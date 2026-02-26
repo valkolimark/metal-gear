@@ -3,11 +3,6 @@
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/ui/tooltip'
 
 function GoogleIcon({ className }: { className?: string }) {
   return (
@@ -42,6 +37,7 @@ function AppleIcon({ className }: { className?: string }) {
 
 export function OAuthButtons() {
   const [isGoogleLoading, setIsGoogleLoading] = useState(false)
+  const [isAppleLoading, setIsAppleLoading] = useState(false)
 
   async function handleGoogleSignIn() {
     setIsGoogleLoading(true)
@@ -58,6 +54,21 @@ export function OAuthButtons() {
     }
   }
 
+  async function handleAppleSignIn() {
+    setIsAppleLoading(true)
+    try {
+      const supabase = createClient()
+      await supabase.auth.signInWithOAuth({
+        provider: 'apple',
+        options: {
+          redirectTo: `${window.location.origin}/callback`,
+        },
+      })
+    } catch {
+      setIsAppleLoading(false)
+    }
+  }
+
   return (
     <div className="flex flex-col gap-3">
       <Button
@@ -65,30 +76,22 @@ export function OAuthButtons() {
         variant="outline"
         className="w-full font-body"
         onClick={handleGoogleSignIn}
-        disabled={isGoogleLoading}
+        disabled={isGoogleLoading || isAppleLoading}
       >
         <GoogleIcon className="size-5" />
         {isGoogleLoading ? 'Redirecting...' : 'Continue with Google'}
       </Button>
 
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <span className="w-full">
-            <Button
-              type="button"
-              variant="outline"
-              className="w-full font-body"
-              disabled
-            >
-              <AppleIcon className="size-5" />
-              Continue with Apple
-            </Button>
-          </span>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p className="font-body">Coming soon</p>
-        </TooltipContent>
-      </Tooltip>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full font-body"
+        onClick={handleAppleSignIn}
+        disabled={isGoogleLoading || isAppleLoading}
+      >
+        <AppleIcon className="size-5" />
+        {isAppleLoading ? 'Redirecting...' : 'Continue with Apple'}
+      </Button>
     </div>
   )
 }
