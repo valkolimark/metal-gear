@@ -3,6 +3,7 @@ import { chakraPetch, manrope } from '@/styles/fonts'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/components/providers/auth-provider'
+import { QueryProvider } from '@/components/providers/query-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -21,12 +22,14 @@ export default function RootLayout({
       <body
         className={`${chakraPetch.variable} ${manrope.variable} font-body antialiased`}
       >
-        <TooltipProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-          <Toaster richColors position="bottom-right" />
-        </TooltipProvider>
+        <QueryProvider>
+          <TooltipProvider>
+            <AuthProvider>
+              {children}
+            </AuthProvider>
+            <Toaster richColors position="bottom-right" />
+          </TooltipProvider>
+        </QueryProvider>
       </body>
     </html>
   )
