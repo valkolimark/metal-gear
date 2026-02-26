@@ -16,6 +16,8 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Separator } from '@/components/ui/separator'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 
 function LoginForm() {
   const router = useRouter()
@@ -67,6 +69,15 @@ function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <OAuthButtons />
+
+        <div className="relative my-6">
+          <Separator />
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 font-body text-xs text-muted-foreground">
+            or continue with email
+          </span>
+        </div>
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="email" className="font-body">

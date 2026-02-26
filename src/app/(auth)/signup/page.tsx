@@ -15,6 +15,8 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { OAuthButtons } from '@/components/auth/oauth-buttons'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -101,6 +103,15 @@ export default function SignupPage() {
         </CardDescription>
       </CardHeader>
       <CardContent>
+        <OAuthButtons />
+
+        <div className="relative my-6">
+          <Separator />
+          <span className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 bg-card px-3 font-body text-xs text-muted-foreground">
+            or continue with email
+          </span>
+        </div>
+
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
           <div className="flex flex-col gap-2">
             <Label htmlFor="fullName" className="font-body">
