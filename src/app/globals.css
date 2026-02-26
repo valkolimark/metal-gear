@@ -1,35 +1,143 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/*
+ * Metal Gear Design System
+ * Dark industrial theme — heavy machinery meets modern SaaS
+ * Dark-only: no light mode toggle needed
+ */
 
 :root {
+  --radius: 0.625rem;
+
+  /* Metal Gear Core Palette */
+  --mg-background: #0A0A0F;
+  --mg-surface: #14141A;
+  --mg-card: #1C1C24;
+  --mg-primary: #FF6B2B;
+  --mg-primary-hover: #e55e25;
+  --mg-secondary: #3A8FD4;
+  --mg-secondary-hover: #327bb8;
+
+  /* shadcn/ui variable mapping — dark only */
   --background: #0A0A0F;
   --foreground: #E4E4E7;
-  --surface: #14141A;
+
   --card: #1C1C24;
+  --card-foreground: #E4E4E7;
+
+  --popover: #14141A;
+  --popover-foreground: #E4E4E7;
+
   --primary: #FF6B2B;
-  --primary-hover: #e55e25;
+  --primary-foreground: #FFFFFF;
+
   --secondary: #3A8FD4;
-  --secondary-hover: #327bb8;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA;
+
+  --accent: #1C1C24;
+  --accent-foreground: #E4E4E7;
+
+  --destructive: #EF4444;
+
   --border: #27272A;
+  --input: #27272A;
+  --ring: #FF6B2B;
+
+  /* Chart colors */
+  --chart-1: #FF6B2B;
+  --chart-2: #3A8FD4;
+  --chart-3: #22C55E;
+  --chart-4: #EAB308;
+  --chart-5: #A855F7;
+
+  /* Sidebar */
+  --sidebar: #14141A;
+  --sidebar-foreground: #E4E4E7;
+  --sidebar-primary: #FF6B2B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #1C1C24;
+  --sidebar-accent-foreground: #E4E4E7;
+  --sidebar-border: #27272A;
+  --sidebar-ring: #FF6B2B;
+
+  /* Metal Gear extra tokens */
+  --surface: #14141A;
+  --primary-hover: #e55e25;
+  --secondary-hover: #327bb8;
 }
 
 @theme inline {
+  /* Core */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-surface: var(--surface);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary);
-  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
-  --color-secondary-hover: var(--secondary-hover);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
   --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* Chart */
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  /* Sidebar */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* Metal Gear extras */
+  --color-surface: var(--surface);
+  --color-primary-hover: var(--primary-hover);
+  --color-secondary-hover: var(--secondary-hover);
+
+  /* Fonts */
   --font-display: var(--font-chakra-petch);
   --font-body: var(--font-manrope);
+
+  /* Radii */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-body), sans-serif;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-body), sans-serif;
+  }
 }
 
 /* Scrollbar styling for the dark theme */
