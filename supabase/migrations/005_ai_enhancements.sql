@@ -1,0 +1,2 @@
+-- AI enhancement tables: embeddings, quality scores, pricing intelligence
+-- Will be populated in Cycle 3

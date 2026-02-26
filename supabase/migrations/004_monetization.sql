@@ -1,0 +1,2 @@
+-- Monetization tables: subscriptions, payments, invoices
+-- Will be populated in Cycle 5

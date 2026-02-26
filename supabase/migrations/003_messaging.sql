@@ -1,0 +1,2 @@
+-- Messaging tables: conversations, messages
+-- Will be populated in Cycle 4

@@ -1,0 +1,2 @@
+-- Core tables: profiles, listings, photos, videos
+-- Will be populated in Cycle 2
