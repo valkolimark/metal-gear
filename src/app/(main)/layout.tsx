@@ -9,13 +9,20 @@ export default function MainLayout({
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex min-h-screen flex-col bg-background">
       <Header />
       <DesktopNav />
       <MobileDrawer />
-      <main className="mx-auto max-w-7xl px-4 py-6 pb-20 sm:px-6 lg:px-8 lg:pb-6">
+
+      {/*
+        Main content area. Pages that use <PageLayout sidebar={...}>
+        will render their own sidebar + content grid inside here.
+        Pages without a sidebar get the default padded container.
+      */}
+      <div className="flex flex-1 flex-col pb-16 lg:pb-0">
         {children}
-      </main>
+      </div>
+
       <MobileNav />
     </div>
   )
