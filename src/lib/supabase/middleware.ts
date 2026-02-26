@@ -45,7 +45,14 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser()
 
-  const { pathname } = request.nextUrl
+  const { pathname, searchParams } = request.nextUrl
+
+  // If an auth code lands on root, redirect to /callback to exchange it
+  if (pathname === '/' && searchParams.has('code')) {
+    const url = request.nextUrl.clone()
+    url.pathname = '/callback'
+    return NextResponse.redirect(url)
+  }
 
   // Protected routes — redirect to login if no session
   const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search']
