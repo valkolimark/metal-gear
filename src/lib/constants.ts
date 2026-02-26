@@ -1,3 +1,5 @@
+// ─── Subscription Tiers ──────────────────────────────────────────────
+
 export const TIER_LIMITS = {
   free: {
     listings: 3,
@@ -26,6 +28,20 @@ export const TIER_LIMITS = {
 } as const
 
 export type SubscriptionTier = keyof typeof TIER_LIMITS
+
+export const TIER_PRICES = {
+  free: 0,
+  premium: 2999, // $29.99/mo in cents
+  boost: 7999,   // $79.99/mo in cents
+} as const
+
+export const TIER_LABELS: Record<SubscriptionTier, string> = {
+  free: 'Free',
+  premium: 'Premium',
+  boost: 'Boost',
+}
+
+// ─── Equipment ───────────────────────────────────────────────────────
 
 export const EQUIPMENT_CATEGORIES = [
   'CNC Machines',
@@ -66,6 +82,25 @@ export const INDUSTRIES = [
   'Other',
 ] as const
 
+export const LISTING_CONDITIONS = [
+  { value: 'new', label: 'New' },
+  { value: 'like_new', label: 'Like New' },
+  { value: 'good', label: 'Good' },
+  { value: 'fair', label: 'Fair' },
+  { value: 'poor', label: 'Poor' },
+  { value: 'for_parts', label: 'For Parts' },
+] as const
+
+export const LISTING_STATUSES = [
+  'draft',
+  'active',
+  'sold',
+  'expired',
+  'removed',
+] as const
+
+// ─── Search & Sort ───────────────────────────────────────────────────
+
 export const SORT_OPTIONS = [
   { value: 'relevance', label: 'Most Relevant' },
   { value: 'price_asc', label: 'Price: Low to High' },
@@ -74,6 +109,24 @@ export const SORT_OPTIONS = [
   { value: 'distance', label: 'Nearest First' },
 ] as const
 
+// ─── App ─────────────────────────────────────────────────────────────
+
 export const APP_NAME = 'Metal Gear'
 export const APP_DESCRIPTION = 'Industrial Equipment Marketplace — Houston, TX'
 export const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'
+
+// Houston, TX default coordinates
+export const DEFAULT_LOCATION = {
+  lat: 29.7604,
+  lng: -95.3698,
+  city: 'Houston',
+  state: 'TX',
+} as const
+
+// File upload limits
+export const UPLOAD_LIMITS = {
+  maxPhotoSizeMB: 10,
+  maxVideoSizeMB: 100,
+  acceptedImageTypes: ['image/jpeg', 'image/png', 'image/webp'],
+  acceptedVideoTypes: ['video/mp4', 'video/quicktime'],
+} as const
