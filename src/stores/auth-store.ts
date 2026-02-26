@@ -7,6 +7,7 @@ interface AuthStore {
   profile: Profile | null
   tier: SubscriptionTier
   isLoading: boolean
+  isAuthenticated: boolean
   setUser: (user: User | null) => void
   setProfile: (profile: Profile | null) => void
   setLoading: (loading: boolean) => void
@@ -18,7 +19,8 @@ export const useAuthStore = create<AuthStore>((set) => ({
   profile: null,
   tier: 'free',
   isLoading: true,
-  setUser: (user) => set({ user }),
+  isAuthenticated: false,
+  setUser: (user) => set({ user, isAuthenticated: !!user }),
   setProfile: (profile) =>
     set({ profile, tier: profile?.subscription_tier ?? 'free' }),
   setLoading: (isLoading) => set({ isLoading }),
@@ -26,6 +28,11 @@ export const useAuthStore = create<AuthStore>((set) => ({
     const { createClient } = await import('@/lib/supabase/client')
     const supabase = createClient()
     await supabase.auth.signOut()
-    set({ user: null, profile: null, tier: 'free' })
+    set({
+      user: null,
+      profile: null,
+      tier: 'free',
+      isAuthenticated: false,
+    })
   },
 }))

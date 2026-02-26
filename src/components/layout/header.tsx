@@ -31,15 +31,20 @@ import { useUIStore } from '@/stores/ui-store'
 export function Header() {
   const router = useRouter()
   const { profile, signOut } = useAuthStore()
-  const { toggleSidebar } = useUIStore()
-  const [searchOpen, setSearchOpen] = useState(false)
+  const {
+    toggleSidebar,
+    mobileSearchOpen,
+    toggleMobileSearch,
+    unreadMessages,
+    unreadNotifications,
+  } = useUIStore()
   const [searchQuery, setSearchQuery] = useState('')
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
-      setSearchOpen(false)
+      toggleMobileSearch()
     }
   }
 
@@ -49,12 +54,13 @@ export function Header() {
     router.refresh()
   }
 
-  const initials = profile?.full_name
-    ?.split(' ')
-    .map((n) => n[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2) || 'MG'
+  const initials =
+    profile?.full_name
+      ?.split(' ')
+      .map((n) => n[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'MG'
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/95 backdrop-blur supports-[backdrop-filter]:bg-surface/80">
@@ -102,9 +108,9 @@ export function Header() {
             variant="ghost"
             size="icon"
             className="md:hidden"
-            onClick={() => setSearchOpen(!searchOpen)}
+            onClick={toggleMobileSearch}
           >
-            {searchOpen ? (
+            {mobileSearchOpen ? (
               <X className="size-5" />
             ) : (
               <Search className="size-5" />
@@ -130,27 +136,30 @@ export function Header() {
           <Button variant="ghost" size="icon" asChild>
             <Link href="/messages" className="relative">
               <MessageSquare className="size-5" />
-              <Badge className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full p-0 text-[10px]">
-                3
-              </Badge>
+              {unreadMessages > 0 && (
+                <Badge className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full p-0 text-[10px]">
+                  {unreadMessages > 9 ? '9+' : unreadMessages}
+                </Badge>
+              )}
               <span className="sr-only">Messages</span>
             </Link>
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" className="relative">
             <Bell className="size-5" />
+            {unreadNotifications > 0 && (
+              <Badge className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full p-0 text-[10px]">
+                {unreadNotifications > 9 ? '9+' : unreadNotifications}
+              </Badge>
+            )}
             <span className="sr-only">Notifications</span>
           </Button>
 
           {/* User dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="rounded-full"
-              >
+              <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar className="size-8">
                   <AvatarImage src={profile?.avatar_url || undefined} />
                   <AvatarFallback className="bg-primary/20 font-body text-xs text-primary">
@@ -160,6 +169,23 @@ export function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              {profile?.full_name && (
+                <>
+                  <div className="px-2 py-1.5">
+                    <p className="font-body text-sm font-medium">
+                      {profile.full_name}
+                    </p>
+                    <p className="font-body text-xs text-muted-foreground">
+                      {profile.subscription_tier === 'free'
+                        ? 'Free Plan'
+                        : profile.subscription_tier === 'premium'
+                          ? 'Premium'
+                          : 'Boost'}
+                    </p>
+                  </div>
+                  <DropdownMenuSeparator />
+                </>
+              )}
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="font-body">
                   <User className="mr-2 size-4" />
@@ -186,7 +212,7 @@ export function Header() {
       </div>
 
       {/* Mobile search bar — expandable */}
-      {searchOpen && (
+      {mobileSearchOpen && (
         <div className="border-t border-border px-4 py-3 md:hidden">
           <form onSubmit={handleSearch}>
             <div className="relative">
