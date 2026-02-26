@@ -1,12 +1,16 @@
+import { MarketingHeader } from '@/components/layout/marketing-header'
+import { Footer } from '@/components/layout/footer'
+
 export default function MarketingLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   return (
-    <div className="min-h-screen bg-[#0A0A0F]">
-      {/* Marketing header/footer will be built in Task 8 */}
-      {children}
+    <div className="flex min-h-screen flex-col bg-background">
+      <MarketingHeader />
+      <main className="flex-1">{children}</main>
+      <Footer />
     </div>
   )
 }
