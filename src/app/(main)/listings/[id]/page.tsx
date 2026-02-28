@@ -16,10 +16,21 @@ import {
   Loader2,
   Calendar,
   QrCode,
+  DollarSign,
+  Check,
+  X,
+  ArrowLeftRight,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { recordListingView } from '@/app/actions/analytics'
+import {
+  makeOffer,
+  getListingOffers,
+  respondToOffer,
+  respondToCounter,
+  withdrawOffer,
+} from '@/app/actions/offers'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -38,6 +49,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/stores/auth-store'
 import { APP_URL } from '@/lib/constants'
 import type { Tables } from '@/types/database'
@@ -59,6 +72,16 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true)
   const [currentImage, setCurrentImage] = useState(0)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
+  const [offerDialogOpen, setOfferDialogOpen] = useState(false)
+  const [offerAmount, setOfferAmount] = useState('')
+  const [offerMessage, setOfferMessage] = useState('')
+  const [submittingOffer, setSubmittingOffer] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [offers, setOffers] = useState<any[]>([])
+  const [isSeller, setIsSeller] = useState(false)
+  const [counterAmount, setCounterAmount] = useState('')
+  const [counterMessage, setCounterMessage] = useState('')
+  const [counteringOfferId, setCounteringOfferId] = useState<string | null>(null)
 
   // Touch swipe state for image gallery
   const touchStartX = useRef(0)
@@ -135,6 +158,16 @@ export default function ListingDetailPage() {
 
       // Record view event (fire and forget)
       recordListingView(id).catch(console.error)
+
+      // Load offers
+      if (user) {
+        getListingOffers(id).then((result) => {
+          if ('offers' in result) {
+            setOffers(result.offers ?? [])
+            setIsSeller(result.isSeller ?? false)
+          }
+        })
+      }
 
       setLoading(false)
     }
@@ -213,6 +246,94 @@ export default function ListingDetailPage() {
 
     if (result.conversationId) {
       router.push(`/messages?conversation=${result.conversationId}`)
+    }
+  }
+
+  async function handleMakeOffer() {
+    if (!user || !listing) return
+    const cents = Math.round(parseFloat(offerAmount) * 100)
+    if (isNaN(cents) || cents <= 0) {
+      toast.error('Enter a valid amount')
+      return
+    }
+    setSubmittingOffer(true)
+    const result = await makeOffer(listing.id, cents, offerMessage)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      toast.success('Offer submitted!')
+      setOfferDialogOpen(false)
+      setOfferAmount('')
+      setOfferMessage('')
+      // Reload offers
+      const updated = await getListingOffers(listing.id)
+      if ('offers' in updated) setOffers(updated.offers ?? [])
+    }
+    setSubmittingOffer(false)
+  }
+
+  async function handleOfferAction(offerId: string, action: 'accept' | 'reject' | 'counter') {
+    if (action === 'counter') {
+      setCounteringOfferId(offerId)
+      return
+    }
+    const result = await respondToOffer(offerId, action)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      toast.success(`Offer ${action === 'accept' ? 'accepted' : 'declined'}`)
+      if (listing) {
+        const updated = await getListingOffers(listing.id)
+        if ('offers' in updated) setOffers(updated.offers ?? [])
+      }
+    }
+  }
+
+  async function handleSubmitCounter() {
+    if (!counteringOfferId) return
+    const cents = Math.round(parseFloat(counterAmount) * 100)
+    if (isNaN(cents) || cents <= 0) {
+      toast.error('Enter a valid counter amount')
+      return
+    }
+    const result = await respondToOffer(counteringOfferId, 'counter', cents, counterMessage)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      toast.success('Counter-offer sent')
+      setCounteringOfferId(null)
+      setCounterAmount('')
+      setCounterMessage('')
+      if (listing) {
+        const updated = await getListingOffers(listing.id)
+        if ('offers' in updated) setOffers(updated.offers ?? [])
+      }
+    }
+  }
+
+  async function handleCounterResponse(offerId: string, action: 'accept' | 'reject') {
+    const result = await respondToCounter(offerId, action)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      toast.success(action === 'accept' ? 'Counter-offer accepted!' : 'Counter-offer declined')
+      if (listing) {
+        const updated = await getListingOffers(listing.id)
+        if ('offers' in updated) setOffers(updated.offers ?? [])
+      }
+    }
+  }
+
+  async function handleWithdrawOffer(offerId: string) {
+    const result = await withdrawOffer(offerId)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      toast.success('Offer withdrawn')
+      if (listing) {
+        const updated = await getListingOffers(listing.id)
+        if ('offers' in updated) setOffers(updated.offers ?? [])
+      }
     }
   }
 
@@ -496,14 +617,156 @@ export default function ListingDetailPage() {
                 </Link>
 
                 {!isOwner && (
-                  <Button
-                    onClick={handleContact}
-                    className="w-full font-body"
-                  >
-                    <MessageSquare className="mr-2 size-4" />
-                    Contact Seller
-                  </Button>
+                  <div className="space-y-2">
+                    <Button
+                      onClick={handleContact}
+                      className="w-full font-body"
+                    >
+                      <MessageSquare className="mr-2 size-4" />
+                      Contact Seller
+                    </Button>
+                    {listing.negotiable && !listing.contact_for_price && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setOfferDialogOpen(true)}
+                        className="w-full font-body"
+                      >
+                        <DollarSign className="mr-2 size-4" />
+                        Make an Offer
+                      </Button>
+                    )}
+                  </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Offers section */}
+          {offers.length > 0 && (
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-display text-lg">
+                  <DollarSign className="size-5 text-primary" />
+                  {isSeller ? 'Incoming Offers' : 'Your Offers'}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {offers.map((offer) => {
+                  const statusColors: Record<string, string> = {
+                    pending: 'border-yellow-500/50 text-yellow-400',
+                    accepted: 'border-green-500/50 text-green-400',
+                    rejected: 'border-red-500/50 text-red-400',
+                    countered: 'border-blue-500/50 text-blue-400',
+                    expired: 'border-muted text-muted-foreground',
+                    withdrawn: 'border-muted text-muted-foreground',
+                  }
+                  return (
+                    <div key={offer.id} className="rounded-lg border border-border p-3 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="font-display text-lg font-bold text-primary">
+                          ${(offer.amount_cents / 100).toLocaleString()}
+                        </p>
+                        <Badge variant="outline" className={`font-body text-[10px] ${statusColors[offer.status] || ''}`}>
+                          {offer.status}
+                        </Badge>
+                      </div>
+                      {isSeller && offer.buyer && (
+                        <p className="font-body text-xs text-muted-foreground">
+                          from {offer.buyer.display_name || offer.buyer.full_name}
+                        </p>
+                      )}
+                      {offer.message && (
+                        <p className="font-body text-xs text-muted-foreground">
+                          &ldquo;{offer.message}&rdquo;
+                        </p>
+                      )}
+                      {offer.status === 'countered' && offer.counter_amount_cents && (
+                        <div className="rounded bg-surface p-2">
+                          <p className="font-body text-xs text-muted-foreground">Counter-offer:</p>
+                          <p className="font-display font-bold text-blue-400">
+                            ${(offer.counter_amount_cents / 100).toLocaleString()}
+                          </p>
+                          {offer.counter_message && (
+                            <p className="font-body text-xs text-muted-foreground">{offer.counter_message}</p>
+                          )}
+                        </div>
+                      )}
+                      {/* Action buttons */}
+                      {isSeller && offer.status === 'pending' && (
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1 font-body text-xs" onClick={() => handleOfferAction(offer.id, 'accept')}>
+                            <Check className="mr-1 size-3" />Accept
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1 font-body text-xs" onClick={() => handleOfferAction(offer.id, 'counter')}>
+                            <ArrowLeftRight className="mr-1 size-3" />Counter
+                          </Button>
+                          <Button size="sm" variant="outline" className="font-body text-xs text-destructive" onClick={() => handleOfferAction(offer.id, 'reject')}>
+                            <X className="size-3" />
+                          </Button>
+                        </div>
+                      )}
+                      {!isSeller && offer.status === 'pending' && (
+                        <Button size="sm" variant="outline" className="w-full font-body text-xs" onClick={() => handleWithdrawOffer(offer.id)}>
+                          Withdraw Offer
+                        </Button>
+                      )}
+                      {!isSeller && offer.status === 'countered' && (
+                        <div className="flex gap-2">
+                          <Button size="sm" className="flex-1 font-body text-xs" onClick={() => handleCounterResponse(offer.id, 'accept')}>
+                            <Check className="mr-1 size-3" />Accept Counter
+                          </Button>
+                          <Button size="sm" variant="outline" className="flex-1 font-body text-xs text-destructive" onClick={() => handleCounterResponse(offer.id, 'reject')}>
+                            <X className="mr-1 size-3" />Decline
+                          </Button>
+                        </div>
+                      )}
+                      <p className="font-body text-[10px] text-muted-foreground">
+                        {new Date(offer.created_at).toLocaleDateString()}
+                        {offer.status === 'pending' && (
+                          <> &middot; expires {new Date(offer.expires_at).toLocaleDateString()}</>
+                        )}
+                      </p>
+                    </div>
+                  )
+                })}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Counter offer inline form */}
+          {counteringOfferId && (
+            <Card className="border-blue-500/50 bg-card">
+              <CardHeader>
+                <CardTitle className="font-display text-sm">Counter Offer</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="space-y-1">
+                  <Label className="font-body text-xs">Your counter price ($)</Label>
+                  <Input
+                    type="number"
+                    value={counterAmount}
+                    onChange={(e) => setCounterAmount(e.target.value)}
+                    placeholder="e.g. 5000"
+                    className="font-body"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="font-body text-xs">Message (optional)</Label>
+                  <Input
+                    value={counterMessage}
+                    onChange={(e) => setCounterMessage(e.target.value)}
+                    placeholder="Why this price?"
+                    className="font-body"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <Button size="sm" className="flex-1 font-body" onClick={handleSubmitCounter}>
+                    Send Counter
+                  </Button>
+                  <Button size="sm" variant="outline" className="font-body" onClick={() => setCounteringOfferId(null)}>
+                    Cancel
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -571,6 +834,73 @@ export default function ListingDetailPage() {
           </div>
         </div>
       )}
+
+      {/* Make an Offer Dialog */}
+      <Dialog open={offerDialogOpen} onOpenChange={setOfferDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Make an Offer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            {listing.price_cents && (
+              <p className="font-body text-sm text-muted-foreground">
+                Listed price: <span className="font-bold text-foreground">
+                  ${(listing.price_cents / 100).toLocaleString()}
+                </span>
+              </p>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="offer-amount" className="font-body">
+                Your offer ($)
+              </Label>
+              <Input
+                id="offer-amount"
+                type="number"
+                value={offerAmount}
+                onChange={(e) => setOfferAmount(e.target.value)}
+                placeholder="e.g. 5000"
+                className="font-body"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="offer-message" className="font-body">
+                Message (optional)
+              </Label>
+              <Input
+                id="offer-message"
+                value={offerMessage}
+                onChange={(e) => setOfferMessage(e.target.value)}
+                placeholder="I'm interested in this equipment..."
+                className="font-body"
+              />
+            </div>
+            <p className="font-body text-[10px] text-muted-foreground">
+              Offers expire after 72 hours if the seller doesn&apos;t respond.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 font-body"
+              onClick={() => setOfferDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 font-body"
+              onClick={handleMakeOffer}
+              disabled={submittingOffer || !offerAmount}
+            >
+              {submittingOffer ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <DollarSign className="mr-2 size-4" />
+              )}
+              Submit Offer
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* QR Code Dialog */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>

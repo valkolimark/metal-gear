@@ -533,6 +533,66 @@ export type Database = {
         }
         Relationships: []
       }
+      offers: {
+        Row: {
+          id: string
+          buyer_id: string
+          listing_id: string
+          amount_cents: number
+          message: string | null
+          status: string
+          counter_amount_cents: number | null
+          counter_message: string | null
+          parent_offer_id: string | null
+          expires_at: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          buyer_id: string
+          listing_id: string
+          amount_cents: number
+          message?: string | null
+          status?: string
+          counter_amount_cents?: number | null
+          counter_message?: string | null
+          parent_offer_id?: string | null
+          expires_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          buyer_id?: string
+          listing_id?: string
+          amount_cents?: number
+          message?: string | null
+          status?: string
+          counter_amount_cents?: number | null
+          counter_message?: string | null
+          parent_offer_id?: string | null
+          expires_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offers_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offers_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notifications: {
         Row: {
           id: string
