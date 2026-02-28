@@ -74,29 +74,11 @@ export default function ProfilePage() {
     try {
       const supabase = createClient()
       const ext = file.name.split('.').pop()
-      // Use unique filename to avoid overwrite/upsert issues
       const path = `${user.id}/avatar-${Date.now()}.${ext}`
 
-      // Try to clean up old avatars (non-blocking)
-      try {
-        const { data: existingFiles } = await supabase.storage
-          .from('avatars')
-          .list(user.id)
-        if (existingFiles && existingFiles.length > 0) {
-          const filesToRemove = existingFiles.map(
-            (f) => `${user.id}/${f.name}`
-          )
-          await supabase.storage.from('avatars').remove(filesToRemove)
-        }
-      } catch {
-        // Ignore cleanup errors
-      }
-
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, {
-          contentType: file.type,
-        })
+        .upload(path, file, { contentType: file.type })
 
       if (uploadError) throw uploadError
 
@@ -111,7 +93,9 @@ export default function ProfilePage() {
 
       if (updateError) throw updateError
 
-      setProfile({ ...profile!, avatar_url: publicUrl })
+      if (profile) {
+        setProfile({ ...profile, avatar_url: publicUrl })
+      }
       toast.success('Avatar updated')
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)
