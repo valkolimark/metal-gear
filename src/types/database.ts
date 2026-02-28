@@ -952,6 +952,76 @@ export type Database = {
           },
         ]
       }
+      transactions: {
+        Row: {
+          id: string
+          buyer_id: string
+          seller_id: string
+          listing_id: string
+          offer_id: string | null
+          amount_cents: number
+          status: string
+          stripe_payment_intent_id: string | null
+          tracking_number: string | null
+          carrier: string | null
+          notes: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          buyer_id: string
+          seller_id: string
+          listing_id: string
+          offer_id?: string | null
+          amount_cents: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+          tracking_number?: string | null
+          carrier?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          buyer_id?: string
+          seller_id?: string
+          listing_id?: string
+          offer_id?: string | null
+          amount_cents?: number
+          status?: string
+          stripe_payment_intent_id?: string | null
+          tracking_number?: string | null
+          carrier?: string | null
+          notes?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "transactions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       subscriptions: {
         Row: {
           cancel_at_period_end: boolean | null
