@@ -137,6 +137,47 @@ export type Database = {
           },
         ]
       }
+      listing_imports: {
+        Row: {
+          id: string
+          user_id: string
+          filename: string
+          total_rows: number
+          success_count: number
+          error_count: number
+          errors: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          filename: string
+          total_rows?: number
+          success_count?: number
+          error_count?: number
+          errors?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          filename?: string
+          total_rows?: number
+          success_count?: number
+          error_count?: number
+          errors?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_imports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_videos: {
         Row: {
           id: string
