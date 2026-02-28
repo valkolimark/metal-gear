@@ -1035,6 +1035,8 @@ export type Database = {
           amount_cents: number
           status: string
           stripe_payment_intent_id: string | null
+          platform_fee_cents: number
+          stripe_payment_intent_status: string
           tracking_number: string | null
           carrier: string | null
           notes: string | null
@@ -1050,6 +1052,8 @@ export type Database = {
           amount_cents: number
           status?: string
           stripe_payment_intent_id?: string | null
+          platform_fee_cents?: number
+          stripe_payment_intent_status?: string
           tracking_number?: string | null
           carrier?: string | null
           notes?: string | null
@@ -1065,6 +1069,8 @@ export type Database = {
           amount_cents?: number
           status?: string
           stripe_payment_intent_id?: string | null
+          platform_fee_cents?: number
+          stripe_payment_intent_status?: string
           tracking_number?: string | null
           carrier?: string | null
           notes?: string | null

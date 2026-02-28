@@ -148,8 +148,8 @@ export async function updateTransactionStatus(
     initiated: { next: ['payment_pending'], role: 'buyer' },
     payment_pending: { next: ['paid'], role: 'buyer' },
     paid: { next: ['shipped'], role: 'seller' },
-    shipped: { next: ['delivered'], role: 'buyer' },
-    delivered: { next: ['completed'], role: 'buyer' },
+    shipped: { next: ['delivered', 'disputed'], role: 'buyer' },
+    delivered: { next: ['completed', 'disputed'], role: 'buyer' },
   }
 
   const allowed = validTransitions[transaction.status]

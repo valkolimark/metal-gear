@@ -69,6 +69,31 @@ export async function POST(request: NextRequest) {
         break
       }
 
+      // ─── PaymentIntent Events (Transaction Escrow) ─────────
+      case 'payment_intent.succeeded': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentIntentUpdate(admin, pi)
+        break
+      }
+
+      case 'payment_intent.canceled': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentIntentUpdate(admin, pi)
+        break
+      }
+
+      case 'payment_intent.payment_failed': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentIntentFailed(admin, pi)
+        break
+      }
+
+      case 'payment_intent.amount_capturable_updated': {
+        const pi = event.data.object as Stripe.PaymentIntent
+        await handlePaymentIntentUpdate(admin, pi)
+        break
+      }
+
       default:
         console.log(`Unhandled event type: ${event.type}`)
     }
@@ -284,6 +309,70 @@ async function handleInvoicePaymentFailed(
     .from('profiles')
     .update({ subscription_tier: 'free' })
     .eq('id', subRecord.user_id)
+}
+
+// ─── PaymentIntent Handlers (Transaction Escrow) ─────────────
+
+async function handlePaymentIntentUpdate(
+  admin: ReturnType<typeof createAdminClient>,
+  pi: Stripe.PaymentIntent
+) {
+  const transactionId = pi.metadata?.transaction_id
+  if (!transactionId) return // Not a transaction payment
+
+  await admin
+    .from('transactions')
+    .update({
+      stripe_payment_intent_status: pi.status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', transactionId)
+}
+
+async function handlePaymentIntentFailed(
+  admin: ReturnType<typeof createAdminClient>,
+  pi: Stripe.PaymentIntent
+) {
+  const transactionId = pi.metadata?.transaction_id
+  if (!transactionId) return
+
+  // Update transaction status
+  await admin
+    .from('transactions')
+    .update({
+      stripe_payment_intent_status: pi.status,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', transactionId)
+
+  // Notify buyer of payment failure
+  const buyerId = pi.metadata?.buyer_id
+  const listingTitle = pi.metadata?.listing_title
+  if (buyerId && listingTitle) {
+    // Send email notification
+    const { data: buyerAuth } = await admin.auth.admin.getUserById(buyerId)
+    if (buyerAuth?.user?.email) {
+      const { data: buyerProfile } = await admin
+        .from('profiles')
+        .select('full_name, display_name')
+        .eq('id', buyerId)
+        .single()
+
+      const name = buyerProfile?.display_name || buyerProfile?.full_name?.split(' ')[0] || 'there'
+
+      await sendEmail({
+        to: buyerAuth.user.email,
+        subject: `Payment Failed: ${listingTitle}`,
+        html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#0A0A0F;color:#ccc;">
+          <h2 style="color:#FF6B2B;">Metal Gear</h2>
+          <p>Hi ${name},</p>
+          <p>Your payment for <strong style="color:#fff;">${listingTitle}</strong> could not be processed.</p>
+          <p>Please try again with a different payment method.</p>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'}/transactions/${transactionId}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">Retry Payment</a>
+        </div>`,
+      })
+    }
+  }
 }
 
 // ─── Helpers ──────────────────────────────────────────────────
