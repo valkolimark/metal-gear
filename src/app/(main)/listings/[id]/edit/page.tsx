@@ -20,7 +20,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import {
   EQUIPMENT_CATEGORIES,
-  INDUSTRIES,
   LISTING_CONDITIONS,
   LISTING_STATUSES,
 } from '@/lib/constants'

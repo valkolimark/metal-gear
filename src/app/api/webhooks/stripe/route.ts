@@ -291,7 +291,6 @@ async function handleInvoicePaymentFailed(
 function getTierFromPriceId(priceId: string): 'premium' | 'boost' {
   // Map Stripe price IDs to tiers
   // These will be set after creating products in Task 2
-  const premiumPriceId = process.env.STRIPE_PREMIUM_PRICE_ID
   const boostPriceId = process.env.STRIPE_BOOST_PRICE_ID
 
   if (priceId === boostPriceId) return 'boost'

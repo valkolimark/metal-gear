@@ -100,7 +100,8 @@ export default function AdminPage() {
       }
       loadAll()
     })
-  }, [router])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function loadAll() {
     try {
@@ -168,7 +169,6 @@ export default function AdminPage() {
     setAuditPage(page)
   }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   async function handleListingAction(id: string, status: string) {
     try {
       await adminUpdateListingStatus(id, status)

@@ -36,6 +36,7 @@ export const useSearchStore = create<SearchStore>()(
         })),
       removeFilter: (key) =>
         set((state) => {
+          // eslint-disable-next-line @typescript-eslint/no-unused-vars
           const { [key]: _, ...rest } = state.filters
           return { filters: rest as SearchFilters }
         }),

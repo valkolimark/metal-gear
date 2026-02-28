@@ -33,6 +33,7 @@ export function useNotifications() {
   // Initial load
   useEffect(() => {
     if (!user) return
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
     loadNotifications()
   }, [user, loadNotifications])
 
@@ -62,7 +63,7 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, setUnreadNotifications])
+  }, [user, setUnreadNotifications, incrementUnreadNotifications])
 
   const markRead = useCallback(async (id: string) => {
     await markNotificationRead(id)

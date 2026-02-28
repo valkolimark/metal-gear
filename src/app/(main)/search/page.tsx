@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react'
+import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -202,6 +202,7 @@ function SearchContent() {
 
   // Load recent searches on mount
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading local storage data on mount
     setRecentSearches(getRecentSearches())
   }, [])
 
@@ -351,6 +352,7 @@ function SearchContent() {
   }, [query, category, industry, condition, priceMin, priceMax, sortBy, page, radius])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount/filter change
     fetchListings()
   }, [fetchListings])
 

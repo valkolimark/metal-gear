@@ -5,7 +5,6 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getListingsForCompare } from '@/app/actions/compare'
 import type { Tables } from '@/types/database'
@@ -35,16 +34,18 @@ function CompareContent() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (ids.length < 2) {
-      setLoading(false)
-      return
-    }
-    getListingsForCompare(ids).then((result) => {
+    async function load() {
+      if (ids.length < 2) {
+        setLoading(false)
+        return
+      }
+      const result = await getListingsForCompare(ids)
       if ('listings' in result) {
         setListings(result.listings ?? [])
       }
       setLoading(false)
-    })
+    }
+    load()
   }, [idsParam]) // eslint-disable-line react-hooks/exhaustive-deps
 
   if (loading) {

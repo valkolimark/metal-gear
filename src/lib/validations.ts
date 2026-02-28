@@ -1,7 +1,6 @@
 import { z } from 'zod'
 import {
   EQUIPMENT_CATEGORIES,
-  INDUSTRIES,
   LISTING_CONDITIONS,
 } from '@/lib/constants'
 

@@ -23,8 +23,7 @@ export default function CheckoutSuccessPage() {
 }
 
 function SuccessContent() {
-  const searchParams = useSearchParams()
-  const sessionId = searchParams.get('session_id')
+  useSearchParams() // triggers Suspense boundary
   const [ready, setReady] = useState(false)
 
   useEffect(() => {

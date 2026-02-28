@@ -26,8 +26,21 @@ async function requireAdmin() {
 
 export async function checkIsAdmin(): Promise<boolean> {
   try {
-    await requireAdmin()
-    return true
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) return false
+
+    const admin = createAdminClient()
+    const { data: profile } = await admin
+      .from('profiles')
+      .select('is_admin')
+      .eq('id', user.id)
+      .single()
+
+    return profile?.is_admin === true
   } catch {
     return false
   }

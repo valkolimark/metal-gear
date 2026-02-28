@@ -108,15 +108,13 @@ export default function DashboardPage() {
       0
     )
 
-    let unreadCount = 0
     if (unreadRes.data && unreadRes.data.length > 0) {
       const convIds = [...new Set(unreadRes.data.map((m) => m.conversation_id))]
-      const { count } = await supabase
+      await supabase
         .from('conversations')
         .select('id', { count: 'exact' })
         .in('id', convIds)
         .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      unreadCount = count ?? 0
     }
 
     setStats({
@@ -145,6 +143,7 @@ export default function DashboardPage() {
   }, [user])
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- legitimate data fetch on mount
     loadDashboard()
   }, [loadDashboard])
 

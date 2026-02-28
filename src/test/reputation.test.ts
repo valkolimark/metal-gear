@@ -82,7 +82,8 @@ describe('Reputation actions', () => {
       // Make insert resolve with no error
       insertBuilder.insert = vi.fn().mockResolvedValue({ error: null })
 
-      let callCount = 0
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const callCount = 0
       mockAdminFrom.mockImplementation((table: string) => {
         if (table === 'conversations') return convBuilder
         if (table === 'reviews') return insertBuilder

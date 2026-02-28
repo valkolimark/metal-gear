@@ -130,8 +130,8 @@ describe('Listing actions', () => {
 
       const result = await duplicateListing('listing1')
       expect(result.listing).toBeDefined()
-      expect(result.listing.title).toBe('Haas VF-2 CNC (Copy)')
-      expect(result.listing.status).toBe('draft')
+      expect(result.listing!.title).toBe('Haas VF-2 CNC (Copy)')
+      expect(result.listing!.status).toBe('draft')
     })
   })
 })

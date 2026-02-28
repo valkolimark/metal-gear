@@ -41,7 +41,7 @@ export default function FavoritesPage() {
       })
   }, [user])
 
-  async function removeFavorite(favoriteId: string, listingId: string) {
+  async function removeFavorite(favoriteId: string) {
     const supabase = createClient()
     const { error } = await supabase
       .from('favorites')
@@ -133,7 +133,7 @@ export default function FavoritesPage() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => removeFavorite(fav.id, listing.id)}
+                  onClick={() => removeFavorite(fav.id)}
                   className="absolute right-2 top-2 text-red-500 opacity-0 transition-opacity group-hover:opacity-100"
                 >
                   <Trash2 className="size-4" />
