@@ -48,6 +48,7 @@ import {
 } from '@/app/actions/admin'
 import { TIER_LABELS } from '@/lib/constants'
 import { getPendingVerifications, reviewVerification } from '@/app/actions/verification'
+import { getAdminDisputes, resolveDispute } from '@/app/actions/disputes'
 
 interface Stats {
   totalUsers: number
@@ -94,6 +95,9 @@ export default function AdminPage() {
   const [flaggedListings, setFlaggedListings] = useState<any[]>([])
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [verifications, setVerifications] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [adminDisputes, setAdminDisputes] = useState<any[]>([])
+  const [disputeResNotes, setDisputeResNotes] = useState<Record<string, string>>({})
 
   useEffect(() => {
     checkIsAdmin().then((isAdmin) => {
@@ -135,8 +139,9 @@ export default function AdminPage() {
       setAuditLogs(audit.logs)
       setAuditTotal(audit.total)
       setFlaggedListings(flagged.flagged)
-      // Load verifications separately (non-blocking)
+      // Load verifications and disputes separately (non-blocking)
       getPendingVerifications().then((v) => setVerifications(v.verifications))
+      getAdminDisputes().then((d) => setAdminDisputes(d.disputes || []))
     } catch {
       toast.error('Failed to load admin data')
     } finally {
@@ -344,7 +349,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="listings">
-        <TabsList className="grid w-full max-w-4xl grid-cols-6">
+        <TabsList className="grid w-full max-w-5xl grid-cols-7">
           <TabsTrigger value="listings" className="font-body text-xs">
             Listings
           </TabsTrigger>
@@ -357,8 +362,11 @@ export default function AdminPage() {
           <TabsTrigger value="flagged" className="font-body text-xs">
             Flagged
           </TabsTrigger>
+          <TabsTrigger value="disputes" className="font-body text-xs">
+            Disputes {adminDisputes.filter((d: { status: string }) => !['resolved_buyer', 'resolved_seller'].includes(d.status)).length > 0 && `(${adminDisputes.filter((d: { status: string }) => !['resolved_buyer', 'resolved_seller'].includes(d.status)).length})`}
+          </TabsTrigger>
           <TabsTrigger value="audit" className="font-body text-xs">
-            Audit Log
+            Audit
           </TabsTrigger>
           <TabsTrigger value="verifications" className="font-body text-xs">
             Verify {verifications.length > 0 && `(${verifications.length})`}
@@ -856,6 +864,159 @@ export default function AdminPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Disputes Tab */}
+        <TabsContent value="disputes" className="mt-4 space-y-4">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="font-display text-lg">Transaction Disputes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {adminDisputes.length === 0 ? (
+                <p className="py-8 text-center font-body text-sm text-muted-foreground">No disputes</p>
+              ) : (
+                <div className="space-y-4">
+                  {adminDisputes.map((d: {
+                    id: string
+                    reason: string
+                    description: string
+                    evidence_urls: string[]
+                    status: string
+                    seller_response: string | null
+                    seller_evidence_urls: string[]
+                    resolution_notes: string | null
+                    created_at: string
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    transactions: any
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    opener: any
+                  }) => {
+                    const tx = d.transactions
+                    const reasonLabel: Record<string, string> = {
+                      item_not_received: 'Item Not Received',
+                      item_not_as_described: 'Not as Described',
+                      damaged_in_shipping: 'Damaged',
+                      wrong_item: 'Wrong Item',
+                      other: 'Other',
+                    }
+                    const isResolved = ['resolved_buyer', 'resolved_seller'].includes(d.status)
+
+                    return (
+                      <div key={d.id} className="rounded-lg border border-border p-4 space-y-3">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <p className="font-body text-sm font-medium text-foreground">
+                              {tx?.listings?.title || 'Unknown Listing'}
+                            </p>
+                            <p className="font-body text-xs text-muted-foreground">
+                              {reasonLabel[d.reason] || d.reason} · {new Date(d.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <Badge className={`font-body text-[10px] ${
+                            d.status === 'open' ? 'bg-yellow-500/20 text-yellow-400'
+                              : d.status === 'under_review' ? 'bg-blue-500/20 text-blue-400'
+                              : d.status === 'escalated' ? 'bg-red-500/20 text-red-400'
+                              : 'bg-green-500/20 text-green-400'
+                          }`}>
+                            {d.status.replace(/_/g, ' ')}
+                          </Badge>
+                        </div>
+
+                        <div className="grid gap-2 sm:grid-cols-2">
+                          <div className="rounded bg-surface/50 p-2">
+                            <p className="font-body text-[10px] text-muted-foreground">Buyer</p>
+                            <p className="font-body text-xs text-foreground">{tx?.buyer?.display_name || tx?.buyer?.full_name || '?'}</p>
+                          </div>
+                          <div className="rounded bg-surface/50 p-2">
+                            <p className="font-body text-[10px] text-muted-foreground">Seller</p>
+                            <p className="font-body text-xs text-foreground">{tx?.seller?.display_name || tx?.seller?.full_name || '?'}</p>
+                          </div>
+                        </div>
+
+                        <div className="rounded bg-surface/50 p-2">
+                          <p className="font-body text-[10px] text-muted-foreground">Buyer&apos;s Complaint</p>
+                          <p className="font-body text-xs text-foreground">{d.description}</p>
+                          {d.evidence_urls.length > 0 && (
+                            <div className="mt-1 flex gap-1">
+                              {d.evidence_urls.map((url, i) => (
+                                <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="size-10 overflow-hidden rounded border border-border">
+                                  <img src={url} alt="" className="size-full object-cover" />
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {d.seller_response && (
+                          <div className="rounded bg-blue-500/5 p-2">
+                            <p className="font-body text-[10px] text-muted-foreground">Seller&apos;s Response</p>
+                            <p className="font-body text-xs text-foreground">{d.seller_response}</p>
+                            {d.seller_evidence_urls.length > 0 && (
+                              <div className="mt-1 flex gap-1">
+                                {d.seller_evidence_urls.map((url, i) => (
+                                  <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="size-10 overflow-hidden rounded border border-border">
+                                    <img src={url} alt="" className="size-full object-cover" />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {d.resolution_notes && (
+                          <div className="rounded bg-green-500/5 p-2">
+                            <p className="font-body text-[10px] text-muted-foreground">Resolution</p>
+                            <p className="font-body text-xs text-foreground">{d.resolution_notes}</p>
+                          </div>
+                        )}
+
+                        {!isResolved && (
+                          <div className="space-y-2 border-t border-border pt-3">
+                            <textarea
+                              placeholder="Resolution notes..."
+                              value={disputeResNotes[d.id] || ''}
+                              onChange={(e) => setDisputeResNotes((prev) => ({ ...prev, [d.id]: e.target.value }))}
+                              rows={2}
+                              className="w-full rounded-md border border-border bg-surface px-3 py-2 font-body text-xs text-foreground placeholder:text-muted-foreground"
+                            />
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  const result = await resolveDispute(d.id, 'resolved_buyer', disputeResNotes[d.id] || 'Resolved in favor of buyer')
+                                  if ('error' in result && result.error) toast.error(result.error)
+                                  else { toast.success('Resolved — buyer refunded'); getAdminDisputes().then((r) => setAdminDisputes(r.disputes || [])) }
+                                }}
+                                className="font-body text-xs text-green-400"
+                              >
+                                <CheckCircle2 className="mr-1 size-3" />
+                                Refund Buyer
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  const result = await resolveDispute(d.id, 'resolved_seller', disputeResNotes[d.id] || 'Resolved in favor of seller')
+                                  if ('error' in result && result.error) toast.error(result.error)
+                                  else { toast.success('Resolved — funds released to seller'); getAdminDisputes().then((r) => setAdminDisputes(r.disputes || [])) }
+                                }}
+                                className="font-body text-xs text-blue-400"
+                              >
+                                <DollarSign className="mr-1 size-3" />
+                                Release to Seller
+                              </Button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </CardContent>

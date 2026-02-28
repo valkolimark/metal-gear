@@ -174,6 +174,28 @@
     "memberSince": "Miembro desde",
     "visitStorefront": "Visitar Tienda"
   },
+  "disputes": {
+    "title": "Disputa",
+    "openDispute": "Abrir una Disputa",
+    "reason": "Razón",
+    "describeIssue": "Describe el problema",
+    "evidencePhotos": "Fotos de Evidencia (hasta 5)",
+    "submitDispute": "Enviar Disputa",
+    "respondToDispute": "Responder a la Disputa",
+    "sellerResponse": "Respuesta del Vendedor",
+    "resolution": "Resolución",
+    "disputeHistory": "Historial de Disputas",
+    "itemNotReceived": "Artículo No Recibido",
+    "itemNotAsDescribed": "Artículo No Corresponde a la Descripción",
+    "damagedInShipping": "Dañado en el Envío",
+    "wrongItem": "Artículo Incorrecto Recibido",
+    "other": "Otro",
+    "open": "Abierta",
+    "underReview": "En Revisión",
+    "resolvedBuyer": "Resuelta (Comprador)",
+    "resolvedSeller": "Resuelta (Vendedor)",
+    "escalated": "Escalada"
+  },
   "accessibility": {
     "mainNavigation": "Navegación principal",
     "mobileNavigation": "Navegación móvil",

@@ -15,6 +15,9 @@ export type NotificationType =
   | 'offer_countered'
   | 'transaction_initiated'
   | 'transaction_update'
+  | 'dispute_opened'
+  | 'dispute_response'
+  | 'dispute_resolved'
 
 export async function getNotifications(limit = 20, offset = 0) {
   const supabase = await createClient()

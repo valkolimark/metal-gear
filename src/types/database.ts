@@ -101,6 +101,69 @@ export type Database = {
           },
         ]
       }
+      disputes: {
+        Row: {
+          id: string
+          transaction_id: string
+          opened_by: string
+          reason: string
+          description: string
+          evidence_urls: string[]
+          status: string
+          seller_response: string | null
+          seller_evidence_urls: string[]
+          resolution_notes: string | null
+          resolved_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          transaction_id: string
+          opened_by: string
+          reason: string
+          description: string
+          evidence_urls?: string[]
+          status?: string
+          seller_response?: string | null
+          seller_evidence_urls?: string[]
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          transaction_id?: string
+          opened_by?: string
+          reason?: string
+          description?: string
+          evidence_urls?: string[]
+          status?: string
+          seller_response?: string | null
+          seller_evidence_urls?: string[]
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "disputes_transaction_id_fkey"
+            columns: ["transaction_id"]
+            isOneToOne: false
+            referencedRelation: "transactions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "disputes_opened_by_fkey"
+            columns: ["opened_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       favorites: {
         Row: {
           created_at: string
