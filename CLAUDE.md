@@ -14,12 +14,20 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 ## Design System
 - **Theme:** Dark-only (`#0A0A0F` background, `#FF6B2B` primary orange, `#3A8FD4` steel blue)
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body) via `next/font/google`
-- **Components:** 12 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label)
+- **Components:** 14 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch)
+
+## Testing
+- **Unit tests:** Vitest + React Testing Library (`npm test`)
+- **E2E tests:** Playwright (`npm run test:e2e`)
+- **Config:** `vitest.config.ts`, `playwright.config.ts`
+- **Test files:** `src/test/*.test.{ts,tsx}`, `e2e/*.spec.ts`
 
 ## Route Groups
 - `(auth)` — login, signup, forgot-password, reset-password, callback
-- `(main)` — dashboard, search, listings, messages, profile (protected)
-- `(marketing)` — pricing, about (public)
+- `(main)` — dashboard, search, listings, messages, profile, favorites, admin (protected)
+- `(marketing)` — pricing, about, terms, privacy (public)
+- `/api/webhooks/stripe` — Stripe subscription webhook
+- `/api/unsubscribe` — Email unsubscribe endpoint
 
 ## Subscription Tiers
 - **Free:** 3 listings, 5 photos, 10 conversations, 100mi search
@@ -51,9 +59,26 @@ curl -s -X POST "https://api.vercel.com/v13/deployments?teamId=team_9n9Gosoaraic
 ## Prompts
 Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant prompt file.
 
+## Database Tables (Cycle 4 additions)
+- `listing_views` — Timestamped view events per listing (viewer_id, listing_id, viewed_at)
+- `saved_searches` — User-saved search filter sets (user_id, name, filters JSONB)
+- `reviews` — Seller ratings/reviews (reviewer_id, seller_id, conversation_id, rating 1-5)
+- `reports` — User/listing reports for moderation (reporter_id, target_type, target_id, reason, status)
+
+## Critical Pattern
+All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. Server actions live in:
+- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, admin)
+- `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
+
+## PWA
+- Manifest at `/public/manifest.json`
+- Icons: `/public/icons/icon-192.svg`, `/public/icons/icon-512.svg`
+- Mobile bottom nav with safe area insets
+
 ## Conventions
 - User preference: "I want you to do all the work. Just ask me for credentials."
 - Build, commit, push, and deploy after each task
 - Commit messages include `Co-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>`
 - Supabase env vars managed via Management API (token needed per session)
 - Vercel env vars managed via REST API
+- API docs at `/docs/api.md`
