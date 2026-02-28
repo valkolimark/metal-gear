@@ -120,13 +120,13 @@ export function Header() {
 
           {/* Create Listing CTA */}
           <Button asChild size="sm" className="hidden font-body sm:flex">
-            <Link href="/listings">
+            <Link href="/listings/new">
               <Plus className="size-4" />
               Create Listing
             </Link>
           </Button>
           <Button asChild size="icon" className="sm:hidden">
-            <Link href="/listings">
+            <Link href="/listings/new">
               <Plus className="size-5" />
               <span className="sr-only">Create Listing</span>
             </Link>
