@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { useAuthStore } from '@/stores/auth-store'
 import { uploadAvatar, updateProfile } from './actions'
+import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 
@@ -363,7 +364,7 @@ export default function ProfilePage() {
                     : 'You have access to premium features.'}
                 </p>
               </div>
-              {profile?.subscription_tier === 'free' && (
+              {profile?.subscription_tier === 'free' ? (
                 <Button
                   type="button"
                   variant="outline"
@@ -371,6 +372,19 @@ export default function ProfilePage() {
                   className="font-body"
                 >
                   Upgrade
+                </Button>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={async () => {
+                    const result = await createBillingPortalSession()
+                    if (result.url) window.location.href = result.url
+                    else if (result.error) toast.error(result.error)
+                  }}
+                  className="font-body"
+                >
+                  Manage Subscription
                 </Button>
               )}
             </div>
