@@ -82,10 +82,10 @@ export default function ProfilePage() {
         return
       }
 
-      if (profile && result.url) {
-        setProfile({ ...profile, avatar_url: result.url })
-        setAvatarKey((k) => k + 1)
+      if (result.profile) {
+        setProfile(result.profile as Profile)
       }
+      setAvatarKey((k) => k + 1)
       toast.success('Avatar updated')
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err)

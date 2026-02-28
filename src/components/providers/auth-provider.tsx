@@ -3,17 +3,8 @@
 import { useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
+import { getCurrentUser, fetchProfileServer } from '@/app/actions'
 import type { Profile } from '@/types/users'
-
-async function fetchProfile(userId: string): Promise<Profile | null> {
-  const supabase = createClient()
-  const { data } = await supabase
-    .from('profiles')
-    .select('*')
-    .eq('id', userId)
-    .single()
-  return data as Profile | null
-}
 
 /**
  * Hydrates auth state from Supabase on mount and listens for auth changes.
@@ -25,18 +16,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const supabase = createClient()
 
-    // Get initial session
-    supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (user) {
-        setUser({
-          id: user.id,
-          email: user.email!,
-          created_at: user.created_at,
-        })
-        // Fetch profile (may not exist yet for new users)
-        const profile = await fetchProfile(user.id).catch(() => null)
-        if (profile) setProfile(profile)
+    // Get initial session via server action (bypasses client-side RLS issues)
+    getCurrentUser().then((result) => {
+      if (result) {
+        setUser(result.user)
+        if (result.profile) setProfile(result.profile as Profile)
       }
+      setLoading(false)
+    }).catch(() => {
       setLoading(false)
     })
 
@@ -51,8 +38,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           created_at: session.user.created_at,
         })
         if (event === 'SIGNED_IN') {
-          const profile = await fetchProfile(session.user.id).catch(() => null)
-          if (profile) setProfile(profile)
+          const profile = await fetchProfileServer(session.user.id).catch(() => null)
+          if (profile) setProfile(profile as Profile)
         }
       } else {
         setUser(null)

@@ -42,17 +42,19 @@ export async function uploadAvatar(formData: FormData) {
     data: { publicUrl },
   } = admin.storage.from('avatars').getPublicUrl(path)
 
-  // Update profile with new avatar URL
-  const { error: updateError } = await admin
+  // Update profile with new avatar URL and return full profile
+  const { data: updatedProfile, error: updateError } = await admin
     .from('profiles')
     .update({ avatar_url: publicUrl })
     .eq('id', user.id)
+    .select()
+    .single()
 
   if (updateError) {
     return { error: `Profile update failed: ${updateError.message}` }
   }
 
-  return { url: publicUrl }
+  return { url: publicUrl, profile: updatedProfile }
 }
 
 export async function updateProfile(formData: {
