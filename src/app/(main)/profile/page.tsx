@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Save, Loader2, Bell } from 'lucide-react'
+import { Camera, Save, Loader2, Bell, CheckCircle2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -23,6 +23,48 @@ import { uploadAvatar, updateProfile, updateNotificationPreferences } from './ac
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
+
+function ProfileCompletion({ profile }: { profile: Profile | null }) {
+  if (!profile) return null
+
+  const fields = [
+    { key: 'full_name', label: 'Full Name', weight: 15 },
+    { key: 'display_name', label: 'Display Name', weight: 10 },
+    { key: 'company_name', label: 'Company', weight: 10 },
+    { key: 'bio', label: 'Bio', weight: 15 },
+    { key: 'phone', label: 'Phone', weight: 10 },
+    { key: 'industry', label: 'Industry', weight: 10 },
+    { key: 'location_city', label: 'City', weight: 10 },
+    { key: 'avatar_url', label: 'Avatar', weight: 20 },
+  ]
+
+  let score = 0
+  for (const field of fields) {
+    const value = profile[field.key as keyof Profile]
+    if (value && String(value).trim()) score += field.weight
+  }
+
+  const color =
+    score >= 80
+      ? 'text-green-400'
+      : score >= 50
+        ? 'text-yellow-400'
+        : 'text-orange-400'
+
+  return (
+    <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+      <CheckCircle2 className={`size-5 ${color}`} />
+      <div>
+        <p className="font-body text-sm font-medium text-foreground">
+          {score}%
+        </p>
+        <p className="font-body text-[10px] text-muted-foreground">
+          Complete
+        </p>
+      </div>
+    </div>
+  )
+}
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -160,13 +202,16 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div>
-        <h1 className="font-display text-3xl font-bold text-foreground">
-          Profile
-        </h1>
-        <p className="mt-1 font-body text-muted-foreground">
-          Manage your account settings and public profile
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="font-display text-3xl font-bold text-foreground">
+            Profile
+          </h1>
+          <p className="mt-1 font-body text-muted-foreground">
+            Manage your account settings and public profile
+          </p>
+        </div>
+        <ProfileCompletion profile={profile} />
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">

@@ -371,6 +371,102 @@ export type Database = {
           },
         ]
       }
+      reviews: {
+        Row: {
+          id: string
+          reviewer_id: string
+          seller_id: string
+          conversation_id: string
+          rating: number
+          comment: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reviewer_id: string
+          seller_id: string
+          conversation_id: string
+          rating: number
+          comment?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reviewer_id?: string
+          seller_id?: string
+          conversation_id?: string
+          rating?: number
+          comment?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reviews_reviewer_id_fkey"
+            columns: ["reviewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "reviews_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reports: {
+        Row: {
+          id: string
+          reporter_id: string
+          target_type: string
+          target_id: string
+          reason: string
+          details: string | null
+          status: string
+          admin_notes: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          reporter_id: string
+          target_type: string
+          target_id: string
+          reason: string
+          details?: string | null
+          status?: string
+          admin_notes?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          reporter_id?: string
+          target_type?: string
+          target_id?: string
+          reason?: string
+          details?: string | null
+          status?: string
+          admin_notes?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reports_reporter_id_fkey"
+            columns: ["reporter_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
