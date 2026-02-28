@@ -3,9 +3,17 @@ import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, subscriptionConfirmEmail } from '@/lib/email'
 import { TIER_LABELS } from '@/lib/constants'
+import { rateLimit, getClientIp } from '@/lib/rate-limit'
 import type Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
+  // Rate limit: 100 webhook calls per minute per IP
+  const ip = getClientIp(request.headers)
+  const rl = rateLimit(`stripe-webhook:${ip}`, { limit: 100, windowSeconds: 60 })
+  if (!rl.success) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 })
+  }
+
   const body = await request.text()
   const signature = request.headers.get('stripe-signature')
 

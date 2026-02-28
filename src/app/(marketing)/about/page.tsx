@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import {
   Factory,
   Search,
@@ -7,6 +8,12 @@ import {
   Users,
 } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
+
+export const metadata: Metadata = {
+  title: 'About',
+  description:
+    'Learn about Metal Gear — the industrial equipment marketplace built for Houston and the Gulf Coast.',
+}
 
 const howItWorks = [
   {
