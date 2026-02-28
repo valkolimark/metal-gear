@@ -16,6 +16,7 @@ import {
   BookmarkCheck,
   Clock,
   Trash2,
+  MapIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -52,7 +53,9 @@ import {
   INDUSTRIES,
   LISTING_CONDITIONS,
   SORT_OPTIONS,
+  DEFAULT_LOCATION,
 } from '@/lib/constants'
+import { DynamicListingMap } from '@/components/map/dynamic-map'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
@@ -86,6 +89,25 @@ const SEARCH_SUGGESTIONS = [
 // Recent searches localStorage key
 const RECENT_SEARCHES_KEY = 'mg-recent-searches'
 const MAX_RECENT_SEARCHES = 10
+
+function haversineDistance(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number
+): number {
+  const R = 3959 // Earth radius in miles
+  const dLat = ((lat2 - lat1) * Math.PI) / 180
+  const dLng = ((lng2 - lng1) * Math.PI) / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2)
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+  return R * c
+}
 
 function getRecentSearches(): string[] {
   if (typeof window === 'undefined') return []
@@ -131,7 +153,7 @@ function SearchContent() {
   const { user } = useAuthStore()
 
   const [filtersOpen, setFiltersOpen] = useState(true)
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid')
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'map'>('grid')
   const [loading, setLoading] = useState(true)
   const [listings, setListings] = useState<Listing[]>([])
   const [totalCount, setTotalCount] = useState(0)
@@ -159,6 +181,7 @@ function SearchContent() {
   const priceMin = searchParams.get('priceMin') || ''
   const priceMax = searchParams.get('priceMax') || ''
   const sortBy = searchParams.get('sort') || 'newest'
+  const radius = searchParams.get('radius') || ''
 
   const [searchInput, setSearchInput] = useState(query)
 
@@ -233,22 +256,29 @@ function SearchContent() {
     if (priceMin) q = q.gte('price_cents', parseInt(priceMin) * 100)
     if (priceMax) q = q.lte('price_cents', parseInt(priceMax) * 100)
 
-    switch (sortBy) {
-      case 'price_asc':
-        q = q.order('price_cents', { ascending: true, nullsFirst: false })
-        break
-      case 'price_desc':
-        q = q.order('price_cents', { ascending: false, nullsFirst: false })
-        break
-      case 'newest':
-        q = q.order('created_at', { ascending: false })
-        break
-      default:
-        q = q.order('created_at', { ascending: false })
+    // For distance sorting, fetch more results and sort client-side
+    const isDistanceSort = sortBy === 'distance'
+
+    if (!isDistanceSort) {
+      switch (sortBy) {
+        case 'price_asc':
+          q = q.order('price_cents', { ascending: true, nullsFirst: false })
+          break
+        case 'price_desc':
+          q = q.order('price_cents', { ascending: false, nullsFirst: false })
+          break
+        case 'newest':
+        default:
+          q = q.order('created_at', { ascending: false })
+      }
+    } else {
+      q = q.order('created_at', { ascending: false })
     }
 
-    const from = page * PAGE_SIZE
-    q = q.range(from, from + PAGE_SIZE - 1)
+    if (!isDistanceSort && !radius) {
+      const from = page * PAGE_SIZE
+      q = q.range(from, from + PAGE_SIZE - 1)
+    }
 
     const { data, error, count } = await q
 
@@ -257,11 +287,53 @@ function SearchContent() {
       setListings([])
       setTotalCount(0)
     } else {
-      setListings((data ?? []) as Listing[])
-      setTotalCount(count ?? 0)
+      let results = (data ?? []) as Listing[]
+
+      // Apply radius filter
+      const radiusMiles = radius ? parseInt(radius) : 0
+      if (radiusMiles > 0) {
+        results = results.filter((l) => {
+          if (!l.location_lat || !l.location_lng) return false
+          const dist = haversineDistance(
+            DEFAULT_LOCATION.lat,
+            DEFAULT_LOCATION.lng,
+            l.location_lat,
+            l.location_lng
+          )
+          return dist <= radiusMiles
+        })
+      }
+
+      // Sort by distance if requested
+      if (isDistanceSort) {
+        results.sort((a, b) => {
+          const distA = haversineDistance(
+            DEFAULT_LOCATION.lat,
+            DEFAULT_LOCATION.lng,
+            a.location_lat,
+            a.location_lng
+          )
+          const distB = haversineDistance(
+            DEFAULT_LOCATION.lat,
+            DEFAULT_LOCATION.lng,
+            b.location_lat,
+            b.location_lng
+          )
+          return distA - distB
+        })
+      }
+
+      if (isDistanceSort || radius) {
+        setTotalCount(results.length)
+        const from = page * PAGE_SIZE
+        setListings(results.slice(from, from + PAGE_SIZE))
+      } else {
+        setListings(results)
+        setTotalCount(count ?? 0)
+      }
     }
     setLoading(false)
-  }, [query, category, industry, condition, priceMin, priceMax, sortBy, page])
+  }, [query, category, industry, condition, priceMin, priceMax, sortBy, page, radius])
 
   useEffect(() => {
     fetchListings()
@@ -342,6 +414,7 @@ function SearchContent() {
     condition,
     priceMin,
     priceMax,
+    radius,
   ].filter(Boolean).length
 
   // Filter suggestions based on input
@@ -505,6 +578,43 @@ function SearchContent() {
                   className="font-body text-sm"
                 />
               </div>
+            </div>
+
+            {/* Radius */}
+            <div className="space-y-2">
+              <p className="font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Distance from Houston
+              </p>
+              <Select
+                value={radius || 'any'}
+                onValueChange={(v) =>
+                  updateParams({ radius: v === 'any' ? '' : v })
+                }
+              >
+                <SelectTrigger className="font-body text-sm">
+                  <SelectValue placeholder="Any distance" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any" className="font-body">
+                    Any distance
+                  </SelectItem>
+                  <SelectItem value="25" className="font-body">
+                    Within 25 miles
+                  </SelectItem>
+                  <SelectItem value="50" className="font-body">
+                    Within 50 miles
+                  </SelectItem>
+                  <SelectItem value="100" className="font-body">
+                    Within 100 miles
+                  </SelectItem>
+                  <SelectItem value="250" className="font-body">
+                    Within 250 miles
+                  </SelectItem>
+                  <SelectItem value="500" className="font-body">
+                    Within 500 miles
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <Separator />
@@ -676,14 +786,23 @@ function SearchContent() {
               <button
                 onClick={() => setViewMode('grid')}
                 className={`p-2 ${viewMode === 'grid' ? 'bg-surface text-foreground' : 'text-muted-foreground'}`}
+                title="Grid view"
               >
                 <Grid3X3 className="size-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
                 className={`p-2 ${viewMode === 'list' ? 'bg-surface text-foreground' : 'text-muted-foreground'}`}
+                title="List view"
               >
                 <List className="size-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('map')}
+                className={`p-2 ${viewMode === 'map' ? 'bg-surface text-foreground' : 'text-muted-foreground'}`}
+                title="Map view"
+              >
+                <MapIcon className="size-4" />
               </button>
             </div>
           </div>
@@ -710,6 +829,15 @@ function SearchContent() {
             >
               Clear filters
             </Button>
+          </div>
+        ) : viewMode === 'map' ? (
+          <div className="h-[500px] overflow-hidden rounded-lg border border-border lg:h-[600px]">
+            <DynamicListingMap
+              listings={listings.filter(
+                (l) => l.location_lat && l.location_lng
+              )}
+              onListingClick={(id) => router.push(`/listings/${id}`)}
+            />
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
