@@ -412,6 +412,44 @@ export type Database = {
           },
         ]
       }
+      seller_storefronts: {
+        Row: {
+          user_id: string
+          banner_url: string | null
+          tagline: string | null
+          featured_listing_ids: string[]
+          theme_color: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          user_id: string
+          banner_url?: string | null
+          tagline?: string | null
+          featured_listing_ids?: string[]
+          theme_color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          user_id?: string
+          banner_url?: string | null
+          tagline?: string | null
+          featured_listing_ids?: string[]
+          theme_color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_storefronts_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_searches: {
         Row: {
           id: string

@@ -766,6 +766,13 @@ export default function ListingDetailPage() {
                   </div>
                 </Link>
 
+                <Link
+                  href={`/sellers/${seller.id}`}
+                  className="flex items-center gap-1.5 font-body text-xs text-secondary transition-colors hover:text-secondary/80"
+                >
+                  Visit Storefront →
+                </Link>
+
                 {!isOwner && (
                   <div className="space-y-2">
                     <Button

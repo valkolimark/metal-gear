@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Save, Loader2, Bell, CheckCircle2 } from 'lucide-react'
+import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
+import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,11 +19,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
+import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
 import { uploadAvatar, updateProfile, updateNotificationPreferences } from './actions'
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
+import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/actions/storefront'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
+import type { Tables } from '@/types/database'
 
 function ProfileCompletion({ profile }: { profile: Profile | null }) {
   if (!profile) return null
@@ -80,6 +84,13 @@ export default function ProfilePage() {
     subscription: true,
     marketing: true,
   })
+  const [storefrontData, setStorefrontData] = useState<Tables<'seller_storefronts'> | null>(null)
+  const [sfTagline, setSfTagline] = useState('')
+  const [sfFeaturedIds, setSfFeaturedIds] = useState<string[]>([])
+  const [savingSf, setSavingSf] = useState(false)
+  const [uploadingBanner, setUploadingBanner] = useState(false)
+  const bannerInputRef = useRef<HTMLInputElement>(null)
+  const [userListings, setUserListings] = useState<{ id: string; title: string }[]>([])
   const [form, setForm] = useState({
     full_name: '',
     display_name: '',
@@ -113,6 +124,30 @@ export default function ProfilePage() {
           marketing: prefs.marketing !== false,
         })
       }
+
+      // Load storefront data
+      getStorefront(profile.id).then((res) => {
+        if (res.storefront) {
+          setStorefrontData(res.storefront)
+          setSfTagline(res.storefront.tagline || '')
+          setSfFeaturedIds(res.storefront.featured_listing_ids || [])
+        }
+      })
+
+      // Load user's active listings for featured picker
+      import('@/lib/supabase/client').then(({ createClient }) => {
+        const supabase = createClient()
+        supabase
+          .from('listings')
+          .select('id, title')
+          .eq('seller_id', profile.id)
+          .eq('status', 'active')
+          .order('created_at', { ascending: false })
+          .limit(50)
+          .then(({ data }) => {
+            if (data) setUserListings(data)
+          })
+      })
     }
   }, [profile])
 
@@ -541,6 +576,199 @@ export default function ProfilePage() {
                   </>
                 ) : (
                   'Save Preferences'
+                )}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Storefront Editor */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Store className="size-5" />
+              Storefront
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="font-body text-sm text-muted-foreground">
+                Customize your public seller storefront.
+              </p>
+              {user && (
+                <Button variant="outline" size="sm" asChild className="font-body">
+                  <Link href={`/sellers/${user.id}`}>
+                    <ExternalLink className="mr-1.5 size-3" />
+                    View Storefront
+                  </Link>
+                </Button>
+              )}
+            </div>
+
+            <Separator />
+
+            {/* Banner Upload */}
+            <div className="space-y-2">
+              <Label className="font-body">Banner Image</Label>
+              <div className="relative overflow-hidden rounded-lg border border-border">
+                {storefrontData?.banner_url ? (
+                  <img
+                    src={storefrontData.banner_url}
+                    alt="Storefront banner"
+                    className="h-32 w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-32 items-center justify-center bg-surface">
+                    <ImagePlus className="size-8 text-muted-foreground/40" />
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => bannerInputRef.current?.click()}
+                  disabled={uploadingBanner}
+                  className="absolute bottom-2 right-2 flex items-center gap-1.5 rounded-md bg-card/90 px-3 py-1.5 font-body text-xs text-foreground backdrop-blur transition-colors hover:bg-card"
+                >
+                  {uploadingBanner ? (
+                    <Loader2 className="size-3 animate-spin" />
+                  ) : (
+                    <Camera className="size-3" />
+                  )}
+                  {uploadingBanner ? 'Uploading...' : 'Change Banner'}
+                </button>
+                <input
+                  ref={bannerInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    if (file.size > 10 * 1024 * 1024) {
+                      toast.error('Image must be under 10MB')
+                      return
+                    }
+                    setUploadingBanner(true)
+                    try {
+                      const fd = new FormData()
+                      fd.append('file', file)
+                      const result = await uploadStorefrontBanner(fd)
+                      if (result.error) toast.error(result.error)
+                      else if (result.storefront) {
+                        setStorefrontData(result.storefront)
+                        toast.success('Banner updated')
+                      }
+                    } catch {
+                      toast.error('Upload failed')
+                    } finally {
+                      setUploadingBanner(false)
+                      if (bannerInputRef.current) bannerInputRef.current.value = ''
+                    }
+                  }}
+                  className="hidden"
+                />
+              </div>
+            </div>
+
+            {/* Tagline */}
+            <div className="space-y-2">
+              <Label htmlFor="sf_tagline" className="font-body">
+                Tagline
+              </Label>
+              <Input
+                id="sf_tagline"
+                value={sfTagline}
+                onChange={(e) => setSfTagline(e.target.value)}
+                placeholder="Your equipment, our expertise"
+                maxLength={120}
+                className="font-body"
+              />
+              <p className="font-body text-[10px] text-muted-foreground">
+                A short line that appears below your name on your storefront.
+              </p>
+            </div>
+
+            {/* Featured Listings */}
+            <div className="space-y-2">
+              <Label className="font-body">
+                Featured Listings (up to 3)
+              </Label>
+              {userListings.length > 0 ? (
+                <div className="space-y-1">
+                  {userListings.map((listing) => {
+                    const isFeatured = sfFeaturedIds.includes(listing.id)
+                    return (
+                      <button
+                        key={listing.id}
+                        type="button"
+                        onClick={() => {
+                          if (isFeatured) {
+                            setSfFeaturedIds((ids) =>
+                              ids.filter((id) => id !== listing.id)
+                            )
+                          } else if (sfFeaturedIds.length < 3) {
+                            setSfFeaturedIds((ids) => [...ids, listing.id])
+                          } else {
+                            toast.error('Maximum 3 featured listings')
+                          }
+                        }}
+                        className={`flex w-full items-center justify-between rounded-lg border p-2 text-left transition-colors ${
+                          isFeatured
+                            ? 'border-primary/50 bg-primary/10'
+                            : 'border-border hover:bg-surface'
+                        }`}
+                      >
+                        <span className="truncate font-body text-sm text-foreground">
+                          {listing.title}
+                        </span>
+                        {isFeatured && (
+                          <Badge className="shrink-0 bg-primary/20 font-body text-[10px] text-primary">
+                            Featured
+                          </Badge>
+                        )}
+                      </button>
+                    )
+                  })}
+                </div>
+              ) : (
+                <p className="font-body text-sm text-muted-foreground">
+                  No active listings to feature. Create a listing first.
+                </p>
+              )}
+            </div>
+
+            <Separator />
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={savingSf}
+                onClick={async () => {
+                  setSavingSf(true)
+                  try {
+                    const result = await updateStorefront({
+                      tagline: sfTagline || null,
+                      featured_listing_ids: sfFeaturedIds,
+                    })
+                    if (result.error) toast.error(result.error)
+                    else {
+                      if (result.storefront) setStorefrontData(result.storefront)
+                      toast.success('Storefront updated')
+                    }
+                  } catch {
+                    toast.error('Failed to save storefront')
+                  } finally {
+                    setSavingSf(false)
+                  }
+                }}
+                className="font-body"
+              >
+                {savingSf ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Storefront'
                 )}
               </Button>
             </div>

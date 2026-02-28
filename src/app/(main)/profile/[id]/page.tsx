@@ -18,6 +18,7 @@ import {
   getSellerReviews,
   getSellerResponseTime,
 } from '@/app/actions/reputation'
+import { Button } from '@/components/ui/button'
 import { ReportButton } from './report-button'
 import type { SubscriptionTier } from '@/lib/constants'
 
@@ -150,8 +151,13 @@ export default async function PublicProfilePage({
             </div>
           </div>
 
-          {/* Report button */}
-          <ReportButton targetType="user" targetId={id} />
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" size="sm" asChild className="font-body">
+              <a href={`/sellers/${id}`}>Visit Storefront</a>
+            </Button>
+            {/* Report button */}
+            <ReportButton targetType="user" targetId={id} />
+          </div>
         </CardContent>
       </Card>
 
