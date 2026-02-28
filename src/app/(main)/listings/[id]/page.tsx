@@ -396,8 +396,34 @@ export default function ListingDetailPage() {
     { month: 'long', day: 'numeric', year: 'numeric' }
   )
 
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: listing.title,
+    description: listing.description || undefined,
+    category: listing.category,
+    offers: {
+      '@type': 'Offer',
+      priceCurrency: 'USD',
+      price: listing.price_cents ? (listing.price_cents / 100).toFixed(2) : undefined,
+      availability: listing.status === 'active'
+        ? 'https://schema.org/InStock'
+        : listing.status === 'sold'
+          ? 'https://schema.org/SoldOut'
+          : 'https://schema.org/OutOfStock',
+      itemCondition: listing.condition === 'new'
+        ? 'https://schema.org/NewCondition'
+        : 'https://schema.org/UsedCondition',
+    },
+    ...(images.length > 0 ? { image: images.map((img) => img.url) } : {}),
+  }
+
   return (
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Photo Gallery */}
       {images.length > 0 ? (
         <div
