@@ -14,6 +14,7 @@ import {
   MessageSquare,
   Loader2,
   Calendar,
+  QrCode,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
@@ -24,7 +25,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/auth-store'
+import { APP_URL } from '@/lib/constants'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -43,6 +57,7 @@ export default function ListingDetailPage() {
   const [isFavorited, setIsFavorited] = useState(false)
   const [loading, setLoading] = useState(true)
   const [currentImage, setCurrentImage] = useState(0)
+  const [qrDialogOpen, setQrDialogOpen] = useState(false)
 
   const isOwner = user?.id === listing?.seller_id
 
@@ -133,14 +148,37 @@ export default function ListingDetailPage() {
     }
   }
 
-  async function handleShare() {
-    const url = window.location.href
-    try {
-      await navigator.clipboard.writeText(url)
-      toast.success('Link copied to clipboard')
-    } catch {
-      toast.error('Failed to copy link')
-    }
+  function getShareUrl() {
+    return `${APP_URL}/listings/${id}`
+  }
+
+  function handleCopyLink() {
+    navigator.clipboard.writeText(getShareUrl())
+    toast.success('Link copied to clipboard')
+  }
+
+  function shareToFacebook() {
+    window.open(
+      `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(getShareUrl())}`,
+      '_blank'
+    )
+  }
+
+  function shareToLinkedIn() {
+    window.open(
+      `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(getShareUrl())}`,
+      '_blank'
+    )
+  }
+
+  function shareToTwitter() {
+    const text = listing
+      ? `Check out ${listing.title} on Metal Gear`
+      : 'Check this out on Metal Gear'
+    window.open(
+      `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(getShareUrl())}`,
+      '_blank'
+    )
   }
 
   async function handleContact() {
@@ -249,9 +287,31 @@ export default function ListingDetailPage() {
                     className={`size-4 ${isFavorited ? 'fill-current' : ''}`}
                   />
                 </Button>
-                <Button variant="outline" size="icon" onClick={handleShare}>
-                  <Share2 className="size-4" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="icon">
+                      <Share2 className="size-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem onClick={handleCopyLink} className="font-body">
+                      Copy Link
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={shareToFacebook} className="font-body">
+                      Share on Facebook
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={shareToLinkedIn} className="font-body">
+                      Share on LinkedIn
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={shareToTwitter} className="font-body">
+                      Share on X/Twitter
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setQrDialogOpen(true)} className="font-body">
+                      <QrCode className="mr-2 size-4" />
+                      QR Code
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 {isOwner && (
                   <Button variant="outline" size="icon" asChild>
                     <Link href={`/listings/${listing.id}/edit`}>
@@ -477,6 +537,37 @@ export default function ListingDetailPage() {
           </div>
         </div>
       )}
+
+      {/* QR Code Dialog */}
+      <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="font-display">Listing QR Code</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="rounded-lg bg-white p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(getShareUrl())}&bgcolor=FFFFFF&color=0A0A0F`}
+                alt="QR Code"
+                width={200}
+                height={200}
+              />
+            </div>
+            <p className="text-center font-body text-xs text-muted-foreground">
+              Scan to view this listing
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleCopyLink}
+              className="font-body"
+            >
+              Copy Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
