@@ -339,6 +339,38 @@ export type Database = {
           },
         ]
       }
+      saved_searches: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          filters: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          filters?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          filters?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_searches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
