@@ -265,6 +265,7 @@ function MessagesContent() {
                     <Avatar className="size-10 shrink-0">
                       <AvatarImage
                         src={conv.other_user?.avatar_url || undefined}
+                        crossOrigin="anonymous"
                       />
                       <AvatarFallback className="bg-primary/20 font-body text-xs text-primary">
                         {conv.other_user?.full_name
@@ -325,6 +326,7 @@ function MessagesContent() {
                 <Avatar className="size-8">
                   <AvatarImage
                     src={activeConv.other_user?.avatar_url || undefined}
+                    crossOrigin="anonymous"
                   />
                   <AvatarFallback className="bg-primary/20 font-body text-xs text-primary">
                     {activeConv.other_user?.full_name

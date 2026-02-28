@@ -161,7 +161,7 @@ export default function ProfilePage() {
           <CardContent className="flex items-center gap-6">
             <div className="relative">
               <Avatar key={avatarKey} className="size-20">
-                <AvatarImage src={profile?.avatar_url || undefined} />
+                <AvatarImage src={profile?.avatar_url || undefined} crossOrigin="anonymous" />
                 <AvatarFallback className="bg-primary/20 font-display text-lg text-primary">
                   {initials}
                 </AvatarFallback>

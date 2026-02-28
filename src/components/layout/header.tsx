@@ -161,7 +161,7 @@ export function Header() {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon" className="rounded-full">
                 <Avatar className="size-8">
-                  <AvatarImage src={profile?.avatar_url || undefined} />
+                  <AvatarImage src={profile?.avatar_url || undefined} crossOrigin="anonymous" />
                   <AvatarFallback className="bg-primary/20 font-body text-xs text-primary">
                     {initials}
                   </AvatarFallback>

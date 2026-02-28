@@ -52,7 +52,7 @@ export default async function PublicProfilePage({
       <Card className="border-border bg-card">
         <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start">
           <Avatar className="size-24">
-            <AvatarImage src={profile.avatar_url || undefined} />
+            <AvatarImage src={profile.avatar_url || undefined} crossOrigin="anonymous" />
             <AvatarFallback className="bg-primary/20 font-display text-2xl text-primary">
               {initials}
             </AvatarFallback>

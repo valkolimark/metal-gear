@@ -400,7 +400,7 @@ export default function ListingDetailPage() {
                   className="flex items-center gap-3 transition-colors hover:text-primary"
                 >
                   <Avatar className="size-12">
-                    <AvatarImage src={seller.avatar_url || undefined} />
+                    <AvatarImage src={seller.avatar_url || undefined} crossOrigin="anonymous" />
                     <AvatarFallback className="bg-primary/20 font-display text-sm text-primary">
                       {seller.full_name
                         ?.split(' ')
