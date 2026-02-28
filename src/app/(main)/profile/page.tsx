@@ -20,6 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
+import { uploadAvatar } from './actions'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 
@@ -72,29 +73,18 @@ export default function ProfilePage() {
 
     setUploading(true)
     try {
-      const supabase = createClient()
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/avatar-${Date.now()}.${ext}`
+      const formData = new FormData()
+      formData.append('file', file)
 
-      const { error: uploadError } = await supabase.storage
-        .from('avatars')
-        .upload(path, file, { contentType: file.type })
+      const result = await uploadAvatar(formData)
 
-      if (uploadError) throw uploadError
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
 
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from('avatars').getPublicUrl(path)
-
-      const { error: updateError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl })
-        .eq('id', user.id)
-
-      if (updateError) throw updateError
-
-      if (profile) {
-        setProfile({ ...profile, avatar_url: publicUrl })
+      if (profile && result.url) {
+        setProfile({ ...profile, avatar_url: result.url })
       }
       toast.success('Avatar updated')
     } catch (err) {
