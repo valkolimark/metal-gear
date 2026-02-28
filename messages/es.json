@@ -11,7 +11,8 @@
     "pricing": "Precios",
     "about": "Acerca de",
     "insights": "Información",
-    "transactions": "Transacciones"
+    "transactions": "Transacciones",
+    "collections": "Colecciones"
   },
   "header": {
     "searchPlaceholder": "Buscar equipos...",
@@ -206,6 +207,26 @@
     "resolvedBuyer": "Resuelta (Comprador)",
     "resolvedSeller": "Resuelta (Vendedor)",
     "escalated": "Escalada"
+  },
+  "collections": {
+    "title": "Colecciones",
+    "subtitle": "Organiza tus equipos guardados en colecciones",
+    "newCollection": "Nueva Colección",
+    "noCollections": "Aún no hay colecciones",
+    "createFirst": "Crea colecciones para organizar los equipos que te interesan.",
+    "name": "Nombre",
+    "description": "Descripción",
+    "publicCollection": "Colección pública",
+    "publicDesc": "Cualquiera puede ver esta colección",
+    "private": "Privada",
+    "public": "Pública",
+    "makePrivate": "Hacer Privada",
+    "makePublic": "Hacer Pública",
+    "addToCollection": "Agregar a Colección",
+    "removeFromCollection": "Eliminado de la colección",
+    "emptyCollection": "Esta colección está vacía",
+    "backToCollections": "Volver a Colecciones",
+    "items": "{count, plural, one {# artículo} other {# artículos}}"
   },
   "conditionReport": {
     "inspectionReport": "Reporte de Inspección",

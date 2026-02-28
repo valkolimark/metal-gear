@@ -11,7 +11,8 @@
     "pricing": "Pricing",
     "about": "About",
     "insights": "Insights",
-    "transactions": "Transactions"
+    "transactions": "Transactions",
+    "collections": "Collections"
   },
   "header": {
     "searchPlaceholder": "Search equipment...",
@@ -206,6 +207,26 @@
     "resolvedBuyer": "Resolved (Buyer)",
     "resolvedSeller": "Resolved (Seller)",
     "escalated": "Escalated"
+  },
+  "collections": {
+    "title": "Collections",
+    "subtitle": "Organize your saved equipment into collections",
+    "newCollection": "New Collection",
+    "noCollections": "No collections yet",
+    "createFirst": "Create collections to organize equipment you're interested in.",
+    "name": "Name",
+    "description": "Description",
+    "publicCollection": "Public collection",
+    "publicDesc": "Anyone can view this collection",
+    "private": "Private",
+    "public": "Public",
+    "makePrivate": "Make Private",
+    "makePublic": "Make Public",
+    "addToCollection": "Add to Collection",
+    "removeFromCollection": "Removed from collection",
+    "emptyCollection": "This collection is empty",
+    "backToCollections": "Back to Collections",
+    "items": "{count, plural, one {# item} other {# items}}"
   },
   "conditionReport": {
     "inspectionReport": "Inspection Report",

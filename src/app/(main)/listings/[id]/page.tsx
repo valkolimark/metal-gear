@@ -26,6 +26,8 @@ import {
   ClipboardCheck,
   ChevronDown,
   ShieldCheck,
+  FolderPlus,
+  Plus,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
@@ -39,6 +41,12 @@ import {
   withdrawOffer,
 } from '@/app/actions/offers'
 import { togglePriceWatch, getPriceWatch, getPriceHistory } from '@/app/actions/compare'
+import {
+  getListingCollections,
+  addToCollection,
+  removeFromCollection,
+  createCollection,
+} from '@/app/actions/collections'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -96,9 +104,15 @@ export default function ListingDetailPage() {
   const [watchLoading, setWatchLoading] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [priceHistory, setPriceHistory] = useState<any[]>([])
+   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [conditionReport, setConditionReport] = useState<any>(null)
   const [reportExpanded, setReportExpanded] = useState(false)
+  const [collectionMenuOpen, setCollectionMenuOpen] = useState(false)
+  const [userCollections, setUserCollections] = useState<
+    { id: string; name: string; hasListing: boolean }[]
+  >([])
+  const [newCollectionName, setNewCollectionName] = useState('')
 
   // Touch swipe state for image gallery
   const touchStartX = useRef(0)
@@ -207,6 +221,15 @@ export default function ListingDetailPage() {
       getConditionReport(id).then((result) => {
         if (result.report) setConditionReport(result.report)
       })
+
+      // Load user collections
+      if (user) {
+        getListingCollections(id).then((result) => {
+          if ('collections' in result) {
+            setUserCollections(result.collections ?? [])
+          }
+        })
+      }
 
       setLoading(false)
     }
@@ -392,6 +415,48 @@ export default function ListingDetailPage() {
     setWatchLoading(false)
   }
 
+  async function handleCollectionToggle(collectionId: string, hasListing: boolean) {
+    if (!listing) return
+    if (hasListing) {
+      const result = await removeFromCollection(collectionId, listing.id)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+    } else {
+      const result = await addToCollection(collectionId, listing.id)
+      if ('error' in result) {
+        toast.error(result.error)
+        return
+      }
+    }
+    setUserCollections((prev) =>
+      prev.map((c) =>
+        c.id === collectionId ? { ...c, hasListing: !hasListing } : c
+      )
+    )
+    toast.success(hasListing ? 'Removed from collection' : 'Added to collection')
+  }
+
+  async function handleQuickCreateCollection() {
+    if (!newCollectionName.trim() || !listing) return
+    const result = await createCollection(newCollectionName.trim())
+    if ('error' in result) {
+      toast.error(result.error)
+      return
+    }
+    // Add listing to new collection
+    if (result.collection) {
+      await addToCollection(result.collection.id, listing.id)
+      setUserCollections((prev) => [
+        ...prev,
+        { id: result.collection.id, name: newCollectionName.trim(), hasListing: true },
+      ])
+    }
+    setNewCollectionName('')
+    toast.success('Collection created & listing added')
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -544,6 +609,64 @@ export default function ListingDetailPage() {
                     className={`size-4 ${isFavorited ? 'fill-current' : ''}`}
                   />
                 </Button>
+                {user && !isOwner && (
+                  <DropdownMenu open={collectionMenuOpen} onOpenChange={setCollectionMenuOpen}>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="icon" title="Add to collection">
+                        <FolderPlus className="size-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      {userCollections.length > 0 && (
+                        <>
+                          {userCollections.map((col) => (
+                            <DropdownMenuItem
+                              key={col.id}
+                              onClick={() => handleCollectionToggle(col.id, col.hasListing)}
+                              className="font-body"
+                            >
+                              <Check
+                                className={`mr-2 size-3.5 ${
+                                  col.hasListing ? 'opacity-100' : 'opacity-0'
+                                }`}
+                              />
+                              {col.name}
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
+                      <div className="border-t border-border p-2">
+                        <div className="flex gap-1">
+                          <Input
+                            value={newCollectionName}
+                            onChange={(e) => setNewCollectionName(e.target.value)}
+                            placeholder="New collection..."
+                            className="h-8 font-body text-xs"
+                            onKeyDown={(e) => {
+                              e.stopPropagation()
+                              if (e.key === 'Enter') {
+                                e.preventDefault()
+                                handleQuickCreateCollection()
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            size="sm"
+                            className="h-8 px-2"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              handleQuickCreateCollection()
+                            }}
+                            disabled={!newCollectionName.trim()}
+                          >
+                            <Plus className="size-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="outline" size="icon">
