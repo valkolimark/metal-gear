@@ -314,6 +314,7 @@ export type Database = {
           full_name: string
           id: string
           industry: string | null
+          is_admin: boolean
           is_verified_dealer: boolean
           location_city: string | null
           location_lat: number | null
@@ -334,6 +335,7 @@ export type Database = {
           full_name?: string
           id: string
           industry?: string | null
+          is_admin?: boolean
           is_verified_dealer?: boolean
           location_city?: string | null
           location_lat?: number | null
@@ -354,6 +356,7 @@ export type Database = {
           full_name?: string
           id?: string
           industry?: string | null
+          is_admin?: boolean
           is_verified_dealer?: boolean
           location_city?: string | null
           location_lat?: number | null
