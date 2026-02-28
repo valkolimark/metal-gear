@@ -16,6 +16,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { checkConversationLimit } from '@/app/actions/tier'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -159,6 +160,14 @@ export default function ListingDetailPage() {
 
     if (existing) {
       router.push(`/messages?conversation=${existing.id}`)
+      return
+    }
+
+    // Check conversation limit before creating new one
+    const limit = await checkConversationLimit()
+    if (!limit.allowed) {
+      toast.error(limit.error || 'Conversation limit reached. Upgrade your plan.')
+      router.push('/pricing')
       return
     }
 

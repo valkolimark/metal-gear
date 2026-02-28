@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   ArrowLeft,
@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
+import { checkListingLimit } from '@/app/actions/tier'
 import {
   EQUIPMENT_CATEGORIES,
   INDUSTRIES,
@@ -72,6 +73,25 @@ export default function CreateListingPage() {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [specKey, setSpecKey] = useState('')
   const [specValue, setSpecValue] = useState('')
+  const [limitInfo, setLimitInfo] = useState<{
+    allowed: boolean
+    current: number
+    limit: number
+    error: string | null
+  } | null>(null)
+
+  useEffect(() => {
+    checkListingLimit().then((result) => {
+      if ('current' in result && 'limit' in result) {
+        setLimitInfo({
+          allowed: result.allowed,
+          current: result.current as number,
+          limit: result.limit as number,
+          error: result.error ?? null,
+        })
+      }
+    })
+  }, [])
 
   const [form, setForm] = useState<ListingForm>({
     title: '',
@@ -217,6 +237,13 @@ export default function CreateListingPage() {
   // Save as draft
   async function saveDraft() {
     if (!user) return
+    // Check listing limit
+    const limit = await checkListingLimit()
+    if (!limit.allowed) {
+      toast.error(limit.error || 'Listing limit reached')
+      router.push('/pricing')
+      return
+    }
     setSaving(true)
     try {
       const supabase = createClient()
@@ -249,6 +276,13 @@ export default function CreateListingPage() {
   // Publish listing
   async function publish() {
     if (!user) return
+    // Check listing limit
+    const limit = await checkListingLimit()
+    if (!limit.allowed) {
+      toast.error(limit.error || 'Listing limit reached')
+      router.push('/pricing')
+      return
+    }
     setSaving(true)
     try {
       const supabase = createClient()
@@ -305,6 +339,43 @@ export default function CreateListingPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  // If at limit, show upgrade prompt
+  if (limitInfo && !limitInfo.allowed) {
+    return (
+      <div className="mx-auto flex min-h-[60vh] max-w-md items-center justify-center px-4">
+        <Card className="w-full border-border bg-card">
+          <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-primary/20">
+              <Upload className="size-6 text-primary" />
+            </div>
+            <h2 className="font-display text-xl font-bold text-foreground">
+              Listing Limit Reached
+            </h2>
+            <p className="font-body text-sm text-muted-foreground">
+              You&apos;ve used {limitInfo.current} of {limitInfo.limit} listings
+              on the {tier} plan. Upgrade to create more.
+            </p>
+            <div className="flex w-full gap-3">
+              <Button
+                variant="outline"
+                className="flex-1 font-body"
+                onClick={() => router.push('/listings')}
+              >
+                My Listings
+              </Button>
+              <Button
+                className="flex-1 font-body"
+                onClick={() => router.push('/pricing')}
+              >
+                Upgrade Plan
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
