@@ -3,22 +3,24 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { Home, Search, List, MessageSquare, Heart, User } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
-
-const navItems = [
-  { href: '/dashboard', label: 'Home', icon: Home },
-  { href: '/search', label: 'Browse Equipment', icon: Search },
-  { href: '/listings', label: 'My Listings', icon: List },
-  { href: '/favorites', label: 'Favorites', icon: Heart },
-  { href: '/messages', label: 'Messages', icon: MessageSquare },
-  { href: '/profile', label: 'Profile', icon: User },
-]
 
 export function DesktopNav() {
   const pathname = usePathname()
+  const t = useTranslations('nav')
+
+  const navItems = [
+    { href: '/dashboard', label: t('home'), icon: Home },
+    { href: '/search', label: t('browseEquipment'), icon: Search },
+    { href: '/listings', label: t('myListings'), icon: List },
+    { href: '/favorites', label: t('favorites'), icon: Heart },
+    { href: '/messages', label: t('messages'), icon: MessageSquare },
+    { href: '/profile', label: t('profile'), icon: User },
+  ]
 
   return (
-    <nav className="hidden border-b border-border bg-surface lg:block">
+    <nav className="hidden border-b border-border bg-surface lg:block" aria-label="Main navigation">
       <div className="mx-auto flex max-w-7xl items-center gap-1 px-4 sm:px-6 lg:px-8">
         {navItems.map((item) => {
           const isActive =
@@ -27,6 +29,7 @@ export function DesktopNav() {
             <Link
               key={item.href}
               href={item.href}
+              aria-current={isActive ? 'page' : undefined}
               className={cn(
                 'flex items-center gap-2 border-b-2 px-4 py-3 font-body text-sm transition-colors',
                 isActive
@@ -34,7 +37,7 @@ export function DesktopNav() {
                   : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
               )}
             >
-              <item.icon className="size-4" />
+              <item.icon className="size-4" aria-hidden="true" />
               {item.label}
             </Link>
           )

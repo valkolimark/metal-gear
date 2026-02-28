@@ -25,11 +25,14 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { NotificationDropdown } from '@/components/layout/notification-dropdown'
+import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
+import { useTranslations } from 'next-intl'
 
 export function Header() {
   const router = useRouter()
+  const t = useTranslations()
   const { profile, signOut } = useAuthStore()
   const {
     toggleSidebar,
@@ -92,10 +95,11 @@ export function Header() {
             <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search equipment..."
+              placeholder={t('header.searchPlaceholder')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-9 font-body"
+              aria-label={t('header.searchPlaceholder')}
             />
           </div>
         </form>
@@ -121,13 +125,13 @@ export function Header() {
           <Button asChild size="sm" className="hidden font-body sm:flex">
             <Link href="/listings/new">
               <Plus className="size-4" />
-              Create Listing
+              {t('header.createListing')}
             </Link>
           </Button>
           <Button asChild size="icon" className="sm:hidden">
             <Link href="/listings/new">
               <Plus className="size-5" />
-              <span className="sr-only">Create Listing</span>
+              <span className="sr-only">{t('header.createListing')}</span>
             </Link>
           </Button>
 
@@ -146,6 +150,9 @@ export function Header() {
 
           {/* Notifications */}
           <NotificationDropdown />
+
+          {/* Language Switcher */}
+          <LanguageSwitcher />
 
           {/* User dropdown */}
           <DropdownMenu>
@@ -168,10 +175,10 @@ export function Header() {
                     </p>
                     <p className="font-body text-xs text-muted-foreground">
                       {profile.subscription_tier === 'free'
-                        ? 'Free Plan'
+                        ? t('header.freePlan')
                         : profile.subscription_tier === 'premium'
-                          ? 'Premium'
-                          : 'Boost'}
+                          ? t('header.premium')
+                          : t('header.boost')}
                     </p>
                   </div>
                   <DropdownMenuSeparator />
@@ -180,13 +187,13 @@ export function Header() {
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="font-body">
                   <User className="mr-2 size-4" />
-                  Profile
+                  {t('nav.profile')}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="font-body">
                   <Settings className="mr-2 size-4" />
-                  Settings
+                  {t('header.settings')}
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
@@ -195,7 +202,7 @@ export function Header() {
                 className="font-body text-destructive focus:text-destructive"
               >
                 <LogOut className="mr-2 size-4" />
-                Sign Out
+                {t('header.signOut')}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -210,11 +217,12 @@ export function Header() {
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 type="search"
-                placeholder="Search equipment..."
+                placeholder={t('header.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-9 font-body"
                 autoFocus
+                aria-label={t('header.searchPlaceholder')}
               />
             </div>
           </form>

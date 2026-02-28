@@ -802,6 +802,7 @@ export type Database = {
           phone: string | null
           stripe_customer_id: string | null
           subscription_tier: string
+          preferred_locale: string
           trust_score: number
           updated_at: string
         }
@@ -822,6 +823,7 @@ export type Database = {
           location_lng?: number | null
           location_state?: string | null
           phone?: string | null
+          preferred_locale?: string
           stripe_customer_id?: string | null
           subscription_tier?: string
           trust_score?: number
@@ -844,6 +846,7 @@ export type Database = {
           location_lng?: number | null
           location_state?: string | null
           phone?: string | null
+          preferred_locale?: string
           stripe_customer_id?: string | null
           subscription_tier?: string
           trust_score?: number

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next'
+import { NextIntlClientProvider } from 'next-intl'
+import { getLocale, getMessages } from 'next-intl/server'
 import { chakraPetch, manrope } from '@/styles/fonts'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -51,13 +53,16 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  const locale = await getLocale()
+  const messages = await getMessages()
+
   return (
-    <html lang="en" className="dark">
+    <html lang={locale} className="dark">
       <head>
         <meta name="theme-color" content="#0A0A0F" />
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
@@ -65,14 +70,22 @@ export default function RootLayout({
       <body
         className={`${chakraPetch.variable} ${manrope.variable} font-body antialiased`}
       >
-        <QueryProvider>
-          <TooltipProvider>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-            <Toaster richColors position="bottom-right" />
-          </TooltipProvider>
-        </QueryProvider>
+        <a
+          href="#main-content"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[100] focus:rounded-md focus:bg-primary focus:px-4 focus:py-2 focus:font-body focus:text-sm focus:text-white focus:outline-none"
+        >
+          Skip to main content
+        </a>
+        <NextIntlClientProvider messages={messages}>
+          <QueryProvider>
+            <TooltipProvider>
+              <AuthProvider>
+                {children}
+              </AuthProvider>
+              <Toaster richColors position="bottom-right" />
+            </TooltipProvider>
+          </QueryProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

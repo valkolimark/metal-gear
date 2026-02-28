@@ -19,9 +19,9 @@ export default function MainLayout({
         will render their own sidebar + content grid inside here.
         Pages without a sidebar get the default padded container.
       */}
-      <div className="flex flex-1 flex-col pb-16 lg:pb-0">
+      <main id="main-content" className="flex flex-1 flex-col pb-16 lg:pb-0">
         {children}
-      </div>
+      </main>
 
       <MobileNav />
     </div>
