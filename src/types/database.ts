@@ -952,6 +952,76 @@ export type Database = {
           },
         ]
       }
+      message_attachments: {
+        Row: {
+          id: string
+          message_id: string
+          file_url: string
+          file_name: string
+          file_type: string
+          file_size_bytes: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          message_id: string
+          file_url: string
+          file_name: string
+          file_type: string
+          file_size_bytes?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          message_id?: string
+          file_url?: string
+          file_name?: string
+          file_type?: string
+          file_size_bytes?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_attachments_message_id_fkey"
+            columns: ["message_id"]
+            isOneToOne: false
+            referencedRelation: "messages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      reply_templates: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          body: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          body: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          body?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "reply_templates_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       transactions: {
         Row: {
           id: string
