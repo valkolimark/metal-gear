@@ -453,6 +453,53 @@ export type Database = {
           },
         ]
       }
+      seller_verifications: {
+        Row: {
+          id: string
+          user_id: string
+          business_name: string
+          tax_id_hash: string
+          document_url: string | null
+          status: string
+          admin_notes: string | null
+          reviewed_by: string | null
+          reviewed_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          business_name: string
+          tax_id_hash: string
+          document_url?: string | null
+          status?: string
+          admin_notes?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          business_name?: string
+          tax_id_hash?: string
+          document_url?: string | null
+          status?: string
+          admin_notes?: string | null
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_verifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_storefronts: {
         Row: {
           user_id: string
@@ -755,6 +802,7 @@ export type Database = {
           phone: string | null
           stripe_customer_id: string | null
           subscription_tier: string
+          trust_score: number
           updated_at: string
         }
         Insert: {
@@ -776,6 +824,7 @@ export type Database = {
           phone?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
+          trust_score?: number
           updated_at?: string
         }
         Update: {
@@ -797,6 +846,7 @@ export type Database = {
           phone?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
+          trust_score?: number
           updated_at?: string
         }
         Relationships: []

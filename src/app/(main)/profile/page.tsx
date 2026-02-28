@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink } from 'lucide-react'
+import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink, Shield, BadgeCheck } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -24,9 +24,17 @@ import { useAuthStore } from '@/stores/auth-store'
 import { uploadAvatar, updateProfile, updateNotificationPreferences } from './actions'
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/actions/storefront'
+import { getVerificationStatus, submitVerificationRequest } from '@/app/actions/verification'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 import type { Tables } from '@/types/database'
+
+function getTrustLevel(score: number): string {
+  if (score >= 80) return 'Top Seller'
+  if (score >= 60) return 'Verified'
+  if (score >= 30) return 'Trusted'
+  return 'New'
+}
 
 function ProfileCompletion({ profile }: { profile: Profile | null }) {
   if (!profile) return null
@@ -84,6 +92,11 @@ export default function ProfilePage() {
     subscription: true,
     marketing: true,
   })
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
+  const [verifyBizName, setVerifyBizName] = useState('')
+  const [verifyTaxId, setVerifyTaxId] = useState('')
+  const [submittingVerify, setSubmittingVerify] = useState(false)
+  const verifyDocRef = useRef<HTMLInputElement>(null)
   const [storefrontData, setStorefrontData] = useState<Tables<'seller_storefronts'> | null>(null)
   const [sfTagline, setSfTagline] = useState('')
   const [sfFeaturedIds, setSfFeaturedIds] = useState<string[]>([])
@@ -124,6 +137,11 @@ export default function ProfilePage() {
           marketing: prefs.marketing !== false,
         })
       }
+
+      // Load verification status
+      getVerificationStatus().then((res) => {
+        setVerificationStatus(res.verification?.status ?? null)
+      })
 
       // Load storefront data
       getStorefront(profile.id).then((res) => {
@@ -775,6 +793,64 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Verification & Trust */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Shield className="size-5" />
+              Seller Verification
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Trust Score Display */}
+            {profile && (
+              <div className="flex items-center gap-3 rounded-lg border border-border p-3">
+                <div className="flex size-12 items-center justify-center rounded-full bg-primary/20 font-display text-lg font-bold text-primary">
+                  {profile.trust_score ?? 0}
+                </div>
+                <div>
+                  <p className="font-body text-sm font-medium text-foreground">
+                    Trust Score
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground">
+                    Level: {getTrustLevel(profile.trust_score ?? 0)}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <Separator />
+
+            {profile?.is_verified_dealer ? (
+              <div className="flex items-center gap-2 rounded-lg bg-secondary/10 p-3">
+                <BadgeCheck className="size-5 text-secondary" />
+                <p className="font-body text-sm font-medium text-secondary">
+                  Verified Seller
+                </p>
+              </div>
+            ) : verificationStatus === 'pending' ? (
+              <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 p-3">
+                <Loader2 className="size-5 animate-spin text-yellow-400" />
+                <p className="font-body text-sm text-yellow-400">
+                  Verification request pending review
+                </p>
+              </div>
+            ) : verificationStatus === 'rejected' ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-3">
+                  <Shield className="size-5 text-red-400" />
+                  <p className="font-body text-sm text-red-400">
+                    Previous verification request was rejected. You may resubmit.
+                  </p>
+                </div>
+                <VerificationForm />
+              </div>
+            ) : (
+              <VerificationForm />
+            )}
+          </CardContent>
+        </Card>
+
         <Separator />
 
         <div className="flex justify-end">
@@ -795,4 +871,89 @@ export default function ProfilePage() {
       </form>
     </div>
   )
+
+  function VerificationForm() {
+    return (
+      <div className="space-y-3">
+        <p className="font-body text-sm text-muted-foreground">
+          Get verified to earn buyer trust and display a verified badge.
+        </p>
+        <div className="space-y-2">
+          <Label htmlFor="biz_name" className="font-body">
+            Business Name
+          </Label>
+          <Input
+            id="biz_name"
+            value={verifyBizName}
+            onChange={(e) => setVerifyBizName(e.target.value)}
+            placeholder="Your registered business name"
+            className="font-body"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="tax_id" className="font-body">
+            EIN / Tax ID
+          </Label>
+          <Input
+            id="tax_id"
+            value={verifyTaxId}
+            onChange={(e) => setVerifyTaxId(e.target.value)}
+            placeholder="XX-XXXXXXX"
+            className="font-body"
+          />
+          <p className="font-body text-[10px] text-muted-foreground">
+            Your tax ID is hashed before storage and never stored in plain text.
+          </p>
+        </div>
+        <div className="space-y-2">
+          <Label className="font-body">Business License (optional)</Label>
+          <input
+            ref={verifyDocRef}
+            type="file"
+            accept="image/*,.pdf"
+            className="block w-full font-body text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary/20 file:px-3 file:py-1.5 file:font-body file:text-xs file:text-primary"
+          />
+        </div>
+        <Button
+          type="button"
+          disabled={submittingVerify || !verifyBizName || !verifyTaxId}
+          onClick={async () => {
+            setSubmittingVerify(true)
+            try {
+              let docFd: FormData | undefined
+              const file = verifyDocRef.current?.files?.[0]
+              if (file) {
+                docFd = new FormData()
+                docFd.append('file', file)
+              }
+              const result = await submitVerificationRequest(
+                verifyBizName,
+                verifyTaxId,
+                docFd
+              )
+              if (result.error) toast.error(result.error)
+              else {
+                setVerificationStatus('pending')
+                toast.success('Verification request submitted')
+              }
+            } catch {
+              toast.error('Failed to submit verification')
+            } finally {
+              setSubmittingVerify(false)
+            }
+          }}
+          className="font-body"
+        >
+          {submittingVerify ? (
+            <>
+              <Loader2 className="mr-2 size-4 animate-spin" />
+              Submitting...
+            </>
+          ) : (
+            'Submit for Verification'
+          )}
+        </Button>
+      </div>
+    )
+  }
 }

@@ -47,6 +47,7 @@ import {
   getFlaggedListings,
 } from '@/app/actions/admin'
 import { TIER_LABELS } from '@/lib/constants'
+import { getPendingVerifications, reviewVerification } from '@/app/actions/verification'
 
 interface Stats {
   totalUsers: number
@@ -91,6 +92,8 @@ export default function AdminPage() {
   const [auditPage, setAuditPage] = useState(1)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [flaggedListings, setFlaggedListings] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [verifications, setVerifications] = useState<any[]>([])
 
   useEffect(() => {
     checkIsAdmin().then((isAdmin) => {
@@ -132,6 +135,8 @@ export default function AdminPage() {
       setAuditLogs(audit.logs)
       setAuditTotal(audit.total)
       setFlaggedListings(flagged.flagged)
+      // Load verifications separately (non-blocking)
+      getPendingVerifications().then((v) => setVerifications(v.verifications))
     } catch {
       toast.error('Failed to load admin data')
     } finally {
@@ -339,7 +344,7 @@ export default function AdminPage() {
 
       {/* Tabs */}
       <Tabs defaultValue="listings">
-        <TabsList className="grid w-full max-w-3xl grid-cols-5">
+        <TabsList className="grid w-full max-w-4xl grid-cols-6">
           <TabsTrigger value="listings" className="font-body text-xs">
             Listings
           </TabsTrigger>
@@ -354,6 +359,9 @@ export default function AdminPage() {
           </TabsTrigger>
           <TabsTrigger value="audit" className="font-body text-xs">
             Audit Log
+          </TabsTrigger>
+          <TabsTrigger value="verifications" className="font-body text-xs">
+            Verify {verifications.length > 0 && `(${verifications.length})`}
           </TabsTrigger>
         </TabsList>
 
@@ -763,6 +771,95 @@ export default function AdminPage() {
             </CardContent>
           </Card>
           <Pagination page={auditPage} total={auditTotal} perPage={20} onPageChange={loadAudit} />
+        </TabsContent>
+
+        {/* Verifications Tab */}
+        <TabsContent value="verifications" className="mt-4 space-y-4">
+          <Card className="border-border bg-card">
+            <CardHeader>
+              <CardTitle className="font-display text-base">
+                Pending Verification Requests
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {verifications.length === 0 ? (
+                <p className="py-4 text-center font-body text-sm text-muted-foreground">
+                  No pending verification requests
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {verifications.map((v: {
+                    id: string
+                    user_id: string
+                    business_name: string
+                    document_url: string | null
+                    created_at: string
+                    profiles: { full_name: string; display_name: string | null; company_name: string | null; avatar_url: string | null } | null
+                  }) => (
+                    <div
+                      key={v.id}
+                      className="flex items-center justify-between rounded-lg border border-border p-3"
+                    >
+                      <div className="space-y-1">
+                        <p className="font-body text-sm font-medium text-foreground">
+                          {v.profiles?.display_name || v.profiles?.full_name || 'Unknown'}
+                        </p>
+                        <p className="font-body text-xs text-muted-foreground">
+                          Business: {v.business_name}
+                        </p>
+                        <p className="font-body text-[10px] text-muted-foreground">
+                          Submitted {new Date(v.created_at).toLocaleDateString()}
+                        </p>
+                        {v.document_url && (
+                          <a
+                            href={v.document_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="font-body text-xs text-secondary hover:underline"
+                          >
+                            View Document
+                          </a>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="font-body text-xs text-red-400 hover:text-red-300"
+                          onClick={async () => {
+                            const res = await reviewVerification(v.id, 'rejected', 'Rejected by admin')
+                            if (res.error) toast.error(res.error)
+                            else {
+                              toast.success('Verification rejected')
+                              setVerifications((prev: typeof verifications) => prev.filter((x: { id: string }) => x.id !== v.id))
+                            }
+                          }}
+                        >
+                          <XCircle className="mr-1 size-3" />
+                          Reject
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="font-body text-xs"
+                          onClick={async () => {
+                            const res = await reviewVerification(v.id, 'approved')
+                            if (res.error) toast.error(res.error)
+                            else {
+                              toast.success('Seller verified!')
+                              setVerifications((prev: typeof verifications) => prev.filter((x: { id: string }) => x.id !== v.id))
+                            }
+                          }}
+                        >
+                          <CheckCircle2 className="mr-1 size-3" />
+                          Approve
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
