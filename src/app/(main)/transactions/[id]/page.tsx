@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { getTransaction, updateTransactionStatus } from '@/app/actions/transactions'
 import { createPaymentIntent, capturePayment, cancelPayment } from '@/app/actions/payments'
 import { openDispute, respondToDispute, getDispute, uploadDisputeEvidence } from '@/app/actions/disputes'
+import { submitTransactionReview, getTransactionReviews } from '@/app/actions/reputation'
 import { StripePaymentForm } from '@/components/payments/stripe-payment-form'
 
 const STATUS_STEPS = [
@@ -75,6 +76,13 @@ export default function TransactionDetailPage() {
   const [sellerResponseText, setSellerResponseText] = useState('')
   const [sellerEvidence, setSellerEvidence] = useState<string[]>([])
 
+  // Review state
+  const [reviewRating, setReviewRating] = useState(5)
+  const [reviewComment, setReviewComment] = useState('')
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [existingReviews, setExistingReviews] = useState<any[]>([])
+
   useEffect(() => {
     loadTransaction()
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -93,9 +101,12 @@ export default function TransactionDetailPage() {
     if (result.transaction?.carrier) setCarrier(result.transaction.carrier)
     setLoading(false)
 
-    // Load disputes
+    // Load disputes and reviews
     const disputeResult = await getDispute(id)
     if (disputeResult.disputes) setDisputes(disputeResult.disputes)
+
+    const reviewResult = await getTransactionReviews(id)
+    if (reviewResult.reviews) setExistingReviews(reviewResult.reviews)
   }
 
   async function handleStatusUpdate(newStatus: string, extraData?: { tracking_number?: string; carrier?: string }) {
@@ -220,6 +231,24 @@ export default function TransactionDetailPage() {
       loadTransaction()
     }
     setDisputeSubmitting(false)
+  }
+
+  async function handleSubmitReview() {
+    if (!tx) return
+    const targetId = isBuyer ? tx.seller_id : tx.buyer_id
+    const reviewType = isBuyer ? 'seller' : 'buyer'
+
+    setReviewSubmitting(true)
+    const result = await submitTransactionReview(id, targetId, reviewType as 'seller' | 'buyer', reviewRating, reviewComment)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success('Review submitted!')
+      setReviewComment('')
+      setReviewRating(5)
+      loadTransaction()
+    }
+    setReviewSubmitting(false)
   }
 
   if (loading) {
@@ -690,6 +719,107 @@ export default function TransactionDetailPage() {
                 {disputes.indexOf(d) < disputes.length - 1 && <Separator />}
               </div>
             ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Reviews Section */}
+      {tx.status === 'completed' && (
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <span className="text-yellow-400">&#9733;</span>
+              Reviews
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Existing reviews */}
+            {existingReviews.length > 0 && (
+              <div className="space-y-3">
+                {existingReviews.map((review: {
+                  id: string
+                  reviewer_id: string
+                  review_type: string
+                  rating: number
+                  comment: string | null
+                  created_at: string
+                  reviewer: { full_name: string; display_name: string | null; avatar_url: string | null } | null
+                  target: { full_name: string; display_name: string | null } | null
+                }) => (
+                  <div key={review.id} className="rounded-lg border border-border bg-surface/50 p-3">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="size-7">
+                          <AvatarImage src={review.reviewer?.avatar_url || undefined} />
+                          <AvatarFallback className="bg-primary/20 text-[10px] text-primary">
+                            {(review.reviewer?.display_name || review.reviewer?.full_name || '?')[0]?.toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-body text-xs font-medium text-foreground">
+                            {review.reviewer?.display_name || review.reviewer?.full_name || 'User'}
+                          </p>
+                          <p className="font-body text-[10px] text-muted-foreground">
+                            reviewed the {review.review_type}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <span key={s} className={`text-sm ${s <= review.rating ? 'text-yellow-400' : 'text-muted-foreground/30'}`}>&#9733;</span>
+                        ))}
+                      </div>
+                    </div>
+                    {review.comment && (
+                      <p className="mt-2 font-body text-sm text-foreground">{review.comment}</p>
+                    )}
+                    <p className="mt-1 font-body text-[10px] text-muted-foreground">
+                      {new Date(review.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Review form — show if user hasn't reviewed yet */}
+            {(() => {
+              const userHasReviewed = existingReviews.some((r: { reviewer_id: string }) => r.reviewer_id === userId)
+              if (userHasReviewed) return null
+
+              const targetName = isBuyer
+                ? (tx.seller?.display_name || tx.seller?.full_name || 'the seller')
+                : (tx.buyer?.display_name || tx.buyer?.full_name || 'the buyer')
+
+              return (
+                <div className="space-y-3 border-t border-border pt-4">
+                  <p className="font-body text-sm text-foreground">
+                    Rate {targetName}
+                  </p>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((s) => (
+                      <button
+                        key={s}
+                        onClick={() => setReviewRating(s)}
+                        className={`text-2xl transition-colors ${s <= reviewRating ? 'text-yellow-400' : 'text-muted-foreground/30'} hover:text-yellow-300`}
+                      >
+                        &#9733;
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={reviewComment}
+                    onChange={(e) => setReviewComment(e.target.value)}
+                    placeholder="Share your experience (optional)..."
+                    rows={3}
+                    className="w-full rounded-md border border-border bg-surface px-3 py-2 font-body text-sm text-foreground placeholder:text-muted-foreground"
+                  />
+                  <Button onClick={handleSubmitReview} disabled={reviewSubmitting} className="font-body">
+                    {reviewSubmitting && <Loader2 className="mr-2 size-4 animate-spin" />}
+                    Submit Review
+                  </Button>
+                </div>
+              )
+            })()}
           </CardContent>
         </Card>
       )}

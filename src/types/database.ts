@@ -686,7 +686,10 @@ export type Database = {
           id: string
           reviewer_id: string
           seller_id: string
-          conversation_id: string
+          conversation_id: string | null
+          transaction_id: string | null
+          listing_id: string | null
+          review_type: string
           rating: number
           comment: string | null
           created_at: string
@@ -695,7 +698,10 @@ export type Database = {
           id?: string
           reviewer_id: string
           seller_id: string
-          conversation_id: string
+          conversation_id?: string | null
+          transaction_id?: string | null
+          listing_id?: string | null
+          review_type?: string
           rating: number
           comment?: string | null
           created_at?: string
@@ -704,7 +710,10 @@ export type Database = {
           id?: string
           reviewer_id?: string
           seller_id?: string
-          conversation_id?: string
+          conversation_id?: string | null
+          transaction_id?: string | null
+          listing_id?: string | null
+          review_type?: string
           rating?: number
           comment?: string | null
           created_at?: string

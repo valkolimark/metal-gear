@@ -48,8 +48,11 @@ export async function submitReview(
     return { error: error.message }
   }
 
+  // Recalculate trust score
+  await recalculateTrustScore(admin, sellerId)
+
   // Create in-app notification for the seller (fire and forget)
-  notifyReviewReceived(admin, user.id, sellerId, rating, comment, conversationId)
+  notifyReviewReceived(admin, user.id, sellerId, rating, comment, conversationId, undefined)
 
   return { success: true }
 }
@@ -91,6 +94,157 @@ export async function getSellerReviews(sellerId: string) {
     reviews: enriched,
     averageRating: Math.round(avgRating * 10) / 10,
     totalReviews: reviews.length,
+  }
+}
+
+export async function submitTransactionReview(
+  transactionId: string,
+  targetId: string,
+  reviewType: 'seller' | 'buyer',
+  rating: number,
+  comment: string
+) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) return { error: 'Not authenticated' }
+  if (user.id === targetId) return { error: 'Cannot review yourself' }
+  if (rating < 1 || rating > 5) return { error: 'Rating must be 1-5' }
+
+  const admin = createAdminClient()
+
+  // Verify transaction and user's role
+  const { data: transaction } = await admin
+    .from('transactions')
+    .select('buyer_id, seller_id, listing_id, status')
+    .eq('id', transactionId)
+    .single()
+
+  if (!transaction) return { error: 'Transaction not found' }
+  if (transaction.status !== 'completed') return { error: 'Transaction must be completed to leave a review' }
+
+  const isBuyer = transaction.buyer_id === user.id
+  const isSeller = transaction.seller_id === user.id
+  if (!isBuyer && !isSeller) return { error: 'Not authorized' }
+
+  // Buyer reviews seller, seller reviews buyer
+  if (reviewType === 'seller' && !isBuyer) return { error: 'Only buyers can review sellers' }
+  if (reviewType === 'buyer' && !isSeller) return { error: 'Only sellers can review buyers' }
+
+  const { error } = await admin.from('reviews').insert({
+    reviewer_id: user.id,
+    seller_id: targetId,
+    transaction_id: transactionId,
+    listing_id: transaction.listing_id,
+    review_type: reviewType,
+    rating,
+    comment: comment.trim() || null,
+  })
+
+  if (error) {
+    if (error.code === '23505') return { error: 'You already reviewed this transaction' }
+    return { error: error.message }
+  }
+
+  // Recalculate trust score for the reviewed user
+  await recalculateTrustScore(admin, targetId)
+
+  // Notify the reviewed user
+  notifyReviewReceived(admin, user.id, targetId, rating, comment, undefined, transactionId)
+
+  return { success: true }
+}
+
+export async function getTransactionReviews(transactionId: string) {
+  const admin = createAdminClient()
+
+  const { data: reviews } = await admin
+    .from('reviews')
+    .select('id, reviewer_id, seller_id, review_type, rating, comment, created_at')
+    .eq('transaction_id', transactionId)
+
+  if (!reviews || reviews.length === 0) return { reviews: [] }
+
+  const userIds = [...new Set([...reviews.map((r) => r.reviewer_id), ...reviews.map((r) => r.seller_id)])]
+  const { data: profiles } = await admin
+    .from('profiles')
+    .select('id, full_name, display_name, avatar_url')
+    .in('id', userIds)
+
+  const profileMap = new Map((profiles || []).map((p) => [p.id, p]))
+
+  return {
+    reviews: reviews.map((r) => ({
+      ...r,
+      reviewer: profileMap.get(r.reviewer_id) || null,
+      target: profileMap.get(r.seller_id) || null,
+    })),
+  }
+}
+
+export async function getBuyerReviews(buyerId: string) {
+  const admin = createAdminClient()
+
+  const { data: reviews } = await admin
+    .from('reviews')
+    .select('id, rating, comment, created_at, reviewer_id')
+    .eq('seller_id', buyerId)
+    .eq('review_type', 'buyer')
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (!reviews || reviews.length === 0) {
+    return { reviews: [], averageRating: 0, totalReviews: 0 }
+  }
+
+  const reviewerIds = [...new Set(reviews.map((r) => r.reviewer_id))]
+  const { data: reviewers } = await admin
+    .from('profiles')
+    .select('id, full_name, display_name, avatar_url')
+    .in('id', reviewerIds)
+
+  const reviewerMap = new Map((reviewers || []).map((r) => [r.id, r]))
+
+  const enriched = reviews.map((r) => ({
+    ...r,
+    reviewer: reviewerMap.get(r.reviewer_id) || null,
+  }))
+
+  const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+
+  return {
+    reviews: enriched,
+    averageRating: Math.round(avgRating * 10) / 10,
+    totalReviews: reviews.length,
+  }
+}
+
+async function recalculateTrustScore(
+  admin: ReturnType<typeof createAdminClient>,
+  userId: string
+) {
+  try {
+    // Get all reviews for this user (both as seller and buyer)
+    const { data: reviews } = await admin
+      .from('reviews')
+      .select('rating')
+      .eq('seller_id', userId)
+
+    if (!reviews || reviews.length === 0) return
+
+    const avgRating = reviews.reduce((s, r) => s + r.rating, 0) / reviews.length
+    // Trust score: avg rating * 20 (so 5 stars = 100), capped at 100
+    const trustScore = Math.min(100, Math.round(avgRating * 20))
+
+    await admin
+      .from('profiles')
+      .update({ trust_score: trustScore })
+      .eq('id', userId)
+  } catch (err) {
+    console.error('Failed to recalculate trust score:', err)
   }
 }
 
@@ -210,10 +364,11 @@ export async function getProfileCompletionPercentage(userId: string) {
 async function notifyReviewReceived(
   admin: ReturnType<typeof createAdminClient>,
   reviewerId: string,
-  sellerId: string,
+  targetId: string,
   rating: number,
   comment: string,
-  conversationId: string
+  conversationId?: string,
+  transactionId?: string
 ) {
   try {
     const { data: reviewer } = await admin
@@ -224,11 +379,11 @@ async function notifyReviewReceived(
 
     const reviewerName = reviewer?.display_name || reviewer?.full_name || 'Someone'
     await createNotification(
-      sellerId,
+      targetId,
       'review_received',
       `${reviewerName} left you a ${rating}-star review`,
       comment?.trim() || 'No comment provided',
-      { reviewer_id: reviewerId, rating, conversation_id: conversationId }
+      { reviewer_id: reviewerId, rating, ...(conversationId ? { conversation_id: conversationId } : {}), ...(transactionId ? { transaction_id: transactionId } : {}) }
     )
   } catch (err) {
     console.error('Failed to send review notification:', err)
