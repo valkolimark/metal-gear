@@ -99,6 +99,42 @@ export type Database = {
           },
         ]
       }
+      listing_views: {
+        Row: {
+          id: string
+          listing_id: string
+          viewer_id: string | null
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          viewer_id?: string | null
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          viewer_id?: string | null
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_views_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_views_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_images: {
         Row: {
           created_at: string

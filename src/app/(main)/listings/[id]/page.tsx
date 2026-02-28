@@ -17,6 +17,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
+import { recordListingView } from '@/app/actions/analytics'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -98,12 +99,8 @@ export default function ListingDetailPage() {
       setIsFavorited(!!favRes.data)
       setSimilar((similarRes.data ?? []) as Listing[])
 
-      // Increment views (fire and forget)
-      supabase
-        .from('listings')
-        .update({ views_count: (listingData.views_count || 0) + 1 })
-        .eq('id', id)
-        .then(() => {})
+      // Record view event (fire and forget)
+      recordListingView(id).catch(console.error)
 
       setLoading(false)
     }

@@ -12,6 +12,7 @@ import {
   Loader2,
   TrendingUp,
   Crown,
+  BarChart3,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +20,7 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
+import { getSellerAnalytics } from '@/app/actions/analytics'
 import { TIER_LABELS, TIER_LIMITS } from '@/lib/constants'
 import type { Tables } from '@/types/database'
 
@@ -29,6 +31,22 @@ interface DashboardStats {
   totalViews: number
   unreadMessages: number
   favoritesReceived: number
+}
+
+interface AnalyticsData {
+  totalViews: number
+  totalFavorites: number
+  totalInquiries: number
+  viewsByDay: { date: string; views: number }[]
+  topListings: {
+    id: string
+    title: string
+    views: number
+    recentViews: number
+    favorites: number
+    inquiries: number
+    conversionRate: number
+  }[]
 }
 
 export default function DashboardPage() {
@@ -43,6 +61,7 @@ export default function DashboardPage() {
     favoritesReceived: 0,
   })
   const [recentListings, setRecentListings] = useState<Listing[]>([])
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -106,6 +125,13 @@ export default function DashboardPage() {
     }
 
     loadDashboard()
+
+    // Load analytics (async, not blocking)
+    getSellerAnalytics().then((result) => {
+      if (!('error' in result)) {
+        setAnalytics(result)
+      }
+    })
   }, [user])
 
   if (loading) {
@@ -219,6 +245,90 @@ export default function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {/* How Your Listings Are Performing */}
+      {analytics && (analytics.topListings.length > 0 || analytics.viewsByDay.some(d => d.views > 0)) && (
+        <Card className="border-border bg-card">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <BarChart3 className="size-5 text-primary" />
+            <CardTitle className="font-display text-lg">
+              How Your Listings Are Performing
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            {/* Stats row */}
+            <div className="grid grid-cols-3 gap-4">
+              <div className="text-center">
+                <p className="font-display text-2xl font-bold text-foreground">
+                  {analytics.totalViews.toLocaleString()}
+                </p>
+                <p className="font-body text-xs text-muted-foreground">
+                  Total Views
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="font-display text-2xl font-bold text-foreground">
+                  {analytics.totalFavorites.toLocaleString()}
+                </p>
+                <p className="font-body text-xs text-muted-foreground">
+                  Total Favorites
+                </p>
+              </div>
+              <div className="text-center">
+                <p className="font-display text-2xl font-bold text-foreground">
+                  {analytics.totalInquiries.toLocaleString()}
+                </p>
+                <p className="font-body text-xs text-muted-foreground">
+                  Total Inquiries
+                </p>
+              </div>
+            </div>
+
+            {/* Views chart (last 30 days) */}
+            <div>
+              <p className="mb-3 font-body text-sm font-medium text-foreground">
+                Views — Last 30 Days
+              </p>
+              <ViewsChart data={analytics.viewsByDay} />
+            </div>
+
+            {/* Top performing listings */}
+            {analytics.topListings.length > 0 && (
+              <div>
+                <p className="mb-3 font-body text-sm font-medium text-foreground">
+                  Top Performing Listings
+                </p>
+                <div className="space-y-2">
+                  {analytics.topListings.map((listing, i) => (
+                    <Link
+                      key={listing.id}
+                      href={`/listings/${listing.id}`}
+                      className="flex items-center gap-3 rounded-lg p-2 transition-colors hover:bg-surface"
+                    >
+                      <span className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20 font-body text-xs font-bold text-primary">
+                        {i + 1}
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-body text-sm font-medium text-foreground">
+                          {listing.title}
+                        </p>
+                        <div className="flex gap-3 font-body text-xs text-muted-foreground">
+                          <span>{listing.views} views</span>
+                          <span>{listing.favorites} favs</span>
+                          <span>{listing.inquiries} inquiries</span>
+                          <span className="text-primary">
+                            {listing.conversionRate.toFixed(1)}% conversion
+                          </span>
+                        </div>
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Listings */}
@@ -386,6 +496,40 @@ function StatCard({
   )
 
   return href ? <Link href={href}>{content}</Link> : content
+}
+
+function ViewsChart({ data }: { data: { date: string; views: number }[] }) {
+  const maxViews = Math.max(...data.map((d) => d.views), 1)
+
+  return (
+    <div className="flex h-32 items-end gap-[2px]">
+      {data.map((day) => {
+        const height = (day.views / maxViews) * 100
+        const date = new Date(day.date + 'T12:00:00')
+        const label = date.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+        return (
+          <div
+            key={day.date}
+            className="group relative flex-1"
+            title={`${label}: ${day.views} views`}
+          >
+            <div
+              className="w-full rounded-t bg-primary/60 transition-colors group-hover:bg-primary"
+              style={{ height: `${Math.max(height, 2)}%` }}
+            />
+            <div className="pointer-events-none absolute -top-8 left-1/2 hidden -translate-x-1/2 rounded bg-card px-2 py-1 text-center shadow-lg group-hover:block">
+              <p className="whitespace-nowrap font-body text-[10px] text-foreground">
+                {day.views}
+              </p>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
 }
 
 function getGreeting(): string {
