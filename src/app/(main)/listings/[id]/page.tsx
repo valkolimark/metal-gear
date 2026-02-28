@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   ChevronLeft,
   ChevronRight,
@@ -218,11 +219,14 @@ export default function ListingDetailPage() {
       {/* Photo Gallery */}
       {images.length > 0 ? (
         <div className="relative overflow-hidden rounded-xl">
-          <div className="aspect-[16/9] sm:aspect-[2/1]">
-            <img
+          <div className="relative aspect-[16/9] sm:aspect-[2/1]">
+            <Image
               src={images[currentImage]?.url}
               alt={listing.title}
-              className="size-full object-cover"
+              fill
+              className="object-cover"
+              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+              priority
             />
           </div>
           {images.length > 1 && (
@@ -485,16 +489,18 @@ export default function ListingDetailPage() {
                     <button
                       key={img.id}
                       onClick={() => setCurrentImage(i)}
-                      className={`aspect-square overflow-hidden rounded-md border-2 transition-colors ${
+                      className={`relative aspect-square overflow-hidden rounded-md border-2 transition-colors ${
                         i === currentImage
                           ? 'border-primary'
                           : 'border-transparent'
                       }`}
                     >
-                      <img
+                      <Image
                         src={img.url}
                         alt={`Thumbnail ${i + 1}`}
-                        className="size-full object-cover"
+                        fill
+                        className="object-cover"
+                        sizes="100px"
                       />
                     </button>
                   ))}
