@@ -12,10 +12,8 @@ import {
   Paperclip,
   X,
   FileText,
-  Image as ImageIcon,
   Download,
   Search,
-  BookTemplate,
   Plus,
   Trash2,
   ChevronDown,
@@ -23,7 +21,6 @@ import {
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'

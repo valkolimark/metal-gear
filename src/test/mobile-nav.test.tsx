@@ -16,6 +16,24 @@ vi.mock('@/stores/ui-store', () => ({
   ),
 }))
 
+// Mock next-intl
+vi.mock('next-intl', () => ({
+  useTranslations: () => (key: string) => {
+    const translations: Record<string, string> = {
+      home: 'Home',
+      browseEquipment: 'Browse Equipment',
+      myListings: 'My Listings',
+      favorites: 'Favorites',
+      messages: 'Messages',
+      profile: 'Profile',
+      search: 'Search',
+      sell: 'Sell',
+    }
+    return translations[key] || key
+  },
+  useLocale: () => 'en',
+}))
+
 import { MobileNav } from '@/components/layout/mobile-nav'
 
 describe('MobileNav', () => {

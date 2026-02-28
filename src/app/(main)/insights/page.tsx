@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
   Loader2,
@@ -9,10 +8,8 @@ import {
   TrendingUp,
   Activity,
   Download,
-  ArrowRight,
   Eye,
   Heart,
-  MessageSquare,
   DollarSign,
   Package,
   Flame,
@@ -37,7 +34,6 @@ type Tab = 'market' | 'performance' | 'compare'
 
 export default function InsightsPage() {
   const { user, profile } = useAuthStore()
-  const router = useRouter()
   const [tab, setTab] = useState<Tab>('market')
   const [loading, setLoading] = useState(true)
 

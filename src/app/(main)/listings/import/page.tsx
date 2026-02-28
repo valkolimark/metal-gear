@@ -49,7 +49,6 @@ export default function CSVImportPage() {
   const [step, setStep] = useState<ImportStep>('upload')
   const [filename, setFilename] = useState('')
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([])
-  const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<{
     successCount: number
     errorCount: number
@@ -93,7 +92,6 @@ export default function CSVImportPage() {
       return
     }
 
-    setImporting(true)
     setStep('importing')
 
     try {
@@ -128,8 +126,6 @@ export default function CSVImportPage() {
     } catch {
       toast.error('Import failed')
       setStep('preview')
-    } finally {
-      setImporting(false)
     }
   }
 
