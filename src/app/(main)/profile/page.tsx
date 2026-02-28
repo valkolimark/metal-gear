@@ -15,12 +15,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
-import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
-import { uploadAvatar } from './actions'
+import { uploadAvatar, updateProfile } from './actions'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 
@@ -105,25 +103,25 @@ export default function ProfilePage() {
 
     setSaving(true)
     try {
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('profiles')
-        .update({
-          full_name: form.full_name,
-          display_name: form.display_name || null,
-          company_name: form.company_name || null,
-          bio: form.bio || null,
-          phone: form.phone || null,
-          industry: form.industry || null,
-          location_city: form.location_city,
-          location_state: form.location_state,
-        })
-        .eq('id', user.id)
-        .select()
-        .single()
+      const result = await updateProfile({
+        full_name: form.full_name,
+        display_name: form.display_name || null,
+        company_name: form.company_name || null,
+        bio: form.bio || null,
+        phone: form.phone || null,
+        industry: form.industry || null,
+        location_city: form.location_city,
+        location_state: form.location_state,
+      })
 
-      if (error) throw error
-      setProfile(data as Profile)
+      if (result.error) {
+        toast.error(result.error)
+        return
+      }
+
+      if (result.profile) {
+        setProfile(result.profile as Profile)
+      }
       toast.success('Profile updated')
     } catch (err) {
       toast.error('Failed to save profile')
@@ -160,12 +158,20 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="flex items-center gap-6">
             <div className="relative">
-              <Avatar key={avatarKey} className="size-20">
-                <AvatarImage src={profile?.avatar_url || undefined} crossOrigin="anonymous" />
-                <AvatarFallback className="bg-primary/20 font-display text-lg text-primary">
-                  {initials}
-                </AvatarFallback>
-              </Avatar>
+              <div className="size-20 overflow-hidden rounded-full">
+                {profile?.avatar_url ? (
+                  <img
+                    key={avatarKey}
+                    src={profile.avatar_url}
+                    alt="Avatar"
+                    className="size-full object-cover"
+                  />
+                ) : (
+                  <div className="flex size-full items-center justify-center bg-primary/20 font-display text-lg text-primary">
+                    {initials}
+                  </div>
+                )}
+              </div>
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}

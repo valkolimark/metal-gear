@@ -54,3 +54,40 @@ export async function uploadAvatar(formData: FormData) {
 
   return { url: publicUrl }
 }
+
+export async function updateProfile(formData: {
+  full_name: string
+  display_name: string | null
+  company_name: string | null
+  bio: string | null
+  phone: string | null
+  industry: string | null
+  location_city: string
+  location_state: string
+}) {
+  const supabase = await createClient()
+
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { error: 'Not authenticated' }
+  }
+
+  const admin = createAdminClient()
+
+  const { data, error } = await admin
+    .from('profiles')
+    .update(formData)
+    .eq('id', user.id)
+    .select()
+    .single()
+
+  if (error) {
+    return { error: `Save failed: ${error.message}` }
+  }
+
+  return { profile: data }
+}
