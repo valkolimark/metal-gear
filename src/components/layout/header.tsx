@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import {
   Search,
   MessageSquare,
-  Bell,
   Plus,
   Menu,
   X,
@@ -25,6 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
+import { NotificationDropdown } from '@/components/layout/notification-dropdown'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
 
@@ -36,7 +36,6 @@ export function Header() {
     mobileSearchOpen,
     toggleMobileSearch,
     unreadMessages,
-    unreadNotifications,
   } = useUIStore()
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -146,15 +145,7 @@ export function Header() {
           </Button>
 
           {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="size-5" />
-            {unreadNotifications > 0 && (
-              <Badge className="absolute -right-1 -top-1 flex size-4 items-center justify-center rounded-full p-0 text-[10px]">
-                {unreadNotifications > 9 ? '9+' : unreadNotifications}
-              </Badge>
-            )}
-            <span className="sr-only">Notifications</span>
-          </Button>
+          <NotificationDropdown />
 
           {/* User dropdown */}
           <DropdownMenu>

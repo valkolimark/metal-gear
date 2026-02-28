@@ -21,6 +21,7 @@ interface UIStore {
   unreadNotifications: number
   setUnreadMessages: (count: number) => void
   setUnreadNotifications: (count: number) => void
+  incrementUnreadNotifications: () => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -46,4 +47,6 @@ export const useUIStore = create<UIStore>((set) => ({
   setUnreadMessages: (unreadMessages) => set({ unreadMessages }),
   setUnreadNotifications: (unreadNotifications) =>
     set({ unreadNotifications }),
+  incrementUnreadNotifications: () =>
+    set((state) => ({ unreadNotifications: state.unreadNotifications + 1 })),
 }))

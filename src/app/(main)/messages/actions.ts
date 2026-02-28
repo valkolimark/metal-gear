@@ -9,6 +9,7 @@ import {
   getEmailPrefs,
 } from '@/lib/email'
 import { checkConversationLimit } from '@/app/actions/tier'
+import { createNotification } from '@/app/actions/notifications'
 
 export async function sendMessage(conversationId: string, content: string) {
   const supabase = await createClient()
@@ -56,15 +57,57 @@ export async function sendMessage(conversationId: string, content: string) {
   // Send email notification to recipient (fire and forget)
   const recipientId =
     conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id
+  const listingTitle = (conv.listing as { title: string } | null)?.title || 'a listing'
+
   sendMessageNotificationEmail(
     admin,
     recipientId,
     user.id,
-    (conv.listing as { title: string } | null)?.title || 'a listing',
+    listingTitle,
     content.trim()
   ).catch(console.error)
 
+  // Create in-app notification (fire and forget)
+  sendMessageInAppNotification(
+    admin,
+    recipientId,
+    user.id,
+    conversationId,
+    listingTitle,
+    content.trim()
+  )
+
   return { message }
+}
+
+async function sendMessageInAppNotification(
+  admin: ReturnType<typeof createAdminClient>,
+  recipientId: string,
+  senderId: string,
+  conversationId: string,
+  listingTitle: string,
+  messageContent: string
+) {
+  try {
+    const { data: sender } = await admin
+      .from('profiles')
+      .select('full_name, display_name')
+      .eq('id', senderId)
+      .single()
+
+    const senderName = sender?.display_name || sender?.full_name || 'Someone'
+    await createNotification(
+      recipientId,
+      'new_message',
+      `New message from ${senderName}`,
+      messageContent.length > 100
+        ? messageContent.slice(0, 100) + '...'
+        : messageContent,
+      { conversation_id: conversationId, listing_title: listingTitle }
+    )
+  } catch (err) {
+    console.error('Failed to send in-app notification:', err)
+  }
 }
 
 async function sendMessageNotificationEmail(
@@ -184,6 +227,16 @@ export async function startConversation(listingId: string) {
     listing.title
   ).catch(console.error)
 
+  // Create in-app notification for inquiry (fire and forget)
+  sendInquiryInAppNotification(
+    admin,
+    listing.seller_id,
+    user.id,
+    listingId,
+    listing.title,
+    conv.id
+  )
+
   return { conversationId: conv.id, isNew: true }
 }
 
@@ -221,4 +274,32 @@ async function sendInquiryNotificationEmail(
 
   const email = listingInquiryEmail(sellerName, buyerName, listingTitle, sellerId)
   await sendEmail({ to: authData.user.email, ...email })
+}
+
+async function sendInquiryInAppNotification(
+  admin: ReturnType<typeof createAdminClient>,
+  sellerId: string,
+  buyerId: string,
+  listingId: string,
+  listingTitle: string,
+  conversationId: string
+) {
+  try {
+    const { data: buyer } = await admin
+      .from('profiles')
+      .select('full_name, display_name')
+      .eq('id', buyerId)
+      .single()
+
+    const buyerName = buyer?.display_name || buyer?.full_name || 'Someone'
+    await createNotification(
+      sellerId,
+      'listing_inquiry',
+      `${buyerName} is interested in your listing`,
+      `New inquiry about "${listingTitle}"`,
+      { listing_id: listingId, conversation_id: conversationId }
+    )
+  } catch (err) {
+    console.error('Failed to send inquiry notification:', err)
+  }
 }

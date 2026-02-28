@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createNotification } from '@/app/actions/notifications'
 
 export async function submitReview(
   conversationId: string,
@@ -46,6 +47,9 @@ export async function submitReview(
     }
     return { error: error.message }
   }
+
+  // Create in-app notification for the seller (fire and forget)
+  notifyReviewReceived(admin, user.id, sellerId, rating, comment, conversationId)
 
   return { success: true }
 }
@@ -201,4 +205,32 @@ export async function getProfileCompletionPercentage(userId: string) {
   }
 
   return { percentage: score }
+}
+
+async function notifyReviewReceived(
+  admin: ReturnType<typeof createAdminClient>,
+  reviewerId: string,
+  sellerId: string,
+  rating: number,
+  comment: string,
+  conversationId: string
+) {
+  try {
+    const { data: reviewer } = await admin
+      .from('profiles')
+      .select('full_name, display_name')
+      .eq('id', reviewerId)
+      .single()
+
+    const reviewerName = reviewer?.display_name || reviewer?.full_name || 'Someone'
+    await createNotification(
+      sellerId,
+      'review_received',
+      `${reviewerName} left you a ${rating}-star review`,
+      comment?.trim() || 'No comment provided',
+      { reviewer_id: reviewerId, rating, conversation_id: conversationId }
+    )
+  } catch (err) {
+    console.error('Failed to send review notification:', err)
+  }
 }

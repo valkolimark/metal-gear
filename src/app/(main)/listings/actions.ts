@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createNotification } from '@/app/actions/notifications'
 
 export async function updateListingStatus(
   listingId: string,
@@ -28,12 +29,24 @@ export async function updateListingStatus(
     return { error: 'Not authorized' }
   }
 
+  const { data: listingDetails } = await admin
+    .from('listings')
+    .select('title')
+    .eq('id', listingId)
+    .single()
+
   const { error } = await admin
     .from('listings')
     .update({ status })
     .eq('id', listingId)
 
   if (error) return { error: error.message }
+
+  // If marked as sold, notify buyers who had conversations about it
+  if (status === 'sold' && listingDetails) {
+    notifyListingSold(admin, listingId, listingDetails.title)
+  }
+
   return { success: true }
 }
 
@@ -83,4 +96,32 @@ export async function duplicateListing(listingId: string) {
 
   if (error) return { error: error.message }
   return { listing: newListing }
+}
+
+async function notifyListingSold(
+  admin: ReturnType<typeof createAdminClient>,
+  listingId: string,
+  title: string
+) {
+  try {
+    const { data: convs } = await admin
+      .from('conversations')
+      .select('buyer_id')
+      .eq('listing_id', listingId)
+
+    if (convs) {
+      const uniqueBuyers = [...new Set(convs.map((c) => c.buyer_id))]
+      for (const buyerId of uniqueBuyers) {
+        await createNotification(
+          buyerId,
+          'listing_sold',
+          'A listing you viewed has sold',
+          `"${title}" has been marked as sold`,
+          { listing_id: listingId }
+        )
+      }
+    }
+  } catch (err) {
+    console.error('Failed to send sold notifications:', err)
+  }
 }

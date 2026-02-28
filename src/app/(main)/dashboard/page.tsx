@@ -13,6 +13,13 @@ import {
   TrendingUp,
   Crown,
   BarChart3,
+  Bell,
+  Star,
+  Tag,
+  TrendingDown,
+  DollarSign,
+  Check,
+  X as XIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,6 +29,7 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { getSellerAnalytics } from '@/app/actions/analytics'
 import { TIER_LABELS, TIER_LIMITS } from '@/lib/constants'
+import { getActivityFeed } from '@/app/actions/notifications'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
@@ -64,6 +72,7 @@ export default function DashboardPage() {
   })
   const [recentListings, setRecentListings] = useState<Listing[]>([])
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
+  const [activityFeed, setActivityFeed] = useState<Tables<'notifications'>[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadDashboard = useCallback(async () => {
@@ -124,6 +133,13 @@ export default function DashboardPage() {
     getSellerAnalytics().then((result) => {
       if (!('error' in result)) {
         setAnalytics(result)
+      }
+    })
+
+    // Load activity feed
+    getActivityFeed().then((result) => {
+      if ('activities' in result) {
+        setActivityFeed(result.activities ?? [])
       }
     })
   }, [user])
@@ -336,6 +352,47 @@ export default function DashboardPage() {
         </Card>
       )}
 
+      {/* Activity Feed */}
+      {activityFeed.length > 0 && (
+        <Card className="border-border bg-card">
+          <CardHeader className="flex flex-row items-center gap-2">
+            <Bell className="size-5 text-primary" />
+            <CardTitle className="font-display text-lg">
+              Recent Activity
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-1">
+              {activityFeed.map((activity) => {
+                const Icon = ACTIVITY_ICONS[activity.type] || Bell
+                const color = ACTIVITY_COLORS[activity.type] || 'text-muted-foreground'
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-start gap-3 rounded-lg p-2 transition-colors hover:bg-surface"
+                  >
+                    <div className={`mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-full bg-surface ${color}`}>
+                      <Icon className="size-3.5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-body text-sm text-foreground">
+                        {activity.title}
+                      </p>
+                      <p className="line-clamp-1 font-body text-xs text-muted-foreground">
+                        {activity.body}
+                      </p>
+                    </div>
+                    <span className="shrink-0 font-body text-[10px] text-muted-foreground/70">
+                      {formatActivityTime(activity.created_at)}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Recent Listings */}
         <div className="lg:col-span-2">
@@ -536,6 +593,43 @@ function ViewsChart({ data }: { data: { date: string; views: number }[] }) {
       })}
     </div>
   )
+}
+
+const ACTIVITY_ICONS: Record<string, React.ElementType> = {
+  new_message: MessageSquare,
+  listing_inquiry: MessageSquare,
+  review_received: Star,
+  listing_sold: Tag,
+  price_drop_alert: TrendingDown,
+  offer_received: DollarSign,
+  offer_accepted: Check,
+  offer_rejected: XIcon,
+  offer_countered: DollarSign,
+}
+
+const ACTIVITY_COLORS: Record<string, string> = {
+  new_message: 'text-blue-400',
+  listing_inquiry: 'text-blue-400',
+  review_received: 'text-yellow-400',
+  listing_sold: 'text-green-400',
+  price_drop_alert: 'text-primary',
+  offer_received: 'text-green-400',
+  offer_accepted: 'text-green-400',
+  offer_rejected: 'text-red-400',
+  offer_countered: 'text-yellow-400',
+}
+
+function formatActivityTime(dateStr: string): string {
+  const seconds = Math.floor(
+    (Date.now() - new Date(dateStr).getTime()) / 1000
+  )
+  if (seconds < 60) return 'just now'
+  const minutes = Math.floor(seconds / 60)
+  if (minutes < 60) return `${minutes}m`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}h`
+  const days = Math.floor(hours / 24)
+  return `${days}d`
 }
 
 function getGreeting(): string {
