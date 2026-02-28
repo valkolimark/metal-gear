@@ -172,6 +172,51 @@ export function listingInquiryEmail(sellerName: string, buyerName: string, listi
   }
 }
 
+export function savedSearchAlertEmail(
+  name: string,
+  searchName: string,
+  matches: { title: string; price: string; id: string }[],
+  userId?: string
+) {
+  const listItems = matches
+    .map(
+      (m) => `
+      <tr>
+        <td style="padding:8px 0;border-bottom:1px solid #2a2a3a;">
+          <a href="${APP_URL}/listings/${m.id}" style="color:#fff;text-decoration:none;font-size:14px;font-weight:500;">
+            ${m.title}
+          </a>
+          <br/>
+          <span style="color:${BRAND_COLOR};font-size:13px;font-weight:600;">${m.price}</span>
+        </td>
+      </tr>`
+    )
+    .join('')
+
+  return {
+    subject: `${matches.length} new listing${matches.length !== 1 ? 's' : ''} match "${searchName}"`,
+    html: baseTemplate(`
+      <h2 style="color:#fff;font-size:20px;margin:0 0 16px;">New Matches Found</h2>
+      <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 8px;">
+        Hi ${name},
+      </p>
+      <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 16px;">
+        We found <strong style="color:#fff;">${matches.length} new listing${matches.length !== 1 ? 's' : ''}</strong> matching your saved search
+        <strong style="color:${BRAND_COLOR};">"${searchName}"</strong>:
+      </p>
+      <table style="width:100%;border-collapse:collapse;margin:0 0 24px;">
+        ${listItems}
+      </table>
+      <div style="text-align:center;">
+        <a href="${APP_URL}/search"
+           style="display:inline-block;background:${BRAND_COLOR};color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
+          View All Matches
+        </a>
+      </div>
+    `, userId),
+  }
+}
+
 export function subscriptionConfirmEmail(name: string, plan: string, userId?: string) {
   return {
     subject: `Your ${plan} subscription is active`,

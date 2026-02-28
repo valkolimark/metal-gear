@@ -418,6 +418,8 @@ export type Database = {
           user_id: string
           name: string
           filters: Json
+          notify_email: boolean
+          last_notified_at: string | null
           created_at: string
         }
         Insert: {
@@ -425,6 +427,8 @@ export type Database = {
           user_id: string
           name: string
           filters?: Json
+          notify_email?: boolean
+          last_notified_at?: string | null
           created_at?: string
         }
         Update: {
@@ -432,6 +436,8 @@ export type Database = {
           user_id?: string
           name?: string
           filters?: Json
+          notify_email?: boolean
+          last_notified_at?: string | null
           created_at?: string
         }
         Relationships: [
@@ -440,6 +446,48 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_activity: {
+        Row: {
+          id: string
+          user_id: string
+          action: string
+          listing_id: string | null
+          metadata: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          action: string
+          listing_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          action?: string
+          listing_id?: string | null
+          metadata?: Json
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_activity_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
             referencedColumns: ["id"]
           },
         ]

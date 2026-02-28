@@ -17,6 +17,15 @@ export async function recordListingView(listingId: string) {
     viewer_id: user?.id || null,
   })
 
+  // Track user activity for recommendations
+  if (user) {
+    await admin.from('user_activity').insert({
+      user_id: user.id,
+      action: 'view',
+      listing_id: listingId,
+    })
+  }
+
   // Also increment the legacy views_count counter
   const { data: listing } = await admin
     .from('listings')

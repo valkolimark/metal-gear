@@ -28,13 +28,19 @@ import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { getSellerAnalytics } from '@/app/actions/analytics'
+import { getRecommendedListings } from '@/app/actions/activity'
 import { TIER_LABELS, TIER_LIMITS } from '@/lib/constants'
 import { getActivityFeed } from '@/app/actions/notifications'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
+import { Sparkles } from 'lucide-react'
 
 type Listing = Tables<'listings'>
+
+interface RecommendedListing extends Listing {
+  listing_images?: { url: string; position: number }[]
+}
 
 interface DashboardStats {
   activeListings: number
@@ -73,6 +79,7 @@ export default function DashboardPage() {
   const [recentListings, setRecentListings] = useState<Listing[]>([])
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [activityFeed, setActivityFeed] = useState<Tables<'notifications'>[]>([])
+  const [recommended, setRecommended] = useState<RecommendedListing[]>([])
   const [loading, setLoading] = useState(true)
 
   const loadDashboard = useCallback(async () => {
@@ -138,6 +145,13 @@ export default function DashboardPage() {
     getActivityFeed().then((result) => {
       if ('activities' in result) {
         setActivityFeed(result.activities ?? [])
+      }
+    })
+
+    // Load recommendations
+    getRecommendedListings().then((result) => {
+      if ('listings' in result) {
+        setRecommended(result.listings as RecommendedListing[])
       }
     })
   }, [user])
@@ -266,6 +280,72 @@ export default function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {/* Recommended for You */}
+      {recommended.length > 0 && (
+        <Card className="border-border bg-card">
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Sparkles className="size-5 text-primary" />
+              <CardTitle className="font-display text-lg">
+                Recommended for You
+              </CardTitle>
+            </div>
+            <Button variant="ghost" size="sm" asChild className="font-body">
+              <Link href="/search">
+                Browse all
+                <ArrowRight className="ml-1 size-3" />
+              </Link>
+            </Button>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {recommended.map((listing) => {
+                const image = listing.listing_images
+                  ?.sort((a, b) => a.position - b.position)[0]?.url
+                return (
+                  <Link
+                    key={listing.id}
+                    href={`/listings/${listing.id}`}
+                    className="group overflow-hidden rounded-lg border border-border bg-surface transition-colors hover:border-primary/50"
+                  >
+                    <div className="aspect-[16/10] w-full overflow-hidden bg-card">
+                      {image ? (
+                        <img
+                          src={image}
+                          alt={listing.title}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex h-full items-center justify-center">
+                          <Package className="size-8 text-muted-foreground/40" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <p className="truncate font-body text-sm font-medium text-foreground">
+                        {listing.title}
+                      </p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <span className="font-display text-sm font-bold text-primary">
+                          {listing.contact_for_price
+                            ? 'Contact'
+                            : listing.price_cents
+                              ? `$${(listing.price_cents / 100).toLocaleString()}`
+                              : 'N/A'}
+                        </span>
+                        <span className="font-body text-[10px] text-muted-foreground">
+                          {listing.category}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                )
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* How Your Listings Are Performing */}
       {analytics && (analytics.topListings.length > 0 || analytics.viewsByDay.some(d => d.views > 0)) && (

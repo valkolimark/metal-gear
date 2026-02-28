@@ -65,3 +65,23 @@ export async function deleteSavedSearch(searchId: string) {
 
   return { success: true }
 }
+
+export async function toggleSearchAlert(searchId: string, notifyEmail: boolean) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('saved_searches')
+    .update({ notify_email: notifyEmail })
+    .eq('id', searchId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+  return { success: true }
+}
