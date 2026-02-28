@@ -10,6 +10,7 @@ import {
   Upload,
   X,
   GripVertical,
+  Video,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -65,11 +66,14 @@ export default function CreateListingPage() {
   const router = useRouter()
   const { user, profile } = useAuthStore()
   const tier = profile?.subscription_tier ?? 'free'
-  const maxPhotos = TIER_LIMITS[tier as keyof typeof TIER_LIMITS].photos
+  const tierLimits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS]
+  const maxPhotos = tierLimits.photos
+  const maxVideos = tierLimits.videos
 
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
   const [images, setImages] = useState<UploadedImage[]>([])
+  const [videos, setVideos] = useState<{ id: string; file?: File; preview: string; storage_path: string; url: string; uploading: boolean }[]>([])
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [specKey, setSpecKey] = useState('')
   const [specValue, setSpecValue] = useState('')
@@ -196,6 +200,63 @@ export default function CreateListingPage() {
   function removeImage(id: string) {
     setImages((prev) => prev.filter((i) => i.id !== id))
   }
+
+  // Video upload
+  const handleVideoSelect = useCallback(
+    async (files: FileList | null) => {
+      if (!files || !user || maxVideos === 0) return
+      const remaining = maxVideos - videos.length
+      const toUpload = Array.from(files).slice(0, remaining)
+
+      if (toUpload.length === 0) {
+        toast.error(`Maximum ${maxVideos} videos allowed on your plan`)
+        return
+      }
+
+      const supabase = createClient()
+
+      for (const file of toUpload) {
+        if (file.size > 100 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 100MB limit`)
+          continue
+        }
+
+        const tempId = crypto.randomUUID()
+        const preview = URL.createObjectURL(file)
+
+        setVideos((prev) => [
+          ...prev,
+          { id: tempId, file, preview, storage_path: '', url: '', uploading: true },
+        ])
+
+        const ext = file.name.split('.').pop()
+        const path = `${user.id}/${tempId}.${ext}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('listing-videos')
+          .upload(path, file)
+
+        if (uploadError) {
+          toast.error(`Failed to upload ${file.name}`)
+          setVideos((prev) => prev.filter((v) => v.id !== tempId))
+          continue
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('listing-videos')
+          .getPublicUrl(path)
+
+        setVideos((prev) =>
+          prev.map((v) =>
+            v.id === tempId
+              ? { ...v, storage_path: path, url: publicUrl, uploading: false }
+              : v
+          )
+        )
+      }
+    },
+    [user, videos.length, maxVideos]
+  )
 
   // Drag and drop reorder
   function handleDragStart(idx: number) {
@@ -328,6 +389,25 @@ export default function CreateListingPage() {
             .from('listing_images')
             .insert(imageRows)
           if (imgError) console.error('Image save error:', imgError)
+        }
+      }
+
+      // Save videos linked to the listing
+      if (videos.length > 0) {
+        const videoRows = videos
+          .filter((v) => v.url && !v.uploading)
+          .map((vid, idx) => ({
+            listing_id: listing.id,
+            url: vid.url,
+            storage_path: vid.storage_path,
+            position: idx,
+          }))
+
+        if (videoRows.length > 0) {
+          const { error: vidError } = await supabase
+            .from('listing_videos')
+            .insert(videoRows)
+          if (vidError) console.error('Video save error:', vidError)
         }
       }
 
@@ -627,6 +707,56 @@ export default function CreateListingPage() {
                 />
               </label>
             </div>
+
+            {/* Video upload (Premium/Boost only) */}
+            {maxVideos > 0 && (
+              <div className="space-y-3">
+                <Separator />
+                <p className="font-body text-sm font-medium text-foreground">
+                  Videos ({videos.length}/{maxVideos})
+                </p>
+                <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-6 transition-colors hover:border-primary/50">
+                  <Video className="mb-2 size-6 text-muted-foreground" />
+                  <p className="font-body text-sm font-medium text-foreground">
+                    Upload Video
+                  </p>
+                  <p className="mt-0.5 font-body text-xs text-muted-foreground">
+                    MP4, MOV up to 100MB
+                  </p>
+                  <input
+                    type="file"
+                    accept="video/mp4,video/quicktime"
+                    onChange={(e) => handleVideoSelect(e.target.files)}
+                    className="hidden"
+                  />
+                </label>
+                {videos.length > 0 && (
+                  <div className="space-y-2">
+                    {videos.map((vid) => (
+                      <div key={vid.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                        <Video className="size-5 shrink-0 text-primary" />
+                        <div className="min-w-0 flex-1">
+                          {vid.uploading ? (
+                            <div className="flex items-center gap-2">
+                              <Loader2 className="size-4 animate-spin text-primary" />
+                              <span className="font-body text-sm text-muted-foreground">Uploading...</span>
+                            </div>
+                          ) : (
+                            <p className="truncate font-body text-sm text-foreground">Video uploaded</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => setVideos((prev) => prev.filter((v) => v.id !== vid.id))}
+                          className="shrink-0 text-muted-foreground hover:text-destructive"
+                        >
+                          <X className="size-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Image grid with drag reorder */}
             {images.length > 0 && (

@@ -57,6 +57,7 @@ import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
 type ListingImage = Tables<'listing_images'>
+type ListingVideo = Tables<'listing_videos'>
 type Profile = Tables<'profiles'>
 
 export default function ListingDetailPage() {
@@ -67,6 +68,7 @@ export default function ListingDetailPage() {
   const [listing, setListing] = useState<Listing | null>(null)
   const [images, setImages] = useState<ListingImage[]>([])
   const [seller, setSeller] = useState<Profile | null>(null)
+  const [videos, setVideos] = useState<ListingVideo[]>([])
   const [similar, setSimilar] = useState<Listing[]>([])
   const [isFavorited, setIsFavorited] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -122,10 +124,15 @@ export default function ListingDetailPage() {
 
       setListing(listingData)
 
-      // Fetch images, seller, favorite status, similar in parallel
-      const [imagesRes, sellerRes, favRes, similarRes] = await Promise.all([
+      // Fetch images, videos, seller, favorite status, similar in parallel
+      const [imagesRes, videosRes, sellerRes, favRes, similarRes] = await Promise.all([
         supabase
           .from('listing_images')
+          .select('*')
+          .eq('listing_id', id)
+          .order('position'),
+        supabase
+          .from('listing_videos')
           .select('*')
           .eq('listing_id', id)
           .order('position'),
@@ -152,6 +159,7 @@ export default function ListingDetailPage() {
       ])
 
       setImages(imagesRes.data ?? [])
+      setVideos((videosRes.data ?? []) as ListingVideo[])
       setSeller(sellerRes.data)
       setIsFavorited(!!favRes.data)
       setSimilar((similarRes.data ?? []) as Listing[])
@@ -417,6 +425,29 @@ export default function ListingDetailPage() {
       ) : (
         <div className="flex aspect-[16/9] items-center justify-center rounded-xl bg-surface sm:aspect-[2/1]">
           <p className="font-body text-muted-foreground">No photos</p>
+        </div>
+      )}
+
+      {/* Videos */}
+      {videos.length > 0 && (
+        <div className="space-y-3">
+          <h2 className="font-display text-lg font-semibold text-foreground">
+            Videos ({videos.length})
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2">
+            {videos.map((vid) => (
+              <div key={vid.id} className="overflow-hidden rounded-xl border border-border">
+                <video
+                  src={vid.url}
+                  controls
+                  preload="metadata"
+                  className="aspect-video w-full bg-black"
+                >
+                  Your browser does not support video playback.
+                </video>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 

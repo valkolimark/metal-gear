@@ -99,6 +99,41 @@ export type Database = {
           },
         ]
       }
+      listing_videos: {
+        Row: {
+          id: string
+          listing_id: string
+          url: string
+          storage_path: string
+          position: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          url: string
+          storage_path: string
+          position?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          url?: string
+          storage_path?: string
+          position?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_videos_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       listing_views: {
         Row: {
           id: string
