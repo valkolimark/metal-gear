@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendEmail, subscriptionConfirmEmail } from '@/lib/email'
+import { TIER_LABELS } from '@/lib/constants'
 import type Stripe from 'stripe'
 
 export async function POST(request: NextRequest) {
@@ -113,10 +115,24 @@ async function handleCheckoutCompleted(
   )
 
   // Update profile tier
-  await admin
+  const { data: updatedProfile } = await admin
     .from('profiles')
     .update({ subscription_tier: tier })
     .eq('id', userId)
+    .select('full_name, email_notifications')
+    .single()
+
+  // Send subscription confirmation email
+  if (updatedProfile && session.customer_email) {
+    const prefs = updatedProfile.email_notifications as Record<string, boolean> | null
+    if (prefs?.subscription !== false) {
+      const email = subscriptionConfirmEmail(
+        updatedProfile.full_name || 'there',
+        TIER_LABELS[tier as keyof typeof TIER_LABELS]
+      )
+      await sendEmail({ to: session.customer_email, ...email })
+    }
+  }
 }
 
 async function handleSubscriptionUpdated(
