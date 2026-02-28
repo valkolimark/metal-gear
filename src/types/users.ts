@@ -1,4 +1,5 @@
 import type { SubscriptionTier } from '@/lib/constants'
+import type { Tables } from './database'
 
 export interface User {
   id: string
@@ -6,21 +7,6 @@ export interface User {
   created_at: string
 }
 
-export interface Profile {
-  id: string
-  user_id: string
-  full_name: string
-  display_name: string | null
-  avatar_url: string | null
-  phone: string | null
-  company_name: string | null
-  bio: string | null
-  location_city: string | null
-  location_state: string | null
-  location_lat: number | null
-  location_lng: number | null
+export type Profile = Tables<'profiles'> & {
   subscription_tier: SubscriptionTier
-  is_verified_dealer: boolean
-  created_at: string
-  updated_at: string
 }
