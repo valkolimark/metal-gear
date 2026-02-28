@@ -20,6 +20,9 @@ import {
   Check,
   X,
   ArrowLeftRight,
+  Bell,
+  BellOff,
+  TrendingDown,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
@@ -31,6 +34,7 @@ import {
   respondToCounter,
   withdrawOffer,
 } from '@/app/actions/offers'
+import { togglePriceWatch, getPriceWatch, getPriceHistory } from '@/app/actions/compare'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -84,6 +88,10 @@ export default function ListingDetailPage() {
   const [counterAmount, setCounterAmount] = useState('')
   const [counterMessage, setCounterMessage] = useState('')
   const [counteringOfferId, setCounteringOfferId] = useState<string | null>(null)
+  const [isWatching, setIsWatching] = useState(false)
+  const [watchLoading, setWatchLoading] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [priceHistory, setPriceHistory] = useState<any[]>([])
 
   // Touch swipe state for image gallery
   const touchStartX = useRef(0)
@@ -175,7 +183,18 @@ export default function ListingDetailPage() {
             setIsSeller(result.isSeller ?? false)
           }
         })
+        // Load price watch status
+        getPriceWatch(id).then((result) => {
+          setIsWatching(result.watching ?? false)
+        })
       }
+
+      // Load price history
+      getPriceHistory(id).then((result) => {
+        if ('history' in result) {
+          setPriceHistory(result.history ?? [])
+        }
+      })
 
       setLoading(false)
     }
@@ -343,6 +362,22 @@ export default function ListingDetailPage() {
         if ('offers' in updated) setOffers(updated.offers ?? [])
       }
     }
+  }
+
+  async function handleTogglePriceWatch() {
+    if (!user || !listing) {
+      toast.error('Sign in to watch prices')
+      return
+    }
+    setWatchLoading(true)
+    const result = await togglePriceWatch(listing.id)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      setIsWatching(result.watching ?? false)
+      toast.success(result.watching ? 'Price watch enabled' : 'Price watch removed')
+    }
+    setWatchLoading(false)
   }
 
   if (loading) {
@@ -606,6 +641,64 @@ export default function ListingDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+          {/* Price History */}
+          {priceHistory.length > 0 && (
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 font-display text-lg">
+                  <TrendingDown className="size-5 text-primary" />
+                  Price History
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {priceHistory.map((entry, i) => {
+                    const prevPrice = i > 0 ? priceHistory[i - 1].price_cents : null
+                    const isDropped = prevPrice !== null && entry.price_cents < prevPrice
+                    const isRaised = prevPrice !== null && entry.price_cents > prevPrice
+                    return (
+                      <div
+                        key={entry.id}
+                        className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-display text-sm font-bold ${
+                              isDropped
+                                ? 'text-green-400'
+                                : isRaised
+                                  ? 'text-red-400'
+                                  : 'text-foreground'
+                            }`}
+                          >
+                            ${(entry.price_cents / 100).toLocaleString()}
+                          </span>
+                          {isDropped && (
+                            <Badge variant="outline" className="border-green-500/50 font-body text-[10px] text-green-400">
+                              -{Math.round(((prevPrice - entry.price_cents) / prevPrice) * 100)}%
+                            </Badge>
+                          )}
+                          {isRaised && (
+                            <Badge variant="outline" className="border-red-500/50 font-body text-[10px] text-red-400">
+                              +{Math.round(((entry.price_cents - prevPrice) / prevPrice) * 100)}%
+                            </Badge>
+                          )}
+                        </div>
+                        <span className="font-body text-xs text-muted-foreground">
+                          {new Date(entry.changed_at).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </div>
 
         {/* Sidebar */}
@@ -664,6 +757,23 @@ export default function ListingDetailPage() {
                       >
                         <DollarSign className="mr-2 size-4" />
                         Make an Offer
+                      </Button>
+                    )}
+                    {listing.price_cents && !listing.contact_for_price && (
+                      <Button
+                        variant="outline"
+                        onClick={handleTogglePriceWatch}
+                        disabled={watchLoading}
+                        className={`w-full font-body ${isWatching ? 'border-primary text-primary' : ''}`}
+                      >
+                        {watchLoading ? (
+                          <Loader2 className="mr-2 size-4 animate-spin" />
+                        ) : isWatching ? (
+                          <BellOff className="mr-2 size-4" />
+                        ) : (
+                          <Bell className="mr-2 size-4" />
+                        )}
+                        {isWatching ? 'Stop Watching' : 'Watch Price'}
                       </Button>
                     )}
                   </div>

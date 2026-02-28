@@ -502,6 +502,74 @@ export type Database = {
           },
         ]
       }
+      price_watches: {
+        Row: {
+          id: string
+          user_id: string
+          listing_id: string
+          original_price_cents: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          listing_id: string
+          original_price_cents: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          listing_id?: string
+          original_price_cents?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_watches_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "price_watches_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      price_history: {
+        Row: {
+          id: string
+          listing_id: string
+          price_cents: number
+          changed_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          price_cents: number
+          changed_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          price_cents?: number
+          changed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "price_history_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null

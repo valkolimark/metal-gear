@@ -17,6 +17,7 @@ import {
   Clock,
   Trash2,
   MapIcon,
+  GitCompareArrows,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -172,6 +173,20 @@ function SearchContent() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [savingSearch, setSavingSearch] = useState(false)
+
+  // Compare state
+  const [compareIds, setCompareIds] = useState<string[]>([])
+
+  function toggleCompare(id: string) {
+    setCompareIds((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= 3) {
+        toast.error('You can compare up to 3 listings')
+        return prev
+      }
+      return [...prev, id]
+    })
+  }
 
   // Read params from URL
   const query = searchParams.get('q') || ''
@@ -842,74 +857,100 @@ function SearchContent() {
         ) : viewMode === 'grid' ? (
           <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {listings.map((listing) => (
-              <Link key={listing.id} href={`/listings/${listing.id}`}>
-                <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
-                  <CardContent className="flex h-full flex-col p-4">
-                    <p className="truncate font-body font-medium text-foreground">
-                      {listing.title}
-                    </p>
-                    <div className="mt-2 flex flex-wrap gap-1.5">
-                      <Badge
-                        variant="outline"
-                        className="font-body text-[11px]"
-                      >
-                        {listing.category}
-                      </Badge>
-                      <Badge
-                        variant="outline"
-                        className="font-body text-[11px] capitalize"
-                      >
-                        {listing.condition.replace('_', ' ')}
-                      </Badge>
-                    </div>
-                    <div className="mt-auto pt-3">
-                      <p className="font-display text-lg font-bold text-primary">
+              <div key={listing.id} className="relative">
+                <Link href={`/listings/${listing.id}`}>
+                  <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
+                    <CardContent className="flex h-full flex-col p-4">
+                      <p className="truncate pr-8 font-body font-medium text-foreground">
+                        {listing.title}
+                      </p>
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        <Badge
+                          variant="outline"
+                          className="font-body text-[11px]"
+                        >
+                          {listing.category}
+                        </Badge>
+                        <Badge
+                          variant="outline"
+                          className="font-body text-[11px] capitalize"
+                        >
+                          {listing.condition.replace('_', ' ')}
+                        </Badge>
+                      </div>
+                      <div className="mt-auto pt-3">
+                        <p className="font-display text-lg font-bold text-primary">
+                          {listing.contact_for_price
+                            ? 'Contact'
+                            : listing.price_cents
+                              ? `$${(listing.price_cents / 100).toLocaleString()}`
+                              : 'Free'}
+                        </p>
+                        <p className="mt-1 flex items-center gap-1 font-body text-xs text-muted-foreground">
+                          <MapPin className="size-3" />
+                          {listing.location_city}, {listing.location_state}
+                          <span className="ml-auto flex items-center gap-1">
+                            <Heart className="size-3" />
+                            {listing.favorites_count}
+                          </span>
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+                <button
+                  onClick={() => toggleCompare(listing.id)}
+                  className={`absolute right-3 top-3 z-10 flex size-6 items-center justify-center rounded border transition-colors ${
+                    compareIds.includes(listing.id)
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary hover:text-primary'
+                  }`}
+                  title="Compare"
+                >
+                  <GitCompareArrows className="size-3.5" />
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {listings.map((listing) => (
+              <div key={listing.id} className="relative">
+                <Link href={`/listings/${listing.id}`}>
+                  <Card className="border-border bg-card transition-colors hover:border-primary/50">
+                    <CardContent className="flex items-center gap-4 p-4">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-body font-medium text-foreground">
+                          {listing.title}
+                        </p>
+                        <p className="mt-1 font-body text-sm text-muted-foreground">
+                          {listing.category} &middot;{' '}
+                          {listing.condition.replace('_', ' ')} &middot;{' '}
+                          {listing.location_city}, {listing.location_state}
+                        </p>
+                      </div>
+                      <p className="shrink-0 font-display text-lg font-bold text-primary">
                         {listing.contact_for_price
                           ? 'Contact'
                           : listing.price_cents
                             ? `$${(listing.price_cents / 100).toLocaleString()}`
                             : 'Free'}
                       </p>
-                      <p className="mt-1 flex items-center gap-1 font-body text-xs text-muted-foreground">
-                        <MapPin className="size-3" />
-                        {listing.location_city}, {listing.location_state}
-                        <span className="ml-auto flex items-center gap-1">
-                          <Heart className="size-3" />
-                          {listing.favorites_count}
-                        </span>
-                      </p>
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="space-y-2">
-            {listings.map((listing) => (
-              <Link key={listing.id} href={`/listings/${listing.id}`}>
-                <Card className="border-border bg-card transition-colors hover:border-primary/50">
-                  <CardContent className="flex items-center gap-4 p-4">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-body font-medium text-foreground">
-                        {listing.title}
-                      </p>
-                      <p className="mt-1 font-body text-sm text-muted-foreground">
-                        {listing.category} &middot;{' '}
-                        {listing.condition.replace('_', ' ')} &middot;{' '}
-                        {listing.location_city}, {listing.location_state}
-                      </p>
-                    </div>
-                    <p className="shrink-0 font-display text-lg font-bold text-primary">
-                      {listing.contact_for_price
-                        ? 'Contact'
-                        : listing.price_cents
-                          ? `$${(listing.price_cents / 100).toLocaleString()}`
-                          : 'Free'}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
+                    </CardContent>
+                  </Card>
+                </Link>
+                <button
+                  onClick={() => toggleCompare(listing.id)}
+                  className={`absolute right-3 top-1/2 z-10 flex size-6 -translate-y-1/2 items-center justify-center rounded border transition-colors ${
+                    compareIds.includes(listing.id)
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary hover:text-primary'
+                  }`}
+                  title="Compare"
+                >
+                  <GitCompareArrows className="size-3.5" />
+                </button>
+              </div>
             ))}
           </div>
         )}
@@ -1001,6 +1042,34 @@ function SearchContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      {/* Comparison Bar */}
+      {compareIds.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+          <div className="mx-auto flex max-w-6xl items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <GitCompareArrows className="size-4 text-primary" />
+              <span className="font-body text-sm text-foreground">
+                {compareIds.length} listing{compareIds.length !== 1 ? 's' : ''} selected
+              </span>
+              <button
+                onClick={() => setCompareIds([])}
+                className="font-body text-xs text-muted-foreground hover:text-foreground"
+              >
+                Clear
+              </button>
+            </div>
+            <Button
+              size="sm"
+              disabled={compareIds.length < 2}
+              onClick={() => router.push(`/compare?ids=${compareIds.join(',')}`)}
+              className="font-body"
+            >
+              <GitCompareArrows className="mr-1.5 size-3.5" />
+              Compare ({compareIds.length}/3)
+            </Button>
+          </div>
+        </div>
+      )}
     </PageLayout>
   )
 }
