@@ -136,7 +136,8 @@ async function handleCheckoutCompleted(
     if (prefs?.subscription !== false) {
       const email = subscriptionConfirmEmail(
         updatedProfile.full_name || 'there',
-        TIER_LABELS[tier as keyof typeof TIER_LABELS]
+        TIER_LABELS[tier as keyof typeof TIER_LABELS],
+        userId
       )
       await sendEmail({ to: session.customer_email, ...email })
     }

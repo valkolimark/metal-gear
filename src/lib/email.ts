@@ -42,8 +42,43 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions) {
 
 const BRAND_COLOR = '#FF6B2B'
 const BG_COLOR = '#0A0A0F'
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'
 
-function baseTemplate(content: string) {
+export interface EmailNotificationPrefs {
+  messages: boolean
+  inquiries: boolean
+  subscription: boolean
+  marketing: boolean
+}
+
+export const DEFAULT_EMAIL_PREFS: EmailNotificationPrefs = {
+  messages: true,
+  inquiries: true,
+  subscription: true,
+  marketing: true,
+}
+
+export function getEmailPrefs(raw: unknown): EmailNotificationPrefs {
+  if (!raw || typeof raw !== 'object') return { ...DEFAULT_EMAIL_PREFS }
+  const prefs = raw as Record<string, unknown>
+  return {
+    messages: prefs.messages !== false,
+    inquiries: prefs.inquiries !== false,
+    subscription: prefs.subscription !== false,
+    marketing: prefs.marketing !== false,
+  }
+}
+
+function unsubscribeFooter(userId: string) {
+  return `
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid #2a2a3a;">
+      <a href="${APP_URL}/api/unsubscribe?uid=${userId}" style="color:#666;font-size:11px;text-decoration:underline;">
+        Manage email preferences
+      </a>
+    </div>`
+}
+
+function baseTemplate(content: string, userId?: string) {
   return `
 <!DOCTYPE html>
 <html>
@@ -56,11 +91,12 @@ function baseTemplate(content: string) {
     </div>
     <div style="background:#15151F;border-radius:12px;padding:32px;border:1px solid #2a2a3a;">
       ${content}
+      ${userId ? unsubscribeFooter(userId) : ''}
     </div>
     <div style="text-align:center;margin-top:24px;">
       <p style="color:#666;font-size:11px;margin:0;">
         Metal Gear — Houston, TX<br/>
-        <a href="https://metal-gear-five.vercel.app" style="color:${BRAND_COLOR};text-decoration:none;">metal-gear-five.vercel.app</a>
+        <a href="${APP_URL}" style="color:${BRAND_COLOR};text-decoration:none;">metal-gear-five.vercel.app</a>
       </p>
     </div>
   </div>
@@ -68,7 +104,7 @@ function baseTemplate(content: string) {
 </html>`
 }
 
-export function welcomeEmail(name: string) {
+export function welcomeEmail(name: string, userId?: string) {
   return {
     subject: 'Welcome to Metal Gear!',
     html: baseTemplate(`
@@ -80,16 +116,16 @@ export function welcomeEmail(name: string) {
         Start listing your equipment, browse what&rsquo;s available, and connect with buyers and sellers in your industry.
       </p>
       <div style="text-align:center;">
-        <a href="https://metal-gear-five.vercel.app/dashboard"
+        <a href="${APP_URL}/dashboard"
            style="display:inline-block;background:${BRAND_COLOR};color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
           Go to Dashboard
         </a>
       </div>
-    `),
+    `, userId),
   }
 }
 
-export function newMessageEmail(recipientName: string, senderName: string, listingTitle: string, messagePreview: string) {
+export function newMessageEmail(recipientName: string, senderName: string, listingTitle: string, messagePreview: string, recipientId?: string) {
   return {
     subject: `New message from ${senderName} about "${listingTitle}"`,
     html: baseTemplate(`
@@ -105,16 +141,16 @@ export function newMessageEmail(recipientName: string, senderName: string, listi
         <p style="color:#aaa;font-size:14px;line-height:1.5;margin:0;">${messagePreview}</p>
       </div>
       <div style="text-align:center;">
-        <a href="https://metal-gear-five.vercel.app/messages"
+        <a href="${APP_URL}/messages"
            style="display:inline-block;background:${BRAND_COLOR};color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
           View Messages
         </a>
       </div>
-    `),
+    `, recipientId),
   }
 }
 
-export function listingInquiryEmail(sellerName: string, buyerName: string, listingTitle: string) {
+export function listingInquiryEmail(sellerName: string, buyerName: string, listingTitle: string, sellerId?: string) {
   return {
     subject: `${buyerName} is interested in "${listingTitle}"`,
     html: baseTemplate(`
@@ -127,16 +163,16 @@ export function listingInquiryEmail(sellerName: string, buyerName: string, listi
         <strong style="color:#fff;">"${listingTitle}"</strong>. Reply to connect with them.
       </p>
       <div style="text-align:center;">
-        <a href="https://metal-gear-five.vercel.app/messages"
+        <a href="${APP_URL}/messages"
            style="display:inline-block;background:${BRAND_COLOR};color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
           View Conversation
         </a>
       </div>
-    `),
+    `, sellerId),
   }
 }
 
-export function subscriptionConfirmEmail(name: string, plan: string) {
+export function subscriptionConfirmEmail(name: string, plan: string, userId?: string) {
   return {
     subject: `Your ${plan} subscription is active`,
     html: baseTemplate(`
@@ -149,11 +185,11 @@ export function subscriptionConfirmEmail(name: string, plan: string) {
         You have access to all premium features.
       </p>
       <div style="text-align:center;">
-        <a href="https://metal-gear-five.vercel.app/dashboard"
+        <a href="${APP_URL}/dashboard"
            style="display:inline-block;background:${BRAND_COLOR};color:#fff;padding:12px 32px;border-radius:8px;text-decoration:none;font-weight:600;font-size:14px;">
           Go to Dashboard
         </a>
       </div>
-    `),
+    `, userId),
   }
 }

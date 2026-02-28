@@ -16,7 +16,7 @@ import {
   Calendar,
 } from 'lucide-react'
 import { toast } from 'sonner'
-import { checkConversationLimit } from '@/app/actions/tier'
+import { startConversation } from '@/app/(main)/messages/actions'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -148,46 +148,18 @@ export default function ListingDetailPage() {
 
   async function handleContact() {
     if (!user || !listing) return
-    const supabase = createClient()
 
-    // Check for existing conversation
-    const { data: existing } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('listing_id', listing.id)
-      .eq('buyer_id', user.id)
-      .maybeSingle()
+    const result = await startConversation(listing.id)
 
-    if (existing) {
-      router.push(`/messages?conversation=${existing.id}`)
+    if (result.error) {
+      toast.error(result.error)
+      if (result.error.includes('limit')) router.push('/pricing')
       return
     }
 
-    // Check conversation limit before creating new one
-    const limit = await checkConversationLimit()
-    if (!limit.allowed) {
-      toast.error(limit.error || 'Conversation limit reached. Upgrade your plan.')
-      router.push('/pricing')
-      return
+    if (result.conversationId) {
+      router.push(`/messages?conversation=${result.conversationId}`)
     }
-
-    // Create new conversation
-    const { data: conv, error } = await supabase
-      .from('conversations')
-      .insert({
-        listing_id: listing.id,
-        buyer_id: user.id,
-        seller_id: listing.seller_id,
-      })
-      .select()
-      .single()
-
-    if (error) {
-      toast.error('Failed to start conversation')
-      return
-    }
-
-    router.push(`/messages?conversation=${conv.id}`)
   }
 
   if (loading) {

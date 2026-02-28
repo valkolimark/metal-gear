@@ -57,6 +57,52 @@ export async function uploadAvatar(formData: FormData) {
   return { url: publicUrl, profile: updatedProfile }
 }
 
+export async function updateNotificationPreferences(preferences: {
+  messages: boolean
+  inquiries: boolean
+  subscription: boolean
+  marketing: boolean
+}) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) {
+    return { error: 'Not authenticated' }
+  }
+
+  const admin = createAdminClient()
+
+  // Get existing prefs to preserve welcome_sent flag
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('email_notifications')
+    .eq('id', user.id)
+    .single()
+
+  const existing = (profile?.email_notifications as Record<string, unknown>) || {}
+
+  const { data, error } = await admin
+    .from('profiles')
+    .update({
+      email_notifications: {
+        ...existing,
+        ...preferences,
+      },
+    })
+    .eq('id', user.id)
+    .select()
+    .single()
+
+  if (error) {
+    return { error: `Save failed: ${error.message}` }
+  }
+
+  return { profile: data }
+}
+
 export async function updateProfile(formData: {
   full_name: string
   display_name: string | null

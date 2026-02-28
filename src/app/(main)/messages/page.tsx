@@ -19,6 +19,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
+import { sendMessage as sendMessageAction } from './actions'
 import type { Tables } from '@/types/database'
 
 type Conversation = Tables<'conversations'>
@@ -203,15 +204,10 @@ function MessagesContent() {
     if (!newMessage.trim() || !activeConvId || !user) return
 
     setSending(true)
-    const supabase = createClient()
-    const { error } = await supabase.from('messages').insert({
-      conversation_id: activeConvId,
-      sender_id: user.id,
-      content: newMessage.trim(),
-    })
+    const result = await sendMessageAction(activeConvId, newMessage.trim())
 
-    if (error) {
-      toast.error('Failed to send message')
+    if (result.error) {
+      toast.error(result.error)
     } else {
       setNewMessage('')
     }

@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Save, Loader2 } from 'lucide-react'
+import { Camera, Save, Loader2, Bell } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -17,8 +17,9 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
-import { uploadAvatar, updateProfile } from './actions'
+import { uploadAvatar, updateProfile, updateNotificationPreferences } from './actions'
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
@@ -30,6 +31,13 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [avatarKey, setAvatarKey] = useState(0)
+  const [savingNotifs, setSavingNotifs] = useState(false)
+  const [notifPrefs, setNotifPrefs] = useState({
+    messages: true,
+    inquiries: true,
+    subscription: true,
+    marketing: true,
+  })
   const [form, setForm] = useState({
     full_name: '',
     display_name: '',
@@ -53,6 +61,16 @@ export default function ProfilePage() {
         location_city: profile.location_city || 'Houston',
         location_state: profile.location_state || 'TX',
       })
+      // Load notification preferences
+      const prefs = profile.email_notifications as Record<string, boolean> | null
+      if (prefs) {
+        setNotifPrefs({
+          messages: prefs.messages !== false,
+          inquiries: prefs.inquiries !== false,
+          subscription: prefs.subscription !== false,
+          marketing: prefs.marketing !== false,
+        })
+      }
     }
   }, [profile])
 
@@ -387,6 +405,99 @@ export default function ProfilePage() {
                   Manage Subscription
                 </Button>
               )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Notification Preferences */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Bell className="size-5" />
+              Email Notifications
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[
+              {
+                key: 'messages' as const,
+                label: 'New Messages',
+                desc: 'Get notified when someone sends you a message',
+              },
+              {
+                key: 'inquiries' as const,
+                label: 'Listing Inquiries',
+                desc: 'Get notified when someone inquires about your listing',
+              },
+              {
+                key: 'subscription' as const,
+                label: 'Subscription Updates',
+                desc: 'Billing confirmations and plan changes',
+              },
+              {
+                key: 'marketing' as const,
+                label: 'Marketing',
+                desc: 'Tips, new features, and promotions',
+              },
+            ].map((item) => (
+              <div
+                key={item.key}
+                className="flex items-center justify-between"
+              >
+                <div>
+                  <p className="font-body text-sm font-medium text-foreground">
+                    {item.label}
+                  </p>
+                  <p className="font-body text-xs text-muted-foreground">
+                    {item.desc}
+                  </p>
+                </div>
+                <Switch
+                  checked={notifPrefs[item.key]}
+                  onCheckedChange={(checked) =>
+                    setNotifPrefs((prev) => ({ ...prev, [item.key]: checked }))
+                  }
+                />
+              </div>
+            ))}
+
+            <Separator />
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={savingNotifs}
+                onClick={async () => {
+                  setSavingNotifs(true)
+                  try {
+                    const result =
+                      await updateNotificationPreferences(notifPrefs)
+                    if (result.error) {
+                      toast.error(result.error)
+                    } else {
+                      if (result.profile) {
+                        setProfile(result.profile as Profile)
+                      }
+                      toast.success('Notification preferences saved')
+                    }
+                  } catch {
+                    toast.error('Failed to save preferences')
+                  } finally {
+                    setSavingNotifs(false)
+                  }
+                }}
+                className="font-body"
+              >
+                {savingNotifs ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Preferences'
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>
