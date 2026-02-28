@@ -101,6 +101,66 @@ export type Database = {
           },
         ]
       }
+      condition_reports: {
+        Row: {
+          id: string
+          listing_id: string
+          created_by: string
+          overall_grade: string
+          mechanical_score: number
+          cosmetic_score: number
+          electrical_score: number
+          hours_of_use: number | null
+          last_service_date: string | null
+          notes: string | null
+          photo_urls: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          created_by: string
+          overall_grade: string
+          mechanical_score: number
+          cosmetic_score: number
+          electrical_score: number
+          hours_of_use?: number | null
+          last_service_date?: string | null
+          notes?: string | null
+          photo_urls?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          created_by?: string
+          overall_grade?: string
+          mechanical_score?: number
+          cosmetic_score?: number
+          electrical_score?: number
+          hours_of_use?: number | null
+          last_service_date?: string | null
+          notes?: string | null
+          photo_urls?: string[]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "condition_reports_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: true
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "condition_reports_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       disputes: {
         Row: {
           id: string

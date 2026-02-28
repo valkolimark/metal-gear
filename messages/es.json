@@ -207,6 +207,25 @@
     "resolvedSeller": "Resuelta (Vendedor)",
     "escalated": "Escalada"
   },
+  "conditionReport": {
+    "inspectionReport": "Reporte de Inspección",
+    "grade": "Grado",
+    "mechanical": "Mecánico",
+    "cosmetic": "Cosmético",
+    "electrical": "Eléctrico",
+    "hoursOfUse": "Horas de Uso",
+    "lastService": "Último Servicio",
+    "inspectorNotes": "Notas del Inspector",
+    "conditionPhotos": "Fotos de Condición",
+    "verifiedInspection": "Inspección Verificada",
+    "overallGrade": "Grado General",
+    "reportCreated": "Reporte creado",
+    "gradeA": "Excelente",
+    "gradeB": "Bueno",
+    "gradeC": "Regular",
+    "gradeD": "Deficiente",
+    "gradeF": "Reprobado"
+  },
   "accessibility": {
     "mainNavigation": "Navegación principal",
     "mobileNavigation": "Navegación móvil",

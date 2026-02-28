@@ -23,10 +23,14 @@ import {
   Bell,
   BellOff,
   TrendingDown,
+  ClipboardCheck,
+  ChevronDown,
+  ShieldCheck,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { recordListingView } from '@/app/actions/analytics'
+import { getConditionReport } from '@/app/actions/condition-reports'
 import {
   makeOffer,
   getListingOffers,
@@ -92,6 +96,9 @@ export default function ListingDetailPage() {
   const [watchLoading, setWatchLoading] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [priceHistory, setPriceHistory] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [conditionReport, setConditionReport] = useState<any>(null)
+  const [reportExpanded, setReportExpanded] = useState(false)
 
   // Touch swipe state for image gallery
   const touchStartX = useRef(0)
@@ -194,6 +201,11 @@ export default function ListingDetailPage() {
         if ('history' in result) {
           setPriceHistory(result.history ?? [])
         }
+      })
+
+      // Load condition report
+      getConditionReport(id).then((result) => {
+        if (result.report) setConditionReport(result.report)
       })
 
       setLoading(false)
@@ -667,6 +679,142 @@ export default function ListingDetailPage() {
                 </CardContent>
               </Card>
             )}
+
+          {/* Inspection Report */}
+          {conditionReport && (
+            <Card className="border-border bg-card">
+              <CardHeader>
+                <button
+                  onClick={() => setReportExpanded(!reportExpanded)}
+                  className="flex w-full items-center justify-between"
+                >
+                  <CardTitle className="flex items-center gap-2 font-display text-lg">
+                    <ClipboardCheck className="size-5 text-primary" />
+                    Inspection Report
+                    <Badge
+                      className={`ml-1 font-display text-sm ${
+                        conditionReport.overall_grade === 'A'
+                          ? 'bg-green-500/20 text-green-400'
+                          : conditionReport.overall_grade === 'B'
+                            ? 'bg-blue-500/20 text-blue-400'
+                            : conditionReport.overall_grade === 'C'
+                              ? 'bg-yellow-500/20 text-yellow-400'
+                              : conditionReport.overall_grade === 'D'
+                                ? 'bg-orange-500/20 text-orange-400'
+                                : 'bg-red-500/20 text-red-400'
+                      }`}
+                    >
+                      Grade {conditionReport.overall_grade}
+                    </Badge>
+                    {conditionReport.creator?.is_verified && (
+                      <Badge variant="outline" className="gap-1 border-green-500/50 font-body text-[10px] text-green-400">
+                        <ShieldCheck className="size-3" />
+                        Verified Inspection
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <ChevronDown
+                    className={`size-5 text-muted-foreground transition-transform ${
+                      reportExpanded ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+              </CardHeader>
+              {reportExpanded && (
+                <CardContent className="space-y-4">
+                  {/* Scores */}
+                  <div className="grid grid-cols-3 gap-4">
+                    {[
+                      { label: 'Mechanical', score: conditionReport.mechanical_score },
+                      { label: 'Cosmetic', score: conditionReport.cosmetic_score },
+                      { label: 'Electrical', score: conditionReport.electrical_score },
+                    ].map(({ label, score }) => (
+                      <div key={label} className="text-center">
+                        <p className="font-body text-xs text-muted-foreground">{label}</p>
+                        <p className={`font-display text-2xl font-bold ${
+                          score >= 8 ? 'text-green-400' : score >= 5 ? 'text-yellow-400' : 'text-red-400'
+                        }`}>
+                          {score}/10
+                        </p>
+                        <div className="mx-auto mt-1 h-1.5 w-full rounded-full bg-surface">
+                          <div
+                            className={`h-1.5 rounded-full ${
+                              score >= 8 ? 'bg-green-500' : score >= 5 ? 'bg-yellow-500' : 'bg-red-500'
+                            }`}
+                            style={{ width: `${score * 10}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <Separator />
+
+                  {/* Details */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {conditionReport.hours_of_use != null && (
+                      <div>
+                        <p className="font-body text-xs text-muted-foreground">Hours of Use</p>
+                        <p className="font-body text-sm font-medium text-foreground">
+                          {conditionReport.hours_of_use.toLocaleString()}
+                        </p>
+                      </div>
+                    )}
+                    {conditionReport.last_service_date && (
+                      <div>
+                        <p className="font-body text-xs text-muted-foreground">Last Service</p>
+                        <p className="font-body text-sm font-medium text-foreground">
+                          {new Date(conditionReport.last_service_date).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Notes */}
+                  {conditionReport.notes && (
+                    <div>
+                      <p className="font-body text-xs text-muted-foreground">Inspector Notes</p>
+                      <p className="mt-1 whitespace-pre-wrap font-body text-sm text-foreground">
+                        {conditionReport.notes}
+                      </p>
+                    </div>
+                  )}
+
+                  {/* Photos */}
+                  {conditionReport.photo_urls?.length > 0 && (
+                    <div>
+                      <p className="mb-2 font-body text-xs text-muted-foreground">Condition Photos</p>
+                      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+                        {conditionReport.photo_urls.map((url: string, i: number) => (
+                          <div key={i} className="relative aspect-square overflow-hidden rounded-md border border-border">
+                            <Image
+                              src={url}
+                              alt={`Condition photo ${i + 1}`}
+                              fill
+                              className="object-cover"
+                              sizes="100px"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <p className="font-body text-[10px] text-muted-foreground">
+                    Report created {new Date(conditionReport.created_at).toLocaleDateString('en-US', {
+                      month: 'long',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </p>
+                </CardContent>
+              )}
+            </Card>
+          )}
 
           {/* Price History */}
           {priceHistory.length > 0 && (

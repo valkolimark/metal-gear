@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
+import { getConditionReportsForListings } from '@/app/actions/condition-reports'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -22,6 +23,7 @@ export default function FavoritesPage() {
   const { user } = useAuthStore()
   const [favorites, setFavorites] = useState<FavoriteWithListing[]>([])
   const [loading, setLoading] = useState(true)
+  const [conditionGrades, setConditionGrades] = useState<Record<string, string>>({})
 
   useEffect(() => {
     if (!user) return
@@ -36,8 +38,19 @@ export default function FavoritesPage() {
           console.error(error)
           toast.error('Failed to load favorites')
         }
-        setFavorites((data as unknown as FavoriteWithListing[]) ?? [])
+        const favs = (data as unknown as FavoriteWithListing[]) ?? []
+        setFavorites(favs)
         setLoading(false)
+
+        // Fetch condition grades
+        const listingIds = favs.map((f) => f.listings?.id).filter(Boolean) as string[]
+        if (listingIds.length > 0) {
+          getConditionReportsForListings(listingIds).then(({ reports }) => {
+            const grades: Record<string, string> = {}
+            for (const r of reports) grades[r.listing_id] = r.overall_grade
+            setConditionGrades(grades)
+          })
+        }
       })
   }, [user])
 
@@ -116,6 +129,23 @@ export default function FavoritesPage() {
                       >
                         {listing.condition.replace('_', ' ')}
                       </Badge>
+                      {conditionGrades[listing.id] && (
+                        <Badge
+                          className={`font-display text-[11px] ${
+                            conditionGrades[listing.id] === 'A'
+                              ? 'bg-green-500/20 text-green-400'
+                              : conditionGrades[listing.id] === 'B'
+                                ? 'bg-blue-500/20 text-blue-400'
+                                : conditionGrades[listing.id] === 'C'
+                                  ? 'bg-yellow-500/20 text-yellow-400'
+                                  : conditionGrades[listing.id] === 'D'
+                                    ? 'bg-orange-500/20 text-orange-400'
+                                    : 'bg-red-500/20 text-red-400'
+                          }`}
+                        >
+                          Grade {conditionGrades[listing.id]}
+                        </Badge>
+                      )}
                     </div>
                     <p className="mt-3 font-display text-lg font-bold text-primary">
                       {listing.contact_for_price

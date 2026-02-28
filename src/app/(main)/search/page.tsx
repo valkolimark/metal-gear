@@ -56,6 +56,7 @@ import {
   SORT_OPTIONS,
   DEFAULT_LOCATION,
 } from '@/lib/constants'
+import { getConditionReportsForListings } from '@/app/actions/condition-reports'
 import { DynamicListingMap } from '@/components/map/dynamic-map'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
@@ -173,6 +174,9 @@ function SearchContent() {
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
   const [savingSearch, setSavingSearch] = useState(false)
+
+  // Condition grades
+  const [conditionGrades, setConditionGrades] = useState<Record<string, string>>({})
 
   // Compare state
   const [compareIds, setCompareIds] = useState<string[]>([])
@@ -339,13 +343,30 @@ function SearchContent() {
         })
       }
 
+      let pageResults: Listing[]
       if (isDistanceSort || radius) {
         setTotalCount(results.length)
         const from = page * PAGE_SIZE
-        setListings(results.slice(from, from + PAGE_SIZE))
+        pageResults = results.slice(from, from + PAGE_SIZE)
+        setListings(pageResults)
       } else {
+        pageResults = results
         setListings(results)
         setTotalCount(count ?? 0)
+      }
+
+      // Fetch condition grades for displayed listings
+      const ids = pageResults.map((l) => l.id)
+      if (ids.length > 0) {
+        getConditionReportsForListings(ids).then(({ reports }) => {
+          const grades: Record<string, string> = {}
+          for (const r of reports) {
+            grades[r.listing_id] = r.overall_grade
+          }
+          setConditionGrades(grades)
+        })
+      } else {
+        setConditionGrades({})
       }
     }
     setLoading(false)
@@ -879,6 +900,23 @@ function SearchContent() {
                         >
                           {listing.condition.replace('_', ' ')}
                         </Badge>
+                        {conditionGrades[listing.id] && (
+                          <Badge
+                            className={`font-display text-[11px] ${
+                              conditionGrades[listing.id] === 'A'
+                                ? 'bg-green-500/20 text-green-400'
+                                : conditionGrades[listing.id] === 'B'
+                                  ? 'bg-blue-500/20 text-blue-400'
+                                  : conditionGrades[listing.id] === 'C'
+                                    ? 'bg-yellow-500/20 text-yellow-400'
+                                    : conditionGrades[listing.id] === 'D'
+                                      ? 'bg-orange-500/20 text-orange-400'
+                                      : 'bg-red-500/20 text-red-400'
+                            }`}
+                          >
+                            Grade {conditionGrades[listing.id]}
+                          </Badge>
+                        )}
                       </div>
                       <div className="mt-auto pt-3">
                         <p className="font-display text-lg font-bold text-primary">
@@ -925,10 +963,27 @@ function SearchContent() {
                         <p className="truncate font-body font-medium text-foreground">
                           {listing.title}
                         </p>
-                        <p className="mt-1 font-body text-sm text-muted-foreground">
+                        <p className="mt-1 flex items-center gap-1 font-body text-sm text-muted-foreground">
                           {listing.category} &middot;{' '}
-                          {listing.condition.replace('_', ' ')} &middot;{' '}
-                          {listing.location_city}, {listing.location_state}
+                          {listing.condition.replace('_', ' ')}
+                          {conditionGrades[listing.id] && (
+                            <Badge
+                              className={`ml-1 font-display text-[10px] ${
+                                conditionGrades[listing.id] === 'A'
+                                  ? 'bg-green-500/20 text-green-400'
+                                  : conditionGrades[listing.id] === 'B'
+                                    ? 'bg-blue-500/20 text-blue-400'
+                                    : conditionGrades[listing.id] === 'C'
+                                      ? 'bg-yellow-500/20 text-yellow-400'
+                                      : conditionGrades[listing.id] === 'D'
+                                        ? 'bg-orange-500/20 text-orange-400'
+                                        : 'bg-red-500/20 text-red-400'
+                              }`}
+                            >
+                              {conditionGrades[listing.id]}
+                            </Badge>
+                          )}
+                          {' '}&middot; {listing.location_city}, {listing.location_state}
                         </p>
                       </div>
                       <p className="shrink-0 font-display text-lg font-bold text-primary">
