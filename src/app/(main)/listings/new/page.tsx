@@ -581,30 +581,52 @@ export default function CreateListingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Drop zone */}
-            <label
-              className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-12 transition-colors hover:border-primary/50"
-              onDragOver={(e) => e.preventDefault()}
-              onDrop={(e) => {
-                e.preventDefault()
-                handleFileSelect(e.dataTransfer.files)
-              }}
-            >
-              <Upload className="mb-3 size-8 text-muted-foreground" />
-              <p className="font-body text-sm font-medium text-foreground">
-                Drag & drop photos or click to browse
-              </p>
-              <p className="mt-1 font-body text-xs text-muted-foreground">
-                JPG, PNG, WebP up to 10MB each
-              </p>
-              <input
-                type="file"
-                multiple
-                accept="image/jpeg,image/png,image/webp"
-                onChange={(e) => handleFileSelect(e.target.files)}
-                className="hidden"
-              />
-            </label>
+            {/* Upload options */}
+            <div className="grid gap-3 sm:grid-cols-2">
+              {/* Camera capture (mobile) */}
+              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary/50 sm:hidden">
+                <Upload className="mb-2 size-6 text-primary" />
+                <p className="font-body text-sm font-medium text-foreground">
+                  Take Photo
+                </p>
+                <p className="mt-0.5 font-body text-xs text-muted-foreground">
+                  Use your camera
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                  className="hidden"
+                />
+              </label>
+
+              {/* Gallery / file picker */}
+              <label
+                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary/50 sm:col-span-2 sm:py-12"
+                onDragOver={(e) => e.preventDefault()}
+                onDrop={(e) => {
+                  e.preventDefault()
+                  handleFileSelect(e.dataTransfer.files)
+                }}
+              >
+                <Upload className="mb-2 size-6 text-muted-foreground sm:mb-3 sm:size-8" />
+                <p className="font-body text-sm font-medium text-foreground">
+                  <span className="hidden sm:inline">Drag & drop photos or click to browse</span>
+                  <span className="sm:hidden">Choose from Gallery</span>
+                </p>
+                <p className="mt-0.5 font-body text-xs text-muted-foreground sm:mt-1">
+                  JPG, PNG, WebP up to 10MB each
+                </p>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/jpeg,image/png,image/webp"
+                  onChange={(e) => handleFileSelect(e.target.files)}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
             {/* Image grid with drag reorder */}
             {images.length > 0 && (

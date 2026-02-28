@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Image from 'next/image'
@@ -59,6 +59,24 @@ export default function ListingDetailPage() {
   const [loading, setLoading] = useState(true)
   const [currentImage, setCurrentImage] = useState(0)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
+
+  // Touch swipe state for image gallery
+  const touchStartX = useRef(0)
+  const touchEndX = useRef(0)
+  const galleryRef = useRef<HTMLDivElement>(null)
+
+  const handleSwipe = useCallback(() => {
+    const diff = touchStartX.current - touchEndX.current
+    const threshold = 50
+    if (Math.abs(diff) < threshold) return
+    if (diff > 0) {
+      // Swiped left → next
+      setCurrentImage((p) => (p === images.length - 1 ? 0 : p + 1))
+    } else {
+      // Swiped right → prev
+      setCurrentImage((p) => (p === 0 ? images.length - 1 : p - 1))
+    }
+  }, [images.length])
 
   const isOwner = user?.id === listing?.seller_id
 
@@ -218,7 +236,17 @@ export default function ListingDetailPage() {
     <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       {/* Photo Gallery */}
       {images.length > 0 ? (
-        <div className="relative overflow-hidden rounded-xl">
+        <div
+          ref={galleryRef}
+          className="relative overflow-hidden rounded-xl touch-pan-y"
+          onTouchStart={(e) => {
+            touchStartX.current = e.changedTouches[0].screenX
+          }}
+          onTouchEnd={(e) => {
+            touchEndX.current = e.changedTouches[0].screenX
+            handleSwipe()
+          }}
+        >
           <div className="relative aspect-[16/9] sm:aspect-[2/1]">
             <Image
               src={images[currentImage]?.url}

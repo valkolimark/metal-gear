@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import Link from 'next/link'
 import {
   Package,
@@ -22,6 +22,8 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { getSellerAnalytics } from '@/app/actions/analytics'
 import { TIER_LABELS, TIER_LIMITS } from '@/lib/constants'
+import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
+import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -64,67 +66,59 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
+  const loadDashboard = useCallback(async () => {
     if (!user) return
     const supabase = createClient()
 
-    async function loadDashboard() {
-      const [listingsRes, unreadRes, allListingsRes] = await Promise.all([
-        // Active listings with aggregate stats
-        supabase
-          .from('listings')
-          .select('*')
-          .eq('seller_id', user!.id)
-          .eq('status', 'active'),
-        // Unread messages
-        supabase
-          .from('messages')
-          .select('id, conversation_id', { count: 'exact' })
-          .neq('sender_id', user!.id)
-          .is('read_at', null),
-        // All user listings for recent activity
-        supabase
-          .from('listings')
-          .select('*')
-          .eq('seller_id', user!.id)
-          .order('updated_at', { ascending: false })
-          .limit(5),
-      ])
+    const [listingsRes, unreadRes, allListingsRes] = await Promise.all([
+      supabase
+        .from('listings')
+        .select('*')
+        .eq('seller_id', user.id)
+        .eq('status', 'active'),
+      supabase
+        .from('messages')
+        .select('id, conversation_id', { count: 'exact' })
+        .neq('sender_id', user.id)
+        .is('read_at', null),
+      supabase
+        .from('listings')
+        .select('*')
+        .eq('seller_id', user.id)
+        .order('updated_at', { ascending: false })
+        .limit(5),
+    ])
 
-      const activeListings = (listingsRes.data ?? []) as Listing[]
-      const totalViews = activeListings.reduce(
-        (sum, l) => sum + (l.views_count || 0),
-        0
-      )
-      const favoritesReceived = activeListings.reduce(
-        (sum, l) => sum + (l.favorites_count || 0),
-        0
-      )
+    const activeListings = (listingsRes.data ?? []) as Listing[]
+    const totalViews = activeListings.reduce(
+      (sum, l) => sum + (l.views_count || 0),
+      0
+    )
+    const favoritesReceived = activeListings.reduce(
+      (sum, l) => sum + (l.favorites_count || 0),
+      0
+    )
 
-      // Filter unread to only messages in user's conversations
-      let unreadCount = 0
-      if (unreadRes.data && unreadRes.data.length > 0) {
-        const convIds = [...new Set(unreadRes.data.map((m) => m.conversation_id))]
-        const { count } = await supabase
-          .from('conversations')
-          .select('id', { count: 'exact' })
-          .in('id', convIds)
-          .or(`buyer_id.eq.${user!.id},seller_id.eq.${user!.id}`)
-        unreadCount = count ?? 0
-      }
-
-      setStats({
-        activeListings: activeListings.length,
-        totalViews,
-        unreadMessages: unreadRes.count ?? 0,
-        favoritesReceived,
-      })
-
-      setRecentListings((allListingsRes.data ?? []) as Listing[])
-      setLoading(false)
+    let unreadCount = 0
+    if (unreadRes.data && unreadRes.data.length > 0) {
+      const convIds = [...new Set(unreadRes.data.map((m) => m.conversation_id))]
+      const { count } = await supabase
+        .from('conversations')
+        .select('id', { count: 'exact' })
+        .in('id', convIds)
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+      unreadCount = count ?? 0
     }
 
-    loadDashboard()
+    setStats({
+      activeListings: activeListings.length,
+      totalViews,
+      unreadMessages: unreadRes.count ?? 0,
+      favoritesReceived,
+    })
+
+    setRecentListings((allListingsRes.data ?? []) as Listing[])
+    setLoading(false)
 
     // Load analytics (async, not blocking)
     getSellerAnalytics().then((result) => {
@@ -133,6 +127,12 @@ export default function DashboardPage() {
       }
     })
   }, [user])
+
+  useEffect(() => {
+    loadDashboard()
+  }, [loadDashboard])
+
+  const { pulling, refreshing, pullDistance, threshold } = usePullToRefresh(loadDashboard)
 
   if (loading) {
     return (
@@ -146,6 +146,12 @@ export default function DashboardPage() {
 
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <PullToRefreshIndicator
+        pulling={pulling}
+        refreshing={refreshing}
+        pullDistance={pullDistance}
+        threshold={threshold}
+      />
       {/* Welcome */}
       <div>
         <h1 className="font-display text-3xl font-bold text-foreground">

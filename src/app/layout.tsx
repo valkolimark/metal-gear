@@ -7,6 +7,12 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import './globals.css'
 
 export const metadata: Metadata = {
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Metal Gear',
+  },
   title: {
     default: 'Metal Gear — Industrial Equipment Marketplace',
     template: '%s | Metal Gear',
@@ -52,6 +58,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark">
+      <head>
+        <meta name="theme-color" content="#0A0A0F" />
+        <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
+      </head>
       <body
         className={`${chakraPetch.variable} ${manrope.variable} font-body antialiased`}
       >

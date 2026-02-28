@@ -1,6 +1,6 @@
 'use client'
 
-import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
+import { Suspense, useEffect, useState, useCallback, useRef, useMemo } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
@@ -53,6 +53,8 @@ import {
   LISTING_CONDITIONS,
   SORT_OPTIONS,
 } from '@/lib/constants'
+import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
+import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -212,62 +214,60 @@ function SearchContent() {
   )
 
   // Fetch listings
-  useEffect(() => {
-    async function search() {
-      setLoading(true)
-      const supabase = createClient()
+  const fetchListings = useCallback(async () => {
+    setLoading(true)
+    const supabase = createClient()
 
-      let q = supabase
-        .from('listings')
-        .select('*', { count: 'exact' })
-        .eq('status', 'active')
+    let q = supabase
+      .from('listings')
+      .select('*', { count: 'exact' })
+      .eq('status', 'active')
 
-      // Full-text search
-      if (query) {
-        q = q.textSearch('fts', query, { type: 'websearch' })
-      }
-
-      // Filters
-      if (category) q = q.eq('category', category)
-      if (industry) q = q.eq('industry', industry)
-      if (condition) q = q.in('condition', condition.split(','))
-      if (priceMin) q = q.gte('price_cents', parseInt(priceMin) * 100)
-      if (priceMax) q = q.lte('price_cents', parseInt(priceMax) * 100)
-
-      // Sort
-      switch (sortBy) {
-        case 'price_asc':
-          q = q.order('price_cents', { ascending: true, nullsFirst: false })
-          break
-        case 'price_desc':
-          q = q.order('price_cents', { ascending: false, nullsFirst: false })
-          break
-        case 'newest':
-          q = q.order('created_at', { ascending: false })
-          break
-        default:
-          q = q.order('created_at', { ascending: false })
-      }
-
-      // Pagination
-      const from = page * PAGE_SIZE
-      q = q.range(from, from + PAGE_SIZE - 1)
-
-      const { data, error, count } = await q
-
-      if (error) {
-        console.error('Search error:', error)
-        setListings([])
-        setTotalCount(0)
-      } else {
-        setListings((data ?? []) as Listing[])
-        setTotalCount(count ?? 0)
-      }
-      setLoading(false)
+    if (query) {
+      q = q.textSearch('fts', query, { type: 'websearch' })
     }
 
-    search()
+    if (category) q = q.eq('category', category)
+    if (industry) q = q.eq('industry', industry)
+    if (condition) q = q.in('condition', condition.split(','))
+    if (priceMin) q = q.gte('price_cents', parseInt(priceMin) * 100)
+    if (priceMax) q = q.lte('price_cents', parseInt(priceMax) * 100)
+
+    switch (sortBy) {
+      case 'price_asc':
+        q = q.order('price_cents', { ascending: true, nullsFirst: false })
+        break
+      case 'price_desc':
+        q = q.order('price_cents', { ascending: false, nullsFirst: false })
+        break
+      case 'newest':
+        q = q.order('created_at', { ascending: false })
+        break
+      default:
+        q = q.order('created_at', { ascending: false })
+    }
+
+    const from = page * PAGE_SIZE
+    q = q.range(from, from + PAGE_SIZE - 1)
+
+    const { data, error, count } = await q
+
+    if (error) {
+      console.error('Search error:', error)
+      setListings([])
+      setTotalCount(0)
+    } else {
+      setListings((data ?? []) as Listing[])
+      setTotalCount(count ?? 0)
+    }
+    setLoading(false)
   }, [query, category, industry, condition, priceMin, priceMax, sortBy, page])
+
+  useEffect(() => {
+    fetchListings()
+  }, [fetchListings])
+
+  const { pulling, refreshing, pullDistance, threshold } = usePullToRefresh(fetchListings)
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -523,6 +523,12 @@ function SearchContent() {
       }
     >
       <div className="space-y-4">
+        <PullToRefreshIndicator
+          pulling={pulling}
+          refreshing={refreshing}
+          pullDistance={pullDistance}
+          threshold={threshold}
+        />
         {/* Search bar with suggestions */}
         <form onSubmit={handleSearch} className="relative flex gap-2">
           <div className="relative flex-1">
