@@ -74,14 +74,29 @@ export default function ProfilePage() {
     try {
       const supabase = createClient()
       const ext = file.name.split('.').pop()
-      const path = `${user.id}/avatar.${ext}`
+      // Use unique filename to avoid overwrite/upsert issues
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`
 
-      // Remove existing avatar first (ignore errors if it doesn't exist)
-      await supabase.storage.from('avatars').remove([path])
+      // Try to clean up old avatars (non-blocking)
+      try {
+        const { data: existingFiles } = await supabase.storage
+          .from('avatars')
+          .list(user.id)
+        if (existingFiles && existingFiles.length > 0) {
+          const filesToRemove = existingFiles.map(
+            (f) => `${user.id}/${f.name}`
+          )
+          await supabase.storage.from('avatars').remove(filesToRemove)
+        }
+      } catch {
+        // Ignore cleanup errors
+      }
 
-      const { error: uploadError } = await supabase.storage
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from('avatars')
-        .upload(path, file)
+        .upload(path, file, {
+          contentType: file.type,
+        })
 
       if (uploadError) throw uploadError
 
@@ -89,25 +104,21 @@ export default function ProfilePage() {
         data: { publicUrl },
       } = supabase.storage.from('avatars').getPublicUrl(path)
 
-      // Add cache buster so the browser fetches the new image
-      const avatarUrl = `${publicUrl}?v=${Date.now()}`
-
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: avatarUrl })
+        .update({ avatar_url: publicUrl })
         .eq('id', user.id)
 
       if (updateError) throw updateError
 
-      setProfile({ ...profile!, avatar_url: avatarUrl })
+      setProfile({ ...profile!, avatar_url: publicUrl })
       toast.success('Avatar updated')
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error'
-      toast.error(`Failed to upload avatar: ${message}`)
+      const message = err instanceof Error ? err.message : String(err)
+      toast.error(`Upload failed: ${message}`)
       console.error('Avatar upload error:', err)
     } finally {
       setUploading(false)
-      // Reset file input so the same file can be re-selected
       if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
