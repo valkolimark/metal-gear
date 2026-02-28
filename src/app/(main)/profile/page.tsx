@@ -76,9 +76,12 @@ export default function ProfilePage() {
       const ext = file.name.split('.').pop()
       const path = `${user.id}/avatar.${ext}`
 
+      // Remove existing avatar first (ignore errors if it doesn't exist)
+      await supabase.storage.from('avatars').remove([path])
+
       const { error: uploadError } = await supabase.storage
         .from('avatars')
-        .upload(path, file, { upsert: true })
+        .upload(path, file)
 
       if (uploadError) throw uploadError
 
@@ -86,20 +89,26 @@ export default function ProfilePage() {
         data: { publicUrl },
       } = supabase.storage.from('avatars').getPublicUrl(path)
 
+      // Add cache buster so the browser fetches the new image
+      const avatarUrl = `${publicUrl}?v=${Date.now()}`
+
       const { error: updateError } = await supabase
         .from('profiles')
-        .update({ avatar_url: publicUrl })
+        .update({ avatar_url: avatarUrl })
         .eq('id', user.id)
 
       if (updateError) throw updateError
 
-      setProfile({ ...profile!, avatar_url: publicUrl })
+      setProfile({ ...profile!, avatar_url: avatarUrl })
       toast.success('Avatar updated')
     } catch (err) {
-      toast.error('Failed to upload avatar')
-      console.error(err)
+      const message = err instanceof Error ? err.message : 'Unknown error'
+      toast.error(`Failed to upload avatar: ${message}`)
+      console.error('Avatar upload error:', err)
     } finally {
       setUploading(false)
+      // Reset file input so the same file can be re-selected
+      if (fileInputRef.current) fileInputRef.current.value = ''
     }
   }
 
