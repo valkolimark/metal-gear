@@ -30,6 +30,7 @@ export default function ProfilePage() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [saving, setSaving] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [avatarKey, setAvatarKey] = useState(0)
   const [form, setForm] = useState({
     full_name: '',
     display_name: '',
@@ -85,6 +86,7 @@ export default function ProfilePage() {
 
       if (profile && result.url) {
         setProfile({ ...profile, avatar_url: result.url })
+        setAvatarKey((k) => k + 1)
       }
       toast.success('Avatar updated')
     } catch (err) {
@@ -158,7 +160,7 @@ export default function ProfilePage() {
           </CardHeader>
           <CardContent className="flex items-center gap-6">
             <div className="relative">
-              <Avatar className="size-20">
+              <Avatar key={avatarKey} className="size-20">
                 <AvatarImage src={profile?.avatar_url || undefined} />
                 <AvatarFallback className="bg-primary/20 font-display text-lg text-primary">
                   {initials}
