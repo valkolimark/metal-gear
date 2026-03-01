@@ -317,6 +317,34 @@
     "emailOnly": "Solo Correo",
     "off": "Desactivado"
   },
+  "savedSearches": {
+    "title": "Búsquedas Guardadas",
+    "subtitle": "Gestiona tus búsquedas guardadas y preferencias de alertas",
+    "noSearches": "No hay búsquedas guardadas",
+    "noSearchesDesc": "Guarda tus filtros de búsqueda para volver a usarlos rápidamente y recibir notificaciones de nuevas coincidencias.",
+    "newSearch": "Nueva Búsqueda",
+    "alertsEnabled": "Alertas por correo activadas",
+    "alertsDisabled": "Alertas por correo desactivadas",
+    "frequencyUpdated": "Frecuencia de alerta actualizada",
+    "searchRemoved": "Búsqueda guardada eliminada",
+    "instant": "Instantáneo",
+    "daily": "Diario",
+    "weekly": "Semanal",
+    "runSearch": "Ejecutar esta búsqueda"
+  },
+  "priceAlert": {
+    "title": "Establecer Alerta de Precio",
+    "description": "Recibe una notificación cuando el precio baje a tu objetivo.",
+    "currentPrice": "Precio actual",
+    "targetPrice": "Precio Objetivo ($)",
+    "targetPlaceholder": "ej., 25000",
+    "belowCurrentWarning": "El objetivo debe estar por debajo del precio actual para una alerta útil.",
+    "removeAlert": "Eliminar Alerta",
+    "setAlert": "Establecer Alerta",
+    "alertSet": "Alerta de precio establecida en ${price}",
+    "targetRemoved": "Precio objetivo eliminado",
+    "alertAt": "Alerta a ${price}"
+  },
   "accessibility": {
     "mainNavigation": "Navegación principal",
     "mobileNavigation": "Navegación móvil",

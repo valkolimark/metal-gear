@@ -23,7 +23,7 @@ export async function getSavedSearches() {
   return { searches: data || [] }
 }
 
-export async function saveSearch(name: string, filters: Record<string, string>) {
+export async function saveSearch(name: string, filters: Record<string, string>, frequency: string = 'daily') {
   const supabase = await createClient()
   const {
     data: { user },
@@ -39,12 +39,33 @@ export async function saveSearch(name: string, filters: Record<string, string>) 
       user_id: user.id,
       name,
       filters,
+      frequency,
     })
     .select()
     .single()
 
   if (error) return { error: error.message }
   return { search: data }
+}
+
+export async function updateSearchFrequency(searchId: string, frequency: string) {
+  const supabase = await createClient()
+  const {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser()
+
+  if (authError || !user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+  const { error } = await admin
+    .from('saved_searches')
+    .update({ frequency })
+    .eq('id', searchId)
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+  return { success: true }
 }
 
 export async function deleteSavedSearch(searchId: string) {

@@ -173,6 +173,7 @@ function SearchContent() {
   >([])
   const [saveDialogOpen, setSaveDialogOpen] = useState(false)
   const [saveName, setSaveName] = useState('')
+  const [saveFrequency, setSaveFrequency] = useState('daily')
   const [savingSearch, setSavingSearch] = useState(false)
 
   // Condition grades
@@ -411,13 +412,14 @@ function SearchContent() {
       filters[key] = value
     })
 
-    const result = await saveSearch(saveName.trim(), filters)
+    const result = await saveSearch(saveName.trim(), filters, saveFrequency)
     if (result.error) {
       toast.error(result.error)
     } else {
       toast.success('Search saved')
       setSaveDialogOpen(false)
       setSaveName('')
+      setSaveFrequency('daily')
       // Reload saved searches
       const updated = await getSavedSearches()
       if (updated.searches) {
@@ -1064,6 +1066,30 @@ function SearchContent() {
                   }
                 }}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="search-frequency" className="font-body">
+                Alert Frequency
+              </Label>
+              <Select
+                value={saveFrequency}
+                onValueChange={setSaveFrequency}
+              >
+                <SelectTrigger className="font-body text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="instant" className="font-body text-sm">
+                    Instant — notify me immediately
+                  </SelectItem>
+                  <SelectItem value="daily" className="font-body text-sm">
+                    Daily — once-a-day digest
+                  </SelectItem>
+                  <SelectItem value="weekly" className="font-body text-sm">
+                    Weekly — weekly summary
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
             <p className="font-body text-xs text-muted-foreground">
               Current filters:{' '}

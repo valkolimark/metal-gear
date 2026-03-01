@@ -42,7 +42,7 @@ import {
   respondToCounter,
   withdrawOffer,
 } from '@/app/actions/offers'
-import { togglePriceWatch, getPriceWatch, getPriceHistory } from '@/app/actions/compare'
+import { togglePriceWatch, getPriceWatch, getPriceHistory, setPriceAlert } from '@/app/actions/compare'
 import {
   getListingCollections,
   addToCollection,
@@ -112,6 +112,10 @@ export default function ListingDetailPage() {
   const [counteringOfferId, setCounteringOfferId] = useState<string | null>(null)
   const [isWatching, setIsWatching] = useState(false)
   const [watchLoading, setWatchLoading] = useState(false)
+  const [priceAlertOpen, setPriceAlertOpen] = useState(false)
+  const [targetPrice, setTargetPrice] = useState('')
+  const [targetPriceCents, setTargetPriceCents] = useState<number | null>(null)
+  const [settingAlert, setSettingAlert] = useState(false)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [priceHistory, setPriceHistory] = useState<any[]>([])
    
@@ -223,6 +227,10 @@ export default function ListingDetailPage() {
         // Load price watch status
         getPriceWatch(id).then((result) => {
           setIsWatching(result.watching ?? false)
+          if (result.targetPriceCents) {
+            setTargetPriceCents(result.targetPriceCents)
+            setTargetPrice(String(result.targetPriceCents / 100))
+          }
         })
       }
 
@@ -450,6 +458,22 @@ export default function ListingDetailPage() {
       toast.success(result.watching ? 'Price watch enabled' : 'Price watch removed')
     }
     setWatchLoading(false)
+  }
+
+  async function handleSetPriceAlert() {
+    if (!user || !listing) return
+    setSettingAlert(true)
+    const cents = targetPrice ? Math.round(parseFloat(targetPrice) * 100) : null
+    const result = await setPriceAlert(listing.id, cents)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      setTargetPriceCents(cents)
+      if (result.watching) setIsWatching(true)
+      toast.success(cents ? `Price alert set for $${parseFloat(targetPrice).toLocaleString()}` : 'Target price removed')
+      setPriceAlertOpen(false)
+    }
+    setSettingAlert(false)
   }
 
   async function handleCollectionToggle(collectionId: string, hasListing: boolean) {
@@ -1118,21 +1142,33 @@ export default function ListingDetailPage() {
                       </Button>
                     )}
                     {listing.price_cents && !listing.contact_for_price && (
-                      <Button
-                        variant="outline"
-                        onClick={handleTogglePriceWatch}
-                        disabled={watchLoading}
-                        className={`w-full font-body ${isWatching ? 'border-primary text-primary' : ''}`}
-                      >
-                        {watchLoading ? (
-                          <Loader2 className="mr-2 size-4 animate-spin" />
-                        ) : isWatching ? (
-                          <BellOff className="mr-2 size-4" />
-                        ) : (
-                          <Bell className="mr-2 size-4" />
-                        )}
-                        {isWatching ? 'Stop Watching' : 'Watch Price'}
-                      </Button>
+                      <>
+                        <Button
+                          variant="outline"
+                          onClick={handleTogglePriceWatch}
+                          disabled={watchLoading}
+                          className={`w-full font-body ${isWatching ? 'border-primary text-primary' : ''}`}
+                        >
+                          {watchLoading ? (
+                            <Loader2 className="mr-2 size-4 animate-spin" />
+                          ) : isWatching ? (
+                            <BellOff className="mr-2 size-4" />
+                          ) : (
+                            <Bell className="mr-2 size-4" />
+                          )}
+                          {isWatching ? 'Stop Watching' : 'Watch Price'}
+                        </Button>
+                        <Button
+                          variant="outline"
+                          onClick={() => setPriceAlertOpen(true)}
+                          className={`w-full font-body text-xs ${targetPriceCents ? 'border-green-500/50 text-green-400' : ''}`}
+                        >
+                          <TrendingDown className="mr-2 size-4" />
+                          {targetPriceCents
+                            ? `Alert at $${(targetPriceCents / 100).toLocaleString()}`
+                            : 'Set Price Alert'}
+                        </Button>
+                      </>
                     )}
                     {sellerHasAvailability && (
                       <Button
@@ -1498,6 +1534,77 @@ export default function ListingDetailPage() {
               className="font-body"
             >
               Copy Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Price Alert Dialog */}
+      <Dialog open={priceAlertOpen} onOpenChange={setPriceAlertOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Set Price Alert</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="font-body text-sm text-muted-foreground">
+              Get notified when the price drops to your target. Current price:{' '}
+              <span className="font-semibold text-foreground">
+                ${listing?.price_cents ? (listing.price_cents / 100).toLocaleString() : '—'}
+              </span>
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="target-price" className="font-body">
+                Target Price ($)
+              </Label>
+              <Input
+                id="target-price"
+                type="number"
+                value={targetPrice}
+                onChange={(e) => setTargetPrice(e.target.value)}
+                placeholder="e.g., 25000"
+                className="font-body"
+                min="0"
+                step="100"
+              />
+            </div>
+            {listing?.price_cents && targetPrice && parseFloat(targetPrice) >= listing.price_cents / 100 && (
+              <p className="font-body text-xs text-yellow-400">
+                Target should be below the current price for a useful alert.
+              </p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            {targetPriceCents && (
+              <Button
+                variant="ghost"
+                className="font-body text-muted-foreground"
+                onClick={() => {
+                  setTargetPrice('')
+                  handleSetPriceAlert()
+                }}
+              >
+                Remove Alert
+              </Button>
+            )}
+            <div className="flex-1" />
+            <Button
+              variant="outline"
+              className="font-body"
+              onClick={() => setPriceAlertOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="font-body"
+              onClick={handleSetPriceAlert}
+              disabled={settingAlert || !targetPrice}
+            >
+              {settingAlert ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <TrendingDown className="mr-2 size-4" />
+              )}
+              Set Alert
             </Button>
           </div>
         </DialogContent>

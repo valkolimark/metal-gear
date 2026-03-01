@@ -889,6 +889,7 @@ export type Database = {
           name: string
           filters: Json
           notify_email: boolean
+          frequency: string
           last_notified_at: string | null
           created_at: string
         }
@@ -898,6 +899,7 @@ export type Database = {
           name: string
           filters?: Json
           notify_email?: boolean
+          frequency?: string
           last_notified_at?: string | null
           created_at?: string
         }
@@ -907,6 +909,7 @@ export type Database = {
           name?: string
           filters?: Json
           notify_email?: boolean
+          frequency?: string
           last_notified_at?: string | null
           created_at?: string
         }
@@ -1108,6 +1111,7 @@ export type Database = {
           user_id: string
           listing_id: string
           original_price_cents: number
+          target_price_cents: number | null
           created_at: string
         }
         Insert: {
@@ -1115,6 +1119,7 @@ export type Database = {
           user_id: string
           listing_id: string
           original_price_cents: number
+          target_price_cents?: number | null
           created_at?: string
         }
         Update: {
@@ -1122,6 +1127,7 @@ export type Database = {
           user_id?: string
           listing_id?: string
           original_price_cents?: number
+          target_price_cents?: number | null
           created_at?: string
         }
         Relationships: [

@@ -317,6 +317,34 @@
     "emailOnly": "Email only",
     "off": "Off"
   },
+  "savedSearches": {
+    "title": "Saved Searches",
+    "subtitle": "Manage your saved searches and alert preferences",
+    "noSearches": "No saved searches",
+    "noSearchesDesc": "Save your search filters to quickly re-run them and get notified about new matches.",
+    "newSearch": "New Search",
+    "alertsEnabled": "Email alerts enabled",
+    "alertsDisabled": "Email alerts disabled",
+    "frequencyUpdated": "Alert frequency updated",
+    "searchRemoved": "Saved search removed",
+    "instant": "Instant",
+    "daily": "Daily",
+    "weekly": "Weekly",
+    "runSearch": "Run this search"
+  },
+  "priceAlert": {
+    "title": "Set Price Alert",
+    "description": "Get notified when the price drops to your target.",
+    "currentPrice": "Current price",
+    "targetPrice": "Target Price ($)",
+    "targetPlaceholder": "e.g., 25000",
+    "belowCurrentWarning": "Target should be below the current price for a useful alert.",
+    "removeAlert": "Remove Alert",
+    "setAlert": "Set Alert",
+    "alertSet": "Price alert set for ${price}",
+    "targetRemoved": "Target price removed",
+    "alertAt": "Alert at ${price}"
+  },
   "accessibility": {
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",
