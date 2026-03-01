@@ -12,7 +12,8 @@
     "about": "About",
     "insights": "Insights",
     "transactions": "Transactions",
-    "collections": "Collections"
+    "collections": "Collections",
+    "notifications": "Notifications"
   },
   "header": {
     "searchPlaceholder": "Search equipment...",
@@ -282,6 +283,31 @@
     "createOrSave": "Create a listing or save a search",
     "skipOnboarding": "Skip onboarding",
     "dismiss": "Dismiss"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "allCaughtUp": "All caught up",
+    "unreadCount": "{count, plural, one {# unread} other {# unread}}",
+    "markAllRead": "Mark all read",
+    "pushNotifications": "Push Notifications",
+    "pushEnabled": "You'll receive instant notifications in your browser",
+    "pushDisabled": "Get notified about messages, offers, and updates",
+    "enable": "Enable",
+    "disable": "Disable",
+    "viewAll": "View all notifications",
+    "noNotifications": "No notifications yet",
+    "filterAll": "All",
+    "filterUnread": "Unread",
+    "filterMessages": "Messages",
+    "filterOffers": "Offers",
+    "filterTransactions": "Transactions",
+    "loadMore": "Load more",
+    "preferencesTitle": "Notification Preferences",
+    "preferencesDesc": "Choose how you want to be notified for each category",
+    "pushAndEmail": "Push & Email",
+    "pushOnly": "Push only",
+    "emailOnly": "Email only",
+    "off": "Off"
   },
   "accessibility": {
     "mainNavigation": "Main navigation",

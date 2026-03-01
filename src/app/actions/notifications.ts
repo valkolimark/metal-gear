@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPushNotification } from '@/app/actions/push'
 
 export type NotificationType =
   | 'new_message'
@@ -18,6 +19,7 @@ export type NotificationType =
   | 'dispute_opened'
   | 'dispute_response'
   | 'dispute_resolved'
+  | 'viewing_response'
 
 export async function getNotifications(limit = 20, offset = 0) {
   const supabase = await createClient()
@@ -103,6 +105,15 @@ export async function createNotification(
     })
 
   if (error) return { error: error.message }
+
+  // Send push notification (fire-and-forget)
+  sendPushNotification(userId, {
+    title,
+    body,
+    tag: type,
+    data: { type, ...(data ? Object.fromEntries(Object.entries(data).map(([k, v]) => [k, String(v ?? '')])) : {}) },
+  }).catch(console.error)
+
   return { success: true }
 }
 

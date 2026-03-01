@@ -12,7 +12,8 @@
     "about": "Acerca de",
     "insights": "Información",
     "transactions": "Transacciones",
-    "collections": "Colecciones"
+    "collections": "Colecciones",
+    "notifications": "Notificaciones"
   },
   "header": {
     "searchPlaceholder": "Buscar equipos...",
@@ -282,6 +283,31 @@
     "createOrSave": "Crea un anuncio o guarda una búsqueda",
     "skipOnboarding": "Omitir introducción",
     "dismiss": "Descartar"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "allCaughtUp": "Todo al día",
+    "unreadCount": "{count, plural, one {# sin leer} other {# sin leer}}",
+    "markAllRead": "Marcar todo como leído",
+    "pushNotifications": "Notificaciones Push",
+    "pushEnabled": "Recibirás notificaciones instantáneas en tu navegador",
+    "pushDisabled": "Recibe notificaciones sobre mensajes, ofertas y actualizaciones",
+    "enable": "Activar",
+    "disable": "Desactivar",
+    "viewAll": "Ver todas las notificaciones",
+    "noNotifications": "Aún no hay notificaciones",
+    "filterAll": "Todas",
+    "filterUnread": "Sin leer",
+    "filterMessages": "Mensajes",
+    "filterOffers": "Ofertas",
+    "filterTransactions": "Transacciones",
+    "loadMore": "Cargar más",
+    "preferencesTitle": "Preferencias de Notificación",
+    "preferencesDesc": "Elige cómo quieres ser notificado para cada categoría",
+    "pushAndEmail": "Push y Correo",
+    "pushOnly": "Solo Push",
+    "emailOnly": "Solo Correo",
+    "off": "Desactivado"
   },
   "accessibility": {
     "mainNavigation": "Navegación principal",

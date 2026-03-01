@@ -139,6 +139,17 @@ export function NotificationDropdown() {
 
             <Separator />
 
+            {/* View All link */}
+            <div className="px-4 pb-2">
+              <Link
+                href="/notifications"
+                onClick={() => setOpen(false)}
+                className="font-body text-xs text-primary hover:underline"
+              >
+                View all notifications →
+              </Link>
+            </div>
+
             {/* Notification list */}
             <div className="max-h-[400px] overflow-y-auto">
               {loading ? (

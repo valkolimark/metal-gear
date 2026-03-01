@@ -304,6 +304,41 @@ export type Database = {
           },
         ]
       }
+      push_subscriptions: {
+        Row: {
+          id: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          endpoint: string
+          p256dh: string
+          auth: string
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          endpoint?: string
+          p256dh?: string
+          auth?: string
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "push_subscriptions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       onboarding_progress: {
         Row: {
           user_id: string
@@ -1120,6 +1155,7 @@ export type Database = {
           preferred_locale: string
           trust_score: number
           last_login_at: string | null
+          notification_preferences: Json | null
           updated_at: string
         }
         Insert: {
@@ -1138,6 +1174,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           location_state?: string | null
+          notification_preferences?: Json | null
           phone?: string | null
           preferred_locale?: string
           stripe_customer_id?: string | null
@@ -1162,6 +1199,7 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           location_state?: string | null
+          notification_preferences?: Json | null
           phone?: string | null
           preferred_locale?: string
           stripe_customer_id?: string | null
