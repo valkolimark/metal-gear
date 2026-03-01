@@ -263,6 +263,17 @@
     "gradeD": "Deficiente",
     "gradeF": "Reprobado"
   },
+  "help": {
+    "title": "Centro de Ayuda",
+    "subtitle": "Encuentra respuestas, guías y soporte",
+    "searchArticles": "Buscar artículos de ayuda...",
+    "faq": "Preguntas Frecuentes",
+    "contactSupport": "Contactar Soporte",
+    "sendMessage": "Enviar Mensaje",
+    "backToHelp": "Volver al Centro de Ayuda",
+    "needHelp": "¿Necesitas Ayuda?",
+    "browseMore": "Ver Más Artículos"
+  },
   "accessibility": {
     "mainNavigation": "Navegación principal",
     "mobileNavigation": "Navegación móvil",

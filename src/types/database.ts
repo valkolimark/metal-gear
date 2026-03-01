@@ -304,6 +304,42 @@ export type Database = {
           },
         ]
       }
+      help_articles: {
+        Row: {
+          id: string
+          slug: string
+          title: string
+          category: string
+          body_markdown: string
+          sort_order: number
+          published: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          slug: string
+          title: string
+          category: string
+          body_markdown: string
+          sort_order?: number
+          published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          slug?: string
+          title?: string
+          category?: string
+          body_markdown?: string
+          sort_order?: number
+          published?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       favorites: {
         Row: {
           created_at: string

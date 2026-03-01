@@ -263,6 +263,17 @@
     "gradeD": "Poor",
     "gradeF": "Failing"
   },
+  "help": {
+    "title": "Help Center",
+    "subtitle": "Find answers, guides, and support",
+    "searchArticles": "Search help articles...",
+    "faq": "Frequently Asked Questions",
+    "contactSupport": "Contact Support",
+    "sendMessage": "Send Message",
+    "backToHelp": "Back to Help Center",
+    "needHelp": "Need Help?",
+    "browseMore": "Browse More Articles"
+  },
   "accessibility": {
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",
