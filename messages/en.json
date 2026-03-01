@@ -78,7 +78,15 @@
     "location": "Location",
     "description": "Description",
     "specifications": "Specifications",
-    "price": "Price"
+    "price": "Price",
+    "expired": "Expired",
+    "expiresIn": "Expires in {days}d",
+    "autoRenew": "Auto-renew",
+    "enableAutoRenew": "Enable Auto-Renew",
+    "disableAutoRenew": "Disable Auto-Renew",
+    "renewListing": "Renew (90 days)",
+    "listingExpired": "This listing has expired",
+    "listingExpiringSoon": "Expiring soon"
   },
   "messages": {
     "title": "Messages",

@@ -367,6 +367,7 @@ export default function CreateListingPage() {
           location_state: form.location_state,
           specifications: form.specifications,
           status: 'active',
+          expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         })
         .select()
         .single()

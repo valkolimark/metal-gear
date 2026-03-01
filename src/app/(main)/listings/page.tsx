@@ -15,6 +15,8 @@ import {
   MoreHorizontal,
   Share2,
   QrCode,
+  RefreshCw,
+  Clock,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -35,7 +37,7 @@ import {
 } from '@/components/ui/dialog'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
-import { updateListingStatus, duplicateListing } from './actions'
+import { updateListingStatus, duplicateListing, renewListing, toggleAutoRenew } from './actions'
 import { APP_URL } from '@/lib/constants'
 import type { Listing } from '@/types/listings'
 
@@ -195,6 +197,13 @@ export default function ListingsPage() {
                         : 'Free'}
                     {' '}&middot; {listing.views_count} views &middot;{' '}
                     {listing.favorites_count} favorites
+                    {listing.status === 'active' && listing.expires_at && (() => {
+                      const daysLeft = Math.ceil((new Date(listing.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+                      return daysLeft <= 7
+                        ? <span className="text-yellow-400"> &middot; Expires in {daysLeft}d</span>
+                        : <span> &middot; Expires in {daysLeft}d</span>
+                    })()}
+                    {listing.auto_renew && <span className="text-green-400"> &middot; Auto-renew</span>}
                   </p>
                 </div>
                 <div className="flex items-center gap-1">
@@ -241,6 +250,50 @@ export default function ListingsPage() {
                           {listing.status === 'draft'
                             ? 'Publish'
                             : 'Relist'}
+                        </DropdownMenuItem>
+                      )}
+
+                      {listing.status === 'active' && (
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const result = await toggleAutoRenew(listing.id, !listing.auto_renew)
+                            if (result.error) toast.error(result.error)
+                            else {
+                              setListings((prev) =>
+                                prev.map((l) =>
+                                  l.id === listing.id ? { ...l, auto_renew: !l.auto_renew } : l
+                                )
+                              )
+                              toast.success(listing.auto_renew ? 'Auto-renew disabled' : 'Auto-renew enabled')
+                            }
+                          }}
+                          className="font-body"
+                        >
+                          <RefreshCw className="mr-2 size-4 text-secondary" />
+                          {listing.auto_renew ? 'Disable Auto-Renew' : 'Enable Auto-Renew'}
+                        </DropdownMenuItem>
+                      )}
+
+                      {listing.status === 'expired' && (
+                        <DropdownMenuItem
+                          onClick={async () => {
+                            const result = await renewListing(listing.id)
+                            if (result.error) toast.error(result.error)
+                            else {
+                              setListings((prev) =>
+                                prev.map((l) =>
+                                  l.id === listing.id
+                                    ? { ...l, status: 'active', expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString() }
+                                    : l
+                                )
+                              )
+                              toast.success('Listing renewed for 90 days')
+                            }
+                          }}
+                          className="font-body"
+                        >
+                          <Clock className="mr-2 size-4 text-green-400" />
+                          Renew (90 days)
                         </DropdownMenuItem>
                       )}
 

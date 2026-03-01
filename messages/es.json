@@ -78,7 +78,15 @@
     "location": "Ubicación",
     "description": "Descripción",
     "specifications": "Especificaciones",
-    "price": "Precio"
+    "price": "Precio",
+    "expired": "Expirado",
+    "expiresIn": "Expira en {days}d",
+    "autoRenew": "Renovación automática",
+    "enableAutoRenew": "Activar Renovación Automática",
+    "disableAutoRenew": "Desactivar Renovación Automática",
+    "renewListing": "Renovar (90 días)",
+    "listingExpired": "Este anuncio ha expirado",
+    "listingExpiringSoon": "Expira pronto"
   },
   "messages": {
     "title": "Mensajes",

@@ -592,11 +592,13 @@ export type Database = {
       }
       listings: {
         Row: {
+          auto_renew: boolean
           category: string
           condition: string
           contact_for_price: boolean
           created_at: string
           description: string
+          expires_at: string | null
           favorites_count: number
           fts: unknown
           id: string
@@ -615,11 +617,13 @@ export type Database = {
           views_count: number
         }
         Insert: {
+          auto_renew?: boolean
           category: string
           condition?: string
           contact_for_price?: boolean
           created_at?: string
           description?: string
+          expires_at?: string | null
           favorites_count?: number
           fts?: unknown
           id?: string
@@ -638,11 +642,13 @@ export type Database = {
           views_count?: number
         }
         Update: {
+          auto_renew?: boolean
           category?: string
           condition?: string
           contact_for_price?: boolean
           created_at?: string
           description?: string
+          expires_at?: string | null
           favorites_count?: number
           fts?: unknown
           id?: string

@@ -35,9 +35,15 @@ export async function updateListingStatus(
     .eq('id', listingId)
     .single()
 
+  // When activating/relisting, set expiration 90 days out
+  const updateData: Record<string, unknown> = { status }
+  if (status === 'active') {
+    updateData.expires_at = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString()
+  }
+
   const { error } = await admin
     .from('listings')
-    .update({ status })
+    .update(updateData)
     .eq('id', listingId)
 
   if (error) return { error: error.message }
@@ -96,6 +102,60 @@ export async function duplicateListing(listingId: string) {
 
   if (error) return { error: error.message }
   return { listing: newListing }
+}
+
+export async function renewListing(listingId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  const { data: listing } = await admin
+    .from('listings')
+    .select('seller_id, status')
+    .eq('id', listingId)
+    .single()
+
+  if (!listing || listing.seller_id !== user.id) return { error: 'Not authorized' }
+
+  const newExpiry = new Date()
+  newExpiry.setDate(newExpiry.getDate() + 90)
+
+  const { error } = await admin
+    .from('listings')
+    .update({
+      status: 'active',
+      expires_at: newExpiry.toISOString(),
+    })
+    .eq('id', listingId)
+
+  if (error) return { error: error.message }
+  return { success: true }
+}
+
+export async function toggleAutoRenew(listingId: string, autoRenew: boolean) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  const { data: listing } = await admin
+    .from('listings')
+    .select('seller_id')
+    .eq('id', listingId)
+    .single()
+
+  if (!listing || listing.seller_id !== user.id) return { error: 'Not authorized' }
+
+  const { error } = await admin
+    .from('listings')
+    .update({ auto_renew: autoRenew })
+    .eq('id', listingId)
+
+  if (error) return { error: error.message }
+  return { success: true }
 }
 
 async function notifyListingSold(
