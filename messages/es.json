@@ -334,6 +334,28 @@
     "emailOnly": "Solo Correo",
     "off": "Desactivado"
   },
+  "inventory": {
+    "title": "Inventario",
+    "noItems": "Sin artículos de inventario",
+    "createFirst": "Crea tu primer anuncio para comenzar.",
+    "totalUnits": "unidades totales",
+    "lowStock": "bajo stock",
+    "newListing": "Nuevo Anuncio",
+    "searchPlaceholder": "Buscar por título o SKU...",
+    "allStatus": "Todos los estados",
+    "allCategories": "Todas las categorías",
+    "bulkAction": "Acción masiva...",
+    "setActive": "Activar",
+    "setDraft": "Borrador",
+    "adjustPrice": "Ajustar Precio",
+    "setQuantity": "Establecer Cantidad",
+    "apply": "Aplicar",
+    "selected": "seleccionados",
+    "sku": "SKU",
+    "qty": "Cant.",
+    "location": "Ubicación",
+    "views": "Vistas"
+  },
   "savedSearches": {
     "title": "Búsquedas Guardadas",
     "subtitle": "Gestiona tus búsquedas guardadas y preferencias de alertas",

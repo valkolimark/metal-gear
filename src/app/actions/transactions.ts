@@ -219,12 +219,39 @@ export async function updateTransactionStatus(
     })
   }
 
-  // If completed, mark listing as sold
+  // If completed, decrement quantity and mark as sold when qty hits 0
   if (newStatus === 'completed') {
-    await admin
+    const { data: listingRow } = await admin
       .from('listings')
-      .update({ status: 'sold' })
+      .select('quantity')
       .eq('id', transaction.listing_id)
+      .single()
+
+    const currentQty = listingRow?.quantity ?? 1
+    const newQty = Math.max(0, currentQty - 1)
+
+    if (newQty === 0) {
+      await admin
+        .from('listings')
+        .update({ quantity: 0, status: 'sold' })
+        .eq('id', transaction.listing_id)
+    } else {
+      await admin
+        .from('listings')
+        .update({ quantity: newQty })
+        .eq('id', transaction.listing_id)
+
+      // Low stock alert when quantity drops to 1
+      if (newQty === 1) {
+        await createNotification(
+          transaction.seller_id,
+          'transaction_update',
+          `Low Stock: ${listing.title}`,
+          'Only 1 unit remaining. Consider restocking or marking as final.',
+          { listingId: transaction.listing_id }
+        )
+      }
+    }
   }
 
   return { success: true }

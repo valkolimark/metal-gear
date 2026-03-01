@@ -641,12 +641,15 @@ export type Database = {
           location_state: string
           negotiable: boolean
           price_cents: number | null
+          quantity: number
           seller_id: string
+          sku: string | null
           specifications: Json | null
           status: string
           title: string
           updated_at: string
           views_count: number
+          warehouse_location: string | null
         }
         Insert: {
           auto_renew?: boolean
@@ -666,12 +669,15 @@ export type Database = {
           location_state?: string
           negotiable?: boolean
           price_cents?: number | null
+          quantity?: number
           seller_id: string
+          sku?: string | null
           specifications?: Json | null
           status?: string
           title: string
           updated_at?: string
           views_count?: number
+          warehouse_location?: string | null
         }
         Update: {
           auto_renew?: boolean
@@ -691,12 +697,15 @@ export type Database = {
           location_state?: string
           negotiable?: boolean
           price_cents?: number | null
+          quantity?: number
           seller_id?: string
+          sku?: string | null
           specifications?: Json | null
           status?: string
           title?: string
           updated_at?: string
           views_count?: number
+          warehouse_location?: string | null
         }
         Relationships: [
           {

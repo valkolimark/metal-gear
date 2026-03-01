@@ -334,6 +334,28 @@
     "emailOnly": "Email only",
     "off": "Off"
   },
+  "inventory": {
+    "title": "Inventory",
+    "noItems": "No inventory items",
+    "createFirst": "Create your first listing to get started.",
+    "totalUnits": "total units",
+    "lowStock": "low stock",
+    "newListing": "New Listing",
+    "searchPlaceholder": "Search by title or SKU...",
+    "allStatus": "All Status",
+    "allCategories": "All Categories",
+    "bulkAction": "Bulk action...",
+    "setActive": "Set Active",
+    "setDraft": "Set Draft",
+    "adjustPrice": "Adjust Price",
+    "setQuantity": "Set Quantity",
+    "apply": "Apply",
+    "selected": "selected",
+    "sku": "SKU",
+    "qty": "Qty",
+    "location": "Location",
+    "views": "Views"
+  },
   "savedSearches": {
     "title": "Saved Searches",
     "subtitle": "Manage your saved searches and alert preferences",

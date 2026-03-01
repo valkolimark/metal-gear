@@ -51,6 +51,9 @@ interface ListingForm {
   location_city: string
   location_state: string
   specifications: Record<string, string>
+  quantity: string
+  sku: string
+  warehouse_location: string
 }
 
 interface UploadedImage {
@@ -109,6 +112,9 @@ export default function CreateListingPage() {
     location_city: profile?.location_city || 'Houston',
     location_state: profile?.location_state || 'TX',
     specifications: {},
+    quantity: '1',
+    sku: '',
+    warehouse_location: '',
   })
 
   function handleChange(
@@ -321,6 +327,9 @@ export default function CreateListingPage() {
         location_city: form.location_city,
         location_state: form.location_state,
         specifications: form.specifications,
+        quantity: form.quantity ? parseInt(form.quantity) : 1,
+        sku: form.sku || null,
+        warehouse_location: form.warehouse_location || null,
         status: 'draft',
       })
       if (error) throw error
@@ -366,6 +375,9 @@ export default function CreateListingPage() {
           location_city: form.location_city,
           location_state: form.location_state,
           specifications: form.specifications,
+          quantity: form.quantity ? parseInt(form.quantity) : 1,
+          sku: form.sku || null,
+          warehouse_location: form.warehouse_location || null,
           status: 'active',
           expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
         })
@@ -872,6 +884,52 @@ export default function CreateListingPage() {
                 </div>
               </div>
             )}
+
+            <Separator />
+
+            {/* Inventory */}
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="space-y-2">
+                <Label htmlFor="quantity" className="font-body">
+                  Quantity
+                </Label>
+                <Input
+                  id="quantity"
+                  name="quantity"
+                  type="number"
+                  min="1"
+                  value={form.quantity}
+                  onChange={handleChange}
+                  className="font-body"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="sku" className="font-body">
+                  SKU (optional)
+                </Label>
+                <Input
+                  id="sku"
+                  name="sku"
+                  value={form.sku}
+                  onChange={handleChange}
+                  placeholder="e.g., CNC-001"
+                  className="font-body"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="warehouse_location" className="font-body">
+                  Warehouse/Yard
+                </Label>
+                <Input
+                  id="warehouse_location"
+                  name="warehouse_location"
+                  value={form.warehouse_location}
+                  onChange={handleChange}
+                  placeholder="e.g., Bay 3, East Yard"
+                  className="font-body"
+                />
+              </div>
+            </div>
 
             <Separator />
 
