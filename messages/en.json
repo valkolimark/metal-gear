@@ -274,6 +274,15 @@
     "needHelp": "Need Help?",
     "browseMore": "Browse More Articles"
   },
+  "onboarding": {
+    "getStarted": "Get Started",
+    "completeProfile": "Complete your profile",
+    "setLocation": "Set your location",
+    "browseEquipment": "Browse equipment",
+    "createOrSave": "Create a listing or save a search",
+    "skipOnboarding": "Skip onboarding",
+    "dismiss": "Dismiss"
+  },
   "accessibility": {
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",

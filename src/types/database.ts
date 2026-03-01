@@ -304,6 +304,38 @@ export type Database = {
           },
         ]
       }
+      onboarding_progress: {
+        Row: {
+          user_id: string
+          steps_completed: string[]
+          completed_at: string | null
+          dismissed: boolean
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          steps_completed?: string[]
+          completed_at?: string | null
+          dismissed?: boolean
+          created_at?: string
+        }
+        Update: {
+          user_id?: string
+          steps_completed?: string[]
+          completed_at?: string | null
+          dismissed?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "onboarding_progress_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       help_articles: {
         Row: {
           id: string
@@ -1087,6 +1119,7 @@ export type Database = {
           subscription_tier: string
           preferred_locale: string
           trust_score: number
+          last_login_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1110,6 +1143,7 @@ export type Database = {
           stripe_customer_id?: string | null
           subscription_tier?: string
           trust_score?: number
+          last_login_at?: string | null
           updated_at?: string
         }
         Update: {
@@ -1133,6 +1167,7 @@ export type Database = {
           stripe_customer_id?: string | null
           subscription_tier?: string
           trust_score?: number
+          last_login_at?: string | null
           updated_at?: string
         }
         Relationships: []

@@ -35,6 +35,8 @@ import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
 import { Sparkles } from 'lucide-react'
+import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
+import { updateLastLogin } from '@/app/actions/onboarding'
 
 type Listing = Tables<'listings'>
 
@@ -134,6 +136,9 @@ export default function DashboardPage() {
     setRecentListings((allListingsRes.data ?? []) as Listing[])
     setLoading(false)
 
+    // Update last login timestamp
+    updateLastLogin().catch(console.error)
+
     // Load analytics (async, not blocking)
     getSellerAnalytics().then((result) => {
       if (!('error' in result)) {
@@ -218,6 +223,9 @@ export default function DashboardPage() {
           value={stats.favoritesReceived}
         />
       </div>
+
+      {/* Onboarding Checklist */}
+      <OnboardingChecklist />
 
       {/* Quick Actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

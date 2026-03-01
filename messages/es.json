@@ -274,6 +274,15 @@
     "needHelp": "¿Necesitas Ayuda?",
     "browseMore": "Ver Más Artículos"
   },
+  "onboarding": {
+    "getStarted": "Comenzar",
+    "completeProfile": "Completa tu perfil",
+    "setLocation": "Establece tu ubicación",
+    "browseEquipment": "Explora equipos",
+    "createOrSave": "Crea un anuncio o guarda una búsqueda",
+    "skipOnboarding": "Omitir introducción",
+    "dismiss": "Descartar"
+  },
   "accessibility": {
     "mainNavigation": "Navegación principal",
     "mobileNavigation": "Navegación móvil",
