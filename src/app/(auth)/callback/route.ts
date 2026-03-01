@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail, welcomeEmail } from '@/lib/email'
+import { trackReferralSignup } from '@/app/actions/referrals'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -37,6 +38,12 @@ export async function GET(request: Request) {
               email_notifications: { ...prefs, welcome_sent: true },
             })
             .eq('id', data.user.id)
+        }
+
+        // Track referral signup from user metadata
+        const refCode = data.user.user_metadata?.referral_code
+        if (refCode && typeof refCode === 'string') {
+          await trackReferralSignup(refCode, data.user.id).catch(console.error)
         }
       } catch (e) {
         console.error('Welcome email check failed:', e)

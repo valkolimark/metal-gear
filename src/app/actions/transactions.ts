@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email'
 import { createNotification } from './notifications'
+import { advanceReferralStatus } from './referrals'
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'
 
@@ -252,6 +253,9 @@ export async function updateTransactionStatus(
         )
       }
     }
+
+    // Advance referral status for buyer
+    await advanceReferralStatus(transaction.buyer_id, 'first_transaction').catch(console.error)
   }
 
   return { success: true }

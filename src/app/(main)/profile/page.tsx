@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink, Shield, BadgeCheck } from 'lucide-react'
+import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink, Shield, BadgeCheck, Users, Copy, Gift } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -25,6 +25,7 @@ import { uploadAvatar, updateProfile, updateNotificationPreferences } from './ac
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/actions/storefront'
 import { getVerificationStatus, submitVerificationRequest } from '@/app/actions/verification'
+import { getReferralData } from '@/app/actions/referrals'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 import type { Tables } from '@/types/database'
@@ -104,6 +105,13 @@ export default function ProfilePage() {
   const [uploadingBanner, setUploadingBanner] = useState(false)
   const bannerInputRef = useRef<HTMLInputElement>(null)
   const [userListings, setUserListings] = useState<{ id: string; title: string }[]>([])
+  const [referralData, setReferralData] = useState<{
+    referralLink: string
+    referrals: { id: string; status: string; reward_cents: number; created_at: string; referredName: string }[]
+    totalEarnings: number
+    totalReferrals: number
+    completedReferrals: number
+  } | null>(null)
   const [form, setForm] = useState({
     full_name: '',
     display_name: '',
@@ -149,6 +157,13 @@ export default function ProfilePage() {
           setStorefrontData(res.storefront)
           setSfTagline(res.storefront.tagline || '')
           setSfFeaturedIds(res.storefront.featured_listing_ids || [])
+        }
+      })
+
+      // Load referral data
+      getReferralData().then((res) => {
+        if (!('error' in res)) {
+          setReferralData(res)
         }
       })
 
@@ -790,6 +805,108 @@ export default function ProfilePage() {
                 )}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Referral Program */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Users className="size-5" />
+              Referral Program
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="font-body text-sm text-muted-foreground">
+              Invite colleagues and earn $10 credit when they complete their first transaction.
+            </p>
+
+            {referralData && (
+              <>
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-3">
+                  <div className="rounded-lg border border-border p-3 text-center">
+                    <p className="font-display text-xl font-bold text-foreground">{referralData.totalReferrals}</p>
+                    <p className="font-body text-[10px] text-muted-foreground">Referrals</p>
+                  </div>
+                  <div className="rounded-lg border border-border p-3 text-center">
+                    <p className="font-display text-xl font-bold text-foreground">{referralData.completedReferrals}</p>
+                    <p className="font-body text-[10px] text-muted-foreground">Completed</p>
+                  </div>
+                  <div className="rounded-lg border border-border p-3 text-center">
+                    <p className="font-display text-xl font-bold text-primary">
+                      ${(referralData.totalEarnings / 100).toFixed(0)}
+                    </p>
+                    <p className="font-body text-[10px] text-muted-foreground">Earned</p>
+                  </div>
+                </div>
+
+                {/* Referral Link */}
+                <div className="space-y-2">
+                  <Label className="font-body">Your Referral Link</Label>
+                  <div className="flex gap-2">
+                    <Input
+                      readOnly
+                      value={referralData.referralLink}
+                      className="font-body text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => {
+                        navigator.clipboard.writeText(referralData.referralLink)
+                        toast.success('Referral link copied!')
+                      }}
+                    >
+                      <Copy className="size-4" />
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Referral List */}
+                {referralData.referrals.length > 0 && (
+                  <div className="space-y-2">
+                    <Label className="font-body">Your Referrals</Label>
+                    <div className="space-y-1">
+                      {referralData.referrals.map((ref) => (
+                        <div
+                          key={ref.id}
+                          className="flex items-center justify-between rounded-lg border border-border p-2"
+                        >
+                          <div>
+                            <p className="font-body text-sm text-foreground">{ref.referredName}</p>
+                            <p className="font-body text-[10px] text-muted-foreground">
+                              {new Date(ref.created_at).toLocaleDateString()}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant="outline"
+                              className={`font-body text-[10px] capitalize ${
+                                ref.status === 'first_transaction'
+                                  ? 'border-green-500/50 text-green-400'
+                                  : ref.status === 'first_listing'
+                                    ? 'border-blue-500/50 text-blue-400'
+                                    : 'border-yellow-500/50 text-yellow-400'
+                              }`}
+                            >
+                              {ref.status.replace('_', ' ')}
+                            </Badge>
+                            {ref.reward_cents > 0 && (
+                              <Badge className="bg-primary/20 font-body text-[10px] text-primary">
+                                <Gift className="mr-1 size-3" />
+                                ${(ref.reward_cents / 100).toFixed(0)}
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </CardContent>
         </Card>
 

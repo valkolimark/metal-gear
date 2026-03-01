@@ -384,6 +384,21 @@
     "targetRemoved": "Precio objetivo eliminado",
     "alertAt": "Alerta a ${price}"
   },
+  "referral": {
+    "title": "Programa de Referidos",
+    "description": "Invita a colegas y gana $10 de crédito cuando completen su primera transacción.",
+    "yourLink": "Tu Enlace de Referido",
+    "linkCopied": "¡Enlace de referido copiado!",
+    "yourReferrals": "Tus Referidos",
+    "referrals": "Referidos",
+    "completed": "Completados",
+    "earned": "Ganado",
+    "signedUp": "Registrado",
+    "firstListing": "Primera Publicación",
+    "firstTransaction": "Primera Transacción",
+    "pending": "Pendiente",
+    "referredBadge": "¡Fuiste referido! Completa tu primera transacción para ganar recompensas."
+  },
   "accessibility": {
     "mainNavigation": "Navegación principal",
     "mobileNavigation": "Navegación móvil",

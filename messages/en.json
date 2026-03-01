@@ -384,6 +384,21 @@
     "targetRemoved": "Target price removed",
     "alertAt": "Alert at ${price}"
   },
+  "referral": {
+    "title": "Referral Program",
+    "description": "Invite colleagues and earn $10 credit when they complete their first transaction.",
+    "yourLink": "Your Referral Link",
+    "linkCopied": "Referral link copied!",
+    "yourReferrals": "Your Referrals",
+    "referrals": "Referrals",
+    "completed": "Completed",
+    "earned": "Earned",
+    "signedUp": "Signed Up",
+    "firstListing": "First Listing",
+    "firstTransaction": "First Transaction",
+    "pending": "Pending",
+    "referredBadge": "You were referred! Complete your first transaction to earn rewards."
+  },
   "accessibility": {
     "mainNavigation": "Main navigation",
     "mobileNavigation": "Mobile navigation",

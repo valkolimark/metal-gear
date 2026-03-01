@@ -1114,6 +1114,48 @@ export type Database = {
           },
         ]
       }
+      referrals: {
+        Row: {
+          id: string
+          referrer_id: string
+          referred_id: string | null
+          status: string
+          reward_cents: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          referrer_id: string
+          referred_id?: string | null
+          status?: string
+          reward_cents?: number
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          referrer_id?: string
+          referred_id?: string | null
+          status?: string
+          reward_cents?: number
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referrals_referrer_id_fkey"
+            columns: ["referrer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referrals_referred_id_fkey"
+            columns: ["referred_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       price_watches: {
         Row: {
           id: string
@@ -1203,6 +1245,7 @@ export type Database = {
           location_lng: number | null
           location_state: string | null
           phone: string | null
+          referral_code: string | null
           stripe_customer_id: string | null
           subscription_tier: string
           preferred_locale: string
@@ -1230,6 +1273,7 @@ export type Database = {
           notification_preferences?: Json | null
           phone?: string | null
           preferred_locale?: string
+          referral_code?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
           trust_score?: number
@@ -1255,6 +1299,7 @@ export type Database = {
           notification_preferences?: Json | null
           phone?: string | null
           preferred_locale?: string
+          referral_code?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
           trust_score?: number

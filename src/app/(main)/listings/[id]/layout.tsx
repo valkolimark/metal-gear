@@ -1,6 +1,8 @@
 import type { Metadata } from 'next'
 import { createAdminClient } from '@/lib/supabase/admin'
 
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'
+
 export async function generateMetadata({
   params,
 }: {
@@ -35,13 +37,22 @@ export async function generateMetadata({
     openGraph: {
       title: listing.title,
       description,
+      images: [
+        {
+          url: `${APP_URL}/api/og?listing=${id}`,
+          width: 1200,
+          height: 630,
+          alt: listing.title,
+        },
+      ],
       type: 'website',
       siteName: 'Metal Gear',
     },
     twitter: {
-      card: 'summary',
+      card: 'summary_large_image',
       title: listing.title,
       description,
+      images: [`${APP_URL}/api/og?listing=${id}`],
     },
   }
 }

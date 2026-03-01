@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -20,6 +20,7 @@ import { OAuthButtons } from '@/components/auth/oauth-buttons'
 
 export default function SignupPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -27,6 +28,14 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
+  const referralCode = searchParams.get('ref')
+
+  // Store referral code in localStorage for post-signup tracking
+  useEffect(() => {
+    if (referralCode) {
+      localStorage.setItem('mg_referral_code', referralCode)
+    }
+  }, [referralCode])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -52,6 +61,7 @@ export default function SignupPage() {
         options: {
           data: {
             full_name: fullName,
+            referral_code: referralCode || localStorage.getItem('mg_referral_code') || undefined,
           },
           emailRedirectTo: `${window.location.origin}/callback`,
         },
@@ -100,6 +110,11 @@ export default function SignupPage() {
         <CardTitle className="font-display text-2xl">Create Account</CardTitle>
         <CardDescription className="font-body">
           Join the industrial equipment marketplace
+          {referralCode && (
+            <span className="mt-1 block text-xs text-primary">
+              You were referred! Complete your first transaction to earn rewards.
+            </span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
