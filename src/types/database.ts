@@ -304,6 +304,38 @@ export type Database = {
           },
         ]
       }
+      view_sessions: {
+        Row: {
+          id: string
+          session_id: string
+          user_id: string | null
+          listing_id: string
+          viewed_at: string
+        }
+        Insert: {
+          id?: string
+          session_id: string
+          user_id?: string | null
+          listing_id: string
+          viewed_at?: string
+        }
+        Update: {
+          id?: string
+          session_id?: string
+          user_id?: string | null
+          listing_id?: string
+          viewed_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "view_sessions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       push_subscriptions: {
         Row: {
           id: string

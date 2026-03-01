@@ -29,6 +29,7 @@ import {
   FolderPlus,
   Plus,
   CalendarDays,
+  Package,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
@@ -49,6 +50,7 @@ import {
   createCollection,
 } from '@/app/actions/collections'
 import { requestViewing, getSellerAvailability } from '@/app/actions/scheduling'
+import { getRelatedListings, getMoreFromSeller, getBuyersAlsoViewed, recordViewSession } from '@/app/actions/related'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -88,6 +90,12 @@ export default function ListingDetailPage() {
   const [seller, setSeller] = useState<Profile | null>(null)
   const [videos, setVideos] = useState<ListingVideo[]>([])
   const [similar, setSimilar] = useState<Listing[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [relatedListings, setRelatedListings] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [moreFromSeller, setMoreFromSeller] = useState<any[]>([])
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [alsoViewed, setAlsoViewed] = useState<any[]>([])
   const [isFavorited, setIsFavorited] = useState(false)
   const [loading, setLoading] = useState(true)
   const [currentImage, setCurrentImage] = useState(0)
@@ -243,6 +251,22 @@ export default function ListingDetailPage() {
           }
         })
       }
+
+      // Load related listings (async, non-blocking)
+      getRelatedListings(id).then((result) => {
+        setRelatedListings(result.listings ?? [])
+      })
+      getMoreFromSeller(listingData.seller_id, id).then((result) => {
+        setMoreFromSeller(result.listings ?? [])
+      })
+      getBuyersAlsoViewed(id).then((result) => {
+        setAlsoViewed(result.listings ?? [])
+      })
+
+      // Record view session for co-view analysis
+      const sessionId = sessionStorage.getItem('mg_session') || `s_${Date.now()}_${Math.random().toString(36).slice(2)}`
+      sessionStorage.setItem('mg_session', sessionId)
+      recordViewSession(id, sessionId).catch(console.error)
 
       setLoading(false)
     }
@@ -1287,30 +1311,91 @@ export default function ListingDetailPage() {
         </div>
       </div>
 
-      {/* Similar Listings */}
-      {similar.length > 0 && (
+      {/* Related Equipment */}
+      {relatedListings.length > 0 && (
         <div>
           <Separator className="my-6" />
           <h2 className="mb-4 font-display text-xl font-bold text-foreground">
-            Similar Listings
+            Related Equipment
           </h2>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {similar.map((item) => (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {relatedListings.map((item) => (
               <Link key={item.id} href={`/listings/${item.id}`}>
                 <Card className="border-border bg-card transition-colors hover:border-primary/50">
-                  <CardContent className="p-4">
-                    <p className="truncate font-body font-medium text-foreground">
-                      {item.title}
+                  <div className="aspect-[16/10] w-full overflow-hidden bg-surface">
+                    {item.listing_images?.[0]?.url ? (
+                      <img src={item.listing_images.sort((a: {position: number}, b: {position: number}) => a.position - b.position)[0].url} alt={item.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center"><Package className="size-8 text-muted-foreground/30" /></div>
+                    )}
+                  </div>
+                  <CardContent className="p-3">
+                    <p className="truncate font-body text-sm font-medium text-foreground">{item.title}</p>
+                    <p className="mt-1 font-body text-xs text-muted-foreground">{item.category}</p>
+                    <p className="mt-1 font-display text-sm font-bold text-primary">
+                      {item.contact_for_price ? 'Contact' : item.price_cents ? `$${(item.price_cents / 100).toLocaleString()}` : 'Free'}
                     </p>
-                    <p className="mt-1 font-body text-sm text-muted-foreground">
-                      {item.category}
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* More from This Seller */}
+      {moreFromSeller.length > 0 && (
+        <div>
+          <Separator className="my-6" />
+          <h2 className="mb-4 font-display text-xl font-bold text-foreground">
+            More from This Seller
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {moreFromSeller.map((item) => (
+              <Link key={item.id} href={`/listings/${item.id}`}>
+                <Card className="border-border bg-card transition-colors hover:border-primary/50">
+                  <div className="aspect-[16/10] w-full overflow-hidden bg-surface">
+                    {item.listing_images?.[0]?.url ? (
+                      <img src={item.listing_images.sort((a: {position: number}, b: {position: number}) => a.position - b.position)[0].url} alt={item.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center"><Package className="size-8 text-muted-foreground/30" /></div>
+                    )}
+                  </div>
+                  <CardContent className="p-3">
+                    <p className="truncate font-body text-sm font-medium text-foreground">{item.title}</p>
+                    <p className="mt-1 font-display text-sm font-bold text-primary">
+                      {item.contact_for_price ? 'Contact' : item.price_cents ? `$${(item.price_cents / 100).toLocaleString()}` : 'Free'}
                     </p>
-                    <p className="mt-2 font-display text-lg font-bold text-primary">
-                      {item.contact_for_price
-                        ? 'Contact'
-                        : item.price_cents
-                          ? `$${(item.price_cents / 100).toLocaleString()}`
-                          : 'Free'}
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Buyers Also Viewed */}
+      {alsoViewed.length > 0 && (
+        <div>
+          <Separator className="my-6" />
+          <h2 className="mb-4 font-display text-xl font-bold text-foreground">
+            Buyers Also Viewed
+          </h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {alsoViewed.map((item) => (
+              <Link key={item.id} href={`/listings/${item.id}`}>
+                <Card className="border-border bg-card transition-colors hover:border-primary/50">
+                  <div className="aspect-[16/10] w-full overflow-hidden bg-surface">
+                    {item.listing_images?.[0]?.url ? (
+                      <img src={item.listing_images.sort((a: {position: number}, b: {position: number}) => a.position - b.position)[0].url} alt={item.title} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex h-full items-center justify-center"><Package className="size-8 text-muted-foreground/30" /></div>
+                    )}
+                  </div>
+                  <CardContent className="p-3">
+                    <p className="truncate font-body text-sm font-medium text-foreground">{item.title}</p>
+                    <p className="mt-1 font-display text-sm font-bold text-primary">
+                      {item.contact_for_price ? 'Contact' : item.price_cents ? `$${(item.price_cents / 100).toLocaleString()}` : 'Free'}
                     </p>
                   </CardContent>
                 </Card>
