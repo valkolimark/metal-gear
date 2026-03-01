@@ -228,6 +228,22 @@
     "backToCollections": "Back to Collections",
     "items": "{count, plural, one {# item} other {# items}}"
   },
+  "schedule": {
+    "title": "Schedule",
+    "subtitle": "Manage your availability and viewing appointments",
+    "weeklyAvailability": "Weekly Availability",
+    "saveAvailability": "Save Availability",
+    "viewingRequests": "Viewing Requests",
+    "yourViewings": "Your Viewing Requests",
+    "requestViewing": "Request Viewing",
+    "noViewings": "No upcoming viewings",
+    "accept": "Accept",
+    "decline": "Decline",
+    "cancelViewing": "Cancel Viewing",
+    "preferredDate": "Preferred Date",
+    "preferredTime": "Preferred Time (CT)",
+    "sendRequest": "Send Request"
+  },
   "conditionReport": {
     "inspectionReport": "Inspection Report",
     "grade": "Grade",

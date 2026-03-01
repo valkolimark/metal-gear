@@ -821,6 +821,41 @@ export type Database = {
           },
         ]
       }
+      seller_availability: {
+        Row: {
+          id: string
+          user_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          timezone: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          day_of_week: number
+          start_time: string
+          end_time: string
+          timezone?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          day_of_week?: number
+          start_time?: string
+          end_time?: string
+          timezone?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_availability_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reviews: {
         Row: {
           id: string
@@ -1231,6 +1266,61 @@ export type Database = {
           {
             foreignKeyName: "reply_templates_user_id_fkey"
             columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      viewing_requests: {
+        Row: {
+          id: string
+          listing_id: string
+          buyer_id: string
+          seller_id: string
+          proposed_datetime: string
+          status: string
+          message: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          listing_id: string
+          buyer_id: string
+          seller_id: string
+          proposed_datetime: string
+          status?: string
+          message?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          listing_id?: string
+          buyer_id?: string
+          seller_id?: string
+          proposed_datetime?: string
+          status?: string
+          message?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "viewing_requests_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewing_requests_buyer_id_fkey"
+            columns: ["buyer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "viewing_requests_seller_id_fkey"
+            columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

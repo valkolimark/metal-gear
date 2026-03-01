@@ -28,6 +28,7 @@ import {
   ShieldCheck,
   FolderPlus,
   Plus,
+  CalendarDays,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { startConversation } from '@/app/(main)/messages/actions'
@@ -47,6 +48,7 @@ import {
   removeFromCollection,
   createCollection,
 } from '@/app/actions/collections'
+import { requestViewing, getSellerAvailability } from '@/app/actions/scheduling'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -113,6 +115,12 @@ export default function ListingDetailPage() {
     { id: string; name: string; hasListing: boolean }[]
   >([])
   const [newCollectionName, setNewCollectionName] = useState('')
+  const [viewingDialogOpen, setViewingDialogOpen] = useState(false)
+  const [viewingDate, setViewingDate] = useState('')
+  const [viewingTime, setViewingTime] = useState('10:00')
+  const [viewingMessage, setViewingMessage] = useState('')
+  const [submittingViewing, setSubmittingViewing] = useState(false)
+  const [sellerHasAvailability, setSellerHasAvailability] = useState(false)
 
   // Touch swipe state for image gallery
   const touchStartX = useRef(0)
@@ -220,6 +228,11 @@ export default function ListingDetailPage() {
       // Load condition report
       getConditionReport(id).then((result) => {
         if (result.report) setConditionReport(result.report)
+      })
+
+      // Check if seller has availability set
+      getSellerAvailability(listingData.seller_id).then((result) => {
+        if (result.slots.length > 0) setSellerHasAvailability(true)
       })
 
       // Load user collections
@@ -436,6 +449,23 @@ export default function ListingDetailPage() {
       )
     )
     toast.success(hasListing ? 'Removed from collection' : 'Added to collection')
+  }
+
+  async function handleRequestViewing() {
+    if (!listing || !viewingDate || !viewingTime) return
+    setSubmittingViewing(true)
+    const datetime = `${viewingDate}T${viewingTime}:00`
+    const result = await requestViewing(listing.id, datetime, viewingMessage || undefined)
+    if ('error' in result) {
+      toast.error(result.error)
+    } else {
+      toast.success('Viewing request sent!')
+      setViewingDialogOpen(false)
+      setViewingDate('')
+      setViewingTime('10:00')
+      setViewingMessage('')
+    }
+    setSubmittingViewing(false)
   }
 
   async function handleQuickCreateCollection() {
@@ -1080,6 +1110,16 @@ export default function ListingDetailPage() {
                         {isWatching ? 'Stop Watching' : 'Watch Price'}
                       </Button>
                     )}
+                    {sellerHasAvailability && (
+                      <Button
+                        variant="outline"
+                        onClick={() => setViewingDialogOpen(true)}
+                        className="w-full font-body"
+                      >
+                        <CalendarDays className="mr-2 size-4" />
+                        Request Viewing
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -1373,6 +1413,78 @@ export default function ListingDetailPage() {
               className="font-body"
             >
               Copy Link
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Request Viewing Dialog */}
+      <Dialog open={viewingDialogOpen} onOpenChange={setViewingDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="font-display">Request Viewing</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <p className="font-body text-sm text-muted-foreground">
+              Request an in-person viewing of this equipment. The seller will confirm your appointment.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="viewing-date" className="font-body">
+                Preferred Date
+              </Label>
+              <Input
+                id="viewing-date"
+                type="date"
+                value={viewingDate}
+                onChange={(e) => setViewingDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                className="font-body"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="viewing-time" className="font-body">
+                Preferred Time (CT)
+              </Label>
+              <Input
+                id="viewing-time"
+                type="time"
+                value={viewingTime}
+                onChange={(e) => setViewingTime(e.target.value)}
+                className="font-body"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="viewing-msg" className="font-body">
+                Message (optional)
+              </Label>
+              <Input
+                id="viewing-msg"
+                value={viewingMessage}
+                onChange={(e) => setViewingMessage(e.target.value)}
+                placeholder="Any notes for the seller..."
+                className="font-body"
+              />
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1 font-body"
+              onClick={() => setViewingDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="flex-1 font-body"
+              onClick={handleRequestViewing}
+              disabled={submittingViewing || !viewingDate}
+            >
+              {submittingViewing ? (
+                <Loader2 className="mr-2 size-4 animate-spin" />
+              ) : (
+                <CalendarDays className="mr-2 size-4" />
+              )}
+              Send Request
             </Button>
           </div>
         </DialogContent>

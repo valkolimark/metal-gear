@@ -228,6 +228,22 @@
     "backToCollections": "Volver a Colecciones",
     "items": "{count, plural, one {# artículo} other {# artículos}}"
   },
+  "schedule": {
+    "title": "Agenda",
+    "subtitle": "Gestiona tu disponibilidad y citas de visita",
+    "weeklyAvailability": "Disponibilidad Semanal",
+    "saveAvailability": "Guardar Disponibilidad",
+    "viewingRequests": "Solicitudes de Visita",
+    "yourViewings": "Tus Solicitudes de Visita",
+    "requestViewing": "Solicitar Visita",
+    "noViewings": "No hay visitas próximas",
+    "accept": "Aceptar",
+    "decline": "Rechazar",
+    "cancelViewing": "Cancelar Visita",
+    "preferredDate": "Fecha Preferida",
+    "preferredTime": "Hora Preferida (CT)",
+    "sendRequest": "Enviar Solicitud"
+  },
   "conditionReport": {
     "inspectionReport": "Reporte de Inspección",
     "grade": "Grado",
