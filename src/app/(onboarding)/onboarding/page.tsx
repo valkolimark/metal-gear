@@ -15,8 +15,8 @@ import {
   saveEnhancedOnboardingStep,
   saveEquipmentInterests,
   completeEnhancedOnboarding,
-  type EnhancedOnboardingData,
 } from '@/app/actions/onboarding'
+import type { EnhancedOnboardingData } from '@/lib/constants/onboarding'
 import {
   EQUIPMENT_CATEGORIES,
   INDUSTRIES,

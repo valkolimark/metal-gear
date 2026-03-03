@@ -10,8 +10,8 @@ import { useAuthStore } from '@/stores/auth-store'
 import {
   getOnboardingProgress,
   dismissOnboarding,
-  ONBOARDING_STEPS,
 } from '@/app/actions/onboarding'
+import { ONBOARDING_STEPS } from '@/lib/constants/onboarding'
 
 const STEP_LINKS: Record<string, string> = {
   profile: '/profile',
