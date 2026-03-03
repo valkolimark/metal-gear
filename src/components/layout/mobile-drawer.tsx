@@ -11,6 +11,7 @@ import {
   X,
   DollarSign,
   Info,
+  Siren,
 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
@@ -27,6 +28,7 @@ export function MobileDrawer() {
     { href: '/dashboard', label: t('home'), icon: Home },
     { href: '/search', label: t('browseEquipment'), icon: Search },
     { href: '/listings', label: t('myListings'), icon: List },
+    { href: '/sos', label: t('sos'), icon: Siren },
     { href: '/messages', label: t('messages'), icon: MessageSquare },
     { href: '/profile', label: t('profile'), icon: User },
   ]

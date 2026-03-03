@@ -132,3 +132,250 @@ export async function updateLastLogin() {
     .update({ last_login_at: new Date().toISOString() })
     .eq('id', user.id)
 }
+
+// ─── Enhanced Multi-Step Onboarding (Cycle 6) ───────────────────────
+
+export interface EnhancedOnboardingData {
+  // Step 1: Identity
+  full_name?: string
+  company_name?: string
+  job_title?: string
+  work_email?: string
+  work_phone?: string
+  show_phone_to?: 'everyone' | 'messaged' | 'no_one'
+  primary_role?: string
+  secondary_roles?: string[]
+  // Step 2: Equipment
+  equipment_interests?: {
+    category: string
+    sub_types: string[]
+    brands: string[]
+  }[]
+  // Step 3: Industry & Pain Points
+  industries?: string[]
+  pain_points?: string[]
+  pain_points_other?: string
+  // Step 4: Trading Intent
+  trading_intents?: string[]
+  // Step 5: Transparency & SOS
+  show_company?: boolean
+  show_name?: boolean
+  show_email_to?: 'everyone' | 'messaged' | 'no_one'
+  sos_responder?: boolean
+  sos_categories?: string[]
+  sos_urgency_level?: 'critical_only' | 'all'
+  sos_notify_methods?: string[]
+  sos_allow_realtime_contact?: boolean
+  // Step 6: Quality Agreement
+  quality_agreement_accepted?: boolean
+}
+
+export async function getEnhancedOnboardingProgress() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  const { data: profile } = await admin
+    .from('user_business_profiles')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!profile) {
+    // Also fetch auth user info for prefilling
+    const { data: authProfile } = await admin
+      .from('profiles')
+      .select('full_name, company_name, phone, location_city, location_state')
+      .eq('id', user.id)
+      .maybeSingle()
+
+    return {
+      step: 1,
+      data: null,
+      completed: false,
+      prefill: {
+        full_name: authProfile?.full_name || '',
+        company_name: authProfile?.company_name || '',
+        work_email: user.email || '',
+        work_phone: authProfile?.phone || '',
+        location_city: authProfile?.location_city || '',
+        location_state: authProfile?.location_state || '',
+      },
+    }
+  }
+
+  // Get equipment interests
+  const { data: interests } = await admin
+    .from('user_equipment_interests')
+    .select('*')
+    .eq('user_id', user.id)
+
+  return {
+    step: profile.onboarding_step || 1,
+    completed: profile.onboarding_completed || false,
+    data: {
+      ...profile,
+      equipment_interests: (interests || []).map((i: { category: string; sub_types: string[] | null; brands: string[] | null }) => ({
+        category: i.category,
+        sub_types: i.sub_types || [],
+        brands: i.brands || [],
+      })),
+    },
+  }
+}
+
+export async function saveEnhancedOnboardingStep(step: number, data: Partial<EnhancedOnboardingData>) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  // Check if profile exists
+  const { data: existing } = await admin
+    .from('user_business_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  const profileFields: Record<string, unknown> = {
+    onboarding_step: step + 1,
+    updated_at: new Date().toISOString(),
+  }
+
+  // Step 1: Identity
+  if (data.company_name) profileFields.company_name = data.company_name
+  if (data.job_title !== undefined) profileFields.job_title = data.job_title
+  if (data.work_phone !== undefined) profileFields.work_phone = data.work_phone
+  if (data.show_phone_to) profileFields.show_phone_to = data.show_phone_to
+  if (data.primary_role) profileFields.primary_role = data.primary_role
+  if (data.secondary_roles) profileFields.secondary_roles = data.secondary_roles
+
+  // Step 3: Industry & Pain Points
+  if (data.industries) profileFields.industries = data.industries
+  if (data.pain_points) profileFields.pain_points = data.pain_points
+  if (data.pain_points_other !== undefined) profileFields.pain_points_other = data.pain_points_other
+
+  // Step 4: Trading Intent
+  if (data.trading_intents) profileFields.trading_intents = data.trading_intents
+
+  // Step 5: Transparency & SOS
+  if (data.show_company !== undefined) profileFields.show_company = data.show_company
+  if (data.show_name !== undefined) profileFields.show_name = data.show_name
+  if (data.show_email_to) profileFields.show_email_to = data.show_email_to
+  if (data.sos_responder !== undefined) profileFields.sos_responder = data.sos_responder
+  if (data.sos_categories) profileFields.sos_categories = data.sos_categories
+  if (data.sos_urgency_level) profileFields.sos_urgency_level = data.sos_urgency_level
+  if (data.sos_notify_methods) profileFields.sos_notify_methods = data.sos_notify_methods
+  if (data.sos_allow_realtime_contact !== undefined) profileFields.sos_allow_realtime_contact = data.sos_allow_realtime_contact
+
+  // Step 6: Quality Agreement
+  if (data.quality_agreement_accepted !== undefined) {
+    profileFields.quality_agreement_accepted = data.quality_agreement_accepted
+    if (data.quality_agreement_accepted) {
+      profileFields.quality_agreement_accepted_at = new Date().toISOString()
+    }
+  }
+
+  if (existing) {
+    const { error } = await admin
+      .from('user_business_profiles')
+      .update(profileFields)
+      .eq('user_id', user.id)
+    if (error) return { error: error.message }
+  } else {
+    const { error } = await admin
+      .from('user_business_profiles')
+      .insert({
+        user_id: user.id,
+        company_name: data.company_name || '',
+        primary_role: data.primary_role || 'end_user',
+        ...profileFields,
+      })
+    if (error) return { error: error.message }
+  }
+
+  // Also update main profiles table with name/company if provided
+  if (data.full_name || data.company_name) {
+    const profileUpdate: Record<string, string> = { updated_at: new Date().toISOString() }
+    if (data.full_name) profileUpdate.full_name = data.full_name
+    if (data.company_name) profileUpdate.company_name = data.company_name
+    await admin.from('profiles').update(profileUpdate).eq('id', user.id)
+  }
+
+  return { success: true, nextStep: step + 1 }
+}
+
+export async function saveEquipmentInterests(
+  interests: { category: string; sub_types: string[]; brands: string[] }[]
+) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  // Delete existing and re-insert
+  await admin.from('user_equipment_interests').delete().eq('user_id', user.id)
+
+  if (interests.length > 0) {
+    const rows = interests.map((i) => ({
+      user_id: user.id,
+      category: i.category,
+      sub_types: i.sub_types,
+      brands: i.brands,
+    }))
+    const { error } = await admin.from('user_equipment_interests').insert(rows)
+    if (error) return { error: error.message }
+  }
+
+  return { success: true }
+}
+
+export async function completeEnhancedOnboarding() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('user_business_profiles')
+    .update({
+      onboarding_completed: true,
+      onboarding_completed_at: new Date().toISOString(),
+      onboarding_step: 7,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('user_id', user.id)
+
+  if (error) return { error: error.message }
+
+  // Also mark old onboarding as complete
+  await admin
+    .from('onboarding_progress')
+    .upsert({
+      user_id: user.id,
+      steps_completed: ['profile', 'location', 'browse', 'action'],
+      completed_at: new Date().toISOString(),
+    })
+
+  return { success: true }
+}
+
+export async function checkEnhancedOnboardingStatus() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { completed: true }
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('user_business_profiles')
+    .select('onboarding_completed')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  return { completed: profile?.onboarding_completed ?? false }
+}

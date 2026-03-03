@@ -13,7 +13,8 @@
     "insights": "Insights",
     "transactions": "Transactions",
     "collections": "Collections",
-    "notifications": "Notifications"
+    "notifications": "Notifications",
+    "sos": "SOS"
   },
   "header": {
     "searchPlaceholder": "Search equipment...",

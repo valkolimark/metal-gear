@@ -20,6 +20,11 @@ export type NotificationType =
   | 'dispute_response'
   | 'dispute_resolved'
   | 'viewing_response'
+  | 'sos_request_match'
+  | 'sos_response_received'
+  | 'sos_response_accepted'
+  | 'sos_expired'
+  | 'sos_fulfilled'
 
 export async function getNotifications(limit = 20, offset = 0) {
   const supabase = await createClient()

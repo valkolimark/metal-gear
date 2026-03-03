@@ -3,6 +3,7 @@ import { DesktopNav } from '@/components/layout/desktop-nav'
 import { MobileNav } from '@/components/layout/mobile-nav'
 import { MobileDrawer } from '@/components/layout/mobile-drawer'
 import { HelpButton } from '@/components/layout/help-button'
+import { SosButton } from '@/components/layout/sos-button'
 
 export default function MainLayout({
   children,
@@ -26,6 +27,7 @@ export default function MainLayout({
 
       <MobileNav />
       <HelpButton />
+      <SosButton />
     </div>
   )
 }

@@ -13,6 +13,7 @@ import {
   CheckCheck,
   X,
   Loader2,
+  Siren,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -33,6 +34,11 @@ const NOTIFICATION_ICONS: Record<string, React.ElementType> = {
   offer_accepted: Check,
   offer_rejected: X,
   offer_countered: DollarSign,
+  sos_request_match: Siren,
+  sos_response_received: Siren,
+  sos_response_accepted: Siren,
+  sos_expired: Siren,
+  sos_fulfilled: Siren,
 }
 
 const NOTIFICATION_COLORS: Record<string, string> = {
@@ -45,6 +51,11 @@ const NOTIFICATION_COLORS: Record<string, string> = {
   offer_accepted: 'text-green-400',
   offer_rejected: 'text-red-400',
   offer_countered: 'text-yellow-400',
+  sos_request_match: 'text-red-500',
+  sos_response_received: 'text-red-400',
+  sos_response_accepted: 'text-green-400',
+  sos_expired: 'text-muted-foreground',
+  sos_fulfilled: 'text-green-400',
 }
 
 function timeAgo(dateStr: string): string {
@@ -82,6 +93,12 @@ function getNotificationHref(notification: Notification): string | null {
     case 'offer_rejected':
     case 'offer_countered':
       return data.listing_id ? `/listings/${data.listing_id}` : null
+    case 'sos_request_match':
+    case 'sos_response_received':
+    case 'sos_response_accepted':
+    case 'sos_expired':
+    case 'sos_fulfilled':
+      return data.sos_id ? `/sos/${data.sos_id}` : '/sos'
     default:
       return null
   }
@@ -173,10 +190,16 @@ export function NotificationDropdown() {
                   const href = getNotificationHref(notification)
                   const isUnread = !notification.read_at
 
+                  const isSos = notification.type.startsWith('sos_')
+
                   const content = (
                     <div
                       className={`flex gap-3 px-4 py-3 transition-colors hover:bg-surface ${
-                        isUnread ? 'bg-primary/5' : ''
+                        isUnread
+                          ? isSos
+                            ? 'border-l-2 border-red-500 bg-red-500/5'
+                            : 'bg-primary/5'
+                          : ''
                       }`}
                       onClick={() => {
                         if (isUnread) markRead(notification.id)

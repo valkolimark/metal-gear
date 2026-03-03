@@ -13,7 +13,8 @@
     "insights": "Información",
     "transactions": "Transacciones",
     "collections": "Colecciones",
-    "notifications": "Notificaciones"
+    "notifications": "Notificaciones",
+    "sos": "SOS"
   },
   "header": {
     "searchPlaceholder": "Buscar equipos...",

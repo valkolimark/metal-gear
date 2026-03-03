@@ -1655,6 +1655,301 @@ export type Database = {
         }
         Relationships: []
       }
+      user_business_profiles: {
+        Row: {
+          id: string
+          user_id: string
+          company_name: string
+          job_title: string | null
+          work_phone: string | null
+          show_phone_to: string
+          show_email_to: string
+          show_company: boolean
+          show_name: boolean
+          primary_role: string
+          secondary_roles: string[]
+          industries: string[]
+          pain_points: string[]
+          pain_points_other: string | null
+          trading_intents: string[]
+          sos_responder: boolean
+          sos_categories: string[]
+          sos_urgency_level: string
+          sos_notify_methods: string[]
+          sos_allow_realtime_contact: boolean
+          quality_agreement_accepted: boolean
+          quality_agreement_accepted_at: string | null
+          onboarding_completed: boolean
+          onboarding_completed_at: string | null
+          onboarding_step: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          company_name: string
+          job_title?: string | null
+          work_phone?: string | null
+          show_phone_to?: string
+          show_email_to?: string
+          show_company?: boolean
+          show_name?: boolean
+          primary_role: string
+          secondary_roles?: string[]
+          industries?: string[]
+          pain_points?: string[]
+          pain_points_other?: string | null
+          trading_intents?: string[]
+          sos_responder?: boolean
+          sos_categories?: string[]
+          sos_urgency_level?: string
+          sos_notify_methods?: string[]
+          sos_allow_realtime_contact?: boolean
+          quality_agreement_accepted?: boolean
+          quality_agreement_accepted_at?: string | null
+          onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
+          onboarding_step?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          company_name?: string
+          job_title?: string | null
+          work_phone?: string | null
+          show_phone_to?: string
+          show_email_to?: string
+          show_company?: boolean
+          show_name?: boolean
+          primary_role?: string
+          secondary_roles?: string[]
+          industries?: string[]
+          pain_points?: string[]
+          pain_points_other?: string | null
+          trading_intents?: string[]
+          sos_responder?: boolean
+          sos_categories?: string[]
+          sos_urgency_level?: string
+          sos_notify_methods?: string[]
+          sos_allow_realtime_contact?: boolean
+          quality_agreement_accepted?: boolean
+          quality_agreement_accepted_at?: string | null
+          onboarding_completed?: boolean
+          onboarding_completed_at?: string | null
+          onboarding_step?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_equipment_interests: {
+        Row: {
+          id: string
+          user_id: string
+          category: string
+          sub_types: string[]
+          brands: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          category: string
+          sub_types?: string[]
+          brands?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          category?: string
+          sub_types?: string[]
+          brands?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      sos_requests: {
+        Row: {
+          id: string
+          requester_id: string
+          title: string
+          description: string | null
+          equipment_category: string
+          equipment_sub_type: string | null
+          brand: string | null
+          model: string | null
+          urgency: string
+          status: string
+          photos: string[]
+          videos: string[]
+          notes: string | null
+          location_city: string | null
+          location_state: string | null
+          location_lat: number | null
+          location_lng: number | null
+          max_distance_miles: number
+          expires_at: string
+          fulfilled_at: string | null
+          fulfilled_by: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          requester_id: string
+          title: string
+          description?: string | null
+          equipment_category: string
+          equipment_sub_type?: string | null
+          brand?: string | null
+          model?: string | null
+          urgency?: string
+          status?: string
+          photos?: string[]
+          videos?: string[]
+          notes?: string | null
+          location_city?: string | null
+          location_state?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          max_distance_miles?: number
+          expires_at?: string
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          requester_id?: string
+          title?: string
+          description?: string | null
+          equipment_category?: string
+          equipment_sub_type?: string | null
+          brand?: string | null
+          model?: string | null
+          urgency?: string
+          status?: string
+          photos?: string[]
+          videos?: string[]
+          notes?: string | null
+          location_city?: string | null
+          location_state?: string | null
+          location_lat?: number | null
+          location_lng?: number | null
+          max_distance_miles?: number
+          expires_at?: string
+          fulfilled_at?: string | null
+          fulfilled_by?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_requests_requester_id_fkey"
+            columns: ["requester_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sos_responses: {
+        Row: {
+          id: string
+          sos_request_id: string
+          responder_id: string
+          message: string
+          price_estimate: string | null
+          lead_time: string | null
+          condition: string | null
+          photos: string[]
+          status: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          sos_request_id: string
+          responder_id: string
+          message: string
+          price_estimate?: string | null
+          lead_time?: string | null
+          condition?: string | null
+          photos?: string[]
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          sos_request_id?: string
+          responder_id?: string
+          message?: string
+          price_estimate?: string | null
+          lead_time?: string | null
+          condition?: string | null
+          photos?: string[]
+          status?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_responses_sos_request_id_fkey"
+            columns: ["sos_request_id"]
+            isOneToOne: false
+            referencedRelation: "sos_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sos_responses_responder_id_fkey"
+            columns: ["responder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sos_notifications: {
+        Row: {
+          id: string
+          sos_request_id: string
+          notified_user_id: string
+          notify_method: string
+          sent_at: string
+          read_at: string | null
+        }
+        Insert: {
+          id?: string
+          sos_request_id: string
+          notified_user_id: string
+          notify_method: string
+          sent_at?: string
+          read_at?: string | null
+        }
+        Update: {
+          id?: string
+          sos_request_id?: string
+          notified_user_id?: string
+          notify_method?: string
+          sent_at?: string
+          read_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sos_notifications_sos_request_id_fkey"
+            columns: ["sos_request_id"]
+            isOneToOne: false
+            referencedRelation: "sos_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

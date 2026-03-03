@@ -55,7 +55,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes — redirect to login if no session
-  const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin']
+  const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin', '/sos', '/onboarding']
   const isProtectedRoute = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   )
@@ -75,6 +75,34 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone()
     url.pathname = '/dashboard'
     return NextResponse.redirect(url)
+  }
+
+  // Onboarding guard: redirect to /onboarding if not completed
+  // Skip for the onboarding page itself, API routes, auth routes, marketing routes, and static assets
+  if (
+    user &&
+    !pathname.startsWith('/onboarding') &&
+    !pathname.startsWith('/api') &&
+    !pathname.startsWith('/callback') &&
+    !isAuthRoute &&
+    isProtectedRoute
+  ) {
+    try {
+      const { data: bizProfile } = await supabase
+        .from('user_business_profiles')
+        .select('onboarding_completed')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      // If no profile exists or onboarding not completed, redirect to onboarding
+      if (!bizProfile || !bizProfile.onboarding_completed) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/onboarding'
+        return NextResponse.redirect(url)
+      }
+    } catch {
+      // If query fails (e.g. table doesn't exist yet), skip the guard
+    }
   }
 
   return supabaseResponse
