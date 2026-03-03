@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getSosRequests, type SosFilters } from '@/app/actions/sos'
-import { EQUIPMENT_CATEGORIES } from '@/lib/constants/equipment-categories'
+import { EQUIPMENT_TAXONOMY, getTier2Label } from '@/lib/constants/equipment-taxonomy'
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -76,8 +76,12 @@ export default function SosDashboard() {
               className="rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
             >
               <option value="">All categories</option>
-              {EQUIPMENT_CATEGORIES.map((c) => (
-                <option key={c.id} value={c.id}>{c.label}</option>
+              {EQUIPMENT_TAXONOMY.map((tier1) => (
+                <optgroup key={tier1.id} label={tier1.label}>
+                  {tier1.groups.map((group) => (
+                    <option key={group.id} value={group.id}>{group.label}</option>
+                  ))}
+                </optgroup>
               ))}
             </select>
           </div>
@@ -116,7 +120,7 @@ export default function SosDashboard() {
           {requests.map((req: Record<string, unknown>) => {
             const r = req
             const requester = r.requester as Record<string, string> | null
-            const cat = EQUIPMENT_CATEGORIES.find((c) => c.id === r.equipment_category)
+            const catLabel = getTier2Label(r.equipment_category as string)
             const responseCount = Array.isArray(r.response_count) && r.response_count.length > 0
               ? (r.response_count[0] as { count: number }).count
               : 0
@@ -150,7 +154,7 @@ export default function SosDashboard() {
                       <span className="font-medium text-foreground/80">
                         {requester?.company_name || requester?.full_name || 'Anonymous'}
                       </span>
-                      {cat && <Badge variant="outline" className="text-[10px]">{cat.label}</Badge>}
+                      {catLabel && <Badge variant="outline" className="text-[10px]">{catLabel}</Badge>}
                       <span className="flex items-center gap-0.5">
                         <MapPin className="size-3" />
                         {r.location_city as string || 'Houston'}, {r.location_state as string || 'TX'}

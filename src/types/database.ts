@@ -1749,24 +1749,27 @@ export type Database = {
         Row: {
           id: string
           user_id: string
-          category: string
-          sub_types: string[]
+          tier1: string
+          tier2: string
+          subcategories: string[]
           brands: string[]
           created_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          category: string
-          sub_types?: string[]
+          tier1: string
+          tier2: string
+          subcategories?: string[]
           brands?: string[]
           created_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          category?: string
-          sub_types?: string[]
+          tier1?: string
+          tier2?: string
+          subcategories?: string[]
           brands?: string[]
           created_at?: string
         }
@@ -1779,7 +1782,7 @@ export type Database = {
           title: string
           description: string | null
           equipment_category: string
-          equipment_sub_type: string | null
+          equipment_subcategory: string | null
           brand: string | null
           model: string | null
           urgency: string
@@ -1804,7 +1807,7 @@ export type Database = {
           title: string
           description?: string | null
           equipment_category: string
-          equipment_sub_type?: string | null
+          equipment_subcategory?: string | null
           brand?: string | null
           model?: string | null
           urgency?: string
@@ -1829,7 +1832,7 @@ export type Database = {
           title?: string
           description?: string | null
           equipment_category?: string
-          equipment_sub_type?: string | null
+          equipment_subcategory?: string | null
           brand?: string | null
           model?: string | null
           urgency?: string

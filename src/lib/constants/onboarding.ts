@@ -19,8 +19,9 @@ export interface EnhancedOnboardingData {
   secondary_roles?: string[]
   // Step 2: Equipment
   equipment_interests?: {
-    category: string
-    sub_types: string[]
+    tier1: string
+    tier2: string
+    subcategories: string[]
     brands: string[]
   }[]
   // Step 3: Industry & Pain Points

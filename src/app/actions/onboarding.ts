@@ -183,9 +183,10 @@ export async function getEnhancedOnboardingProgress() {
       completed: profile.onboarding_completed || false,
       data: {
         ...profile,
-        equipment_interests: (interests || []).map((i: { category: string; sub_types: string[] | null; brands: string[] | null }) => ({
-          category: i.category,
-          sub_types: i.sub_types || [],
+        equipment_interests: (interests || []).map((i: { tier1: string; tier2: string; subcategories: string[] | null; brands: string[] | null }) => ({
+          tier1: i.tier1,
+          tier2: i.tier2,
+          subcategories: i.subcategories || [],
           brands: i.brands || [],
         })),
       },
@@ -279,7 +280,7 @@ export async function saveEnhancedOnboardingStep(step: number, data: Partial<Enh
 }
 
 export async function saveEquipmentInterests(
-  interests: { category: string; sub_types: string[]; brands: string[] }[]
+  interests: { tier1: string; tier2: string; subcategories: string[]; brands: string[] }[]
 ) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
@@ -293,8 +294,9 @@ export async function saveEquipmentInterests(
   if (interests.length > 0) {
     const rows = interests.map((i) => ({
       user_id: user.id,
-      category: i.category,
-      sub_types: i.sub_types,
+      tier1: i.tier1,
+      tier2: i.tier2,
+      subcategories: i.subcategories,
       brands: i.brands,
     }))
     const { error } = await admin.from('user_equipment_interests').insert(rows)

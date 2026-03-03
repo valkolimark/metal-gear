@@ -18,12 +18,16 @@ import {
 } from '@/app/actions/onboarding'
 import type { EnhancedOnboardingData } from '@/lib/constants/onboarding'
 import {
-  EQUIPMENT_CATEGORIES,
+  EQUIPMENT_TAXONOMY,
   INDUSTRIES,
   ROLES,
   PAIN_POINTS,
   TRADING_INTENTS,
-} from '@/lib/constants/equipment-categories'
+  searchTaxonomy,
+  getTier2Label,
+  getTier1ForTier2,
+} from '@/lib/constants/equipment-taxonomy'
+import type { Tier1Bucket, Tier2Group } from '@/lib/constants/equipment-taxonomy'
 
 const STEP_LABELS = [
   'Identity',
@@ -227,37 +231,48 @@ export default function OnboardingPage() {
     if (currentStep > 1) setCurrentStep(currentStep - 1)
   }
 
-  // Equipment interest helpers
-  const toggleEquipmentCategory = (categoryId: string) => {
+  // Expanded tier1/tier2 tracking for accordion
+  const [expandedTier1, setExpandedTier1] = useState<string[]>([])
+  const [expandedTier2, setExpandedTier2] = useState<string[]>([])
+
+  const toggleTier1 = (id: string) => {
+    setExpandedTier1((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+  }
+  const toggleTier2 = (id: string) => {
+    setExpandedTier2((prev) => prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id])
+  }
+
+  // Equipment interest helpers for 3-tier taxonomy
+  const toggleEquipmentGroup = (tier1Id: string, tier2Id: string) => {
     const current = formData.equipment_interests || []
-    const exists = current.find((i) => i.category === categoryId)
+    const exists = current.find((i) => i.tier2 === tier2Id)
     if (exists) {
-      updateField('equipment_interests', current.filter((i) => i.category !== categoryId))
+      updateField('equipment_interests', current.filter((i) => i.tier2 !== tier2Id))
     } else {
-      updateField('equipment_interests', [...current, { category: categoryId, sub_types: [], brands: [] }])
+      updateField('equipment_interests', [...current, { tier1: tier1Id, tier2: tier2Id, subcategories: [], brands: [] }])
     }
   }
 
-  const toggleEquipmentSubType = (categoryId: string, subType: string) => {
+  const toggleSubcategory = (tier2Id: string, subId: string) => {
     const current = formData.equipment_interests || []
     updateField(
       'equipment_interests',
       current.map((i) => {
-        if (i.category !== categoryId) return i
-        const subs = i.sub_types.includes(subType)
-          ? i.sub_types.filter((s) => s !== subType)
-          : [...i.sub_types, subType]
-        return { ...i, sub_types: subs }
+        if (i.tier2 !== tier2Id) return i
+        const subs = i.subcategories.includes(subId)
+          ? i.subcategories.filter((s) => s !== subId)
+          : [...i.subcategories, subId]
+        return { ...i, subcategories: subs }
       })
     )
   }
 
-  const setEquipmentBrands = (categoryId: string, brandsStr: string) => {
+  const setEquipmentBrands = (tier2Id: string, brandsStr: string) => {
     const current = formData.equipment_interests || []
     updateField(
       'equipment_interests',
       current.map((i) => {
-        if (i.category !== categoryId) return i
+        if (i.tier2 !== tier2Id) return i
         return { ...i, brands: brandsStr.split(',').map((b) => b.trim()).filter(Boolean) }
       })
     )
@@ -287,13 +302,13 @@ export default function OnboardingPage() {
     )
   }
 
-  const filteredCategories = equipSearch
-    ? EQUIPMENT_CATEGORIES.filter(
-        (c) =>
-          c.label.toLowerCase().includes(equipSearch.toLowerCase()) ||
-          c.subTypes.some((s) => s.toLowerCase().includes(equipSearch.toLowerCase()))
-      )
-    : EQUIPMENT_CATEGORIES
+  // Search taxonomy — returns matching tier2 groups with their matching subcategories
+  const searchResults = equipSearch ? searchTaxonomy(equipSearch) : null
+
+  // Build a set of matching tier2 IDs for search filtering
+  const matchingTier2Ids = searchResults
+    ? new Set(searchResults.map((r) => r.tier2))
+    : null
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col px-4 py-6">
@@ -460,125 +475,193 @@ export default function OnboardingPage() {
           </div>
         )}
 
-        {/* ─── Step 2: Equipment Interests ─── */}
+        {/* ─── Step 2: Equipment Interests (3-Tier Taxonomy) ─── */}
         {currentStep === 2 && (
           <div className="space-y-6">
             <div>
               <h2 className="font-display text-2xl font-bold text-foreground">Your equipment interests</h2>
               <p className="mt-1 font-body text-muted-foreground">
-                Select the categories you work with. This powers your feed and SOS routing.
+                Select the groups and subcategories you work with. This powers your feed and SOS routing.
               </p>
             </div>
 
             <Input
-              placeholder="Search categories..."
+              placeholder="Search equipment (e.g., centrifuge, valve, pump)..."
               value={equipSearch}
               onChange={(e) => setEquipSearch(e.target.value)}
             />
 
-            <div className="space-y-3">
-              {filteredCategories.map((cat) => {
-                const isSelected = (formData.equipment_interests || []).some(
-                  (i) => i.category === cat.id
-                )
-                const interest = (formData.equipment_interests || []).find(
-                  (i) => i.category === cat.id
-                )
-                return (
-                  <div
-                    key={cat.id}
-                    className={`rounded-lg border transition-all ${
-                      isSelected
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border bg-surface hover:border-muted-foreground/30'
-                    }`}
-                  >
+            {/* Search results mode */}
+            {searchResults && searchResults.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-xs text-muted-foreground">{searchResults.length} result{searchResults.length !== 1 ? 's' : ''}</Label>
+                {searchResults.map((result) => {
+                  const tier1Id = getTier1ForTier2(result.tier2)
+                  const isGroupSelected = (formData.equipment_interests || []).some((i) => i.tier2 === result.tier2)
+                  const subId = result.subcategory.id
+                  return (
                     <button
+                      key={`${result.tier2}-${subId}`}
                       type="button"
-                      onClick={() => toggleEquipmentCategory(cat.id)}
-                      className="flex w-full items-center justify-between p-4"
+                      onClick={() => {
+                        if (!isGroupSelected) {
+                          // Group not yet selected — add it with this subcategory
+                          const current = formData.equipment_interests || []
+                          const newInterest = { tier1: tier1Id, tier2: result.tier2, subcategories: [subId], brands: [] }
+                          updateField('equipment_interests', [...current, newInterest])
+                        } else {
+                          toggleSubcategory(result.tier2, subId)
+                        }
+                      }}
+                      className="flex w-full items-center gap-3 rounded-lg border border-border bg-surface p-3 text-left transition-all hover:border-primary/50"
                     >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`flex size-8 items-center justify-center rounded-lg ${
-                            isSelected ? 'bg-primary text-white' : 'bg-border text-muted-foreground'
-                          }`}
-                        >
-                          {isSelected ? (
-                            <Check className="size-4" />
-                          ) : (
-                            <Wrench className="size-4" />
-                          )}
-                        </div>
-                        <span className="font-body text-sm font-medium text-foreground">
-                          {cat.label}
-                        </span>
+                      <div className={`flex size-6 items-center justify-center rounded ${isGroupSelected ? 'bg-primary text-white' : 'border border-border'}`}>
+                        {isGroupSelected && <Check className="size-3" />}
                       </div>
-                      {cat.subTypes.length > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          {cat.subTypes.length} sub-types
-                        </span>
-                      )}
+                      <div>
+                        <span className="text-sm font-medium text-foreground">{result.subcategory.label}</span>
+                        <span className="ml-2 text-xs text-muted-foreground">{getTier2Label(result.tier2)}</span>
+                      </div>
                     </button>
+                  )
+                })}
+              </div>
+            )}
+            {searchResults && searchResults.length === 0 && (
+              <p className="text-sm text-muted-foreground">No results found for &ldquo;{equipSearch}&rdquo;</p>
+            )}
 
-                    {isSelected && cat.subTypes.length > 0 && (
-                      <div className="border-t border-border px-4 pb-4 pt-3">
-                        <Label className="mb-2 block text-xs text-muted-foreground">Sub-types</Label>
-                        <div className="flex flex-wrap gap-1.5">
-                          {cat.subTypes.map((sub) => (
-                            <button
-                              key={sub}
-                              type="button"
-                              onClick={() => toggleEquipmentSubType(cat.id, sub)}
-                              className={`rounded-full border px-2.5 py-1 text-xs transition-all ${
-                                interest?.sub_types.includes(sub)
-                                  ? 'border-primary bg-primary/10 text-primary'
-                                  : 'border-border text-muted-foreground hover:border-primary/50'
-                              }`}
-                            >
-                              {sub}
-                            </button>
-                          ))}
-                        </div>
-                        {cat.commonBrands.length > 0 && (
-                          <div className="mt-3">
-                            <Label className="mb-1 block text-xs text-muted-foreground">
-                              Brands (comma-separated)
-                            </Label>
-                            <Input
-                              placeholder={cat.commonBrands.slice(0, 3).join(', ')}
-                              value={interest?.brands.join(', ') || ''}
-                              onChange={(e) => setEquipmentBrands(cat.id, e.target.value)}
-                              className="text-xs"
-                            />
+            {/* Browse taxonomy — shown when not searching */}
+            {!searchResults && (
+              <div className="space-y-3">
+                {EQUIPMENT_TAXONOMY.map((tier1: Tier1Bucket) => {
+                  const isTier1Expanded = expandedTier1.includes(tier1.id)
+                  const selectedGroupCount = (formData.equipment_interests || []).filter(
+                    (i) => i.tier1 === tier1.id
+                  ).length
+                  return (
+                    <div key={tier1.id} className="rounded-lg border border-border bg-surface">
+                      <button
+                        type="button"
+                        onClick={() => toggleTier1(tier1.id)}
+                        className="flex w-full items-center justify-between p-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className={`flex size-8 items-center justify-center rounded-lg ${selectedGroupCount > 0 ? 'bg-primary text-white' : 'bg-border text-muted-foreground'}`}>
+                            <Wrench className="size-4" />
                           </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
+                          <div className="text-left">
+                            <span className="font-display text-sm font-semibold text-foreground">{tier1.label}</span>
+                            <span className="ml-2 text-xs text-muted-foreground">({tier1.groups.length} groups)</span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {selectedGroupCount > 0 && (
+                            <Badge variant="secondary" className="text-[10px]">{selectedGroupCount} selected</Badge>
+                          )}
+                          <ChevronRight className={`size-4 text-muted-foreground transition-transform ${isTier1Expanded ? 'rotate-90' : ''}`} />
+                        </div>
+                      </button>
 
+                      {isTier1Expanded && (
+                        <div className="border-t border-border px-4 pb-3 pt-2">
+                          {tier1.groups.map((group: Tier2Group) => {
+                            const isGroupSelected = (formData.equipment_interests || []).some((i) => i.tier2 === group.id)
+                            const interest = (formData.equipment_interests || []).find((i) => i.tier2 === group.id)
+                            const isTier2Expanded = expandedTier2.includes(group.id)
+                            return (
+                              <div key={group.id} className={`mb-2 rounded-lg border transition-all ${isGroupSelected ? 'border-primary/40 bg-primary/5' : 'border-border/50'}`}>
+                                <div className="flex items-center gap-2 p-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleEquipmentGroup(tier1.id, group.id)}
+                                    className={`flex size-5 shrink-0 items-center justify-center rounded ${isGroupSelected ? 'bg-primary text-white' : 'border border-border'}`}
+                                  >
+                                    {isGroupSelected && <Check className="size-3" />}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => { if (!isGroupSelected) toggleEquipmentGroup(tier1.id, group.id); toggleTier2(group.id) }}
+                                    className="flex flex-1 items-center justify-between text-left"
+                                  >
+                                    <span className="font-body text-sm font-medium text-foreground">{group.label}</span>
+                                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                                      {group.subcategories.length} items
+                                      <ChevronRight className={`size-3 transition-transform ${isTier2Expanded ? 'rotate-90' : ''}`} />
+                                    </span>
+                                  </button>
+                                </div>
+
+                                {isGroupSelected && isTier2Expanded && (
+                                  <div className="border-t border-border/50 px-3 pb-3 pt-2">
+                                    <Label className="mb-2 block text-xs text-muted-foreground">Subcategories</Label>
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {group.subcategories.map((sub) => (
+                                        <button
+                                          key={sub.id}
+                                          type="button"
+                                          onClick={() => toggleSubcategory(group.id, sub.id)}
+                                          className={`rounded-full border px-2.5 py-1 text-xs transition-all ${
+                                            interest?.subcategories.includes(sub.id)
+                                              ? 'border-primary bg-primary/10 text-primary'
+                                              : 'border-border text-muted-foreground hover:border-primary/50'
+                                          }`}
+                                        >
+                                          {sub.label}
+                                          {sub.crossListedIn && sub.crossListedIn.length > 0 && (
+                                            <span className="ml-1 text-[9px] text-muted-foreground/60" title={`Also in: ${sub.crossListedIn.join(', ')}`}>+</span>
+                                          )}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <div className="mt-3">
+                                      <Label className="mb-1 block text-xs text-muted-foreground">
+                                        Brands (comma-separated)
+                                      </Label>
+                                      <Input
+                                        placeholder="e.g., Caterpillar, John Deere"
+                                        value={interest?.brands.join(', ') || ''}
+                                        onChange={(e) => setEquipmentBrands(group.id, e.target.value)}
+                                        className="text-xs"
+                                      />
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Selection summary */}
             {(formData.equipment_interests || []).length > 0 && (
               <div className="rounded-lg border border-border bg-surface p-3">
-                <Label className="mb-2 block text-xs text-muted-foreground">Selected ({(formData.equipment_interests || []).length})</Label>
+                <Label className="mb-2 block text-xs text-muted-foreground">
+                  {(formData.equipment_interests || []).length} group{(formData.equipment_interests || []).length !== 1 ? 's' : ''} selected
+                  {' '}&middot;{' '}
+                  {(formData.equipment_interests || []).reduce((sum, i) => sum + i.subcategories.length, 0)} subcategories
+                </Label>
                 <div className="flex flex-wrap gap-1.5">
-                  {(formData.equipment_interests || []).map((i) => {
-                    const cat = EQUIPMENT_CATEGORIES.find((c) => c.id === i.category)
-                    return (
-                      <Badge key={i.category} variant="secondary" className="gap-1">
-                        {cat?.label || i.category}
-                        <button
-                          type="button"
-                          onClick={() => toggleEquipmentCategory(i.category)}
-                          className="ml-0.5 text-muted-foreground hover:text-foreground"
-                        >
-                          &times;
-                        </button>
-                      </Badge>
-                    )
-                  })}
+                  {(formData.equipment_interests || []).map((i) => (
+                    <Badge key={i.tier2} variant="secondary" className="gap-1">
+                      {getTier2Label(i.tier2)}
+                      {i.subcategories.length > 0 && (
+                        <span className="text-muted-foreground">({i.subcategories.length})</span>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => toggleEquipmentGroup(i.tier1, i.tier2)}
+                        className="ml-0.5 text-muted-foreground hover:text-foreground"
+                      >
+                        &times;
+                      </button>
+                    </Badge>
+                  ))}
                 </div>
               </div>
             )}
@@ -804,23 +887,20 @@ export default function OnboardingPage() {
                   <div className="space-y-2">
                     <Label className="text-xs text-muted-foreground">SOS categories (from your interests)</Label>
                     <div className="flex flex-wrap gap-1.5">
-                      {(formData.equipment_interests || []).map((i) => {
-                        const cat = EQUIPMENT_CATEGORIES.find((c) => c.id === i.category)
-                        return (
+                      {(formData.equipment_interests || []).map((i) => (
                           <button
-                            key={i.category}
+                            key={i.tier2}
                             type="button"
-                            onClick={() => toggleArrayItem('sos_categories', i.category)}
+                            onClick={() => toggleArrayItem('sos_categories', i.tier2)}
                             className={`rounded-full border px-2.5 py-1 text-xs transition-all ${
-                              (formData.sos_categories || []).includes(i.category)
+                              (formData.sos_categories || []).includes(i.tier2)
                                 ? 'border-primary bg-primary/10 text-primary'
                                 : 'border-border text-muted-foreground'
                             }`}
                           >
-                            {cat?.label || i.category}
+                            {getTier2Label(i.tier2)}
                           </button>
-                        )
-                      })}
+                      ))}
                     </div>
                   </div>
 

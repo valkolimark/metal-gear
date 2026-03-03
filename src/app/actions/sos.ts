@@ -3,13 +3,13 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotification } from '@/app/actions/notifications'
-import { SOS_TIER_LIMITS } from '@/lib/constants/equipment-categories'
+import { SOS_TIER_LIMITS, getAllGroupsForSubcategory } from '@/lib/constants/equipment-taxonomy'
 
 export interface SosRequestData {
   title: string
   description?: string
   equipment_category: string
-  equipment_sub_type?: string
+  equipment_subcategory?: string
   brand?: string
   model?: string
   urgency: 'critical' | 'normal'
@@ -94,7 +94,7 @@ export async function createSosRequest(data: SosRequestData) {
       title: data.title,
       description: data.description || null,
       equipment_category: data.equipment_category,
-      equipment_sub_type: data.equipment_sub_type || null,
+      equipment_subcategory: data.equipment_subcategory || null,
       brand: data.brand || null,
       model: data.model || null,
       urgency: data.urgency,
@@ -113,14 +113,44 @@ export async function createSosRequest(data: SosRequestData) {
 
   if (error) return { error: error.message }
 
-  // Route SOS to matching responders
+  // Route SOS to matching responders — primary tier2 group
   const { data: responders } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string | null>) => Promise<{ data: { user_id: string; notify_methods: string[] }[] | null }> })
     .rpc('find_sos_responders', {
-      p_category: data.equipment_category,
-      p_sub_type: data.equipment_sub_type || null,
+      p_tier2: data.equipment_category,
+      p_subcategory: data.equipment_subcategory || null,
     })
 
+  // Cross-list expansion: find additional tier2 groups that share this subcategory
+  const allResponders = new Map<string, { user_id: string; notify_methods: string[] }>()
   if (responders && Array.isArray(responders)) {
+    for (const r of responders) {
+      allResponders.set((r as { user_id: string }).user_id, r as { user_id: string; notify_methods: string[] })
+    }
+  }
+
+  if (data.equipment_subcategory) {
+    const crossGroups = getAllGroupsForSubcategory(data.equipment_subcategory)
+      .filter(g => g !== data.equipment_category)
+    for (const groupId of crossGroups) {
+      const { data: crossResponders } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string | null>) => Promise<{ data: { user_id: string; notify_methods: string[] }[] | null }> })
+        .rpc('find_sos_responders', {
+          p_tier2: groupId,
+          p_subcategory: data.equipment_subcategory,
+        })
+      if (crossResponders && Array.isArray(crossResponders)) {
+        for (const r of crossResponders) {
+          const cr = r as { user_id: string; notify_methods: string[] }
+          if (!allResponders.has(cr.user_id)) {
+            allResponders.set(cr.user_id, cr)
+          }
+        }
+      }
+    }
+  }
+
+  const mergedResponders = Array.from(allResponders.values())
+
+  if (mergedResponders.length > 0) {
     // Get requester's company name
     const { data: bizProfile } = await admin
       .from('user_business_profiles')
@@ -129,10 +159,10 @@ export async function createSosRequest(data: SosRequestData) {
       .maybeSingle()
 
     const companyName = bizProfile?.company_name || 'Someone'
-    const responderLimit = limits.maxResponders === Infinity ? responders.length : Math.min(responders.length, limits.maxResponders)
+    const responderLimit = limits.maxResponders === Infinity ? mergedResponders.length : Math.min(mergedResponders.length, limits.maxResponders)
 
     for (let i = 0; i < responderLimit; i++) {
-      const r = responders[i] as { user_id: string; notify_methods: string[] }
+      const r = mergedResponders[i] as { user_id: string; notify_methods: string[] }
       if (r.user_id === user.id) continue // Don't notify yourself
 
       // Log notification delivery
@@ -225,10 +255,10 @@ export async function getSosRequests(filters?: SosFilters) {
   // Get user's equipment interests to filter relevant SOS
   const { data: interests } = await admin
     .from('user_equipment_interests')
-    .select('category')
+    .select('tier2')
     .eq('user_id', user.id)
 
-  const userCategories = (interests || []).map((i: { category: string }) => i.category)
+  const userCategories = (interests || []).map((i: { tier2: string }) => i.tier2)
 
   let query = admin
     .from('sos_requests')

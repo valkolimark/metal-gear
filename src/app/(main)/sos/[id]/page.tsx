@@ -20,7 +20,7 @@ import {
   updateSosStatus,
   markSosFulfilled,
 } from '@/app/actions/sos'
-import { EQUIPMENT_CATEGORIES } from '@/lib/constants/equipment-categories'
+import { getTier2Label, getSubcategoryLabel } from '@/lib/constants/equipment-taxonomy'
 import { createClient } from '@/lib/supabase/client'
 
 function timeAgo(dateStr: string) {
@@ -161,7 +161,8 @@ export default function SosDetailPage() {
 
   if (!sos) return null
 
-  const cat = EQUIPMENT_CATEGORIES.find((c) => c.id === sos.equipment_category)
+  const catLabel = getTier2Label(sos.equipment_category as string)
+  const subLabel = sos.equipment_subcategory ? getSubcategoryLabel(sos.equipment_subcategory as string) : null
   const requester = sos.requester as Record<string, string> | null
   const requesterBiz = sos.requester_business as Record<string, string> | null
 
@@ -216,8 +217,8 @@ export default function SosDetailPage() {
         ) : null}
 
         <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
-          {cat ? <Badge variant="outline">{cat.label}</Badge> : null}
-          {sos.equipment_sub_type ? <Badge variant="outline">{sos.equipment_sub_type as string}</Badge> : null}
+          {catLabel ? <Badge variant="outline">{catLabel}</Badge> : null}
+          {subLabel ? <Badge variant="outline">{subLabel}</Badge> : null}
           {sos.brand ? <span>Brand: {sos.brand as string}</span> : null}
           {sos.model ? <span>Model: {sos.model as string}</span> : null}
         </div>

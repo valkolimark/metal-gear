@@ -10,7 +10,13 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { createSosRequest, uploadSosMedia } from '@/app/actions/sos'
-import { EQUIPMENT_CATEGORIES } from '@/lib/constants/equipment-categories'
+import {
+  EQUIPMENT_TAXONOMY,
+  searchTaxonomy,
+  getTier2Label,
+  getSubcategoryLabel,
+} from '@/lib/constants/equipment-taxonomy'
+import type { Tier2Group } from '@/lib/constants/equipment-taxonomy'
 
 const EXPIRY_OPTIONS = [
   { value: '24', label: '24 hours' },
@@ -32,9 +38,10 @@ export default function CreateSosPage() {
   const [photos, setPhotos] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
 
+  const [equipSearch, setEquipSearch] = useState('')
   const [form, setForm] = useState({
     equipment_category: '',
-    equipment_sub_type: '',
+    equipment_subcategory: '',
     brand: '',
     model: '',
     title: '',
@@ -47,16 +54,29 @@ export default function CreateSosPage() {
     expiry_hours: '72',
   })
 
-  const selectedCategory = EQUIPMENT_CATEGORIES.find((c) => c.id === form.equipment_category)
+  // Find the selected tier2 group for subcategory display
+  const selectedGroup: Tier2Group | undefined = (() => {
+    for (const tier1 of EQUIPMENT_TAXONOMY) {
+      for (const group of tier1.groups) {
+        if (group.id === form.equipment_category) return group
+      }
+    }
+    return undefined
+  })()
 
   const updateForm = (key: string, value: string | number) => {
     setForm((prev) => {
       const next = { ...prev, [key]: value }
       // Auto-generate title
-      if (['brand', 'model', 'equipment_sub_type', 'equipment_category'].includes(key)) {
-        const cat = EQUIPMENT_CATEGORIES.find((c) => c.id === (key === 'equipment_category' ? value : next.equipment_category))
-        const parts = [next.brand, next.equipment_sub_type || cat?.label, next.model].filter(Boolean)
-        next.title = parts.join(' ') || cat?.label || ''
+      if (['brand', 'model', 'equipment_subcategory', 'equipment_category'].includes(key)) {
+        const catLabel = getTier2Label(key === 'equipment_category' ? (value as string) : next.equipment_category)
+        const subLabel = next.equipment_subcategory ? getSubcategoryLabel(next.equipment_subcategory) : ''
+        const parts = [next.brand, subLabel || catLabel, next.model].filter(Boolean)
+        next.title = parts.join(' ') || catLabel || ''
+      }
+      // Reset subcategory when category changes
+      if (key === 'equipment_category') {
+        next.equipment_subcategory = ''
       }
       return next
     })
@@ -104,7 +124,7 @@ export default function CreateSosPage() {
         title: form.title,
         description: form.description || undefined,
         equipment_category: form.equipment_category,
-        equipment_sub_type: form.equipment_sub_type || undefined,
+        equipment_subcategory: form.equipment_subcategory || undefined,
         brand: form.brand || undefined,
         model: form.model || undefined,
         urgency: form.urgency,
@@ -155,34 +175,70 @@ export default function CreateSosPage() {
 
           <div className="space-y-2">
             <Label>Equipment Category <span className="text-primary">*</span></Label>
-            <select
-              value={form.equipment_category}
-              onChange={(e) => updateForm('equipment_category', e.target.value)}
-              className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground"
-            >
-              <option value="">Select category...</option>
-              {EQUIPMENT_CATEGORIES.map((cat) => (
-                <option key={cat.id} value={cat.id}>{cat.label}</option>
-              ))}
-            </select>
+            <Input
+              placeholder="Search equipment (e.g., centrifuge, valve, pump)..."
+              value={equipSearch}
+              onChange={(e) => setEquipSearch(e.target.value)}
+            />
+            {/* Search results */}
+            {equipSearch && (() => {
+              const results = searchTaxonomy(equipSearch)
+              if (results.length === 0) return <p className="text-xs text-muted-foreground">No results</p>
+              return (
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-lg border border-border bg-surface p-2">
+                  {results.slice(0, 15).map((r) => (
+                    <button
+                      key={`${r.tier2}-${r.subcategory.id}`}
+                      type="button"
+                      onClick={() => {
+                        updateForm('equipment_category', r.tier2)
+                        updateForm('equipment_subcategory', r.subcategory.id)
+                        setEquipSearch('')
+                      }}
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-left text-sm hover:bg-primary/10"
+                    >
+                      <span className="font-medium text-foreground">{r.subcategory.label}</span>
+                      <span className="text-xs text-muted-foreground">{getTier2Label(r.tier2)}</span>
+                    </button>
+                  ))}
+                </div>
+              )
+            })()}
+            {/* Selected category display or dropdown fallback */}
+            {!equipSearch && (
+              <select
+                value={form.equipment_category}
+                onChange={(e) => updateForm('equipment_category', e.target.value)}
+                className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground"
+              >
+                <option value="">Select category...</option>
+                {EQUIPMENT_TAXONOMY.map((tier1) => (
+                  <optgroup key={tier1.id} label={tier1.label}>
+                    {tier1.groups.map((group) => (
+                      <option key={group.id} value={group.id}>{group.label}</option>
+                    ))}
+                  </optgroup>
+                ))}
+              </select>
+            )}
           </div>
 
-          {selectedCategory && selectedCategory.subTypes.length > 0 && (
+          {selectedGroup && selectedGroup.subcategories.length > 0 && (
             <div className="space-y-2">
-              <Label>Sub-type</Label>
+              <Label>Subcategory</Label>
               <div className="flex flex-wrap gap-1.5">
-                {selectedCategory.subTypes.map((sub) => (
+                {selectedGroup.subcategories.map((sub) => (
                   <button
-                    key={sub}
+                    key={sub.id}
                     type="button"
-                    onClick={() => updateForm('equipment_sub_type', form.equipment_sub_type === sub ? '' : sub)}
+                    onClick={() => updateForm('equipment_subcategory', form.equipment_subcategory === sub.id ? '' : sub.id)}
                     className={`rounded-full border px-3 py-1 text-xs transition-all ${
-                      form.equipment_sub_type === sub
+                      form.equipment_subcategory === sub.id
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border text-muted-foreground hover:border-primary/50'
                     }`}
                   >
-                    {sub}
+                    {sub.label}
                   </button>
                 ))}
               </div>
@@ -195,7 +251,7 @@ export default function CreateSosPage() {
               <Input
                 value={form.brand}
                 onChange={(e) => updateForm('brand', e.target.value)}
-                placeholder={selectedCategory?.commonBrands[0] || 'e.g., Fisher'}
+                placeholder="e.g., Fisher"
               />
             </div>
             <div className="space-y-2">
@@ -416,7 +472,7 @@ export default function CreateSosPage() {
                 <p className="text-xs text-muted-foreground">{form.description}</p>
               )}
               <div className="flex gap-3 text-xs text-muted-foreground">
-                {selectedCategory && <span>{selectedCategory.label}</span>}
+                {form.equipment_category && <span>{getTier2Label(form.equipment_category)}</span>}
                 <span>{form.location_city || 'Houston'}, {form.location_state || 'TX'}</span>
                 <span>{DISTANCE_OPTIONS.find((d) => d.value === form.max_distance_miles)?.label}</span>
               </div>
