@@ -342,7 +342,8 @@ src/app/api/template/bulk-upload/route.ts
 3. **Server actions** — `processExcelImport()` and `processSosImport()`
 4. **UI rewrite** — `/listings/import` page with upload, preview, progress
 5. **Build & test** — Verify template download, upload round-trip, error handling
-6. **Deploy**
+6. **Update CHANGELOG.md** — Add a `[0.10.0]` entry under the `[Unreleased]` section with all features added, files changed, and any bug fixes. Move the `[Unreleased]` planned note down or remove it. Follow the existing format (Added/Changed/Fixed sections with bold feature names).
+7. **Deploy**
 
 ---
 
@@ -355,6 +356,7 @@ src/app/api/template/bulk-upload/route.ts
 - Toast notifications via `sonner` for success/error feedback
 - File upload via `FormData` passed to server actions
 - `exceljs` for both server-side generation and client-side preview parsing
+- **Always update `CHANGELOG.md`** at the end of each cycle before deploying — add a versioned entry with Added/Changed/Fixed sections following the existing format
 
 ---
 

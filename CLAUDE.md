@@ -82,3 +82,4 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - Supabase env vars managed via Management API (token needed per session)
 - Vercel env vars managed via REST API
 - API docs at `/docs/api.md`
+- Update `CHANGELOG.md` at the end of each cycle before deploying — add a versioned entry with Added/Changed/Fixed sections following Keep a Changelog format
