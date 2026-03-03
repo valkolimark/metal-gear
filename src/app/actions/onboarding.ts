@@ -137,52 +137,62 @@ export async function getEnhancedOnboardingProgress() {
 
   const admin = createAdminClient()
 
-  const { data: profile } = await admin
-    .from('user_business_profiles')
-    .select('*')
-    .eq('user_id', user.id)
-    .maybeSingle()
-
-  if (!profile) {
-    // Also fetch auth user info for prefilling
-    const { data: authProfile } = await admin
-      .from('profiles')
-      .select('full_name, company_name, phone, location_city, location_state')
-      .eq('id', user.id)
+  try {
+    const { data: profile, error: profileError } = await admin
+      .from('user_business_profiles')
+      .select('*')
+      .eq('user_id', user.id)
       .maybeSingle()
 
+    if (profileError) {
+      console.error('getEnhancedOnboardingProgress: user_business_profiles query failed:', profileError.message)
+      // Table may not exist — treat as fresh user
+    }
+
+    if (!profile) {
+      // Also fetch auth user info for prefilling
+      const { data: authProfile } = await admin
+        .from('profiles')
+        .select('full_name, company_name, phone, location_city, location_state')
+        .eq('id', user.id)
+        .maybeSingle()
+
+      return {
+        step: 1,
+        data: null,
+        completed: false,
+        prefill: {
+          full_name: authProfile?.full_name || '',
+          company_name: authProfile?.company_name || '',
+          work_email: user.email || '',
+          work_phone: authProfile?.phone || '',
+          location_city: authProfile?.location_city || '',
+          location_state: authProfile?.location_state || '',
+        },
+      }
+    }
+
+    // Get equipment interests
+    const { data: interests } = await admin
+      .from('user_equipment_interests')
+      .select('*')
+      .eq('user_id', user.id)
+
     return {
-      step: 1,
-      data: null,
-      completed: false,
-      prefill: {
-        full_name: authProfile?.full_name || '',
-        company_name: authProfile?.company_name || '',
-        work_email: user.email || '',
-        work_phone: authProfile?.phone || '',
-        location_city: authProfile?.location_city || '',
-        location_state: authProfile?.location_state || '',
+      step: profile.onboarding_step || 1,
+      completed: profile.onboarding_completed || false,
+      data: {
+        ...profile,
+        equipment_interests: (interests || []).map((i: { category: string; sub_types: string[] | null; brands: string[] | null }) => ({
+          category: i.category,
+          sub_types: i.sub_types || [],
+          brands: i.brands || [],
+        })),
       },
     }
-  }
-
-  // Get equipment interests
-  const { data: interests } = await admin
-    .from('user_equipment_interests')
-    .select('*')
-    .eq('user_id', user.id)
-
-  return {
-    step: profile.onboarding_step || 1,
-    completed: profile.onboarding_completed || false,
-    data: {
-      ...profile,
-      equipment_interests: (interests || []).map((i: { category: string; sub_types: string[] | null; brands: string[] | null }) => ({
-        category: i.category,
-        sub_types: i.sub_types || [],
-        brands: i.brands || [],
-      })),
-    },
+  } catch (err) {
+    console.error('getEnhancedOnboardingProgress: unexpected error:', err)
+    return { error: 'Failed to load onboarding data' }
   }
 }
 

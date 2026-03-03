@@ -88,20 +88,22 @@ export async function updateSession(request: NextRequest) {
     isProtectedRoute
   ) {
     try {
-      const { data: bizProfile } = await supabase
+      const { data: bizProfile, error: bizError } = await supabase
         .from('user_business_profiles')
         .select('onboarding_completed')
         .eq('user_id', user.id)
         .maybeSingle()
 
-      // If no profile exists or onboarding not completed, redirect to onboarding
-      if (!bizProfile || !bizProfile.onboarding_completed) {
+      // Fail-open: if the query errors (table missing, RLS issue), let the user through
+      if (bizError) {
+        // Skip guard — don't block users if onboarding table is unavailable
+      } else if (!bizProfile || !bizProfile.onboarding_completed) {
         const url = request.nextUrl.clone()
         url.pathname = '/onboarding'
         return NextResponse.redirect(url)
       }
     } catch {
-      // If query fails (e.g. table doesn't exist yet), skip the guard
+      // If query throws (e.g. network issue), skip the guard
     }
   }
 

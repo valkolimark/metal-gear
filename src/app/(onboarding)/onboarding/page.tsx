@@ -40,6 +40,7 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [formData, setFormData] = useState<EnhancedOnboardingData>({
     show_phone_to: 'no_one',
@@ -72,51 +73,64 @@ export default function OnboardingPage() {
 
   useEffect(() => {
     async function load() {
-      const result = await getEnhancedOnboardingProgress()
-      if ('error' in result) {
-        router.push('/login')
-        return
+      try {
+        const result = await getEnhancedOnboardingProgress()
+        if ('error' in result) {
+          // If it's an auth error, redirect to login
+          if (result.error === 'Not authenticated') {
+            router.push('/login')
+            return
+          }
+          // For other errors (e.g. table doesn't exist), show form with defaults
+          console.error('Onboarding load error:', result.error)
+          setLoading(false)
+          return
+        }
+        if (result.completed) {
+          router.push('/dashboard')
+          return
+        }
+        if (result.data) {
+          // Extract known fields from the DB result, converting nulls to undefined
+          const d = result.data as Record<string, unknown>
+          setFormData((prev) => ({
+            ...prev,
+            company_name: (d.company_name as string) || prev.company_name,
+            job_title: (d.job_title as string) || prev.job_title,
+            work_phone: (d.work_phone as string) || prev.work_phone,
+            show_phone_to: (d.show_phone_to as EnhancedOnboardingData['show_phone_to']) || prev.show_phone_to,
+            primary_role: (d.primary_role as string) || prev.primary_role,
+            secondary_roles: (d.secondary_roles as string[]) || prev.secondary_roles,
+            industries: (d.industries as string[]) || prev.industries,
+            pain_points: (d.pain_points as string[]) || prev.pain_points,
+            pain_points_other: (d.pain_points_other as string) || prev.pain_points_other,
+            trading_intents: (d.trading_intents as string[]) || prev.trading_intents,
+            show_company: d.show_company != null ? (d.show_company as boolean) : prev.show_company,
+            show_name: d.show_name != null ? (d.show_name as boolean) : prev.show_name,
+            show_email_to: (d.show_email_to as EnhancedOnboardingData['show_email_to']) || prev.show_email_to,
+            sos_responder: d.sos_responder != null ? (d.sos_responder as boolean) : prev.sos_responder,
+            sos_categories: (d.sos_categories as string[]) || prev.sos_categories,
+            sos_urgency_level: (d.sos_urgency_level as EnhancedOnboardingData['sos_urgency_level']) || prev.sos_urgency_level,
+            sos_notify_methods: (d.sos_notify_methods as string[]) || prev.sos_notify_methods,
+            sos_allow_realtime_contact: d.sos_allow_realtime_contact != null ? (d.sos_allow_realtime_contact as boolean) : prev.sos_allow_realtime_contact,
+            equipment_interests: (d.equipment_interests as EnhancedOnboardingData['equipment_interests']) || prev.equipment_interests,
+          }))
+          setCurrentStep(Math.min(result.step || 1, 6))
+        } else if (result.prefill) {
+          setFormData((prev) => ({
+            ...prev,
+            full_name: result.prefill?.full_name || '',
+            company_name: result.prefill?.company_name || '',
+            work_email: result.prefill?.work_email || '',
+            work_phone: result.prefill?.work_phone || '',
+          }))
+        }
+      } catch (err) {
+        console.error('Onboarding load failed:', err)
+        setLoadError('Unable to load onboarding data. You can still fill out the form or skip to dashboard.')
+      } finally {
+        setLoading(false)
       }
-      if (result.completed) {
-        router.push('/dashboard')
-        return
-      }
-      if (result.data) {
-        // Extract known fields from the DB result, converting nulls to undefined
-        const d = result.data as Record<string, unknown>
-        setFormData((prev) => ({
-          ...prev,
-          company_name: (d.company_name as string) || prev.company_name,
-          job_title: (d.job_title as string) || prev.job_title,
-          work_phone: (d.work_phone as string) || prev.work_phone,
-          show_phone_to: (d.show_phone_to as EnhancedOnboardingData['show_phone_to']) || prev.show_phone_to,
-          primary_role: (d.primary_role as string) || prev.primary_role,
-          secondary_roles: (d.secondary_roles as string[]) || prev.secondary_roles,
-          industries: (d.industries as string[]) || prev.industries,
-          pain_points: (d.pain_points as string[]) || prev.pain_points,
-          pain_points_other: (d.pain_points_other as string) || prev.pain_points_other,
-          trading_intents: (d.trading_intents as string[]) || prev.trading_intents,
-          show_company: d.show_company != null ? (d.show_company as boolean) : prev.show_company,
-          show_name: d.show_name != null ? (d.show_name as boolean) : prev.show_name,
-          show_email_to: (d.show_email_to as EnhancedOnboardingData['show_email_to']) || prev.show_email_to,
-          sos_responder: d.sos_responder != null ? (d.sos_responder as boolean) : prev.sos_responder,
-          sos_categories: (d.sos_categories as string[]) || prev.sos_categories,
-          sos_urgency_level: (d.sos_urgency_level as EnhancedOnboardingData['sos_urgency_level']) || prev.sos_urgency_level,
-          sos_notify_methods: (d.sos_notify_methods as string[]) || prev.sos_notify_methods,
-          sos_allow_realtime_contact: d.sos_allow_realtime_contact != null ? (d.sos_allow_realtime_contact as boolean) : prev.sos_allow_realtime_contact,
-          equipment_interests: (d.equipment_interests as EnhancedOnboardingData['equipment_interests']) || prev.equipment_interests,
-        }))
-        setCurrentStep(Math.min(result.step || 1, 6))
-      } else if (result.prefill) {
-        setFormData((prev) => ({
-          ...prev,
-          full_name: result.prefill?.full_name || '',
-          company_name: result.prefill?.company_name || '',
-          work_email: result.prefill?.work_email || '',
-          work_phone: result.prefill?.work_phone || '',
-        }))
-      }
-      setLoading(false)
     }
     load()
   }, [router])
@@ -175,6 +189,9 @@ export default function OnboardingPage() {
       if (currentStep < 6) {
         setCurrentStep(currentStep + 1)
       }
+    } catch (err) {
+      console.error('handleNext error:', err)
+      toast.error('Failed to save. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -198,6 +215,9 @@ export default function OnboardingPage() {
       }
       toast.success('Welcome to Metal Gear!')
       router.push('/dashboard')
+    } catch (err) {
+      console.error('handleComplete error:', err)
+      toast.error('Failed to complete setup. Please try again.')
     } finally {
       setSaving(false)
     }
@@ -247,6 +267,22 @@ export default function OnboardingPage() {
     return (
       <div className="flex flex-1 items-center justify-center">
         <div className="size-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-4 text-center">
+        <p className="font-body text-sm text-muted-foreground">{loadError}</p>
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => { setLoadError(null); setLoading(true); window.location.reload() }}>
+            Try Again
+          </Button>
+          <Button onClick={() => router.push('/dashboard')}>
+            Go to Dashboard
+          </Button>
+        </div>
       </div>
     )
   }
