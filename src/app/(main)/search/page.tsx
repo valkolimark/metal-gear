@@ -280,6 +280,10 @@ function SearchContent() {
     // For distance sorting, fetch more results and sort client-side
     const isDistanceSort = sortBy === 'distance'
 
+    // Featured and boosted listings always appear first
+    q = q.order('is_featured', { ascending: false })
+         .order('admin_boost', { ascending: false })
+
     if (!isDistanceSort) {
       switch (sortBy) {
         case 'price_asc':

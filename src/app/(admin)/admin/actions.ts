@@ -413,3 +413,520 @@ export async function adminGrantRole(userId: string, role: AdminRole | null) {
   await logAdminAction(profile.id, role ? 'grant_role' : 'revoke_role', 'user', userId, { role })
   return { success: true }
 }
+
+// ─── Listing Management ─────────────────────────────────────────────
+
+export async function getAdminListings(params: {
+  page?: number
+  search?: string
+  status?: string
+  ai_fraud_flagged?: boolean
+}) {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const page = params.page ?? 1
+  const perPage = 50
+  const offset = (page - 1) * perPage
+
+  let query = admin
+    .from('listings')
+    .select(
+      'id, title, status, price_cents, condition, category, created_at, seller_id, ai_fraud_flagged, ai_fraud_reason, admin_reviewed_at, is_featured, admin_boost, specifications',
+      { count: 'exact' }
+    )
+
+  if (params.search) {
+    query = query.ilike('title', `%${params.search}%`)
+  }
+  if (params.status && params.status !== 'all') {
+    query = query.eq('status', params.status)
+  }
+  if (params.ai_fraud_flagged !== undefined) {
+    query = query.eq('ai_fraud_flagged', params.ai_fraud_flagged)
+  }
+
+  const { data, count } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + perPage - 1)
+
+  // Get seller names via second query
+  const sellerIds = [...new Set((data ?? []).map((l) => l.seller_id))]
+  const sellerMap: Record<string, string> = {}
+
+  if (sellerIds.length > 0) {
+    const { data: sellers } = await admin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', sellerIds)
+
+    for (const s of sellers ?? []) {
+      sellerMap[s.id] = s.full_name ?? 'Unknown'
+    }
+  }
+
+  return {
+    listings: (data ?? []).map((l) => ({
+      ...l,
+      seller_name: sellerMap[l.seller_id] || 'Unknown',
+    })),
+    total: count ?? 0,
+    page,
+    totalPages: Math.ceil((count ?? 0) / perPage),
+  }
+}
+
+export async function getAdminListingDetail(listingId: string) {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const [
+    { data: listing },
+    { data: images },
+    { data: videos },
+    { count: viewCount },
+    { data: auditLog },
+  ] = await Promise.all([
+    admin.from('listings').select('*').eq('id', listingId).single(),
+    admin.from('listing_images').select('*').eq('listing_id', listingId).order('position', { ascending: true }),
+    admin.from('listing_videos').select('*').eq('listing_id', listingId),
+    admin.from('listing_views').select('*', { count: 'exact', head: true }).eq('listing_id', listingId),
+    admin
+      .from('admin_audit_log')
+      .select('*')
+      .eq('target_type', 'listing')
+      .eq('target_id', listingId)
+      .order('created_at', { ascending: false }),
+  ])
+
+  // Get seller profile
+  let seller = null
+  if (listing?.seller_id) {
+    const { data: sellerData } = await admin
+      .from('profiles')
+      .select('id, full_name, avatar_url, subscription_tier')
+      .eq('id', listing.seller_id)
+      .single()
+    seller = sellerData
+  }
+
+  return {
+    listing,
+    images: images ?? [],
+    videos: videos ?? [],
+    seller,
+    viewCount: viewCount ?? 0,
+    auditLog: auditLog ?? [],
+  }
+}
+
+export async function adminUpdateListing(
+  listingId: string,
+  updates: {
+    status?: string
+    title?: string
+    description?: string
+    price_cents?: number
+    condition?: string
+    is_featured?: boolean
+    admin_boost?: number
+    pinned_position?: number | null
+    pinned_category?: string | null
+    admin_flag_reason?: string | null
+  }
+) {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('listings')
+    .update(updates)
+    .eq('id', listingId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(
+    profile.id,
+    'update_listing',
+    'listing',
+    listingId,
+    { updates }
+  )
+
+  return { success: true }
+}
+
+export async function adminBulkUpdateListings(
+  listingIds: string[],
+  updates: {
+    status?: string
+    is_featured?: boolean
+    admin_boost?: number
+  }
+) {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('listings')
+    .update(updates)
+    .in('id', listingIds)
+
+  if (error) throw new Error(error.message)
+
+  // Log each action individually for audit trail
+  await Promise.all(
+    listingIds.map((id) =>
+      logAdminAction(
+        profile.id,
+        'bulk_update_listing',
+        'listing',
+        id,
+        { updates }
+      )
+    )
+  )
+
+  return { success: true }
+}
+
+export async function adminDeleteListing(listingId: string) {
+  const { profile } = await requireAdmin('grant_roles')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('listings')
+    .delete()
+    .eq('id', listingId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(profile.id, 'delete_listing', 'listing', listingId, {})
+
+  return { success: true }
+}
+
+export async function adminClearFraudFlag(listingId: string) {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('listings')
+    .update({
+      ai_fraud_flagged: false,
+      admin_reviewed_by: profile.id,
+      admin_reviewed_at: new Date().toISOString(),
+    })
+    .eq('id', listingId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(
+    profile.id,
+    'clear_fraud_flag',
+    'listing',
+    listingId,
+    {}
+  )
+
+  return { success: true }
+}
+
+export async function adminFlagListing(listingId: string, reason: string) {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('listings')
+    .update({
+      status: 'flagged',
+      admin_flag_reason: reason,
+    })
+    .eq('id', listingId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(
+    profile.id,
+    'flag_listing',
+    'listing',
+    listingId,
+    { reason }
+  )
+
+  return { success: true }
+}
+
+// ─── SOS Monitor ────────────────────────────────────────────────────
+
+export async function getAdminSOS(params: {
+  page?: number
+  status?: string
+  urgency?: string
+}) {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const page = params.page ?? 1
+  const perPage = 50
+  const offset = (page - 1) * perPage
+
+  let query = admin
+    .from('sos_requests')
+    .select(
+      'id, title, equipment_category, equipment_subcategory, brand, model, urgency, status, created_at, expires_at, requester_id',
+      { count: 'exact' }
+    )
+
+  if (params.status && params.status !== 'all') {
+    query = query.eq('status', params.status)
+  }
+  if (params.urgency && params.urgency !== 'all') {
+    query = query.eq('urgency', params.urgency)
+  }
+
+  const { data, count } = await query
+    .order('created_at', { ascending: false })
+    .range(offset, offset + perPage - 1)
+
+  // Get requester names via second query
+  const requesterIds = [...new Set((data ?? []).map((s) => s.requester_id))]
+  const requesterMap: Record<string, string> = {}
+
+  if (requesterIds.length > 0) {
+    const { data: requesters } = await admin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', requesterIds)
+
+    for (const r of requesters ?? []) {
+      requesterMap[r.id] = r.full_name ?? 'Unknown'
+    }
+  }
+
+  // Get response counts per SOS
+  const sosIds = (data ?? []).map((s) => s.id)
+  const responseCountMap: Record<string, number> = {}
+
+  if (sosIds.length > 0) {
+    const { data: responses } = await admin
+      .from('sos_responses')
+      .select('sos_request_id')
+      .in('sos_request_id', sosIds)
+
+    for (const r of responses ?? []) {
+      responseCountMap[r.sos_request_id] = (responseCountMap[r.sos_request_id] || 0) + 1
+    }
+  }
+
+  return {
+    requests: (data ?? []).map((s) => ({
+      ...s,
+      requester_name: requesterMap[s.requester_id] || 'Unknown',
+      response_count: responseCountMap[s.id] || 0,
+    })),
+    total: count ?? 0,
+    page,
+    totalPages: Math.ceil((count ?? 0) / perPage),
+  }
+}
+
+export async function getAdminSOSDetail(sosId: string) {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data: sos } = await admin
+    .from('sos_requests')
+    .select('*')
+    .eq('id', sosId)
+    .single()
+
+  if (!sos) throw new Error('SOS request not found')
+
+  // Get requester profile
+  const { data: requester } = await admin
+    .from('profiles')
+    .select('id, full_name, avatar_url, subscription_tier, location_city, location_state')
+    .eq('id', sos.requester_id)
+    .single()
+
+  // Get all responses with responder profiles
+  const { data: responses } = await admin
+    .from('sos_responses')
+    .select('*')
+    .eq('sos_request_id', sosId)
+    .order('created_at', { ascending: false })
+
+  // Get responder profiles
+  const responderIds = [...new Set((responses ?? []).map((r) => r.responder_id))]
+  const responderMap: Record<string, { id: string; full_name: string | null; avatar_url: string | null }> = {}
+
+  if (responderIds.length > 0) {
+    const { data: responders } = await admin
+      .from('profiles')
+      .select('id, full_name, avatar_url')
+      .in('id', responderIds)
+
+    for (const r of responders ?? []) {
+      responderMap[r.id] = r
+    }
+  }
+
+  return {
+    sos,
+    requester,
+    responses: (responses ?? []).map((r) => ({
+      ...r,
+      responder: responderMap[r.responder_id] || null,
+    })),
+  }
+}
+
+export async function getSOSStats() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const oneWeekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()
+
+  const [
+    { count: openCount },
+    { count: fulfilledCount },
+    { data: recentSos },
+  ] = await Promise.all([
+    admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+    admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'fulfilled'),
+    admin
+      .from('sos_requests')
+      .select('id')
+      .eq('status', 'open')
+      .gte('created_at', oneWeekAgo),
+  ])
+
+  // Count SOSs this week with 0 responses
+  let noMatchWeek = 0
+  if (recentSos && recentSos.length > 0) {
+    const recentIds = recentSos.map((s) => s.id)
+    const { data: responsesThisWeek } = await admin
+      .from('sos_responses')
+      .select('sos_request_id')
+      .in('sos_request_id', recentIds)
+
+    const respondedIds = new Set((responsesThisWeek ?? []).map((r) => r.sos_request_id))
+    noMatchWeek = recentIds.filter((id) => !respondedIds.has(id)).length
+  }
+
+  return {
+    openCount: openCount ?? 0,
+    fulfilledCount: fulfilledCount ?? 0,
+    noMatchWeek,
+  }
+}
+
+export async function adminUpdateSOS(
+  sosId: string,
+  updates: {
+    status?: string
+    expires_at?: string
+  }
+) {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('sos_requests')
+    .update(updates)
+    .eq('id', sosId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(
+    profile.id,
+    'update_sos',
+    'sos',
+    sosId,
+    { updates }
+  )
+
+  return { success: true }
+}
+
+// ─── Moderation ─────────────────────────────────────────────────────
+
+export async function getReportsQueue() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data: reports } = await admin
+    .from('reports')
+    .select('*')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+
+  // Get reporter names via second query
+  const reporterIds = [...new Set((reports ?? []).map((r) => r.reporter_id))]
+  const reporterMap: Record<string, string> = {}
+
+  if (reporterIds.length > 0) {
+    const { data: reporters } = await admin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', reporterIds)
+
+    for (const r of reporters ?? []) {
+      reporterMap[r.id] = r.full_name ?? 'Unknown'
+    }
+  }
+
+  return (reports ?? []).map((r) => ({
+    ...r,
+    reporter_name: reporterMap[r.reporter_id] || 'Unknown',
+  }))
+}
+
+export async function adminResolveReport(
+  reportId: string,
+  resolution: 'dismissed' | 'warned' | 'removed' | 'banned'
+) {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('reports')
+    .update({
+      status: 'resolved',
+      admin_notes: `Resolution: ${resolution}`,
+    })
+    .eq('id', reportId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(
+    profile.id,
+    'resolve_report',
+    'report',
+    reportId,
+    { resolution }
+  )
+
+  return { success: true }
+}
+
+export async function getDisputedReviews() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  // Get reports where target_type is 'review'
+  const { data: reviewReports } = await admin
+    .from('reports')
+    .select('target_id')
+    .eq('target_type', 'review')
+
+  if (!reviewReports || reviewReports.length === 0) return []
+
+  const reviewIds = [...new Set(reviewReports.map((r) => r.target_id))]
+
+  const { data: reviews } = await admin
+    .from('reviews')
+    .select('*')
+    .in('id', reviewIds)
+
+  return reviews ?? []
+}
