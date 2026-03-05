@@ -9,7 +9,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 ## [Unreleased]
 
 ### Planned
-- Cycle 9: Bulk listing import via Excel with downloadable template, SOS bulk creation, and full field coverage
+- Cycle 11: Super Admin Dashboard with role-based access control
+
+---
+
+## [1.0.0] — 2026-03-05 · AI-Powered Equipment Recognition (Cycle 10)
+
+### Added
+- **Claude Vision API route** (`/api/listings/analyze-image`) — identify equipment from photos using Claude Sonnet 4
+- **Wide shot analysis** — equipment type identification mapped to 3-tier taxonomy with confidence scoring and alternatives
+- **Nameplate OCR** — extract manufacturer, model, serial number, year, specs from data plate close-ups
+- **Fraud detection** — AI-generated image, stock photo, and screenshot detection with flagging
+- **AI-Assist listing creation** — new Step 0 in listing wizard with mobile camera capture and desktop upload
+- **Client-side image compression** — max 1200px width, 0.85 quality via canvas API to stay under Vercel body limit
+- **4-step AI capture flow** — mode selection → camera/upload → animated processing → editable results review
+- **Auto-populate form fields** — title, description, category, condition, manufacturer, model, serial, specs from AI
+- **Haptic feedback** — `navigator.vibrate(200)` on mobile after successful analysis
+- Anthropic SDK (`@anthropic-ai/sdk`) integration with `src/lib/anthropic.ts` client
+- Type definitions: `src/types/ai-analysis.ts` (request/response shapes)
+- `AIImageCapture` component with responsive mobile/desktop camera UI
+- Columns: `listings.ai_analyzed`, `listings.ai_fraud_flagged`, `listings.ai_fraud_reason`, `listings.specs` (JSONB), `listings.ai_assist_used`, `listings.ai_assist_accepted`
+- 8 unit tests for image analysis (response shape, markdown fence stripping, input validation)
+
+### Changed
+- Listing creation form: 4-step → 5-step wizard (AI Assist → Details → Photos → Pricing → Review)
 
 ---
 
