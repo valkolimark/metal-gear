@@ -36,8 +36,10 @@ import {
   LISTING_CONDITIONS,
   TIER_LIMITS,
 } from '@/lib/constants'
+import AIImageCapture from '@/components/listings/AIImageCapture'
+import type { AIAnalysisResult } from '@/types/ai-analysis'
 
-const STEPS = ['Details', 'Photos', 'Pricing', 'Review']
+const STEPS = ['AI Assist', 'Details', 'Photos', 'Pricing', 'Review']
 
 interface ListingForm {
   title: string
@@ -80,6 +82,9 @@ export default function CreateListingPage() {
   const [dragIdx, setDragIdx] = useState<number | null>(null)
   const [specKey, setSpecKey] = useState('')
   const [specValue, setSpecValue] = useState('')
+  const [aiAssistUsed, setAiAssistUsed] = useState(false)
+  const [aiAssistAccepted, setAiAssistAccepted] = useState(false)
+  const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set())
   const [limitInfo, setLimitInfo] = useState<{
     allowed: boolean
     current: number
@@ -285,16 +290,66 @@ export default function CreateListingPage() {
     setDragIdx(null)
   }
 
+  // AI Assist handlers
+  function handleAIComplete(data: AIAnalysisResult) {
+    setAiAssistUsed(true)
+    setAiAssistAccepted(true)
+    const filled = new Set<string>()
+
+    const updates: Partial<ListingForm> = {}
+    if (data.listing.title) { updates.title = data.listing.title; filled.add('title') }
+    if (data.listing.manufacturer) {
+      updates.specifications = { ...form.specifications, manufacturer: data.listing.manufacturer }
+      filled.add('manufacturer')
+    }
+    if (data.listing.model) {
+      updates.specifications = { ...(updates.specifications || form.specifications), model: data.listing.model }
+      filled.add('model')
+    }
+    if (data.listing.serialNumber) {
+      updates.specifications = { ...(updates.specifications || form.specifications), 'Serial Number': data.listing.serialNumber }
+      filled.add('serialNumber')
+    }
+    if (data.listing.year) {
+      updates.specifications = { ...(updates.specifications || form.specifications), year: String(data.listing.year) }
+      filled.add('year')
+    }
+    if (data.listing.condition) { updates.condition = data.listing.condition; filled.add('condition') }
+    if (data.listing.suggestedDescription) { updates.description = data.listing.suggestedDescription; filled.add('description') }
+
+    // Map taxonomy to category (best-effort: use subcategory label as category)
+    if (data.taxonomy.subcategory) {
+      updates.category = data.taxonomy.subcategory.replace(/_/g, ' ')
+      filled.add('category')
+    }
+
+    // Merge specs from nameplate
+    if (data.listing.specs && Object.keys(data.listing.specs).length > 0) {
+      updates.specifications = { ...(updates.specifications || form.specifications), ...data.listing.specs }
+      filled.add('specs')
+    }
+
+    setForm(prev => ({ ...prev, ...updates }))
+    setAiFilledFields(filled)
+    setStep(1) // advance to Details
+  }
+
+  function handleAISkip() {
+    setStep(1) // advance to Details
+  }
+
   // Validation
   function canProceed(): boolean {
     switch (step) {
       case 0:
-        return !!(form.title && form.category && form.condition)
+        return true // AI step has its own flow
       case 1:
-        return true // photos are optional
+        return !!(form.title && form.category && form.condition)
       case 2:
-        return form.contact_for_price || !!form.price_cents
+        return true // photos are optional
       case 3:
+        return form.contact_for_price || !!form.price_cents
+      case 4:
         return true
       default:
         return false
@@ -327,10 +382,13 @@ export default function CreateListingPage() {
         location_city: form.location_city,
         location_state: form.location_state,
         specifications: form.specifications,
+        specs: form.specifications,
         quantity: form.quantity ? parseInt(form.quantity) : 1,
         sku: form.sku || null,
         warehouse_location: form.warehouse_location || null,
         status: 'draft',
+        ai_assist_used: aiAssistUsed,
+        ai_assist_accepted: aiAssistAccepted,
       })
       if (error) throw error
       toast.success('Draft saved')
@@ -375,11 +433,14 @@ export default function CreateListingPage() {
           location_city: form.location_city,
           location_state: form.location_state,
           specifications: form.specifications,
+          specs: form.specifications,
           quantity: form.quantity ? parseInt(form.quantity) : 1,
           sku: form.sku || null,
           warehouse_location: form.warehouse_location || null,
           status: 'active',
           expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+          ai_assist_used: aiAssistUsed,
+          ai_assist_accepted: aiAssistAccepted,
         })
         .select()
         .single()
@@ -517,8 +578,13 @@ export default function CreateListingPage() {
         ))}
       </div>
 
-      {/* Step 1: Details */}
+      {/* Step 0: AI Assist */}
       {step === 0 && (
+        <AIImageCapture onComplete={handleAIComplete} onSkip={handleAISkip} />
+      )}
+
+      {/* Step 1: Details */}
+      {step === 1 && (
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
@@ -666,7 +732,7 @@ export default function CreateListingPage() {
       )}
 
       {/* Step 2: Photos */}
-      {step === 1 && (
+      {step === 2 && (
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
@@ -818,7 +884,7 @@ export default function CreateListingPage() {
       )}
 
       {/* Step 3: Pricing */}
-      {step === 2 && (
+      {step === 3 && (
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
@@ -965,7 +1031,7 @@ export default function CreateListingPage() {
       )}
 
       {/* Step 4: Review */}
-      {step === 3 && (
+      {step === 4 && (
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
@@ -1055,10 +1121,11 @@ export default function CreateListingPage() {
         </Card>
       )}
 
-      {/* Navigation */}
+      {/* Navigation (hidden on AI step which has its own flow) */}
+      {step > 0 && (
       <div className="flex items-center justify-between">
         <div className="flex gap-2">
-          {step > 0 && (
+          {step > 1 && (
             <Button
               variant="outline"
               onClick={() => setStep((s) => s - 1)}
@@ -1107,6 +1174,7 @@ export default function CreateListingPage() {
           </Button>
         )}
       </div>
+      )}
     </div>
   )
 }
