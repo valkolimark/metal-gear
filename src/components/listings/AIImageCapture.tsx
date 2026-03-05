@@ -132,7 +132,8 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({ error: 'Unknown error' }))
-        throw new Error(data.error || `HTTP ${response.status}`)
+        const details = data.details ? ` (${data.details.join('; ')})` : ''
+        throw new Error((data.error || `HTTP ${response.status}`) + details)
       }
 
       const data: AIAnalysisResult = await response.json()
