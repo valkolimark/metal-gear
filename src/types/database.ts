@@ -22,6 +22,8 @@ export type Database = {
           target_type: string
           target_id: string
           details: Json | null
+          metadata: Json | null
+          ip_address: string | null
           created_at: string
         }
         Insert: {
@@ -31,6 +33,8 @@ export type Database = {
           target_type: string
           target_id: string
           details?: Json | null
+          metadata?: Json | null
+          ip_address?: string | null
           created_at?: string
         }
         Update: {
@@ -40,6 +44,8 @@ export type Database = {
           target_type?: string
           target_id?: string
           details?: Json | null
+          metadata?: Json | null
+          ip_address?: string | null
           created_at?: string
         }
         Relationships: [
@@ -624,6 +630,13 @@ export type Database = {
       }
       listings: {
         Row: {
+          admin_boost: number
+          admin_flag_reason: string | null
+          admin_reviewed_at: string | null
+          admin_reviewed_by: string | null
+          ai_analyzed: boolean
+          ai_fraud_flagged: boolean
+          ai_fraud_reason: string | null
           auto_renew: boolean
           category: string
           condition: string
@@ -632,14 +645,18 @@ export type Database = {
           description: string
           expires_at: string | null
           favorites_count: number
+          featured_until: string | null
           fts: unknown
           id: string
           industry: string | null
+          is_featured: boolean
           location_city: string
           location_lat: number
           location_lng: number
           location_state: string
           negotiable: boolean
+          pinned_category: string | null
+          pinned_position: number | null
           price_cents: number | null
           quantity: number
           seller_id: string
@@ -652,6 +669,13 @@ export type Database = {
           warehouse_location: string | null
         }
         Insert: {
+          admin_boost?: number
+          admin_flag_reason?: string | null
+          admin_reviewed_at?: string | null
+          admin_reviewed_by?: string | null
+          ai_analyzed?: boolean
+          ai_fraud_flagged?: boolean
+          ai_fraud_reason?: string | null
           auto_renew?: boolean
           category: string
           condition?: string
@@ -660,14 +684,18 @@ export type Database = {
           description?: string
           expires_at?: string | null
           favorites_count?: number
+          featured_until?: string | null
           fts?: unknown
           id?: string
           industry?: string | null
+          is_featured?: boolean
           location_city?: string
           location_lat?: number
           location_lng?: number
           location_state?: string
           negotiable?: boolean
+          pinned_category?: string | null
+          pinned_position?: number | null
           price_cents?: number | null
           quantity?: number
           seller_id: string
@@ -680,6 +708,13 @@ export type Database = {
           warehouse_location?: string | null
         }
         Update: {
+          admin_boost?: number
+          admin_flag_reason?: string | null
+          admin_reviewed_at?: string | null
+          admin_reviewed_by?: string | null
+          ai_analyzed?: boolean
+          ai_fraud_flagged?: boolean
+          ai_fraud_reason?: string | null
           auto_renew?: boolean
           category?: string
           condition?: string
@@ -688,14 +723,18 @@ export type Database = {
           description?: string
           expires_at?: string | null
           favorites_count?: number
+          featured_until?: string | null
           fts?: unknown
           id?: string
           industry?: string | null
+          is_featured?: boolean
           location_city?: string
           location_lat?: number
           location_lng?: number
           location_state?: string
           negotiable?: boolean
+          pinned_category?: string | null
+          pinned_position?: number | null
           price_cents?: number | null
           quantity?: number
           seller_id?: string
@@ -1229,6 +1268,10 @@ export type Database = {
       }
       profiles: {
         Row: {
+          admin_granted_at: string | null
+          admin_granted_by: string | null
+          admin_notes: string | null
+          admin_role: Database["public"]["Enums"]["admin_role"] | null
           avatar_url: string | null
           bio: string | null
           company_name: string | null
@@ -1239,6 +1282,8 @@ export type Database = {
           id: string
           industry: string | null
           is_admin: boolean
+          is_banned: boolean
+          is_suspended: boolean
           is_verified_dealer: boolean
           location_city: string | null
           location_lat: number | null
@@ -1248,6 +1293,7 @@ export type Database = {
           referral_code: string | null
           stripe_customer_id: string | null
           subscription_tier: string
+          suspended_until: string | null
           preferred_locale: string
           trust_score: number
           last_login_at: string | null
@@ -1255,6 +1301,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_granted_at?: string | null
+          admin_granted_by?: string | null
+          admin_notes?: string | null
+          admin_role?: Database["public"]["Enums"]["admin_role"] | null
           avatar_url?: string | null
           bio?: string | null
           company_name?: string | null
@@ -1265,6 +1315,8 @@ export type Database = {
           id: string
           industry?: string | null
           is_admin?: boolean
+          is_banned?: boolean
+          is_suspended?: boolean
           is_verified_dealer?: boolean
           location_city?: string | null
           location_lat?: number | null
@@ -1276,11 +1328,16 @@ export type Database = {
           referral_code?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
+          suspended_until?: string | null
           trust_score?: number
           last_login_at?: string | null
           updated_at?: string
         }
         Update: {
+          admin_granted_at?: string | null
+          admin_granted_by?: string | null
+          admin_notes?: string | null
+          admin_role?: Database["public"]["Enums"]["admin_role"] | null
           avatar_url?: string | null
           bio?: string | null
           company_name?: string | null
@@ -1291,6 +1348,8 @@ export type Database = {
           id?: string
           industry?: string | null
           is_admin?: boolean
+          is_banned?: boolean
+          is_suspended?: boolean
           is_verified_dealer?: boolean
           location_city?: string | null
           location_lat?: number | null
@@ -1302,6 +1361,7 @@ export type Database = {
           referral_code?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
+          suspended_until?: string | null
           trust_score?: number
           last_login_at?: string | null
           updated_at?: string
@@ -1961,7 +2021,15 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      admin_role: "superadmin" | "moderator" | "analyst"
+      listing_status:
+        | "draft"
+        | "active"
+        | "sold"
+        | "expired"
+        | "archived"
+        | "pending_review"
+        | "flagged"
     }
     CompositeTypes: {
       [_ in never]: never

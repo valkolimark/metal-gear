@@ -1,0 +1,203 @@
+'use client'
+
+import { useState } from 'react'
+import Image from 'next/image'
+import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import {
+  Home,
+  Users,
+  Package,
+  AlertTriangle,
+  Star,
+  Shield,
+  DollarSign,
+  BarChart3,
+  Settings,
+  Menu,
+  X,
+  LogOut,
+} from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import type { AdminRole } from '@/lib/admin/permissions'
+
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  home: Home,
+  users: Users,
+  package: Package,
+  alert: AlertTriangle,
+  star: Star,
+  shield: Shield,
+  dollar: DollarSign,
+  chart: BarChart3,
+  settings: Settings,
+}
+
+const ROLE_COLORS: Record<AdminRole, string> = {
+  superadmin: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
+  moderator: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+  analyst: 'bg-green-500/20 text-green-400 border-green-500/30',
+}
+
+interface AdminShellProps {
+  navItems: Array<{ href: string; label: string; icon: string }>
+  adminName: string
+  adminRole: AdminRole
+  avatarUrl?: string | null
+  children: React.ReactNode
+}
+
+export default function AdminShell({
+  navItems,
+  adminName,
+  adminRole,
+  avatarUrl,
+  children,
+}: AdminShellProps) {
+  const pathname = usePathname()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Build breadcrumbs from pathname
+  const segments = pathname.split('/').filter(Boolean)
+  const breadcrumbs = segments.map((seg, i) => ({
+    label: seg.charAt(0).toUpperCase() + seg.slice(1).replace(/-/g, ' '),
+    href: '/' + segments.slice(0, i + 1).join('/'),
+    active: i === segments.length - 1,
+  }))
+
+  return (
+    <div className="flex min-h-screen bg-[#0A0A0F]">
+      {/* Mobile overlay */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0D0D14] transition-transform duration-200 lg:static lg:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex h-16 items-center justify-between border-b border-white/5 px-5">
+          <Link href="/admin" className="flex items-center gap-2">
+            <Settings className="size-5 text-primary" />
+            <span className="font-display text-sm font-bold text-foreground">
+              METAL GEAR ADMIN
+            </span>
+          </Link>
+          <button
+            onClick={() => setSidebarOpen(false)}
+            className="lg:hidden text-muted-foreground hover:text-foreground"
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+
+        {/* Nav items */}
+        <nav className="flex-1 overflow-y-auto px-3 py-4">
+          <ul className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = ICON_MAP[item.icon] || Home
+              const isActive =
+                item.href === '/admin'
+                  ? pathname === '/admin'
+                  : pathname.startsWith(item.href)
+
+              return (
+                <li key={item.href}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setSidebarOpen(false)}
+                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-body text-sm transition-colors ${
+                      isActive
+                        ? 'bg-primary/10 text-primary'
+                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                    }`}
+                  >
+                    {isActive && (
+                      <div className="absolute left-0 h-6 w-1 rounded-r bg-primary" />
+                    )}
+                    <Icon className="size-4 shrink-0" />
+                    {item.label}
+                  </Link>
+                </li>
+              )
+            })}
+          </ul>
+        </nav>
+
+        {/* Admin profile */}
+        <div className="border-t border-white/5 p-4">
+          <div className="flex items-center gap-3">
+            <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-surface">
+              {avatarUrl ? (
+                <Image src={avatarUrl} alt="" width={36} height={36} className="size-full object-cover" />
+              ) : (
+                <Users className="size-4 text-muted-foreground" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-body text-sm font-medium text-foreground">
+                {adminName}
+              </p>
+              <Badge
+                className={`mt-0.5 border px-1.5 py-0 font-body text-[10px] uppercase ${ROLE_COLORS[adminRole]}`}
+              >
+                {adminRole}
+              </Badge>
+            </div>
+          </div>
+          <Link
+            href="/dashboard"
+            className="mt-3 flex items-center gap-2 font-body text-xs text-muted-foreground hover:text-foreground"
+          >
+            <LogOut className="size-3" />
+            Exit admin
+          </Link>
+        </div>
+      </aside>
+
+      {/* Main content */}
+      <div className="flex flex-1 flex-col">
+        {/* Top bar */}
+        <header className="flex h-14 items-center gap-4 border-b border-white/5 bg-[#0D0D14]/80 px-4 backdrop-blur lg:px-6">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="lg:hidden"
+            onClick={() => setSidebarOpen(true)}
+          >
+            <Menu className="size-5" />
+          </Button>
+
+          {/* Breadcrumbs */}
+          <nav className="flex items-center gap-1.5 font-body text-sm">
+            {breadcrumbs.map((crumb, i) => (
+              <span key={crumb.href} className="flex items-center gap-1.5">
+                {i > 0 && <span className="text-muted-foreground">/</span>}
+                {crumb.active ? (
+                  <span className="text-foreground">{crumb.label}</span>
+                ) : (
+                  <Link
+                    href={crumb.href}
+                    className="text-muted-foreground hover:text-foreground"
+                  >
+                    {crumb.label}
+                  </Link>
+                )}
+              </span>
+            ))}
+          </nav>
+        </header>
+
+        {/* Page content */}
+        <main className="flex-1 overflow-y-auto p-4 lg:p-6">{children}</main>
+      </div>
+    </div>
+  )
+}
