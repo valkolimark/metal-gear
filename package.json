@@ -15,6 +15,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.78.0",
     "@sentry/nextjs": "^10.40.0",
     "@stripe/react-stripe-js": "^5.6.0",
     "@stripe/stripe-js": "^8.8.0",
