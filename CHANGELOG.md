@@ -9,7 +9,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 ## [Unreleased]
 
 ### Planned
-- Cycle 11: Super Admin Dashboard with role-based access control
+- Cycle 12: Priority Engine and Financial Dashboard
+
+---
+
+## [1.1.0] — 2026-03-05 · Super Admin Dashboard (Cycle 11)
+
+### Added
+- **Admin RBAC system** — 3 roles (superadmin, moderator, analyst) with permission matrix and `requireAdmin()` helper
+- **Admin route group** `(admin)` — dark sidebar layout with role-based nav visibility, mobile hamburger, breadcrumbs
+- **Control Tower** (`/admin`) — live stats (users, listings, SOS, MRR, alerts), activity feed, 30-day charts, auto-refresh every 30s
+- **User Management** (`/admin/users`) — paginated table with search/filter, row actions (suspend, ban, role management)
+- **User Detail** (`/admin/users/[id]`) — full dossier with listings, SOS, reviews, reports, admin notes, audit log
+- **Listing Management** (`/admin/listings`) — paginated table with filters (search, status, fraud), bulk actions (approve, flag, feature, expire), row actions with admin edit
+- **Listing Detail** (`/admin/listings/[id]`) — full preview with image gallery, seller card, stats, status/boost controls, audit log
+- **AI Fraud Queue** — review fraud-flagged listings, clear false positives or flag & notify sellers
+- **SOS Monitor** (`/admin/sos`) — analytics strip (open/fulfilled/no-match), paginated table, slide-in detail drawer with responses list and admin actions
+- **Moderation Queue** (`/admin/moderation`) — 3-tab consolidation: reported content, AI fraud queue, review disputes
+- **Admin audit logging** — all admin actions recorded with admin_id, target, metadata, timestamp
+- Columns: `profiles.admin_role`, `profiles.admin_granted_at/by`, `profiles.admin_notes`, `profiles.is_suspended`, `profiles.is_banned`
+- Columns: `listings.is_featured`, `listings.admin_boost`, `listings.pinned_position/category`, `listings.admin_flag_reason`, `listings.admin_reviewed_by/at`
+- Listing statuses: `pending_review`, `flagged` added to enum
+- `admin_audit_log.metadata` (JSONB) and `admin_audit_log.ip_address` columns
+
+### Changed
+- Search results now prioritize featured and boosted listings (`is_featured DESC`, `admin_boost DESC` ordering)
+- Replaced old monolithic admin page with new `(admin)` route group
 
 ---
 
