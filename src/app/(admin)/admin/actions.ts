@@ -930,3 +930,63 @@ export async function getDisputedReviews() {
 
   return reviews ?? []
 }
+
+// ─── SOS Demand Gap Analysis ─────────────────────────────────────────
+
+export async function getSOSDemandGap() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const threeMonthsAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+
+  // Get all SOS requests from last 3 months
+  const { data: allSos } = await admin
+    .from('sos_requests')
+    .select('id, equipment_category, equipment_subcategory, status, ai_categorized')
+    .gte('created_at', threeMonthsAgo)
+
+  if (!allSos || allSos.length === 0) {
+    return { demandGaps: [], aiStats: { totalSos: 0, aiCategorized: 0 } }
+  }
+
+  // Get response counts
+  const sosIds = allSos.map((s) => s.id)
+  const { data: allResponses } = await admin
+    .from('sos_responses')
+    .select('sos_request_id')
+    .in('sos_request_id', sosIds)
+
+  const responseCounts = new Map<string, number>()
+  for (const r of allResponses || []) {
+    responseCounts.set(r.sos_request_id, (responseCounts.get(r.sos_request_id) || 0) + 1)
+  }
+
+  // Group by category
+  const catStats = new Map<string, { total: number; responded: number; category: string }>()
+  for (const sos of allSos) {
+    const cat = sos.equipment_subcategory || sos.equipment_category
+    const entry = catStats.get(cat) || { total: 0, responded: 0, category: cat }
+    entry.total++
+    if ((responseCounts.get(sos.id) || 0) > 0) entry.responded++
+    catStats.set(cat, entry)
+  }
+
+  // Find demand gaps: high volume, low response rate
+  const demandGaps = Array.from(catStats.values())
+    .map((stat) => ({
+      category: stat.category,
+      totalSos: stat.total,
+      responseRate: stat.total > 0 ? Math.round((stat.responded / stat.total) * 100) : 0,
+    }))
+    .filter((g) => g.totalSos >= 2)
+    .sort((a, b) => a.responseRate - b.responseRate)
+    .slice(0, 15)
+
+  return {
+    demandGaps,
+    aiStats: {
+      totalSos: allSos.length,
+      aiCategorized: allSos.filter((s) => s.ai_categorized).length,
+    },
+  }
+}

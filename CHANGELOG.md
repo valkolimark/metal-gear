@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [1.7.0] — 2026-03-06 · SOS AI Features (Cycle 14-2)
+
+### Added
+- **SOS AI API** (`/api/sos/ai`) — 3 actions: `categorize` (free-text to taxonomy mapping), `rank_responses` (AI-scored vendor response ranking), `predict_demand` (historical SOS pattern analysis)
+- **Quick SOS Widget** — two-step AI flow on SOS creation: describe problem in plain text, AI extracts equipment category, subcategory, brand, specs, urgency, and suggested title for confirmation before sending
+- **Response Ranker** — AI-powered ranking of vendor responses to SOS requests, scoring by spec match, trust signals, speed, price, and condition; shown to requesters when 2+ responses exist
+- **Demand Forecast Widget** — seller dashboard widget showing AI-predicted demand trends per equipment category with trend indicators (rising/stable/declining), historical patterns, and recommended actions
+- **Demand Insights Cron** (`/api/cron/demand-insights`) — nightly job generates personalized demand insights for premium/boost subscribers and active sellers
+- **Admin SOS Demand Gap** — new "Demand Gap" tab in admin SOS management showing unfulfilled categories, response rates, and AI utilization stats
+- Database: `sos_requests.ai_categorized`, `sos_requests.ranked_response_ids` columns, `seller_demand_insights` table
+- Server action: `getSOSDemandGap()` for admin demand gap analytics
+
+### Changed
+- SOS creation page now starts with Quick SOS mode (AI-powered) with option to switch to detailed form
+- SOS detail page shows AI Response Ranker before response list for requesters
+- Seller dashboard includes Demand Forecast widget after seller stats section
+- Admin SOS page now has tabbed navigation (List / Demand Gap)
+
+---
+
 ## [1.6.0] — 2026-03-06 · AI Pricing Intelligence (Cycle 14-1)
 
 ### Added

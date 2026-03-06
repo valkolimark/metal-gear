@@ -22,6 +22,7 @@ import {
 } from '@/app/actions/sos'
 import { getTier2Label, getSubcategoryLabel } from '@/lib/constants/equipment-taxonomy'
 import { createClient } from '@/lib/supabase/client'
+import { ResponseRanker } from '@/components/sos/ResponseRanker'
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -256,6 +257,14 @@ export default function SosDetailPage() {
         <h2 className="mb-3 font-display text-lg font-semibold text-foreground">
           Responses ({responses.length})
         </h2>
+
+        {/* AI Response Ranker — shown to requester */}
+        {isRequester && responses.length >= 2 && (
+          <ResponseRanker
+            sosRequestId={sosId}
+            responseCount={responses.length}
+          />
+        )}
 
         {responses.length === 0 ? (
           <div className="rounded-lg border border-dashed border-border py-8 text-center">

@@ -50,7 +50,7 @@ export async function getDashboardData() {
     // First: get active listings (needed for subsequent queries)
     const activeListingsRes = await admin
       .from('listings')
-      .select('id, views_count, favorites_count, expires_at')
+      .select('id, views_count, favorites_count, expires_at, category')
       .eq('seller_id', user.id)
       .eq('status', 'active')
 
@@ -115,6 +115,7 @@ export async function getDashboardData() {
       })),
       weeklyViews: weekViewsRes.count ?? 0,
       weeklyInquiries: weekInquiriesRes.count ?? 0,
+      listingCategories: [...new Set(activeListings.map(l => l.category).filter(Boolean))],
     }
   }
 

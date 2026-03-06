@@ -2072,6 +2072,8 @@ export type Database = {
           expires_at: string
           fulfilled_at: string | null
           fulfilled_by: string | null
+          ai_categorized: boolean
+          ranked_response_ids: Json | null
           created_at: string
           updated_at: string
         }
@@ -2097,6 +2099,8 @@ export type Database = {
           expires_at?: string
           fulfilled_at?: string | null
           fulfilled_by?: string | null
+          ai_categorized?: boolean
+          ranked_response_ids?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -2122,6 +2126,8 @@ export type Database = {
           expires_at?: string
           fulfilled_at?: string | null
           fulfilled_by?: string | null
+          ai_categorized?: boolean
+          ranked_response_ids?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -2186,6 +2192,38 @@ export type Database = {
           {
             foreignKeyName: "sos_responses_responder_id_fkey"
             columns: ["responder_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_demand_insights: {
+        Row: {
+          id: string
+          user_id: string
+          insights: Json
+          generated_at: string
+          valid_until: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          insights: Json
+          generated_at?: string
+          valid_until?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          insights?: Json
+          generated_at?: string
+          valid_until?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_demand_insights_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]

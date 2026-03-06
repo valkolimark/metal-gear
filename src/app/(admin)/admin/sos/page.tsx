@@ -37,6 +37,7 @@ import {
   getSOSStats,
   getAdminSOSDetail,
   adminUpdateSOS,
+  getSOSDemandGap,
 } from '../actions'
 
 // ─── Types ──────────────────────────────────────────────────────────
@@ -183,6 +184,11 @@ export default function AdminSOSPage() {
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
 
+  // Tab state
+  const [activeTab, setActiveTab] = useState<'list' | 'demand_gap'>('list')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [demandGap, setDemandGap] = useState<any>(null)
+
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [selectedSOS, setSelectedSOS] = useState<SOSDetail | null>(null)
@@ -218,8 +224,16 @@ export default function AdminSOSPage() {
     return () => { cancelled = true }
   }, [refreshKey])
 
+  // Fetch demand gap data
+  useEffect(() => {
+    if (activeTab === 'demand_gap' && !demandGap) {
+      getSOSDemandGap().then(setDemandGap)
+    }
+  }, [activeTab, demandGap])
+
   function refresh() {
     setRefreshKey((k) => k + 1)
+    setDemandGap(null)
   }
 
   // ─── Drawer Actions ───────────────────────────────────────────────
@@ -354,7 +368,116 @@ export default function AdminSOSPage() {
         </Card>
       </div>
 
-      {/* Filters */}
+      {/* Tab Navigation */}
+      <div className="flex gap-2 border-b border-white/5 pb-2">
+        <button
+          onClick={() => setActiveTab('list')}
+          className={`rounded-t px-4 py-2 font-body text-sm transition-colors ${
+            activeTab === 'list'
+              ? 'bg-white/5 text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          SOS List
+        </button>
+        <button
+          onClick={() => setActiveTab('demand_gap')}
+          className={`rounded-t px-4 py-2 font-body text-sm transition-colors ${
+            activeTab === 'demand_gap'
+              ? 'bg-white/5 text-foreground'
+              : 'text-muted-foreground hover:text-foreground'
+          }`}
+        >
+          Demand Gap
+        </button>
+      </div>
+
+      {/* Demand Gap Tab */}
+      {activeTab === 'demand_gap' && (
+        <Card className="border-white/5 bg-[#0D0D14]">
+          <CardHeader>
+            <CardTitle className="font-display text-base text-foreground">
+              Demand Gap Analysis (90 days)
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {!demandGap ? (
+              <p className="font-body text-sm text-muted-foreground">Loading...</p>
+            ) : (
+              <div className="space-y-4">
+                {/* AI Stats */}
+                <div className="flex gap-4">
+                  <div className="rounded border border-white/5 px-3 py-2">
+                    <p className="font-body text-xs text-muted-foreground">Total SOSs</p>
+                    <p className="font-display text-lg font-bold text-foreground">{demandGap.aiStats.totalSos}</p>
+                  </div>
+                  <div className="rounded border border-white/5 px-3 py-2">
+                    <p className="font-body text-xs text-muted-foreground">AI Categorized</p>
+                    <p className="font-display text-lg font-bold text-foreground">
+                      {demandGap.aiStats.aiCategorized}
+                      <span className="ml-1 font-body text-xs text-muted-foreground">
+                        ({demandGap.aiStats.totalSos > 0 ? Math.round((demandGap.aiStats.aiCategorized / demandGap.aiStats.totalSos) * 100) : 0}%)
+                      </span>
+                    </p>
+                  </div>
+                </div>
+
+                {/* Demand gaps table */}
+                {demandGap.demandGaps.length === 0 ? (
+                  <p className="font-body text-sm text-muted-foreground">No demand gap data yet.</p>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-white/5">
+                          <th className="px-4 py-2 text-left font-body text-xs font-medium text-muted-foreground">Category</th>
+                          <th className="px-4 py-2 text-right font-body text-xs font-medium text-muted-foreground">SOSs</th>
+                          <th className="px-4 py-2 text-right font-body text-xs font-medium text-muted-foreground">Response Rate</th>
+                          <th className="px-4 py-2 text-right font-body text-xs font-medium text-muted-foreground">Gap</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {demandGap.demandGaps.map((gap: { category: string; totalSos: number; responseRate: number }) => (
+                          <tr key={gap.category} className="border-b border-white/[0.03] hover:bg-white/[0.02]">
+                            <td className="px-4 py-2 font-body text-sm capitalize text-foreground">
+                              {gap.category.replace(/_/g, ' ')}
+                            </td>
+                            <td className="px-4 py-2 text-right font-body text-sm text-foreground">
+                              {gap.totalSos}
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              <Badge className={`${
+                                gap.responseRate < 30
+                                  ? 'bg-red-500/20 text-red-400'
+                                  : gap.responseRate < 60
+                                    ? 'bg-amber-500/20 text-amber-400'
+                                    : 'bg-green-500/20 text-green-400'
+                              } font-body text-[10px]`}>
+                                {gap.responseRate}%
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-2 text-right">
+                              {gap.responseRate < 30 && (
+                                <Badge className="bg-red-500/20 text-red-400 font-body text-[10px]">
+                                  High Gap
+                                </Badge>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters — only show on list tab */}
+      {activeTab === 'list' && (
+      <>
       <Card className="border-white/5 bg-[#0D0D14]">
         <CardContent className="flex flex-wrap items-end gap-3 p-4">
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
@@ -389,6 +512,7 @@ export default function AdminSOSPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
+
                 <tr className="border-b border-white/5">
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">
                     Equipment
@@ -531,6 +655,8 @@ export default function AdminSOSPage() {
           )}
         </CardContent>
       </Card>
+      </>
+      )}
 
       {/* Detail Drawer (slide-in from right) */}
       {drawerOpen && (

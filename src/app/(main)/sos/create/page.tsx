@@ -17,6 +17,7 @@ import {
   getSubcategoryLabel,
 } from '@/lib/constants/equipment-taxonomy'
 import type { Tier2Group } from '@/lib/constants/equipment-taxonomy'
+import { QuickSOS } from '@/components/sos/QuickSOS'
 
 const EXPIRY_OPTIONS = [
   { value: '24', label: '24 hours' },
@@ -37,6 +38,8 @@ export default function CreateSosPage() {
   const [sending, setSending] = useState(false)
   const [photos, setPhotos] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [mode, setMode] = useState<'quick' | 'detailed'>('quick')
+  const [aiCategorized, setAiCategorized] = useState(false)
 
   const [equipSearch, setEquipSearch] = useState('')
   const [form, setForm] = useState({
@@ -164,6 +167,38 @@ export default function CreateSosPage() {
       </div>
 
       <div className="space-y-8">
+        {/* Quick SOS Mode */}
+        {mode === 'quick' && (
+          <QuickSOS
+            onCategorized={(data) => {
+              setForm((prev) => ({
+                ...prev,
+                equipment_category: data.equipment_category,
+                equipment_subcategory: data.equipment_subcategory,
+                brand: data.brand,
+                title: data.title,
+                description: data.description,
+                urgency: data.urgency,
+              }))
+              setAiCategorized(data.ai_categorized)
+              setMode('detailed')
+              // Auto-submit after a short delay to let the user see the filled form
+            }}
+            onSwitchToDetailed={() => setMode('detailed')}
+          />
+        )}
+
+        {mode === 'quick' && (
+          <div className="text-center">
+            <button
+              onClick={() => setMode('detailed')}
+              className="font-body text-sm text-muted-foreground hover:text-foreground"
+            >
+              Or use the detailed form below ↓
+            </button>
+          </div>
+        )}
+
         {/* Section 1: What do you need? */}
         <section className="space-y-4">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground">

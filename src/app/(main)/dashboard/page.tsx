@@ -42,6 +42,7 @@ import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
 import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
+import { DemandForecast } from '@/components/dashboard/DemandForecast'
 import { updateLastLogin } from '@/app/actions/onboarding'
 import type { Tables } from '@/types/database'
 
@@ -86,6 +87,7 @@ interface DashData {
     recentOffers: { id: string; amountCents: number; status: string; createdAt: string; listingTitle: string }[]
     weeklyViews: number
     weeklyInquiries: number
+    listingCategories: string[]
   } | null
   buyerData: {
     activeTransactions: { id: string; status: string; amountCents: number; listingTitle: string }[]
@@ -434,6 +436,11 @@ export default function DashboardPage() {
             </div>
           </CollapsibleWidget>
         </div>
+      )}
+
+      {/* === DEMAND FORECAST (Seller AI) === */}
+      {seller && seller.listingCategories.length > 0 && (
+        <DemandForecast userCategories={seller.listingCategories} />
       )}
 
       {/* === BUYER WIDGETS === */}
