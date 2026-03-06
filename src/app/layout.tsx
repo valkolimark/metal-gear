@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
+import { ThemeProvider } from 'next-themes'
 import { chakraPetch, manrope } from '@/styles/fonts'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
@@ -62,9 +63,10 @@ export default async function RootLayout({
   const messages = await getMessages()
 
   return (
-    <html lang={locale} className="dark">
+    <html lang={locale} suppressHydrationWarning>
       <head>
-        <meta name="theme-color" content="#0A0A0F" />
+        <meta name="theme-color" content="#0A0A0F" media="(prefers-color-scheme: dark)" />
+        <meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)" />
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body
@@ -76,16 +78,18 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        <NextIntlClientProvider messages={messages}>
-          <QueryProvider>
-            <TooltipProvider>
-              <AuthProvider>
-                {children}
-              </AuthProvider>
-              <Toaster richColors position="bottom-right" />
-            </TooltipProvider>
-          </QueryProvider>
-        </NextIntlClientProvider>
+        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <NextIntlClientProvider messages={messages}>
+            <QueryProvider>
+              <TooltipProvider>
+                <AuthProvider>
+                  {children}
+                </AuthProvider>
+                <Toaster richColors position="bottom-right" />
+              </TooltipProvider>
+            </QueryProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   )

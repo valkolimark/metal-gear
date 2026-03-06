@@ -6,23 +6,68 @@
 
 /*
  * Metal Gear Design System
- * Dark industrial theme — heavy machinery meets modern SaaS
- * Dark-only: no light mode toggle needed
+ * Industrial equipment marketplace — supports light + dark mode
  */
 
+/* ── Light Mode (default) ── */
 :root {
   --radius: 0.625rem;
 
   /* Metal Gear Core Palette */
-  --mg-background: #0A0A0F;
-  --mg-surface: #14141A;
-  --mg-card: #1C1C24;
   --mg-primary: #FF6B2B;
   --mg-primary-hover: #e55e25;
   --mg-secondary: #3A8FD4;
   --mg-secondary-hover: #327bb8;
 
-  /* shadcn/ui variable mapping — dark only */
+  --background: #FAFAFA;
+  --foreground: #18181B;
+
+  --card: #FFFFFF;
+  --card-foreground: #18181B;
+
+  --popover: #FFFFFF;
+  --popover-foreground: #18181B;
+
+  --primary: #FF6B2B;
+  --primary-foreground: #FFFFFF;
+
+  --secondary: #3A8FD4;
+  --secondary-foreground: #FFFFFF;
+
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A;
+
+  --accent: #F4F4F5;
+  --accent-foreground: #18181B;
+
+  --destructive: #EF4444;
+
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #FF6B2B;
+
+  --chart-1: #FF6B2B;
+  --chart-2: #3A8FD4;
+  --chart-3: #22C55E;
+  --chart-4: #EAB308;
+  --chart-5: #A855F7;
+
+  --sidebar: #FFFFFF;
+  --sidebar-foreground: #18181B;
+  --sidebar-primary: #FF6B2B;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #F4F4F5;
+  --sidebar-accent-foreground: #18181B;
+  --sidebar-border: #E4E4E7;
+  --sidebar-ring: #FF6B2B;
+
+  --surface: #F4F4F5;
+  --primary-hover: #e55e25;
+  --secondary-hover: #327bb8;
+}
+
+/* ── Dark Mode ── */
+.dark {
   --background: #0A0A0F;
   --foreground: #E4E4E7;
 
@@ -50,14 +95,6 @@
   --input: #27272A;
   --ring: #FF6B2B;
 
-  /* Chart colors */
-  --chart-1: #FF6B2B;
-  --chart-2: #3A8FD4;
-  --chart-3: #22C55E;
-  --chart-4: #EAB308;
-  --chart-5: #A855F7;
-
-  /* Sidebar */
   --sidebar: #14141A;
   --sidebar-foreground: #E4E4E7;
   --sidebar-primary: #FF6B2B;
@@ -67,14 +104,10 @@
   --sidebar-border: #27272A;
   --sidebar-ring: #FF6B2B;
 
-  /* Metal Gear extra tokens */
   --surface: #14141A;
-  --primary-hover: #e55e25;
-  --secondary-hover: #327bb8;
 }
 
 @theme inline {
-  /* Core */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -94,14 +127,12 @@
   --color-input: var(--input);
   --color-ring: var(--ring);
 
-  /* Chart */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
   --color-chart-4: var(--chart-4);
   --color-chart-5: var(--chart-5);
 
-  /* Sidebar */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -111,16 +142,13 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
 
-  /* Metal Gear extras */
   --color-surface: var(--surface);
   --color-primary-hover: var(--primary-hover);
   --color-secondary-hover: var(--secondary-hover);
 
-  /* Fonts */
   --font-display: var(--font-chakra-petch);
   --font-body: var(--font-manrope);
 
-  /* Radii */
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -140,21 +168,21 @@
   }
 }
 
-/* Scrollbar styling for the dark theme */
-::-webkit-scrollbar {
+/* Scrollbar styling */
+.dark ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 
-::-webkit-scrollbar-track {
+.dark ::-webkit-scrollbar-track {
   background: var(--surface);
 }
 
-::-webkit-scrollbar-thumb {
+.dark ::-webkit-scrollbar-thumb {
   background: #3f3f46;
   border-radius: 4px;
 }
 
-::-webkit-scrollbar-thumb:hover {
+.dark ::-webkit-scrollbar-thumb:hover {
   background: #52525b;
 }

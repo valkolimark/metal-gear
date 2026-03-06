@@ -13,7 +13,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Hosting:** Vercel
 
 ## Design System
-- **Theme:** Dark-only (`#0A0A0F` background, `#FF6B2B` primary orange, `#3A8FD4` steel blue)
+- **Theme:** Light/dark mode via `next-themes` (dark default, `enableSystem`); dark: `#0A0A0F` bg; light: `#FAFAFA` bg; `#FF6B2B` primary orange, `#3A8FD4` steel blue; `ThemeToggle` in header
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body) via `next/font/google`
 - **Components:** 14 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch)
 

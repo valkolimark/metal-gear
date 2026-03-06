@@ -6,9 +6,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
-## [2.0.0] — 2026-03-06 · Cloudflare R2 + Stream Media Migration (Cycle 16-0)
+## [2.0.0] — 2026-03-06 · Cloudflare R2 + Stream, Light/Dark Mode, Listing Redesign (Cycle 16-0)
 
 ### Added
+- **Light/dark mode toggle** — site-wide theme switching via `next-themes` with `ThemeProvider`; `ThemeToggle` component (Sun/Moon icon) in header; system preference detection with `enableSystem`
+- **Light mode color palette** — full `:root` light theme in `globals.css`: `#FAFAFA` background, `#FFFFFF` cards, `#18181B` foreground, semantic border/muted/accent colors; dark mode preserved under `.dark` class
 - **Cloudflare R2 storage** (`src/lib/r2.ts`) — S3-compatible client for all image/document uploads via `media.metalgear.com` CDN with zero egress fees
 - **Cloudflare Stream** (`src/lib/cloudflare-stream.ts`) — video upload, transcoding, adaptive bitrate streaming, thumbnail generation
 - **Unified media interface** (`src/lib/media.ts`) — single entry point for all upload/delete operations across listings, avatars, SOS, disputes, condition reports, messages, storefronts, verification docs
@@ -19,15 +21,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 - Database: `stream_video_id`, `thumbnail_url`, `embed_url`, `hls_url`, `duration_seconds`, `status` columns on `listing_videos`; index on `stream_video_id`
 
 ### Changed
+- **Listing detail page redesigned** — Apple-esque 2-column hero layout with 4:3 `object-contain` gallery (rounded-2xl, thumbnail strip, dot indicators), key info sidebar (title, price, badges, seller mini-card, CTA buttons); content below in 3-column grid (description, specs, condition report, price history on left; offers on right)
+- **Theme architecture** — replaced hardcoded `dark` class on `<html>` with `next-themes` `ThemeProvider attribute="class" defaultTheme="dark" enableSystem`; dual `theme-color` meta tags for light/dark
 - All media uploads now route through Cloudflare R2 instead of Supabase Storage (listing images, avatars, SOS media, dispute evidence, condition reports, message attachments, storefront banners, verification documents)
 - Listing video uploads now use Cloudflare Stream with processing status tracking
 - Listing creation page uses server actions for media uploads instead of client-side Supabase Storage calls
 - Listing detail page uses `VideoPlayer` component for Stream videos, with fallback to HTML5 `<video>` for legacy URLs
 - `next.config.ts` updated with `media.metalgear.com`, `videodelivery.net`, and Cloudflare Stream domain patterns
 - Video size limit increased from 100MB to 200MB (Cloudflare Stream supports larger files)
+- Storefront avatar positioning fixed — avatar no longer clipped by `overflow-hidden` banner container
 
 ### Dependencies
 - Added `@aws-sdk/client-s3`, `@aws-sdk/lib-storage` for R2 uploads
+- Added `next-themes` for light/dark mode switching
 
 ---
 

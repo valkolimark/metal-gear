@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { NotificationDropdown } from '@/components/layout/notification-dropdown'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useTranslations } from 'next-intl'
@@ -150,6 +151,9 @@ export function Header() {
 
           {/* Notifications */}
           <NotificationDropdown />
+
+          {/* Theme Toggle */}
+          <ThemeToggle />
 
           {/* Language Switcher */}
           <LanguageSwitcher />

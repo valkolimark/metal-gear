@@ -576,134 +576,158 @@ export default function ListingDetailPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+    <div className="mx-auto w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      {/* Photo Gallery */}
-      {images.length > 0 ? (
-        <div
-          ref={galleryRef}
-          className="relative overflow-hidden rounded-xl touch-pan-y"
-          onTouchStart={(e) => {
-            touchStartX.current = e.changedTouches[0].screenX
-          }}
-          onTouchEnd={(e) => {
-            touchEndX.current = e.changedTouches[0].screenX
-            handleSwipe()
-          }}
-        >
-          <div className="relative aspect-[16/9] sm:aspect-[2/1]">
-            <Image
-              src={images[currentImage]?.url}
-              alt={listing.title}
-              fill
-              className="object-cover"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
-              priority
-            />
-          </div>
-          {images.length > 1 && (
-            <>
-              <button
-                onClick={() =>
-                  setCurrentImage((p) =>
-                    p === 0 ? images.length - 1 : p - 1
-                  )
-                }
-                className="absolute left-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-              >
-                <ChevronLeft className="size-5" />
-              </button>
-              <button
-                onClick={() =>
-                  setCurrentImage((p) =>
-                    p === images.length - 1 ? 0 : p + 1
-                  )
-                }
-                className="absolute right-3 top-1/2 flex size-10 -translate-y-1/2 items-center justify-center rounded-full bg-black/60 text-white transition-colors hover:bg-black/80"
-              >
-                <ChevronRight className="size-5" />
-              </button>
-              <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
-                {images.map((_, i) => (
-                  <button
-                    key={i}
-                    onClick={() => setCurrentImage(i)}
-                    className={`size-2 rounded-full transition-colors ${
-                      i === currentImage ? 'bg-white' : 'bg-white/40'
-                    }`}
-                  />
-                ))}
+
+      {/* Hero: Gallery + Key Info side-by-side on desktop */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Photo Gallery — compact, Apple-style */}
+        <div className="space-y-3">
+          {images.length > 0 ? (
+            <div
+              ref={galleryRef}
+              className="relative overflow-hidden rounded-2xl border border-border bg-card touch-pan-y"
+              onTouchStart={(e) => {
+                touchStartX.current = e.changedTouches[0].screenX
+              }}
+              onTouchEnd={(e) => {
+                touchEndX.current = e.changedTouches[0].screenX
+                handleSwipe()
+              }}
+            >
+              <div className="relative aspect-[4/3]">
+                <Image
+                  src={images[currentImage]?.url}
+                  alt={listing.title}
+                  fill
+                  className="object-contain"
+                  sizes="(max-width: 768px) 100vw, 600px"
+                  priority
+                />
               </div>
-            </>
+              {images.length > 1 && (
+                <>
+                  <button
+                    onClick={() =>
+                      setCurrentImage((p) =>
+                        p === 0 ? images.length - 1 : p - 1
+                      )
+                    }
+                    className="absolute left-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-background"
+                  >
+                    <ChevronLeft className="size-4" />
+                  </button>
+                  <button
+                    onClick={() =>
+                      setCurrentImage((p) =>
+                        p === images.length - 1 ? 0 : p + 1
+                      )
+                    }
+                    className="absolute right-2 top-1/2 flex size-8 -translate-y-1/2 items-center justify-center rounded-full bg-background/80 text-foreground shadow-sm backdrop-blur transition-colors hover:bg-background"
+                  >
+                    <ChevronRight className="size-4" />
+                  </button>
+                  <div className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1.5">
+                    {images.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentImage(i)}
+                        className={`size-2 rounded-full transition-all ${
+                          i === currentImage ? 'bg-primary scale-125' : 'bg-foreground/30'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="flex aspect-[4/3] items-center justify-center rounded-2xl border border-border bg-card">
+              <p className="font-body text-muted-foreground">No photos</p>
+            </div>
+          )}
+
+          {/* Thumbnail strip */}
+          {images.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {images.map((img, i) => (
+                <button
+                  key={img.id}
+                  onClick={() => setCurrentImage(i)}
+                  className={`relative size-16 shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                    i === currentImage
+                      ? 'border-primary ring-1 ring-primary/30'
+                      : 'border-transparent opacity-60 hover:opacity-100'
+                  }`}
+                >
+                  <Image
+                    src={img.url}
+                    alt={`${listing.title} photo ${i + 1}`}
+                    fill
+                    className="object-cover"
+                    sizes="64px"
+                  />
+                </button>
+              ))}
+            </div>
+          )}
+
+          {/* Videos — inline below thumbnails */}
+          {videos.length > 0 && (
+            <div className="space-y-2">
+              {videos.map((vid) => (
+                <div key={vid.id}>
+                  {vid.stream_video_id || vid.embed_url ? (
+                    <VideoPlayer
+                      videoId={vid.stream_video_id || undefined}
+                      embedUrl={vid.embed_url || undefined}
+                      thumbnailUrl={vid.thumbnail_url || undefined}
+                      title={listing?.title}
+                    />
+                  ) : (
+                    <div className="overflow-hidden rounded-2xl border border-border">
+                      <video
+                        src={vid.url}
+                        controls
+                        preload="metadata"
+                        className="aspect-video w-full bg-black"
+                      >
+                        Your browser does not support video playback.
+                      </video>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           )}
         </div>
-      ) : (
-        <div className="flex aspect-[16/9] items-center justify-center rounded-xl bg-surface sm:aspect-[2/1]">
-          <p className="font-body text-muted-foreground">No photos</p>
-        </div>
-      )}
 
-      {/* Videos */}
-      {videos.length > 0 && (
-        <div className="space-y-3">
-          <h2 className="font-display text-lg font-semibold text-foreground">
-            Videos ({videos.length})
-          </h2>
-          <div className="grid gap-4 sm:grid-cols-2">
-            {videos.map((vid) => (
-              <div key={vid.id}>
-                {vid.stream_video_id || vid.embed_url ? (
-                  <VideoPlayer
-                    videoId={vid.stream_video_id || undefined}
-                    embedUrl={vid.embed_url || undefined}
-                    thumbnailUrl={vid.thumbnail_url || undefined}
-                    title={listing?.title}
-                  />
-                ) : (
-                  <div className="overflow-hidden rounded-xl border border-border">
-                    <video
-                      src={vid.url}
-                      controls
-                      preload="metadata"
-                      className="aspect-video w-full bg-black"
-                    >
-                      Your browser does not support video playback.
-                    </video>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Main content */}
-        <div className="space-y-6 lg:col-span-2">
-          {/* Title & badges */}
+        {/* Key Info — right column on desktop */}
+        <div className="space-y-5">
+          {/* Title */}
           <div>
             <div className="flex flex-wrap items-start justify-between gap-3">
-              <h1 className="font-display text-2xl font-bold text-foreground sm:text-3xl">
+              <h1 className="font-display text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
                 {listing.title}
               </h1>
-              <div className="flex gap-2">
+              <div className="flex gap-1.5">
                 <Button
                   variant="outline"
                   size="icon"
+                  className="size-9"
                   onClick={toggleFavorite}
-                  className={isFavorited ? 'text-red-500' : ''}
                 >
                   <Heart
-                    className={`size-4 ${isFavorited ? 'fill-current' : ''}`}
+                    className={`size-4 ${isFavorited ? 'fill-red-500 text-red-500' : ''}`}
                   />
                 </Button>
                 {user && !isOwner && (
                   <DropdownMenu open={collectionMenuOpen} onOpenChange={setCollectionMenuOpen}>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="icon" title="Add to collection">
+                      <Button variant="outline" size="icon" className="size-9" title="Add to collection">
                         <FolderPlus className="size-4" />
                       </Button>
                     </DropdownMenuTrigger>
@@ -760,7 +784,7 @@ export default function ListingDetailPage() {
                 )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="icon">
+                    <Button variant="outline" size="icon" className="size-9">
                       <Share2 className="size-4" />
                     </Button>
                   </DropdownMenuTrigger>
@@ -784,7 +808,7 @@ export default function ListingDetailPage() {
                   </DropdownMenuContent>
                 </DropdownMenu>
                 {isOwner && (
-                  <Button variant="outline" size="icon" asChild>
+                  <Button variant="outline" size="icon" className="size-9" asChild>
                     <Link href={`/listings/${listing.id}/edit`}>
                       <Edit className="size-4" />
                     </Link>
@@ -793,7 +817,8 @@ export default function ListingDetailPage() {
               </div>
             </div>
 
-            <p className="mt-2 font-display text-2xl font-bold text-primary">
+            {/* Price — prominent */}
+            <p className="mt-3 font-display text-3xl font-bold text-primary">
               {listing.contact_for_price
                 ? 'Contact for Price'
                 : listing.price_cents
@@ -806,6 +831,7 @@ export default function ListingDetailPage() {
               )}
             </p>
 
+            {/* Badges */}
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge variant="outline" className="font-body">
                 {listing.category}
@@ -830,6 +856,7 @@ export default function ListingDetailPage() {
               </Badge>
             </div>
 
+            {/* Meta info */}
             <div className="mt-3 flex flex-wrap gap-4 font-body text-sm text-muted-foreground">
               <span className="flex items-center gap-1">
                 <MapPin className="size-3.5" />
@@ -850,13 +877,116 @@ export default function ListingDetailPage() {
             </div>
           </div>
 
+          {/* Seller mini-card + CTA buttons */}
+          {seller && (
+            <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+              <Link
+                href={`/sellers/${seller.id}`}
+                className="flex items-center gap-3 transition-colors hover:text-primary"
+              >
+                <Avatar className="size-10">
+                  <AvatarImage src={seller.avatar_url || undefined} crossOrigin="anonymous" />
+                  <AvatarFallback className="bg-primary/20 font-display text-xs text-primary">
+                    {seller.full_name
+                      ?.split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .toUpperCase()
+                      .slice(0, 2) || 'MG'}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <p className="font-body text-sm font-medium text-foreground">
+                    {seller.display_name || seller.full_name || 'Anonymous'}
+                  </p>
+                  {seller.company_name && (
+                    <p className="font-body text-xs text-muted-foreground">
+                      {seller.company_name}
+                    </p>
+                  )}
+                </div>
+              </Link>
+
+              {!isOwner && (
+                <div className="flex gap-2">
+                  <Button
+                    onClick={handleContact}
+                    className="flex-1 font-body"
+                    size="sm"
+                  >
+                    <MessageSquare className="mr-2 size-4" />
+                    Contact Seller
+                  </Button>
+                  {listing.negotiable && !listing.contact_for_price && (
+                    <Button
+                      variant="outline"
+                      onClick={() => setOfferDialogOpen(true)}
+                      className="flex-1 font-body"
+                      size="sm"
+                    >
+                      <DollarSign className="mr-2 size-4" />
+                      Make Offer
+                    </Button>
+                  )}
+                </div>
+              )}
+
+              {!isOwner && listing.price_cents && !listing.contact_for_price && (
+                <div className="flex gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleTogglePriceWatch}
+                    disabled={watchLoading}
+                    className={`flex-1 font-body text-xs ${isWatching ? 'text-primary' : ''}`}
+                  >
+                    {watchLoading ? (
+                      <Loader2 className="mr-1 size-3 animate-spin" />
+                    ) : isWatching ? (
+                      <BellOff className="mr-1 size-3" />
+                    ) : (
+                      <Bell className="mr-1 size-3" />
+                    )}
+                    {isWatching ? 'Watching' : 'Watch Price'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPriceAlertOpen(true)}
+                    className={`flex-1 font-body text-xs ${targetPriceCents ? 'text-green-400' : ''}`}
+                  >
+                    <TrendingDown className="mr-1 size-3" />
+                    {targetPriceCents
+                      ? `Alert $${(targetPriceCents / 100).toLocaleString()}`
+                      : 'Price Alert'}
+                  </Button>
+                  {sellerHasAvailability && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setViewingDialogOpen(true)}
+                      className="flex-1 font-body text-xs"
+                    >
+                      <CalendarDays className="mr-1 size-3" />
+                      Viewing
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Content below hero: 2-column on desktop */}
+      <div className="mt-8 grid gap-6 lg:grid-cols-3">
+        {/* Main content — left 2 cols */}
+        <div className="space-y-6 lg:col-span-2">
           {/* Description */}
           {listing.description && (
             <Card className="border-border bg-card">
               <CardHeader>
-                <CardTitle className="font-display text-lg">
-                  Description
-                </CardTitle>
+                <CardTitle className="font-display text-lg">Description</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="whitespace-pre-wrap font-body text-sm text-muted-foreground">
@@ -871,9 +1001,7 @@ export default function ListingDetailPage() {
             Object.keys(listing.specifications as Record<string, string>).length > 0 && (
               <Card className="border-border bg-card">
                 <CardHeader>
-                  <CardTitle className="font-display text-lg">
-                    Specifications
-                  </CardTitle>
+                  <CardTitle className="font-display text-lg">Specifications</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -881,12 +1009,8 @@ export default function ListingDetailPage() {
                       listing.specifications as Record<string, string>
                     ).map(([k, v]) => (
                       <div key={k}>
-                        <dt className="font-body text-xs text-muted-foreground">
-                          {k}
-                        </dt>
-                        <dd className="font-body text-sm font-medium text-foreground">
-                          {v}
-                        </dd>
+                        <dt className="font-body text-xs text-muted-foreground">{k}</dt>
+                        <dd className="font-body text-sm font-medium text-foreground">{v}</dd>
                       </div>
                     ))}
                   </dl>
@@ -936,7 +1060,6 @@ export default function ListingDetailPage() {
               </CardHeader>
               {reportExpanded && (
                 <CardContent className="space-y-4">
-                  {/* Scores */}
                   <div className="grid grid-cols-3 gap-4">
                     {[
                       { label: 'Mechanical', score: conditionReport.mechanical_score },
@@ -961,10 +1084,7 @@ export default function ListingDetailPage() {
                       </div>
                     ))}
                   </div>
-
                   <Separator />
-
-                  {/* Details */}
                   <div className="grid grid-cols-2 gap-3">
                     {conditionReport.hours_of_use != null && (
                       <div>
@@ -987,8 +1107,6 @@ export default function ListingDetailPage() {
                       </div>
                     )}
                   </div>
-
-                  {/* Notes */}
                   {conditionReport.notes && (
                     <div>
                       <p className="font-body text-xs text-muted-foreground">Inspector Notes</p>
@@ -997,8 +1115,6 @@ export default function ListingDetailPage() {
                       </p>
                     </div>
                   )}
-
-                  {/* Photos */}
                   {conditionReport.photo_urls?.length > 0 && (
                     <div>
                       <p className="mb-2 font-body text-xs text-muted-foreground">Condition Photos</p>
@@ -1017,7 +1133,6 @@ export default function ListingDetailPage() {
                       </div>
                     </div>
                   )}
-
                   <p className="font-body text-[10px] text-muted-foreground">
                     Report created {new Date(conditionReport.created_at).toLocaleDateString('en-US', {
                       month: 'long',
@@ -1089,116 +1204,8 @@ export default function ListingDetailPage() {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar — right col */}
         <div className="space-y-4">
-          {/* Seller Card */}
-          {seller && (
-            <Card className="border-border bg-card">
-              <CardHeader>
-                <CardTitle className="font-display text-lg">Seller</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Link
-                  href={`/profile/${seller.id}`}
-                  className="flex items-center gap-3 transition-colors hover:text-primary"
-                >
-                  <Avatar className="size-12">
-                    <AvatarImage src={seller.avatar_url || undefined} crossOrigin="anonymous" />
-                    <AvatarFallback className="bg-primary/20 font-display text-sm text-primary">
-                      {seller.full_name
-                        ?.split(' ')
-                        .map((n) => n[0])
-                        .join('')
-                        .toUpperCase()
-                        .slice(0, 2) || 'MG'}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div>
-                    <p className="font-body font-medium text-foreground">
-                      {seller.display_name || seller.full_name || 'Anonymous'}
-                    </p>
-                    {seller.company_name && (
-                      <p className="font-body text-xs text-muted-foreground">
-                        {seller.company_name}
-                      </p>
-                    )}
-                    <p className="font-body text-xs text-muted-foreground">
-                      {seller.location_city}, {seller.location_state}
-                    </p>
-                  </div>
-                </Link>
-
-                <Link
-                  href={`/sellers/${seller.id}`}
-                  className="flex items-center gap-1.5 font-body text-xs text-secondary transition-colors hover:text-secondary/80"
-                >
-                  Visit Storefront →
-                </Link>
-
-                {!isOwner && (
-                  <div className="space-y-2">
-                    <Button
-                      onClick={handleContact}
-                      className="w-full font-body"
-                    >
-                      <MessageSquare className="mr-2 size-4" />
-                      Contact Seller
-                    </Button>
-                    {listing.negotiable && !listing.contact_for_price && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setOfferDialogOpen(true)}
-                        className="w-full font-body"
-                      >
-                        <DollarSign className="mr-2 size-4" />
-                        Make an Offer
-                      </Button>
-                    )}
-                    {listing.price_cents && !listing.contact_for_price && (
-                      <>
-                        <Button
-                          variant="outline"
-                          onClick={handleTogglePriceWatch}
-                          disabled={watchLoading}
-                          className={`w-full font-body ${isWatching ? 'border-primary text-primary' : ''}`}
-                        >
-                          {watchLoading ? (
-                            <Loader2 className="mr-2 size-4 animate-spin" />
-                          ) : isWatching ? (
-                            <BellOff className="mr-2 size-4" />
-                          ) : (
-                            <Bell className="mr-2 size-4" />
-                          )}
-                          {isWatching ? 'Stop Watching' : 'Watch Price'}
-                        </Button>
-                        <Button
-                          variant="outline"
-                          onClick={() => setPriceAlertOpen(true)}
-                          className={`w-full font-body text-xs ${targetPriceCents ? 'border-green-500/50 text-green-400' : ''}`}
-                        >
-                          <TrendingDown className="mr-2 size-4" />
-                          {targetPriceCents
-                            ? `Alert at $${(targetPriceCents / 100).toLocaleString()}`
-                            : 'Set Price Alert'}
-                        </Button>
-                      </>
-                    )}
-                    {sellerHasAvailability && (
-                      <Button
-                        variant="outline"
-                        onClick={() => setViewingDialogOpen(true)}
-                        className="w-full font-body"
-                      >
-                        <CalendarDays className="mr-2 size-4" />
-                        Request Viewing
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* Offers section */}
           {offers.length > 0 && (
             <Card className="border-border bg-card">
@@ -1249,7 +1256,6 @@ export default function ListingDetailPage() {
                           )}
                         </div>
                       )}
-                      {/* Action buttons */}
                       {isSeller && offer.status === 'pending' && (
                         <div className="flex gap-2">
                           <Button size="sm" className="flex-1 font-body text-xs" onClick={() => handleOfferAction(offer.id, 'accept')}>
@@ -1284,7 +1290,6 @@ export default function ListingDetailPage() {
                           <> &middot; expires {new Date(offer.expires_at).toLocaleDateString()}</>
                         )}
                       </p>
-                      {/* AI Deal Coach — private, per-side */}
                       {(offer.status === 'pending' || offer.status === 'countered') && listing && (() => {
                         const listingAge = Math.floor(
                           (new Date().getTime() - new Date(listing.created_at).getTime()) / (1000 * 60 * 60 * 24)
@@ -1346,35 +1351,6 @@ export default function ListingDetailPage() {
                   <Button size="sm" variant="outline" className="font-body" onClick={() => setCounteringOfferId(null)}>
                     Cancel
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Thumbnail strip */}
-          {images.length > 1 && (
-            <Card className="border-border bg-card">
-              <CardContent className="p-3">
-                <div className="grid grid-cols-4 gap-2">
-                  {images.map((img, i) => (
-                    <button
-                      key={img.id}
-                      onClick={() => setCurrentImage(i)}
-                      className={`relative aspect-square overflow-hidden rounded-md border-2 transition-colors ${
-                        i === currentImage
-                          ? 'border-primary'
-                          : 'border-transparent'
-                      }`}
-                    >
-                      <Image
-                        src={img.url}
-                        alt={`Thumbnail ${i + 1}`}
-                        fill
-                        className="object-cover"
-                        sizes="100px"
-                      />
-                    </button>
-                  ))}
                 </div>
               </CardContent>
             </Card>

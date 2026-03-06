@@ -95,7 +95,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 
 ### Design System
 
-- **Theme:** Dark-only (`#0A0A0F` background, `#FF6B2B` primary orange, `#3A8FD4` steel blue)
+- **Theme:** Light/dark mode toggle via `next-themes` (dark default, system preference detection); dark: `#0A0A0F` background; light: `#FAFAFA` background; `#FF6B2B` primary orange, `#3A8FD4` steel blue
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body)
 - **Components:** 14 shadcn/ui components (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch)
 
@@ -119,6 +119,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/api/webhooks/stripe` | POST | Stripe subscription webhook |
+| `/api/webhooks/cloudflare-stream` | POST | Cloudflare Stream video processing webhook |
 | `/api/unsubscribe` | GET | Email unsubscribe endpoint |
 | `/api/search/ai` | POST | Conversational AI search (NL to filter mapping) |
 | `/api/listings/ai-copy` | POST | AI description generator (streaming), title optimizer, quality scorer |
@@ -170,6 +171,15 @@ ANTHROPIC_API_KEY=your_anthropic_key
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public
 VAPID_PRIVATE_KEY=your_vapid_private
 
+CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
+R2_BUCKET_NAME=your_r2_bucket
+R2_PUBLIC_URL=https://media.yourdomain.com
+R2_ACCESS_KEY_ID=your_r2_access_key
+R2_SECRET_ACCESS_KEY=your_r2_secret_key
+CLOUDFLARE_STREAM_TOKEN=your_stream_token
+CLOUDFLARE_CUSTOMER_SUBDOMAIN=your_stream_subdomain
+CLOUDFLARE_STREAM_WEBHOOK_SECRET=your_stream_webhook_secret
+
 SENTRY_DSN=your_sentry_dsn
 CRON_SECRET=your_cron_secret
 ```
@@ -219,6 +229,9 @@ src/
 │   ├── constants/       # Equipment taxonomy, onboarding config
 │   ├── supabase/        # Client and admin Supabase clients
 │   ├── anthropic.ts     # Anthropic SDK client
+│   ├── r2.ts            # Cloudflare R2 storage client
+│   ├── cloudflare-stream.ts  # Cloudflare Stream video client
+│   ├── media.ts         # Unified media upload/delete interface
 │   ├── email.ts         # Resend email templates
 │   ├── stripe.ts        # Stripe client
 │   └── stores/          # Zustand stores (auth, ui, search)
