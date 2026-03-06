@@ -155,6 +155,54 @@ export async function getAIAssistMetrics() {
   }
 }
 
+export async function getListingQualityMetrics() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  // Get all active listings with quality scores
+  const { data: scored } = await admin
+    .from('listings')
+    .select('listing_quality_score, ai_analyzed')
+    .eq('status', 'active')
+    .not('listing_quality_score', 'is', null)
+
+  const { count: totalActive } = await admin
+    .from('listings')
+    .select('id', { count: 'exact', head: true })
+    .eq('status', 'active')
+
+  const scores = (scored ?? []).map((l) => l.listing_quality_score as number)
+  const avgScore = scores.length > 0 ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length) : 0
+
+  // Grade distribution
+  const gradeDistribution = { A: 0, B: 0, C: 0, D: 0, F: 0 }
+  for (const s of scores) {
+    if (s >= 80) gradeDistribution.A++
+    else if (s >= 65) gradeDistribution.B++
+    else if (s >= 50) gradeDistribution.C++
+    else if (s >= 35) gradeDistribution.D++
+    else gradeDistribution.F++
+  }
+
+  // AI-assisted vs manual average (ai_analyzed = true means AI was used)
+  const aiScores = (scored ?? []).filter((l) => l.ai_analyzed).map((l) => l.listing_quality_score as number)
+  const manualScores = (scored ?? []).filter((l) => !l.ai_analyzed).map((l) => l.listing_quality_score as number)
+
+  const avgAI = aiScores.length > 0 ? Math.round(aiScores.reduce((a, b) => a + b, 0) / aiScores.length) : 0
+  const avgManual = manualScores.length > 0 ? Math.round(manualScores.reduce((a, b) => a + b, 0) / manualScores.length) : 0
+
+  return {
+    totalActive: totalActive ?? 0,
+    scoredCount: scores.length,
+    avgScore,
+    gradeDistribution,
+    avgAI,
+    avgManual,
+    aiScoredCount: aiScores.length,
+    manualScoredCount: manualScores.length,
+  }
+}
+
 // ─── Seller Analytics (existing) ────────────────────────────────────
 
 export async function recordListingView(listingId: string) {

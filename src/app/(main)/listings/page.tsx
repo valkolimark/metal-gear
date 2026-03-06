@@ -197,6 +197,9 @@ export default function ListingsPage() {
                         : 'Free'}
                     {' '}&middot; {listing.views_count} views &middot;{' '}
                     {listing.favorites_count} favorites
+                    {listing.listing_quality_score != null && (
+                      <span> &middot; Score: {listing.listing_quality_score}</span>
+                    )}
                     {listing.status === 'active' && listing.expires_at && (() => {
                       const daysLeft = Math.ceil((new Date(listing.expires_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
                       return daysLeft <= 7

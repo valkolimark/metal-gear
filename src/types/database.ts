@@ -789,6 +789,7 @@ export type Database = {
           id: string
           industry: string | null
           is_featured: boolean
+          listing_quality_score: number | null
           location_city: string
           location_lat: number
           location_lng: number
@@ -828,6 +829,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_featured?: boolean
+          listing_quality_score?: number | null
           location_city?: string
           location_lat?: number
           location_lng?: number
@@ -867,6 +869,7 @@ export type Database = {
           id?: string
           industry?: string | null
           is_featured?: boolean
+          listing_quality_score?: number | null
           location_city?: string
           location_lat?: number
           location_lng?: number

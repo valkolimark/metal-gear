@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [1.5.0] — 2026-03-05 · AI Listing Copy Tools (Cycle 13-2)
+
+### Added
+- **AI Copy API** (`/api/listings/ai-copy`) — single route with 3 actions: `generate_description` (streaming), `optimize_title`, `score_quality`, all powered by Claude Sonnet 4
+- **AI Description Generator** — in listing creation Step 1, generates 150-300 word professional descriptions with 4-6 bullet selling points; streaming text display, "Use This" / "Regenerate" / "Edit before using" actions
+- **AI Title Optimizer** — inline "Optimize" button next to title field, suggests 3 SEO-optimized title options with issue warnings (vague, missing manufacturer, etc.), radio-select to apply
+- **Listing Quality Score Widget** — auto-scores listings 0-100 (grades A-F) on review step with breakdown bars for photos/description/specs/title/pricing, top improvement suggestions, estimated reach multiplier, "Improve Now" navigation
+- **Quality score on listings management** — quality score chip shown on each listing row in My Listings page
+- **Admin Listing Quality Analytics** — new section in admin analytics: average quality score, grade distribution pie chart, AI-assisted vs manual average comparison, AI advantage KPI
+- Column: `listings.listing_quality_score` (integer)
+- Server action: `getListingQualityMetrics()` for admin analytics
+
+### Changed
+- Listing creation Step 1 now includes AI description generator panel and title optimizer button
+- Listing creation Step 4 (Review) now shows auto-scoring quality widget with debounced updates
+- Admin analytics page extended with Section 6: Listing Quality
+
+---
+
 ## [1.4.0] — 2026-03-05 · Conversational AI Search (Cycle 13-1)
 
 ### Added

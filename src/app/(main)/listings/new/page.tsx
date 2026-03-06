@@ -37,6 +37,9 @@ import {
   TIER_LIMITS,
 } from '@/lib/constants'
 import AIImageCapture from '@/components/listings/AIImageCapture'
+import { AIDescriptionGenerator } from '@/components/listings/AIDescriptionGenerator'
+import { AITitleOptimizer } from '@/components/listings/AITitleOptimizer'
+import { ListingQualityScore } from '@/components/listings/ListingQualityScore'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
 
 const STEPS = ['AI Assist', 'Details', 'Photos', 'Pricing', 'Review']
@@ -596,15 +599,48 @@ export default function CreateListingPage() {
               <Label htmlFor="title" className="font-body">
                 Title *
               </Label>
-              <Input
-                id="title"
-                name="title"
-                value={form.title}
-                onChange={handleChange}
-                placeholder="e.g. Haas VF-2 CNC Vertical Machining Center"
-                className="font-body"
-              />
+              <div className="flex items-center gap-2">
+                <Input
+                  id="title"
+                  name="title"
+                  value={form.title}
+                  onChange={handleChange}
+                  placeholder="e.g. Haas VF-2 CNC Vertical Machining Center"
+                  className="font-body flex-1"
+                />
+                <AITitleOptimizer
+                  title={form.title}
+                  manufacturer={form.specifications?.manufacturer}
+                  model={form.specifications?.model}
+                  condition={form.condition}
+                  specifications={form.specifications}
+                  onApplyTitle={(title) => setForm((prev) => ({ ...prev, title }))}
+                />
+              </div>
             </div>
+
+            {/* AI Description Generator */}
+            <AIDescriptionGenerator
+              listing={{
+                title: form.title,
+                manufacturer: form.specifications?.manufacturer,
+                model: form.specifications?.model,
+                condition: form.condition,
+                specifications: form.specifications,
+              }}
+              onUseDescription={(desc) => {
+                setForm((prev) => ({ ...prev, description: desc }))
+                setAiAssistUsed(true)
+              }}
+              onEditDescription={(desc) => {
+                setForm((prev) => ({ ...prev, description: desc }))
+                setAiAssistUsed(true)
+                // Focus the textarea
+                setTimeout(() => {
+                  document.getElementById('description')?.focus()
+                }, 100)
+              }}
+            />
 
             <div className="space-y-2">
               <Label htmlFor="description" className="font-body">
@@ -1119,6 +1155,33 @@ export default function CreateListingPage() {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* Quality Score — shown on review step */}
+      {step === 4 && (
+        <ListingQualityScore
+          listing={{
+            title: form.title,
+            description: form.description,
+            condition: form.condition,
+            specifications: form.specifications,
+            price_cents: form.price_cents,
+            contact_for_price: form.contact_for_price,
+            photoCount: images.length,
+            hasVideo: videos.length > 0,
+          }}
+          onImprove={(section) => {
+            // Navigate back to the relevant step
+            const sectionStepMap: Record<string, number> = {
+              title: 1,
+              description: 1,
+              specs: 1,
+              photos: 2,
+              pricing: 3,
+            }
+            setStep(sectionStepMap[section] ?? 1)
+          }}
+        />
       )}
 
       {/* Navigation (hidden on AI step which has its own flow) */}

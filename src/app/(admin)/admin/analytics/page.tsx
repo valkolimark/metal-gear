@@ -24,6 +24,7 @@ import {
   getSearchAnalytics,
   getGeographicData,
   getAIAssistMetrics,
+  getListingQualityMetrics,
 } from '@/app/actions/analytics'
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -117,17 +118,20 @@ export default function AdminAnalyticsPage() {
   const [searchData, setSearchData] = useState<SearchData | null>(null)
   const [geoData, setGeoData] = useState<GeoData | null>(null)
   const [aiData, setAIData] = useState<AIData | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [qualityData, setQualityData] = useState<any>(null)
 
   useEffect(() => {
     let cancelled = false
     async function fetchData() {
-      const [ug, lh, sos, search, geo, ai] = await Promise.all([
+      const [ug, lh, sos, search, geo, ai, quality] = await Promise.all([
         getUserGrowthData(),
         getListingHealth(),
         getSOSPerformance(),
         getSearchAnalytics(),
         getGeographicData(),
         getAIAssistMetrics(),
+        getListingQualityMetrics(),
       ])
       if (!cancelled) {
         setUserGrowth(ug)
@@ -136,6 +140,7 @@ export default function AdminAnalyticsPage() {
         setSearchData(search)
         setGeoData(geo)
         setAIData(ai)
+        setQualityData(quality)
       }
     }
     fetchData()
@@ -340,7 +345,59 @@ export default function AdminAnalyticsPage() {
         </div>
       )}
 
-      {/* ── Section 6: Geographic ──────────────────────────────────── */}
+      {/* ── Section 6: Listing Quality ─────────────────────────────── */}
+      {!qualityData ? (
+        <SectionSkeleton />
+      ) : (
+        <div>
+          <h2 className="font-display mb-4 text-lg font-semibold text-foreground">Listing Quality</h2>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-4">
+            <KPICard label="Avg Quality Score" value={qualityData.avgScore} sub={`${qualityData.scoredCount} scored of ${qualityData.totalActive} active`} />
+            <KPICard label="AI-Assisted Avg" value={qualityData.avgAI} sub={`${qualityData.aiScoredCount} listings`} />
+            <KPICard label="Manual Avg" value={qualityData.avgManual} sub={`${qualityData.manualScoredCount} listings`} />
+            <KPICard label="AI Advantage" value={qualityData.avgAI > qualityData.avgManual ? `+${qualityData.avgAI - qualityData.avgManual}` : `${qualityData.avgAI - qualityData.avgManual}`} sub="AI vs manual score diff" />
+          </div>
+          <Card className="border-white/5 bg-[#0D0D14]">
+            <CardHeader>
+              <CardTitle className="font-display text-base text-foreground">Grade Distribution</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {qualityData.scoredCount === 0 ? (
+                <p className="font-body text-sm text-muted-foreground">No scored listings yet. Quality scores are generated when sellers use the listing quality tool.</p>
+              ) : (
+                <div className="h-[200px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={[
+                          { name: 'A (80-100)', value: qualityData.gradeDistribution.A },
+                          { name: 'B (65-79)', value: qualityData.gradeDistribution.B },
+                          { name: 'C (50-64)', value: qualityData.gradeDistribution.C },
+                          { name: 'D (35-49)', value: qualityData.gradeDistribution.D },
+                          { name: 'F (0-34)', value: qualityData.gradeDistribution.F },
+                        ].filter((d) => d.value > 0)}
+                        cx="50%"
+                        cy="50%"
+                        outerRadius={70}
+                        dataKey="value"
+                        label={((props: { name: string; percent: number }) => `${props.name}: ${(props.percent * 100).toFixed(0)}%`) as never}
+                      >
+                        {['#10b981', '#3A8FD4', '#f59e0b', '#FF6B2B', '#ef4444'].map((color, i) => (
+                          <Cell key={i} fill={color} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<ChartTooltip /> as never} />
+                      <Legend wrapperStyle={{ fontSize: '12px', fontFamily: 'Manrope' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* ── Section 7: Geographic ──────────────────────────────────── */}
       {!geoData ? (
         <SectionSkeleton />
       ) : (
