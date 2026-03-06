@@ -25,9 +25,14 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 ## Route Groups
 - `(auth)` — login, signup, forgot-password, reset-password, callback
 - `(main)` — dashboard, search, listings, messages, profile, favorites, admin (protected)
+- `(admin)` — super admin dashboard with RBAC (superadmin, moderator, analyst)
 - `(marketing)` — pricing, about, terms, privacy (public)
 - `/api/webhooks/stripe` — Stripe subscription webhook
 - `/api/unsubscribe` — Email unsubscribe endpoint
+- `/api/search/ai` — Conversational AI search (Claude-powered NL→filter mapping)
+- `/api/listings/ai-copy` — AI description generator (streaming), title optimizer, quality scorer
+- `/api/listings/analyze-image` — Claude Vision equipment recognition + fraud detection
+- `/api/cron/expire-boosts` — Daily boost expiration cleanup
 
 ## Subscription Tiers
 - **Free:** 3 listings, 5 photos, 10 conversations, 100mi search
@@ -59,11 +64,22 @@ curl -s -X POST "https://api.vercel.com/v13/deployments?teamId=team_9n9Gosoaraic
 ## Prompts
 Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant prompt file.
 
-## Database Tables (Cycle 4 additions)
+## Database Tables (notable)
 - `listing_views` — Timestamped view events per listing (viewer_id, listing_id, viewed_at)
-- `saved_searches` — User-saved search filter sets (user_id, name, filters JSONB)
+- `saved_searches` — User-saved search filter sets (user_id, name, filters JSONB, ai_query, ai_filters, is_ai_search)
 - `reviews` — Seller ratings/reviews (reviewer_id, seller_id, conversation_id, rating 1-5)
 - `reports` — User/listing reports for moderation (reporter_id, target_type, target_id, reason, status)
+- `boost_purchases` — Self-serve boost purchases with Stripe checkout
+- `homepage_featured_slots` — Admin-curated homepage slots
+- `system_config` — Key-value platform configuration with audit trail
+- `admin_audit_log` — All admin actions with admin_id, target, metadata, timestamp
+
+## AI Infrastructure
+- **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
+- **Model:** Claude Sonnet 4 for all AI features
+- **AI columns on listings:** `ai_analyzed`, `ai_fraud_flagged`, `ai_fraud_reason`, `ai_assist_used`, `ai_assist_accepted`, `listing_quality_score`
+- **AI columns on saved_searches:** `ai_query`, `ai_filters`, `is_ai_search`
+- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`
 
 ## Critical Pattern
 All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. Server actions live in:

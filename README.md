@@ -33,6 +33,14 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Offer & negotiation system with full lifecycle and 72-hour auto-expiration
 - Seller availability scheduling with timezone-aware viewing requests
 
+### AI-Powered Tools
+- Conversational AI search powered by Claude — natural language to structured filter mapping with multi-turn context
+- "Describe Your Problem" diagnoser — equipment problem descriptions routed to AI search with diagnostic reasoning
+- AI description generator with streaming output, regenerate, and edit-before-using actions
+- AI title optimizer — 3 SEO-optimized title suggestions with issue warnings
+- Listing quality scorer — 0-100 score (grades A-F) with per-category breakdown and improvement tips
+- AI image recognition — equipment identification, nameplate OCR, and fraud detection via Claude Vision
+
 ### Discovery & Analytics
 - Saved search alerts with daily digest emails and recommendation engine
 - Market insights with category pricing, trends, and demand heatmap (Premium/Boost)
@@ -66,6 +74,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 | Payments | Stripe (escrow, subscriptions, Billing Portal) |
 | Email | Resend (transactional templates) |
 | Maps | Leaflet + OpenStreetMap |
+| AI | Anthropic Claude (Sonnet 4) via `@anthropic-ai/sdk` |
 | Error Tracking | Sentry |
 | Hosting | Vercel |
 | CI/CD | GitHub Actions + Husky pre-commit hooks |
@@ -189,7 +198,7 @@ All database operations use server actions with `createAdminClient()`. Client-si
 
 PostgreSQL via Supabase with 30+ tables including:
 
-`profiles`, `listings`, `listing_images`, `listing_videos`, `favorites`, `conversations`, `messages`, `message_attachments`, `subscriptions`, `payments`, `notifications`, `push_subscriptions`, `offers`, `reviews`, `reports`, `saved_searches`, `listing_views`, `user_activity`, `seller_storefronts`, `listing_imports`, `seller_verifications`, `transactions`, `reply_templates`, `disputes`, `condition_reports`, `collections`, `collection_items`, `seller_availability`, `viewing_requests`, `help_articles`, `onboarding_progress`, `referrals`, `price_watches`, `price_history`, `user_business_profiles`, `user_equipment_interests`, `sos_requests`, `sos_responses`, `sos_notifications`
+`profiles`, `listings`, `listing_images`, `listing_videos`, `favorites`, `conversations`, `messages`, `message_attachments`, `subscriptions`, `payments`, `notifications`, `push_subscriptions`, `offers`, `reviews`, `reports`, `saved_searches`, `listing_views`, `user_activity`, `seller_storefronts`, `listing_imports`, `seller_verifications`, `transactions`, `reply_templates`, `disputes`, `condition_reports`, `collections`, `collection_items`, `seller_availability`, `viewing_requests`, `help_articles`, `onboarding_progress`, `referrals`, `price_watches`, `price_history`, `user_business_profiles`, `user_equipment_interests`, `sos_requests`, `sos_responses`, `sos_notifications`, `boost_purchases`, `homepage_featured_slots`, `system_config`, `admin_audit_log`
 
 Row-level security (RLS) policies on all tables. Full-text search via PostgreSQL `tsvector`.
 
