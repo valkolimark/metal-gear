@@ -24,15 +24,29 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 
 ## Route Groups
 - `(auth)` — login, signup, forgot-password, reset-password, callback
-- `(main)` — dashboard, search, listings, messages, profile, favorites, admin (protected)
+- `(main)` — dashboard, search, listings, messages, profile, favorites, sellers (protected)
 - `(admin)` — super admin dashboard with RBAC (superadmin, moderator, analyst)
 - `(marketing)` — pricing, about, terms, privacy (public)
+
+## API Routes
 - `/api/webhooks/stripe` — Stripe subscription webhook
 - `/api/unsubscribe` — Email unsubscribe endpoint
 - `/api/search/ai` — Conversational AI search (Claude-powered NL→filter mapping)
 - `/api/listings/ai-copy` — AI description generator (streaming), title optimizer, quality scorer
 - `/api/listings/analyze-image` — Claude Vision equipment recognition + fraud detection
+- `/api/sos/ai` — SOS auto-categorization, response ranking, demand prediction
+- `/api/users/[id]/reputation-summary` — AI seller reputation summary (cached)
+- `/api/admin/users/[id]/generate-outreach` — AI churn retention email generator
+- `/api/admin/market-gaps/generate-outreach` — AI seller recruitment email generator
+- `/api/cron/smart-search-alerts` — Daily AI-scored saved search alerts
 - `/api/cron/expire-boosts` — Daily boost expiration cleanup
+- `/api/cron/engagement-digest` — Weekly engagement digest emails
+- `/api/cron/listing-expiration` — Daily listing expiration + auto-renew
+- `/api/cron/demand-insights` — Nightly AI demand prediction for sellers
+- `/api/cron/weekly-brief` — Monday AI business brief for founders (schedule: `0 14 * * 1`)
+- `/api/cron/churn-prediction` — Nightly churn risk scoring for subscribers
+- `/api/cron/market-gaps` — Weekly SOS demand gap analysis
+- `/api/cron/cleanup` — Periodic notification and data cleanup
 
 ## Subscription Tiers
 - **Free:** 3 listings, 5 photos, 10 conversations, 100mi search
@@ -67,24 +81,36 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 ## Database Tables (notable)
 - `listing_views` — Timestamped view events per listing (viewer_id, listing_id, viewed_at)
 - `saved_searches` — User-saved search filter sets (user_id, name, filters JSONB, ai_query, ai_filters, is_ai_search)
+- `saved_search_alert_log` — AI relevance scoring log for smart alerts (saved_search_id, listing_id, ai_relevance_score, alert_sent)
 - `reviews` — Seller ratings/reviews (reviewer_id, seller_id, conversation_id, rating 1-5)
 - `reports` — User/listing reports for moderation (reporter_id, target_type, target_id, reason, status)
+- `disputes` — Transaction disputes with AI mediation (buyer statement, seller response, evidence, ai_summary JSONB)
 - `boost_purchases` — Self-serve boost purchases with Stripe checkout
 - `homepage_featured_slots` — Admin-curated homepage slots
 - `system_config` — Key-value platform configuration with audit trail
 - `admin_audit_log` — All admin actions with admin_id, target, metadata, timestamp
+- `seller_demand_insights` — AI-generated demand predictions per seller (JSONB insights, valid_until)
+- `offer_coaching_log` — AI negotiation coaching sessions
+- `weekly_briefs` — Monday AI business briefs (period, raw_data JSONB, ai_brief text, sent_to emails)
+- `churn_risk` — Nightly churn scoring for paid subscribers (user_id UNIQUE, risk_score, risk_level, signals JSONB)
+- `market_gap_reports` — Weekly SOS demand gap analysis (gaps JSONB, ai_analysis JSONB)
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
 - **Model:** Claude Sonnet 4 for all AI features
-- **AI columns on listings:** `ai_analyzed`, `ai_fraud_flagged`, `ai_fraud_reason`, `ai_assist_used`, `ai_assist_accepted`, `listing_quality_score`
+- **AI columns on listings:** `ai_analyzed`, `ai_fraud_flagged`, `ai_fraud_reason`, `ai_assist_used`, `ai_assist_accepted`, `listing_quality_score`, `ai_price_suggested`, `ai_price_accepted`
 - **AI columns on saved_searches:** `ai_query`, `ai_filters`, `is_ai_search`
-- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`
+- **AI columns on profiles:** `reputation_summary` (JSONB), `reputation_summary_updated_at`
+- **AI columns on disputes:** `ai_summary` (JSONB)
+- **AI columns on sos_requests:** `ai_categorized`, `ranked_response_ids`
+- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`
+- **AI utilities:** `src/lib/ai/churn-scorer.ts` — heuristic churn signal weights and scoring
 
 ## Critical Pattern
 All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. Server actions live in:
-- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, admin)
+- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, etc.)
 - `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
+- `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
 
 ## PWA
 - Manifest at `/public/manifest.json`
