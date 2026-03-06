@@ -21,8 +21,9 @@ export async function uploadListingImageAction(formData: FormData) {
     const url = await uploadListingImage(buffer, listingId, file.type)
     return { url }
   } catch (err) {
-    console.error('R2 listing image upload failed:', err)
-    return { error: 'Failed to upload image to R2' }
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error('R2 listing image upload failed:', msg)
+    return { error: `R2 upload error: ${msg}` }
   }
 }
 

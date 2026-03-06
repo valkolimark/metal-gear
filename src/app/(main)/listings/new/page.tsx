@@ -194,7 +194,7 @@ export default function CreateListingPage() {
         const result = await uploadListingImageAction(fd)
 
         if (result.error || !result.url) {
-          toast.error(`Failed to upload ${file.name}`)
+          toast.error(result.error || `Failed to upload ${file.name}`)
           setImages((prev) => prev.filter((i) => i.id !== tempId))
           continue
         }
