@@ -30,6 +30,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 - `next.config.ts` updated with `media.metalgear.com`, `videodelivery.net`, and Cloudflare Stream domain patterns
 - Video size limit increased from 100MB to 200MB (Cloudflare Stream supports larger files)
 - Storefront avatar positioning fixed — avatar no longer clipped by `overflow-hidden` banner container
+- SOS floating button moved from bottom-right to bottom-left to avoid overlaying mobile nav elements
 
 ### Dependencies
 - Added `@aws-sdk/client-s3`, `@aws-sdk/lib-storage` for R2 uploads
