@@ -67,7 +67,6 @@ export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited }:
                 seller={seller}
                 currentUser={currentUser}
                 isFavorited={isFavorited}
-                onToggleFavorite={() => {}}
               />
             </div>
           </SheetContent>

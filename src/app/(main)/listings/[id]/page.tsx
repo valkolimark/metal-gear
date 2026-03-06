@@ -162,7 +162,6 @@ export default async function ListingDetailPage({
               seller={seller}
               currentUser={currentUser}
               isFavorited={!!favoriteResult.data}
-              onToggleFavorite={() => {}}
             />
           </div>
         </div>

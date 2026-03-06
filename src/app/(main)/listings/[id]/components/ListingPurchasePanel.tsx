@@ -43,7 +43,6 @@ interface Props {
   seller: Profile
   currentUser: User | null
   isFavorited: boolean
-  onToggleFavorite?: () => void
 }
 
 export function ListingPurchasePanel({
@@ -51,7 +50,6 @@ export function ListingPurchasePanel({
   seller,
   currentUser,
   isFavorited,
-  onToggleFavorite,
 }: Props) {
   const router = useRouter()
   const [gateOpen, setGateOpen] = useState(false)
