@@ -2,6 +2,160 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { requireAdmin } from '@/lib/admin/permissions'
+
+// ─── Admin Analytics ────────────────────────────────────────────────
+
+export async function getUserGrowthData() {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: signups } = await admin.from('profiles').select('created_at').gte('created_at', ninetyDaysAgo)
+  const { count: totalUsers } = await admin.from('profiles').select('id', { count: 'exact', head: true })
+  const { data: activeUsers } = await admin.from('profiles').select('last_login_at').not('last_login_at', 'is', null).gte('last_login_at', ninetyDaysAgo)
+
+  const signupsByDate: Record<string, number> = {}
+  const dauByDate: Record<string, number> = {}
+  for (const u of signups ?? []) { const d = u.created_at.slice(0, 10); signupsByDate[d] = (signupsByDate[d] || 0) + 1 }
+  for (const u of activeUsers ?? []) { if (!u.last_login_at) continue; const d = u.last_login_at.slice(0, 10); dauByDate[d] = (dauByDate[d] || 0) + 1 }
+
+  const baseCount = (totalUsers ?? 0) - (signups ?? []).length
+  let cumulative = baseCount
+  const series = []
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    const key = d.toISOString().slice(0, 10)
+    cumulative += signupsByDate[key] || 0
+    series.push({ date: key, signups: signupsByDate[key] || 0, dau: dauByDate[key] || 0, cumulative })
+  }
+  return series
+}
+
+export async function getListingHealth() {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: recentListings } = await admin.from('listings').select('created_at, category').gte('created_at', ninetyDaysAgo)
+  const { data: allActive } = await admin.from('listings').select('category').eq('status', 'active')
+
+  const listingsByDate: Record<string, number> = {}
+  for (const l of recentListings ?? []) { const d = l.created_at.slice(0, 10); listingsByDate[d] = (listingsByDate[d] || 0) + 1 }
+
+  const activeCategoryCount: Record<string, number> = {}
+  for (const l of allActive ?? []) activeCategoryCount[l.category] = (activeCategoryCount[l.category] || 0) + 1
+
+  const categoryDistribution = Object.entries(activeCategoryCount).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value)
+
+  const listingSeries = []
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    const key = d.toISOString().slice(0, 10)
+    listingSeries.push({ date: key, count: listingsByDate[key] || 0 })
+  }
+
+  return { listingSeries, categoryDistribution }
+}
+
+export async function getSOSPerformance() {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString()
+
+  const { data: recentSOS } = await admin.from('sos_requests').select('id, status, equipment_subcategory, created_at').gte('created_at', ninetyDaysAgo)
+
+  const sosByDate: Record<string, number> = {}
+  const subcategoryCount: Record<string, number> = {}
+  let fulfilledCount = 0
+
+  for (const s of recentSOS ?? []) {
+    const d = s.created_at.slice(0, 10)
+    sosByDate[d] = (sosByDate[d] || 0) + 1
+    const sub = s.equipment_subcategory?.replace(/_/g, ' ') || 'Unknown'
+    subcategoryCount[sub] = (subcategoryCount[sub] || 0) + 1
+    if (s.status === 'fulfilled') fulfilledCount++
+  }
+
+  const totalSOS = (recentSOS ?? []).length
+  const fulfillmentRate = totalSOS > 0 ? Math.round((fulfilledCount / totalSOS) * 100) : 0
+
+  const sosIds = (recentSOS ?? []).map((s) => s.id)
+  let noMatchCount = 0
+  if (sosIds.length > 0) {
+    const { data: responses } = await admin.from('sos_responses').select('sos_request_id').in('sos_request_id', sosIds)
+    const respondedIds = new Set((responses ?? []).map((r) => r.sos_request_id))
+    noMatchCount = sosIds.filter((id) => !respondedIds.has(id)).length
+  }
+
+  const noMatchRate = totalSOS > 0 ? Math.round((noMatchCount / totalSOS) * 100) : 0
+  const topRequested = Object.entries(subcategoryCount).sort(([, a], [, b]) => b - a).slice(0, 10).map(([name, count]) => ({ name, count }))
+
+  const sosSeries = []
+  for (let i = 89; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 24 * 60 * 60 * 1000)
+    const key = d.toISOString().slice(0, 10)
+    sosSeries.push({ date: key, count: sosByDate[key] || 0 })
+  }
+
+  return { sosSeries, topRequested, fulfillmentRate, noMatchRate, totalSOS }
+}
+
+export async function getSearchAnalytics() {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const { data: savedSearches } = await admin.from('saved_searches').select('filters').order('created_at', { ascending: false }).limit(500)
+
+  const termCount: Record<string, number> = {}
+  for (const s of savedSearches ?? []) {
+    const filters = s.filters as Record<string, string> | null
+    if (filters?.q) termCount[filters.q] = (termCount[filters.q] || 0) + 1
+  }
+
+  return {
+    topSearchTerms: Object.entries(termCount).sort(([, a], [, b]) => b - a).slice(0, 20).map(([term, count]) => ({ term, count })),
+  }
+}
+
+export async function getGeographicData() {
+  await requireAdmin()
+  const admin = createAdminClient()
+  const { data: users } = await admin.from('profiles').select('location_city, location_state, location_lat, location_lng').not('location_lat', 'is', null).not('location_lng', 'is', null)
+
+  const cityCount: Record<string, { count: number; lat: number; lng: number }> = {}
+  for (const u of users ?? []) {
+    const key = `${u.location_city}, ${u.location_state}`
+    if (!cityCount[key]) cityCount[key] = { count: 0, lat: u.location_lat!, lng: u.location_lng! }
+    cityCount[key].count++
+  }
+
+  return {
+    topCities: Object.entries(cityCount).sort(([, a], [, b]) => b.count - a.count).slice(0, 10).map(([city, data]) => ({ city, ...data })),
+    mapPoints: (users ?? []).filter((u) => u.location_lat && u.location_lng).map((u) => ({ lat: u.location_lat!, lng: u.location_lng! })),
+  }
+}
+
+export async function getAIAssistMetrics() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const [{ count: totalListings }, { count: aiAssisted }, { count: fraudFlagged }, { count: fraudCleared }] = await Promise.all([
+    admin.from('listings').select('id', { count: 'exact', head: true }),
+    admin.from('listings').select('id', { count: 'exact', head: true }).eq('ai_analyzed', true),
+    admin.from('listings').select('id', { count: 'exact', head: true }).eq('ai_fraud_flagged', true),
+    admin.from('listings').select('id', { count: 'exact', head: true }).eq('ai_fraud_flagged', false).not('admin_reviewed_by', 'is', null),
+  ])
+
+  return {
+    totalListings: totalListings ?? 0,
+    aiAssisted: aiAssisted ?? 0,
+    aiAssistRate: (totalListings ?? 0) > 0 ? Math.round(((aiAssisted ?? 0) / (totalListings ?? 1)) * 100) : 0,
+    fraudFlagged: fraudFlagged ?? 0,
+    fraudCleared: fraudCleared ?? 0,
+  }
+}
+
+// ─── Seller Analytics (existing) ────────────────────────────────────
 
 export async function recordListingView(listingId: string) {
   const supabase = await createClient()

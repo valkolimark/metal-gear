@@ -6,10 +6,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
-## [Unreleased]
+## [1.3.0] — 2026-03-05 · Financial Dashboard, Analytics & System Settings (Cycle 12-2)
 
-### Planned
-- Cycle 12-2: Financial Dashboard and Analytics
+### Added
+- **Financial Dashboard** (`/admin/financials`) — MRR/ARR/churn KPIs, 12-month stacked revenue chart (recharts), subscription distribution, paginated subscription table with plan/status filters, boost revenue table, failed payments view, revenue forecast widget, CSV export
+- **Analytics Panel** (`/admin/analytics`) — 90-day user growth chart (signups/DAU/cumulative), listing health with category distribution pie chart, SOS performance with fulfillment/no-match rates and top requested equipment, search analytics (top 20 terms), AI assist metrics (assist rate, fraud flags), geographic distribution (top 10 cities)
+- **System Settings** (`/admin/settings`) — 6-tab interface: platform config (maintenance mode, feature flags, banners, thresholds), admin user management (grant/revoke roles, search users), subscription pricing display, integration health checks (Supabase/Stripe/Anthropic/Resend/Sentry/Sightengine), database stats, audit log viewer with pagination and CSV export
+- Server actions: `src/app/actions/settings.ts` (system config CRUD, admin user management, integration checks, database stats, audit log)
+- Server actions: `src/app/actions/financials.ts` (KPIs, revenue by month, subscriptions table, boost revenue, failed payments, CSV exports)
+- Admin analytics functions in `src/app/actions/analytics.ts` (user growth, listing health, SOS performance, search analytics, geographic data, AI metrics)
+- Table: `system_config` (key-value platform configuration with audit trail)
+- Installed `recharts` for data visualization charts
 
 ---
 

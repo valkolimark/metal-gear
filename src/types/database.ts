@@ -294,6 +294,38 @@ export type Database = {
           },
         ]
       }
+      system_config: {
+        Row: {
+          key: string
+          value: Json
+          description: string | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          key: string
+          value: Json
+          description?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          key?: string
+          value?: Json
+          description?: string | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "system_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       condition_reports: {
         Row: {
           id: string
