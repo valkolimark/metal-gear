@@ -9,7 +9,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 ## [Unreleased]
 
 ### Planned
-- Cycle 12: Priority Engine and Financial Dashboard
+- Cycle 12-2: Financial Dashboard and Analytics
+
+---
+
+## [1.2.0] — 2026-03-06 · Priority Engine (Cycle 12-1)
+
+### Added
+- **Boost Store** (`/boost`) — self-serve boost purchasing with Stripe Checkout for 5 boost types: Listing Featured, Category Pin, Homepage Slot, Storefront Featured, SOS Priority
+- **Boost product catalog** — tiered duration/pricing options (7/14/30 days) per boost type in `BOOST_PRODUCTS` constants
+- **Active boosts panel** — users see their active boosts with days remaining, cancel, and renew actions
+- **Admin Priority Engine** (`/admin/priority`) — 5-tab interface: Company Tiers, Active Boosts, Homepage Slots, Category Pins, SOS Priority
+- **Company priority tiers** — `standard`/`preferred`/`featured`/`platinum` enum with admin-set priority scores (0-1000)
+- **Admin boost management** — cancel, refund, extend (+7d), and grant free boosts to any user
+- **Homepage featured slots** — admin-curated slot editor with up/down reorder, add/remove slots, labels, and end dates
+- **Category pin management** — admin can pin listings to positions 1-3 on any category page
+- **Cron job** (`/api/cron/expire-boosts`) — daily expiration of active boosts with cleanup of listing featured/pinned flags
+- **Stripe webhook** — handles `boost_purchase` checkout sessions, creates `boost_purchases` records and applies listing effects
+- **Featured badges** — search results and homepage show "Featured" and "Pinned" badges on boosted listings
+- **Homepage priority** — featured section now pulls from admin-curated homepage slots, falling back to boosted/most-viewed listings
+- Tables: `boost_purchases`, `homepage_featured_slots`
+- Columns: `profiles.priority_tier`, `profiles.priority_score`, `profiles.priority_set_by`, `profiles.priority_set_at`
+- Enum: `company_priority_tier`
+- Indexes: `idx_boosts_listing`, `idx_boosts_user`
+
+### Changed
+- Homepage "Featured Equipment" section now prioritizes admin-curated slots and boosted listings over most-viewed
+- Search results show Featured/Pinned badges on listing cards in both grid and list views
 
 ---
 

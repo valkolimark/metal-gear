@@ -58,12 +58,42 @@ const FEATURES = [
 
 export default async function HomePage() {
   const admin = createAdminClient()
-  const { data: featured } = await admin
-    .from('listings')
-    .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count')
-    .eq('status', 'active')
-    .order('views_count', { ascending: false })
+
+  // Try homepage featured slots first, fall back to most-viewed
+  const { data: featuredSlots } = await admin
+    .from('homepage_featured_slots')
+    .select('target_id')
+    .eq('active', true)
+    .eq('slot_type', 'listing')
+    .order('position', { ascending: true })
     .limit(6)
+
+  const slotListingIds = (featuredSlots ?? []).map((s) => s.target_id)
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  let featured: any[] | null = null
+  if (slotListingIds.length > 0) {
+    const { data } = await admin
+      .from('listings')
+      .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured')
+      .in('id', slotListingIds)
+      .eq('status', 'active')
+    featured = data
+  }
+
+  // Fill remaining slots with boosted/most-viewed listings
+  if (!featured || featured.length < 3) {
+    const existingIds = (featured ?? []).map((l) => l.id)
+    const { data: fallback } = await admin
+      .from('listings')
+      .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured')
+      .eq('status', 'active')
+      .not('id', 'in', `(${existingIds.length > 0 ? existingIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
+      .order('is_featured', { ascending: false })
+      .order('views_count', { ascending: false })
+      .limit(6 - (featured?.length ?? 0))
+    featured = [...(featured ?? []), ...(fallback ?? [])]
+  }
 
   const { count: totalListings } = await admin
     .from('listings')
@@ -132,7 +162,7 @@ export default async function HomePage() {
                     Featured Equipment
                   </h2>
                   <p className="mt-1 font-body text-muted-foreground">
-                    Most viewed listings this week
+                    Top picks and boosted listings
                   </p>
                 </div>
                 <Button asChild variant="outline" className="hidden font-body sm:flex">
@@ -150,6 +180,11 @@ export default async function HomePage() {
                           {listing.title}
                         </p>
                         <div className="mt-2 flex flex-wrap gap-1.5">
+                          {listing.is_featured && (
+                            <Badge className="bg-primary/20 font-body text-[11px] text-primary">
+                              Featured
+                            </Badge>
+                          )}
                           <Badge variant="outline" className="font-body text-[11px]">
                             {listing.category}
                           </Badge>

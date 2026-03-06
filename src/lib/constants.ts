@@ -41,6 +41,78 @@ export const TIER_LABELS: Record<SubscriptionTier, string> = {
   boost: 'Boost',
 }
 
+// ─── Boost Products ─────────────────────────────────────────────────
+
+export type BoostType = 'listing_featured' | 'category_pin' | 'homepage_slot' | 'storefront_featured' | 'sos_priority'
+
+export const BOOST_PRODUCTS: Record<BoostType, {
+  label: string
+  description: string
+  icon: string
+  needsListing: boolean
+  options: { days: number; cents: number }[]
+}> = {
+  listing_featured: {
+    label: 'Listing Featured',
+    description: 'Listing appears in "Featured" carousel on browse + category pages with a Featured badge.',
+    icon: 'star',
+    needsListing: true,
+    options: [
+      { days: 7, cents: 4900 },
+      { days: 14, cents: 8900 },
+      { days: 30, cents: 14900 },
+    ],
+  },
+  category_pin: {
+    label: 'Category Pin',
+    description: 'Listing pinned to position 1-3 on a specific category page.',
+    icon: 'pin',
+    needsListing: true,
+    options: [
+      { days: 7, cents: 7900 },
+      { days: 14, cents: 13900 },
+      { days: 30, cents: 22900 },
+    ],
+  },
+  homepage_slot: {
+    label: 'Homepage Slot',
+    description: 'Listing or company card in the homepage featured section (limited slots).',
+    icon: 'home',
+    needsListing: true,
+    options: [
+      { days: 7, cents: 19900 },
+      { days: 14, cents: 34900 },
+    ],
+  },
+  storefront_featured: {
+    label: 'Storefront Featured',
+    description: 'Seller storefront promoted in "Top Sellers" widget.',
+    icon: 'store',
+    needsListing: false,
+    options: [
+      { days: 14, cents: 5900 },
+      { days: 30, cents: 9900 },
+    ],
+  },
+  sos_priority: {
+    label: 'SOS Priority',
+    description: 'SOS broadcasts reach 2x more responders and appear at top of dashboards.',
+    icon: 'zap',
+    needsListing: false,
+    options: [
+      { days: 7, cents: 2900 },
+      { days: 14, cents: 4900 },
+    ],
+  },
+} as const
+
+export const PRIORITY_TIER_BOOSTS: Record<string, number> = {
+  standard: 0,
+  preferred: 10,
+  featured: 25,
+  platinum: 50,
+}
+
 // ─── Equipment ───────────────────────────────────────────────────────
 
 export const EQUIPMENT_CATEGORIES = [

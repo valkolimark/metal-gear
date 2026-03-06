@@ -187,6 +187,113 @@ export type Database = {
           },
         ]
       }
+      boost_purchases: {
+        Row: {
+          id: string
+          user_id: string
+          listing_id: string | null
+          boost_type: string
+          stripe_payment_intent_id: string | null
+          amount_cents: number
+          duration_days: number
+          starts_at: string
+          expires_at: string
+          status: string
+          admin_override: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          listing_id?: string | null
+          boost_type: string
+          stripe_payment_intent_id?: string | null
+          amount_cents: number
+          duration_days: number
+          starts_at?: string
+          expires_at: string
+          status?: string
+          admin_override?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          listing_id?: string | null
+          boost_type?: string
+          stripe_payment_intent_id?: string | null
+          amount_cents?: number
+          duration_days?: number
+          starts_at?: string
+          expires_at?: string
+          status?: string
+          admin_override?: boolean
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boost_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "boost_purchases_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      homepage_featured_slots: {
+        Row: {
+          id: string
+          slot_type: string
+          target_id: string
+          position: number
+          label: string | null
+          active: boolean
+          starts_at: string
+          ends_at: string | null
+          created_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          slot_type: string
+          target_id: string
+          position: number
+          label?: string | null
+          active?: boolean
+          starts_at?: string
+          ends_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          slot_type?: string
+          target_id?: string
+          position?: number
+          label?: string | null
+          active?: boolean
+          starts_at?: string
+          ends_at?: string | null
+          created_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "homepage_featured_slots_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       condition_reports: {
         Row: {
           id: string
@@ -1298,6 +1405,10 @@ export type Database = {
           trust_score: number
           last_login_at: string | null
           notification_preferences: Json | null
+          priority_tier: Database["public"]["Enums"]["company_priority_tier"]
+          priority_score: number
+          priority_set_by: string | null
+          priority_set_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1325,6 +1436,10 @@ export type Database = {
           notification_preferences?: Json | null
           phone?: string | null
           preferred_locale?: string
+          priority_tier?: Database["public"]["Enums"]["company_priority_tier"]
+          priority_score?: number
+          priority_set_by?: string | null
+          priority_set_at?: string | null
           referral_code?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
@@ -1358,6 +1473,10 @@ export type Database = {
           notification_preferences?: Json | null
           phone?: string | null
           preferred_locale?: string
+          priority_tier?: Database["public"]["Enums"]["company_priority_tier"]
+          priority_score?: number
+          priority_set_by?: string | null
+          priority_set_at?: string | null
           referral_code?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
@@ -2022,6 +2141,7 @@ export type Database = {
     }
     Enums: {
       admin_role: "superadmin" | "moderator" | "analyst"
+      company_priority_tier: "standard" | "preferred" | "featured" | "platinum"
       listing_status:
         | "draft"
         | "active"

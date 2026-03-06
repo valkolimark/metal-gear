@@ -41,7 +41,11 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        await handleCheckoutCompleted(admin, session)
+        if (session.metadata?.type === 'boost_purchase') {
+          await handleBoostCheckoutCompleted(admin, session)
+        } else {
+          await handleCheckoutCompleted(admin, session)
+        }
         break
       }
 
@@ -371,6 +375,52 @@ async function handlePaymentIntentFailed(
           <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'}/transactions/${transactionId}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">Retry Payment</a>
         </div>`,
       })
+    }
+  }
+}
+
+// ─── Boost Purchase Handler ───────────────────────────────────
+
+async function handleBoostCheckoutCompleted(
+  admin: ReturnType<typeof createAdminClient>,
+  session: Stripe.Checkout.Session
+) {
+  const userId = session.metadata?.user_id
+  const boostType = session.metadata?.boost_type
+  const durationDays = parseInt(session.metadata?.duration_days || '0')
+  const listingId = session.metadata?.listing_id || null
+
+  if (!userId || !boostType || !durationDays) {
+    console.error('Missing boost metadata in checkout session')
+    return
+  }
+
+  const expiresAt = new Date()
+  expiresAt.setDate(expiresAt.getDate() + durationDays)
+
+  // Create boost purchase record
+  await admin.from('boost_purchases').insert({
+    user_id: userId,
+    listing_id: listingId || null,
+    boost_type: boostType,
+    stripe_payment_intent_id: session.payment_intent as string,
+    amount_cents: session.amount_total ?? 0,
+    duration_days: durationDays,
+    expires_at: expiresAt.toISOString(),
+    status: 'active',
+    admin_override: false,
+  })
+
+  // Apply boost effects to listing
+  if (listingId) {
+    if (boostType === 'listing_featured') {
+      await admin
+        .from('listings')
+        .update({
+          is_featured: true,
+          featured_until: expiresAt.toISOString(),
+        })
+        .eq('id', listingId)
     }
   }
 }

@@ -894,6 +894,16 @@ function SearchContent() {
                         {listing.title}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
+                        {listing.is_featured && (
+                          <Badge className="bg-primary/20 font-body text-[11px] text-primary">
+                            Featured
+                          </Badge>
+                        )}
+                        {listing.pinned_position && (
+                          <Badge className="bg-blue-500/20 font-body text-[11px] text-blue-400">
+                            Pinned
+                          </Badge>
+                        )}
                         <Badge
                           variant="outline"
                           className="font-body text-[11px]"
@@ -969,7 +979,10 @@ function SearchContent() {
                         <p className="truncate font-body font-medium text-foreground">
                           {listing.title}
                         </p>
-                        <p className="mt-1 flex items-center gap-1 font-body text-sm text-muted-foreground">
+                        <p className="mt-1 flex flex-wrap items-center gap-1 font-body text-sm text-muted-foreground">
+                          {listing.is_featured && (
+                            <Badge className="mr-1 bg-primary/20 font-body text-[10px] text-primary">Featured</Badge>
+                          )}
                           {listing.category} &middot;{' '}
                           {listing.condition.replace('_', ' ')}
                           {conditionGrades[listing.id] && (
