@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [1.8.0] — 2026-03-06 · Smart Alerts, Reputation Summarizer, Dispute Mediation (Cycle 15-1)
+
+### Added
+- **Smart Saved Search Alerts** (`/api/cron/smart-search-alerts`) — AI-powered relevance scoring replaces naive filter matching; Claude evaluates each listing-search pair (0-100), only notifies on score >= 75 with a 1-sentence explanation of why it matches
+- **AI Seller Reputation Summarizer** (`/api/users/[id]/reputation-summary`) — generates plain-English reputation summaries from reviews: strengths, watchouts, verified claims, buyer recommendation percentage, confidence level; cached per-seller, auto-invalidated on new review
+- **Reputation Summary UI** — new `ReputationSummary` component on seller storefront showing AI summary, evidence-backed strengths, watchouts, and buyer recommendation
+- **AI Dispute Mediation** — `generateDisputeSummary()` server action reads dispute evidence and generates neutral case summary with buyer/seller positions, key disagreements, evidence assessment, possible outcomes, and recommended action
+- **Dispute AI Panel** — new "Transaction Disputes" tab in admin moderation with expandable dispute details and AI case summary generation (on-demand, advisory only)
+- Database: `saved_search_alert_log` table, `profiles.reputation_summary` + `profiles.reputation_summary_updated_at` columns, `disputes.ai_summary` column
+
+### Changed
+- Saved search alert cron now uses AI relevance scoring instead of exact filter matching; logs all send/skip decisions to `saved_search_alert_log`
+- Alert emails now include AI-generated explanation of why each listing matches
+- Review submission invalidates cached reputation summary for the reviewed seller
+
+---
+
 ## [1.7.0] — 2026-03-06 · SOS AI Features (Cycle 14-2)
 
 ### Added

@@ -20,6 +20,7 @@ import { Separator } from '@/components/ui/separator'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getStorefront, getSellerStats } from '@/app/actions/storefront'
 import { getSellerReviews } from '@/app/actions/reputation'
+import { ReputationSummary } from '@/components/reputation-summary'
 import { APP_URL } from '@/lib/constants'
 
 export async function generateMetadata({
@@ -283,6 +284,11 @@ export default async function SellerStorefrontPage({
               </div>
             </CardContent>
           </Card>
+        )}
+
+        {/* AI Reputation Summary */}
+        {reviewsData.totalReviews > 0 && (
+          <ReputationSummary sellerId={id} />
         )}
 
         {/* Reviews */}

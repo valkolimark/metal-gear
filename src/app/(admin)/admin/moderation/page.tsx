@@ -1,19 +1,21 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, AlertTriangle, Flag, Star } from 'lucide-react'
+import { Shield, AlertTriangle, Flag, Star, Gavel } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { DisputeAISummary } from '@/components/dispute-ai-summary'
 import {
   getReportsQueue,
   adminResolveReport,
   getDisputedReviews,
   getAdminListings,
 } from '../actions'
+import { getAdminDisputes } from '@/app/actions/disputes'
 
-type Tab = 'reports' | 'fraud' | 'disputes'
+type Tab = 'reports' | 'fraud' | 'disputes' | 'transaction_disputes'
 
 type Report = Awaited<ReturnType<typeof getReportsQueue>>[number]
 
@@ -36,6 +38,12 @@ export default function AdminModerationPage() {
   // Disputed reviews state
   const [disputedReviews, setDisputedReviews] = useState<DisputedReview[]>([])
   const [disputesLoading, setDisputesLoading] = useState(true)
+
+  // Transaction disputes state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [txDisputes, setTxDisputes] = useState<any[]>([])
+  const [txDisputesLoading, setTxDisputesLoading] = useState(true)
+  const [expandedDispute, setExpandedDispute] = useState<string | null>(null)
 
   // Fetch reports
   useEffect(() => {
@@ -94,6 +102,26 @@ export default function AdminModerationPage() {
       }
     }
     fetchDisputes()
+    return () => { cancelled = true }
+  }, [refreshKey])
+
+  // Fetch transaction disputes
+  useEffect(() => {
+    let cancelled = false
+    async function fetchTxDisputes() {
+      setTxDisputesLoading(true)
+      try {
+        const result = await getAdminDisputes()
+        if (!cancelled && result.disputes) {
+          setTxDisputes(result.disputes)
+        }
+      } catch {
+        if (!cancelled) toast.error('Failed to load transaction disputes')
+      } finally {
+        if (!cancelled) setTxDisputesLoading(false)
+      }
+    }
+    fetchTxDisputes()
     return () => { cancelled = true }
   }, [refreshKey])
 
@@ -168,12 +196,14 @@ export default function AdminModerationPage() {
   const pendingCount = reports.length
   const fraudCount = fraudListings.length
   const disputeCount = disputedReviews.length
-  const totalCount = pendingCount + fraudCount + disputeCount
+  const txDisputeCount = txDisputes.filter((d) => ['open', 'under_review', 'escalated'].includes(d.status)).length
+  const totalCount = pendingCount + fraudCount + disputeCount + txDisputeCount
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'reports', label: 'Reports' },
     { key: 'fraud', label: 'AI Fraud Queue' },
     { key: 'disputes', label: 'Review Disputes' },
+    { key: 'transaction_disputes', label: 'Transaction Disputes' },
   ]
 
   return (
@@ -199,6 +229,11 @@ export default function AdminModerationPage() {
             <Star className="size-4 text-blue-400" />
             <span className="font-body text-sm text-muted-foreground">Review disputes:</span>
             <span className="font-display text-lg font-bold text-foreground">{disputeCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Gavel className="size-4 text-purple-400" />
+            <span className="font-body text-sm text-muted-foreground">Tx disputes:</span>
+            <span className="font-display text-lg font-bold text-foreground">{txDisputeCount}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Shield className="size-4 text-primary" />
@@ -503,6 +538,113 @@ export default function AdminModerationPage() {
                 </CardContent>
               </Card>
             ))
+          )}
+        </div>
+      )}
+
+      {/* Tab 4 — Transaction Disputes with AI Mediation */}
+      {activeTab === 'transaction_disputes' && (
+        <div className="space-y-4">
+          <Card className="border-white/5 bg-[#0D0D14]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 font-display text-base">
+                <Gavel className="size-4 text-purple-400" />
+                Transaction Disputes ({txDisputeCount} active)
+              </CardTitle>
+            </CardHeader>
+          </Card>
+
+          {txDisputesLoading ? (
+            <Card className="border-white/5 bg-[#0D0D14]">
+              <CardContent className="p-6 text-center">
+                <p className="font-body text-sm text-muted-foreground">Loading...</p>
+              </CardContent>
+            </Card>
+          ) : txDisputes.length === 0 ? (
+            <Card className="border-white/5 bg-[#0D0D14]">
+              <CardContent className="p-6 text-center">
+                <p className="font-body text-sm text-muted-foreground">No transaction disputes</p>
+              </CardContent>
+            </Card>
+          ) : (
+            txDisputes.map((dispute) => {
+              const tx = dispute.transactions
+              const isExpanded = expandedDispute === dispute.id
+              const statusColors: Record<string, string> = {
+                open: 'bg-red-500/20 text-red-400',
+                under_review: 'bg-yellow-500/20 text-yellow-400',
+                escalated: 'bg-purple-500/20 text-purple-400',
+                resolved_buyer: 'bg-green-500/20 text-green-400',
+                resolved_seller: 'bg-blue-500/20 text-blue-400',
+              }
+
+              return (
+                <Card key={dispute.id} className="border-white/5 bg-[#0D0D14]">
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1 space-y-2">
+                        <div className="flex items-center gap-2">
+                          <h3 className="truncate font-display text-sm font-semibold text-foreground">
+                            {tx?.listings?.title || 'Unknown Listing'}
+                          </h3>
+                          <Badge className={`shrink-0 border-0 font-body text-[10px] uppercase ${statusColors[dispute.status] || 'bg-zinc-500/20 text-zinc-400'}`}>
+                            {dispute.status.replace('_', ' ')}
+                          </Badge>
+                        </div>
+                        <p className="font-body text-sm text-muted-foreground">
+                          <span className="text-foreground">{dispute.reason.replace(/_/g, ' ')}</span>
+                          {' — '}
+                          {dispute.description?.slice(0, 100)}{dispute.description?.length > 100 ? '...' : ''}
+                        </p>
+                        <div className="flex items-center gap-3 font-body text-xs text-muted-foreground">
+                          <span>Buyer: {tx?.buyer?.display_name || tx?.buyer?.full_name || 'Unknown'}</span>
+                          <span>Seller: {tx?.seller?.display_name || tx?.seller?.full_name || 'Unknown'}</span>
+                          <span>{new Date(dispute.created_at).toLocaleDateString()}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="shrink-0 font-body text-xs"
+                        onClick={() => setExpandedDispute(isExpanded ? null : dispute.id)}
+                      >
+                        {isExpanded ? 'Collapse' : 'View & AI Summary'}
+                      </Button>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="mt-4 space-y-4 border-t border-white/5 pt-4">
+                        {/* Buyer statement */}
+                        <div>
+                          <p className="mb-1 font-body text-xs font-semibold text-blue-400">Buyer Statement</p>
+                          <p className="rounded bg-surface p-3 font-body text-sm text-foreground">{dispute.description}</p>
+                        </div>
+
+                        {/* Seller response */}
+                        <div>
+                          <p className="mb-1 font-body text-xs font-semibold text-purple-400">Seller Response</p>
+                          <p className="rounded bg-surface p-3 font-body text-sm text-foreground">
+                            {dispute.seller_response || 'No response yet'}
+                          </p>
+                        </div>
+
+                        {/* Evidence counts */}
+                        <div className="flex gap-4 font-body text-xs text-muted-foreground">
+                          <span>Buyer evidence: {(dispute.evidence_urls || []).length} files</span>
+                          <span>Seller evidence: {(dispute.seller_evidence_urls || []).length} files</span>
+                        </div>
+
+                        {/* AI Summary Panel */}
+                        <DisputeAISummary
+                          disputeId={dispute.id}
+                          initialSummary={dispute.ai_summary || null}
+                        />
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              )
+            })
           )}
         </div>
       )}

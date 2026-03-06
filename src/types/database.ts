@@ -399,6 +399,7 @@ export type Database = {
           seller_evidence_urls: string[]
           resolution_notes: string | null
           resolved_by: string | null
+          ai_summary: Json | null
           created_at: string
           updated_at: string
         }
@@ -414,6 +415,7 @@ export type Database = {
           seller_evidence_urls?: string[]
           resolution_notes?: string | null
           resolved_by?: string | null
+          ai_summary?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -429,6 +431,7 @@ export type Database = {
           seller_evidence_urls?: string[]
           resolution_notes?: string | null
           resolved_by?: string | null
+          ai_summary?: Json | null
           created_at?: string
           updated_at?: string
         }
@@ -1078,6 +1081,54 @@ export type Database = {
           },
         ]
       }
+      saved_search_alert_log: {
+        Row: {
+          id: string
+          saved_search_id: string | null
+          listing_id: string | null
+          ai_relevance_score: number | null
+          ai_explanation: string | null
+          alert_sent: boolean | null
+          skip_reason: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          saved_search_id?: string | null
+          listing_id?: string | null
+          ai_relevance_score?: number | null
+          ai_explanation?: string | null
+          alert_sent?: boolean | null
+          skip_reason?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          saved_search_id?: string | null
+          listing_id?: string | null
+          ai_relevance_score?: number | null
+          ai_explanation?: string | null
+          alert_sent?: boolean | null
+          skip_reason?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_search_alert_log_saved_search_id_fkey"
+            columns: ["saved_search_id"]
+            isOneToOne: false
+            referencedRelation: "saved_searches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "saved_search_alert_log_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       saved_searches: {
         Row: {
           id: string
@@ -1459,6 +1510,8 @@ export type Database = {
           priority_score: number
           priority_set_by: string | null
           priority_set_at: string | null
+          reputation_summary: Json | null
+          reputation_summary_updated_at: string | null
           updated_at: string
         }
         Insert: {
@@ -1491,6 +1544,8 @@ export type Database = {
           priority_set_by?: string | null
           priority_set_at?: string | null
           referral_code?: string | null
+          reputation_summary?: Json | null
+          reputation_summary_updated_at?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
           suspended_until?: string | null
@@ -1528,6 +1583,8 @@ export type Database = {
           priority_set_by?: string | null
           priority_set_at?: string | null
           referral_code?: string | null
+          reputation_summary?: Json | null
+          reputation_summary_updated_at?: string | null
           stripe_customer_id?: string | null
           subscription_tier?: string
           suspended_until?: string | null

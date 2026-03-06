@@ -51,6 +51,12 @@ export async function submitReview(
   // Recalculate trust score
   await recalculateTrustScore(admin, sellerId)
 
+  // Invalidate reputation summary cache so it regenerates on next view
+  await admin
+    .from('profiles')
+    .update({ reputation_summary_updated_at: null })
+    .eq('id', sellerId)
+
   // Create in-app notification for the seller (fire and forget)
   notifyReviewReceived(admin, user.id, sellerId, rating, comment, conversationId, undefined)
 
@@ -151,6 +157,12 @@ export async function submitTransactionReview(
 
   // Recalculate trust score for the reviewed user
   await recalculateTrustScore(admin, targetId)
+
+  // Invalidate reputation summary cache
+  await admin
+    .from('profiles')
+    .update({ reputation_summary_updated_at: null })
+    .eq('id', targetId)
 
   // Notify the reviewed user
   notifyReviewReceived(admin, user.id, targetId, rating, comment, undefined, transactionId)
