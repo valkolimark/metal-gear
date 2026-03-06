@@ -142,24 +142,26 @@ export default async function SellerStorefrontPage({
       />
 
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {/* Banner */}
-        <div className="relative overflow-hidden rounded-xl border border-border">
-          {storefront?.banner_url ? (
-            <img
-              src={storefront.banner_url}
-              alt={`${name}'s storefront banner`}
-              className="h-48 w-full object-cover sm:h-56 lg:h-64"
-            />
-          ) : (
-            <div
-              className="h-48 w-full sm:h-56 lg:h-64"
-              style={{
-                background: `linear-gradient(135deg, ${storefront?.theme_color || '#FF6B2B'}22 0%, #0A0A0F 100%)`,
-              }}
-            />
-          )}
+        {/* Banner + Avatar */}
+        <div className="relative">
+          <div className="overflow-hidden rounded-xl border border-border">
+            {storefront?.banner_url ? (
+              <img
+                src={storefront.banner_url}
+                alt={`${name}'s storefront banner`}
+                className="h-48 w-full object-cover sm:h-56 lg:h-64"
+              />
+            ) : (
+              <div
+                className="h-48 w-full sm:h-56 lg:h-64"
+                style={{
+                  background: `linear-gradient(135deg, ${storefront?.theme_color || '#FF6B2B'}22 0%, #0A0A0F 100%)`,
+                }}
+              />
+            )}
+          </div>
 
-          {/* Avatar overlay */}
+          {/* Avatar overlay — outside overflow-hidden so it isn't clipped */}
           <div className="absolute -bottom-12 left-6">
             <Avatar className="size-24 border-4 border-background">
               <AvatarImage
@@ -174,7 +176,7 @@ export default async function SellerStorefrontPage({
         </div>
 
         {/* Profile Info */}
-        <div className="pt-8">
+        <div className="pt-14">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
