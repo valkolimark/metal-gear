@@ -33,6 +33,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 - **Condition reports query** — fixed `is_verified` → `is_verified_dealer` column reference in `getConditionReport`
 - Draft listings remain auth-gated (404 for anonymous users)
 
+### Fixed
+- **RSC serialization error** — removed non-serializable function prop (`onToggleFavorite={() => {}}`) from Server→Client Component boundary; favorites now handled entirely via `toggleFavoriteAction` server action
+
 ---
 
 ## [2.0.0] — 2026-03-06 · Cloudflare R2 + Stream, Light/Dark Mode, Listing Redesign (Cycle 16-0)

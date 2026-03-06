@@ -15,7 +15,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 ## Design System
 - **Theme:** Light/dark mode via `next-themes` (dark default, `enableSystem`); dark: `#0A0A0F` bg; light: `#FAFAFA` bg; `#FF6B2B` primary orange, `#3A8FD4` steel blue; `ThemeToggle` in header
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body) via `next/font/google`
-- **Components:** 14 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch)
+- **Components:** 15 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch, sheet)
 
 ## Testing
 - **Unit tests:** Vitest + React Testing Library (`npm test`)
@@ -25,7 +25,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 
 ## Route Groups
 - `(auth)` — login, signup, forgot-password, reset-password, callback
-- `(main)` — dashboard, search, listings, messages, profile, favorites, sellers (protected)
+- `(main)` — dashboard, search, listings, messages, profile, favorites, sellers (protected; `/listings/[id]` and `/sellers/[id]` are publicly accessible)
 - `(admin)` — super admin dashboard with RBAC (superadmin, moderator, analyst)
 - `(marketing)` — pricing, about, terms, privacy (public)
 
@@ -49,6 +49,8 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/cron/churn-prediction` — Nightly churn risk scoring for subscribers
 - `/api/cron/market-gaps` — Weekly SOS demand gap analysis
 - `/api/cron/cleanup` — Periodic notification and data cleanup
+- `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat (listing-context, 20 req/hr rate limit)
+- `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
 
 ## Pricing Tiers
 - **Free:** 3 listings
@@ -109,7 +111,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **AI columns on profiles:** `reputation_summary` (JSONB), `reputation_summary_updated_at`
 - **AI columns on disputes:** `ai_summary` (JSONB)
 - **AI columns on sos_requests:** `ai_categorized`, `ranked_response_ids`
-- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`, `VideoPlayer`
+- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`, `VideoPlayer`, `AskMetalGear`, `HelpButton` (AI chat)
 - **AI utilities:** `src/lib/ai/churn-scorer.ts` — heuristic churn signal weights and scoring
 
 ## Media Infrastructure
@@ -122,10 +124,22 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - Supabase Storage URLs still resolve for legacy data; new uploads go exclusively to R2/Stream
 
 ## Critical Pattern
-All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. Server actions live in:
+All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. **Never pass functions from Server Components to Client Components** — use server actions in separate `'use server'` files instead. Server actions live in:
 - `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, etc.)
 - `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
+- `src/app/(main)/listings/[id]/components/favorite-action.ts` — Listing favorite toggle
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
+
+## Listing Detail Page Architecture
+The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server Component** that fetches data server-side and passes to 7 client sub-components:
+- `ListingGallery` — image/video gallery with desktop thumbnails + mobile swipe
+- `ListingMainContent` — title, badges, description, share/QR
+- `ListingPurchasePanel` — price, CTAs, seller info, buyer protection (sticky sidebar on desktop)
+- `ListingSpecs` — specs table + condition report
+- `AskMetalGear` — AI chat with streaming responses
+- `ListingReviews` — seller reviews with star distribution
+- `MobilePurchaseBar` — fixed bottom bar with Sheet drawer
+- `AnonInteractionGate` — signup prompt for anonymous users
 
 ## PWA
 - Manifest at `/public/manifest.json`
