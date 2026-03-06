@@ -2255,6 +2255,104 @@ export type Database = {
           },
         ]
       }
+      weekly_briefs: {
+        Row: {
+          id: string
+          period_start: string
+          period_end: string
+          raw_data: Json
+          ai_brief: string
+          sent_to: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          period_start: string
+          period_end: string
+          raw_data: Json
+          ai_brief: string
+          sent_to?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          period_start?: string
+          period_end?: string
+          raw_data?: Json
+          ai_brief?: string
+          sent_to?: string[]
+          created_at?: string
+        }
+        Relationships: []
+      }
+      churn_risk: {
+        Row: {
+          id: string
+          user_id: string
+          risk_score: number
+          risk_level: string
+          signals: Json
+          last_calculated_at: string
+          outreach_sent_at: string | null
+          retained: boolean | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          risk_score: number
+          risk_level: string
+          signals: Json
+          last_calculated_at?: string
+          outreach_sent_at?: string | null
+          retained?: boolean | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          risk_score?: number
+          risk_level?: string
+          signals?: Json
+          last_calculated_at?: string
+          outreach_sent_at?: string | null
+          retained?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "churn_risk_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      market_gap_reports: {
+        Row: {
+          id: string
+          period_start: string
+          period_end: string
+          gaps: Json
+          ai_analysis: Json
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          period_start: string
+          period_end: string
+          gaps: Json
+          ai_analysis: Json
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          period_start?: string
+          period_end?: string
+          gaps?: Json
+          ai_analysis?: Json
+          created_at?: string
+        }
+        Relationships: []
+      }
       seller_demand_insights: {
         Row: {
           id: string

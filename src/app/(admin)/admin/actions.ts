@@ -990,3 +990,64 @@ export async function getSOSDemandGap() {
     },
   }
 }
+
+// ─── Churn Risk ─────────────────────────────────────────────────────
+
+export async function getChurnRiskMap(): Promise<Record<string, { risk_score: number; risk_level: string }>> {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('churn_risk')
+    .select('user_id, risk_score, risk_level')
+    .in('risk_level', ['at_risk', 'high_risk'])
+
+  const map: Record<string, { risk_score: number; risk_level: string }> = {}
+  for (const row of data || []) {
+    map[row.user_id] = { risk_score: row.risk_score, risk_level: row.risk_level }
+  }
+  return map
+}
+
+export async function getChurnRiskDetail(userId: string) {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('churn_risk')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  return data
+}
+
+// ─── Market Gap Reports ─────────────────────────────────────────────
+
+export async function getMarketGapReports(limit = 5) {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('market_gap_reports')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  return data || []
+}
+
+// ─── Weekly Briefs Archive ──────────────────────────────────────────
+
+export async function getWeeklyBriefs(limit = 10) {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('weekly_briefs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+
+  return data || []
+}

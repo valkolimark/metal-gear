@@ -37,10 +37,11 @@ import {
   getAuditLog,
   exportAuditLogCSV,
 } from '@/app/actions/settings'
+import { getWeeklyBriefs } from '../actions'
 
 // ─── Types ──────────────────────────────────────────────────────────
 
-type Tab = 'config' | 'admins' | 'pricing' | 'integrations' | 'data' | 'audit'
+type Tab = 'config' | 'admins' | 'pricing' | 'integrations' | 'data' | 'audit' | 'briefs'
 
 interface ConfigItem {
   key: string
@@ -96,6 +97,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'integrations', label: 'Integrations' },
   { key: 'data', label: 'Data Management' },
   { key: 'audit', label: 'Audit Log' },
+  { key: 'briefs', label: 'Weekly Briefs' },
 ]
 
 const BOOLEAN_KEYS = [
@@ -158,6 +160,7 @@ export default function AdminSettingsPage() {
       {activeTab === 'integrations' && <IntegrationsSection />}
       {activeTab === 'data' && <DataManagementSection />}
       {activeTab === 'audit' && <AuditLogSection />}
+      {activeTab === 'briefs' && <WeeklyBriefsSection />}
     </div>
   )
 }
@@ -1090,6 +1093,88 @@ function AuditLogSection() {
                   Next
                 </Button>
               </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// ─── Weekly Briefs Archive ─────────────────────────────────────────
+
+function WeeklyBriefsSection() {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [briefs, setBriefs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [expanded, setExpanded] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchBriefs() {
+      setLoading(true)
+      try {
+        const data = await getWeeklyBriefs(20)
+        if (!cancelled) setBriefs(data)
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    fetchBriefs()
+    return () => { cancelled = true }
+  }, [])
+
+  return (
+    <div className="space-y-4">
+      <Card className="border-white/5 bg-[#0D0D14]">
+        <CardHeader>
+          <CardTitle className="font-display text-base text-foreground">
+            Weekly Briefs Archive
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <p className="font-body text-sm text-muted-foreground">Loading...</p>
+          ) : briefs.length === 0 ? (
+            <p className="font-body text-sm text-muted-foreground">No briefs generated yet. The weekly brief cron runs every Monday at 8:00 AM CT.</p>
+          ) : (
+            <div className="space-y-3">
+              {briefs.map((brief) => (
+                <div
+                  key={brief.id}
+                  className="rounded-lg border border-white/5 bg-surface p-4"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-display text-sm font-semibold text-foreground">
+                        Week of {brief.period_start} — {brief.period_end}
+                      </p>
+                      <p className="font-body text-xs text-muted-foreground">
+                        Sent to: {(brief.sent_to || []).join(', ') || 'None'}
+                      </p>
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="font-body text-xs"
+                      onClick={() => setExpanded(expanded === brief.id ? null : brief.id)}
+                    >
+                      {expanded === brief.id ? 'Collapse' : 'View Brief'}
+                    </Button>
+                  </div>
+                  {expanded === brief.id && (
+                    <div className="mt-4 space-y-3 border-t border-white/5 pt-4">
+                      <div className="prose prose-invert max-w-none">
+                        <pre className="whitespace-pre-wrap rounded bg-[#0D0D14] p-4 font-body text-sm text-foreground">
+                          {brief.ai_brief}
+                        </pre>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
             </div>
           )}
         </CardContent>

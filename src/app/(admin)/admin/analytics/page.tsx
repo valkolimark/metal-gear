@@ -17,6 +17,7 @@ import {
   Cell,
   Legend,
 } from 'recharts'
+import { Button } from '@/components/ui/button'
 import {
   getUserGrowthData,
   getListingHealth,
@@ -27,6 +28,7 @@ import {
   getListingQualityMetrics,
   getPricingIntelligenceMetrics,
 } from '@/app/actions/analytics'
+import { getMarketGapReports } from '../actions'
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -123,6 +125,10 @@ export default function AdminAnalyticsPage() {
   const [qualityData, setQualityData] = useState<any>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [pricingData, setPricingData] = useState<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [marketGaps, setMarketGaps] = useState<any[] | null>(null)
+  const [outreachDraft, setOutreachDraft] = useState<{ subject: string; body: string } | null>(null)
+  const [outreachLoading, setOutreachLoading] = useState<string | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -151,6 +157,37 @@ export default function AdminAnalyticsPage() {
     fetchData()
     return () => { cancelled = true }
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchMarketGaps() {
+      const reports = await getMarketGapReports(1)
+      if (!cancelled && reports.length > 0) {
+        setMarketGaps(reports[0].ai_analysis as unknown as Array<Record<string, unknown>>)
+      }
+    }
+    fetchMarketGaps()
+    return () => { cancelled = true }
+  }, [])
+
+  async function handleDraftOutreach(subcategory: string, sosCount: number, gapPct: number, sellerType: string) {
+    setOutreachLoading(subcategory)
+    try {
+      const res = await fetch('/api/admin/market-gaps/generate-outreach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ subcategory, sosCount, unmatchedPct: gapPct, sellerType }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setOutreachDraft(data)
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setOutreachLoading(null)
+    }
+  }
 
   return (
     <div className="space-y-8">
@@ -477,6 +514,85 @@ export default function AdminAnalyticsPage() {
                   </tbody>
                 </table>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Section: Market Gaps ────────────────────────────────────── */}
+      {!marketGaps ? (
+        <SectionSkeleton />
+      ) : (
+        <Card className="border-white/5 bg-[#0D0D14]">
+          <CardHeader>
+            <CardTitle className="font-display text-base text-foreground">
+              Market Gaps — Top Recruitment Opportunities
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {marketGaps.length === 0 ? (
+              <p className="font-body text-sm text-muted-foreground">No market gap data available yet. Run the weekly market gaps cron to generate reports.</p>
+            ) : (
+              <>
+                {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+                {(marketGaps as any[]).map((gap: any, i: number) => {
+                  const priorityColors: Record<string, string> = {
+                    critical: 'bg-red-500/20 text-red-400',
+                    high: 'bg-amber-500/20 text-amber-400',
+                    medium: 'bg-blue-500/20 text-blue-400',
+                  }
+                  return (
+                    <div key={i} className="rounded-lg border border-white/5 bg-surface p-4 space-y-2">
+                      <div className="flex items-center gap-2">
+                        <Badge className={`border-0 font-body text-[10px] ${priorityColors[gap.priority] || 'bg-zinc-500/20 text-zinc-400'}`}>
+                          #{i + 1} {gap.priority}
+                        </Badge>
+                        <h3 className="font-display text-sm font-semibold text-foreground">
+                          {gap.subcategory}
+                        </h3>
+                      </div>
+                      <p className="font-body text-sm text-muted-foreground">{gap.whyGapExists}</p>
+                      <div className="flex flex-wrap items-center gap-4 font-body text-xs text-muted-foreground">
+                        <span>Recruit: {gap.sellerTypeToRecruit}</span>
+                        <span>Est. revenue: {gap.estimatedRevenuePotential}</span>
+                      </div>
+                      <p className="font-body text-xs text-muted-foreground">{gap.suggestedOutreach}</p>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="font-body text-xs"
+                        disabled={outreachLoading === gap.subcategory}
+                        onClick={() => handleDraftOutreach(gap.subcategory, 0, 0, gap.sellerTypeToRecruit)}
+                      >
+                        {outreachLoading === gap.subcategory ? 'Drafting...' : 'Draft Outreach Email'}
+                      </Button>
+                    </div>
+                  )
+                })}
+                {outreachDraft && (
+                  <Card className="border-primary/20 bg-primary/5">
+                    <CardHeader>
+                      <CardTitle className="font-display text-sm text-foreground">
+                        Outreach Draft
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      <p className="font-body text-xs text-muted-foreground">Subject: <strong className="text-foreground">{outreachDraft.subject}</strong></p>
+                      <pre className="whitespace-pre-wrap rounded bg-surface p-3 font-body text-sm text-foreground">{outreachDraft.body}</pre>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="font-body text-xs"
+                        onClick={() => {
+                          navigator.clipboard.writeText(`Subject: ${outreachDraft.subject}\n\n${outreachDraft.body}`)
+                        }}
+                      >
+                        Copy to Clipboard
+                      </Button>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

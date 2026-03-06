@@ -32,6 +32,7 @@ import {
   adminSuspendUser,
   adminBanUser,
   adminGrantRole,
+  getChurnRiskDetail,
 } from '../../actions'
 
 const ROLE_COLORS: Record<string, string> = {
@@ -47,13 +48,35 @@ export default function AdminUserDetailPage() {
   const [data, setData] = useState<Awaited<ReturnType<typeof getAdminUserDetail>> | null>(null)
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [churnRisk, setChurnRisk] = useState<any>(null)
+  const [outreach, setOutreach] = useState<{ subject: string; body: string } | null>(null)
+  const [generatingOutreach, setGeneratingOutreach] = useState(false)
 
   useEffect(() => {
     getAdminUserDetail(userId).then((d) => {
       setData(d)
       setNotes(d.profile?.admin_notes || '')
     })
+    getChurnRiskDetail(userId).then(setChurnRisk)
   }, [userId])
+
+  async function handleGenerateOutreach() {
+    setGeneratingOutreach(true)
+    try {
+      const res = await fetch(`/api/admin/users/${userId}/generate-outreach`, { method: 'POST' })
+      if (res.ok) {
+        const data = await res.json()
+        setOutreach(data)
+      } else {
+        toast.error('Failed to generate outreach')
+      }
+    } catch {
+      toast.error('Failed to generate outreach')
+    } finally {
+      setGeneratingOutreach(false)
+    }
+  }
 
   async function saveNotes() {
     setSaving(true)
@@ -328,6 +351,59 @@ export default function AdminUserDetailPage() {
                 </Link>
               ))}
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Churn Risk */}
+      {churnRisk && (churnRisk.risk_level === 'at_risk' || churnRisk.risk_level === 'high_risk') && (
+        <Card className="border-white/5 bg-[#0D0D14]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <AlertTriangle className={`size-4 ${churnRisk.risk_level === 'high_risk' ? 'text-red-400' : 'text-yellow-400'}`} />
+              Churn Risk: {churnRisk.risk_level === 'high_risk' ? 'HIGH' : 'AT RISK'} (Score: {churnRisk.risk_score})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(churnRisk.signals || {}).map(([signal, weight]) => (
+                <Badge
+                  key={signal}
+                  className={`border-0 font-body text-[10px] ${Number(weight) > 0 ? 'bg-red-500/20 text-red-400' : 'bg-green-500/20 text-green-400'}`}
+                >
+                  {signal.replace(/([A-Z])/g, ' $1').trim()}: {Number(weight) > 0 ? '+' : ''}{String(weight)}
+                </Badge>
+              ))}
+            </div>
+            <p className="font-body text-xs text-muted-foreground">
+              Last calculated: {churnRisk.last_calculated_at ? new Date(churnRisk.last_calculated_at).toLocaleString() : 'Unknown'}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="font-body text-xs"
+              disabled={generatingOutreach}
+              onClick={handleGenerateOutreach}
+            >
+              {generatingOutreach ? 'Generating...' : 'Generate Outreach Email'}
+            </Button>
+            {outreach && (
+              <div className="mt-3 space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
+                <p className="font-body text-xs text-muted-foreground">Subject: <strong className="text-foreground">{outreach.subject}</strong></p>
+                <pre className="whitespace-pre-wrap rounded bg-surface p-3 font-body text-sm text-foreground">{outreach.body}</pre>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="font-body text-xs"
+                  onClick={() => {
+                    navigator.clipboard.writeText(`Subject: ${outreach.subject}\n\n${outreach.body}`)
+                    toast.success('Copied to clipboard')
+                  }}
+                >
+                  Copy to Clipboard
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

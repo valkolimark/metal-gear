@@ -38,6 +38,7 @@ import {
   adminSuspendUser,
   adminBanUser,
   adminGrantRole,
+  getChurnRiskMap,
 } from '../actions'
 
 const TIER_COLORS: Record<string, string> = {
@@ -78,6 +79,8 @@ export default function AdminUsersPage() {
   const [role, setRole] = useState(searchParams.get('role') || 'all')
   const [loading, setLoading] = useState(true)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [churnFilter, setChurnFilter] = useState('all')
+  const [churnMap, setChurnMap] = useState<Record<string, { risk_score: number; risk_level: string }>>({})
 
   useEffect(() => {
     let cancelled = false
@@ -94,6 +97,16 @@ export default function AdminUsersPage() {
     fetchUsers()
     return () => { cancelled = true }
   }, [page, search, tier, role, refreshKey])
+
+  useEffect(() => {
+    let cancelled = false
+    async function fetchChurn() {
+      const data = await getChurnRiskMap()
+      if (!cancelled) setChurnMap(data)
+    }
+    fetchChurn()
+    return () => { cancelled = true }
+  }, [refreshKey])
 
   function refreshUsers() { setRefreshKey((k) => k + 1) }
 
@@ -177,6 +190,16 @@ export default function AdminUsersPage() {
               <SelectItem value="analyst">Analyst</SelectItem>
             </SelectContent>
           </Select>
+          <Select value={churnFilter} onValueChange={(v) => { setChurnFilter(v); setPage(1) }}>
+            <SelectTrigger className="w-[160px] font-body">
+              <SelectValue placeholder="Churn Risk" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All churn risk</SelectItem>
+              <SelectItem value="high_risk">High Risk</SelectItem>
+              <SelectItem value="at_risk">At Risk</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" onClick={handleSearch}>
             <Search className="mr-1 size-4" />
             Search
@@ -223,7 +246,7 @@ export default function AdminUsersPage() {
                       </p>
                     </td>
                   </tr>
-                ) : users.length === 0 ? (
+                ) : users.filter((u) => churnFilter === 'all' || churnMap[u.id]?.risk_level === churnFilter).length === 0 ? (
                   <tr>
                     <td colSpan={7} className="px-4 py-8 text-center">
                       <p className="font-body text-sm text-muted-foreground">
@@ -232,7 +255,7 @@ export default function AdminUsersPage() {
                     </td>
                   </tr>
                 ) : (
-                  users.map((user) => (
+                  users.filter((u) => churnFilter === 'all' || churnMap[u.id]?.risk_level === churnFilter).map((user) => (
                     <tr
                       key={user.id}
                       className="border-b border-white/5 hover:bg-white/[0.02]"
@@ -289,19 +312,31 @@ export default function AdminUsersPage() {
                         {new Date(user.created_at).toLocaleDateString()}
                       </td>
                       <td className="px-4 py-3">
-                        {user.is_banned ? (
-                          <Badge className="border-0 bg-red-500/20 text-red-400 font-body text-[10px]">
-                            Banned
-                          </Badge>
-                        ) : user.is_suspended ? (
-                          <Badge className="border-0 bg-amber-500/20 text-amber-400 font-body text-[10px]">
-                            Suspended
-                          </Badge>
-                        ) : (
-                          <Badge className="border-0 bg-green-500/20 text-green-400 font-body text-[10px]">
-                            Active
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1">
+                          {user.is_banned ? (
+                            <Badge className="border-0 bg-red-500/20 text-red-400 font-body text-[10px]">
+                              Banned
+                            </Badge>
+                          ) : user.is_suspended ? (
+                            <Badge className="border-0 bg-amber-500/20 text-amber-400 font-body text-[10px]">
+                              Suspended
+                            </Badge>
+                          ) : (
+                            <Badge className="border-0 bg-green-500/20 text-green-400 font-body text-[10px]">
+                              Active
+                            </Badge>
+                          )}
+                          {churnMap[user.id]?.risk_level === 'high_risk' && (
+                            <Badge className="border-0 bg-red-500/20 text-red-400 font-body text-[10px]">
+                              HIGH RISK
+                            </Badge>
+                          )}
+                          {churnMap[user.id]?.risk_level === 'at_risk' && (
+                            <Badge className="border-0 bg-yellow-500/20 text-yellow-400 font-body text-[10px]">
+                              AT RISK
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-right">
                         <DropdownMenu>

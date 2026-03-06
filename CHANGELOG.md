@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [1.9.0] — 2026-03-06 · Weekly Brief, Churn Prediction, Market Gaps (Cycle 15-2)
+
+### Added
+- **Weekly AI Business Brief** (`/api/cron/weekly-brief`) — Monday cron gathers growth, listings, revenue, SOS, search, and quality metrics; Claude generates executive summary with key numbers, concerns, recommended actions; emailed to all superadmins via Resend with dark-themed HTML template
+- **Churn Prediction System** (`/api/cron/churn-prediction`) — nightly heuristic scoring of paid subscribers across 9 signals (login recency, listing activity, messages, SOS engagement, etc.); scores 0-100 with at_risk (50+) and high_risk (75+) levels
+- **AI Outreach Generator** (`/api/admin/users/[id]/generate-outreach`) — Claude writes personalized retention emails based on user's activity, churn signals, and subscription value; admin reviews and copies to clipboard
+- **Market Gap Alert System** (`/api/cron/market-gaps`) — weekly analysis of unmet SOS demand by equipment subcategory over 90 days; Claude identifies top 5 recruitment opportunities with seller type, revenue potential, and outreach approach
+- **Market Gap Outreach** (`/api/admin/market-gaps/generate-outreach`) — AI-drafted cold outreach emails for seller recruitment in high-gap categories
+- **Churn Risk in Admin Users** — churn risk filter (High Risk / At Risk) in admin user management; risk badges on user rows; detailed signal breakdown on user detail page
+- **Market Gaps in Admin Analytics** — new Market Gaps section showing AI-analyzed recruitment opportunities with draft outreach email generation
+- **Weekly Briefs Archive** — new "Weekly Briefs" tab in admin settings showing all past briefs with expandable content
+- Churn scorer utility at `src/lib/ai/churn-scorer.ts` with configurable signal weights
+- Database: `weekly_briefs`, `churn_risk`, `market_gap_reports` tables
+
+---
+
 ## [1.8.0] — 2026-03-06 · Smart Alerts, Reputation Summarizer, Dispute Mediation (Cycle 15-1)
 
 ### Added
