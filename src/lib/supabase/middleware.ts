@@ -54,6 +54,16 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Public listing detail pages — allow anonymous access (QR codes, shared links)
+  if (pathname.match(/^\/listings\/[^/]+$/) && !pathname.endsWith('/edit')) {
+    return supabaseResponse
+  }
+
+  // Public seller storefront pages — allow anonymous read-only access
+  if (pathname.match(/^\/sellers\/[^/]+$/)) {
+    return supabaseResponse
+  }
+
   // Protected routes — redirect to login if no session
   const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin', '/sos', '/onboarding']
   const isProtectedRoute = protectedPrefixes.some((prefix) =>

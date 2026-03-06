@@ -6,6 +6,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [2.1.0] — 2026-03-06 · Amazon-Style Listing Page, AI Help, Public QR Access (Cycle 17)
+
+### Added
+- **Amazon-style three-column listing page** — gallery (460px) / main content (flex) / sticky purchase panel (320px, `position: sticky; top: 80px`) replacing old two-column Apple-esque layout
+- **ListingGallery component** — vertical thumbnail strip (72x72) on desktop with active border highlight, zoom on hover (`group-hover:scale-110`), prev/next arrows; mobile horizontal dot indicators with swipe navigation
+- **Mobile touch swipe gallery** — native touch events with 50px threshold, horizontal vs vertical scroll detection, slide-in CSS animations (`slideInFromRight`/`slideInFromLeft`)
+- **ListingPurchasePanel component** — bordered card with price, stock status, condition grade, quality score bar, Make Offer (orange), Contact Seller (blue outline), Save Listing CTAs, seller mini-card with trust score, buyer protection badge
+- **ListingSpecs component** — Amazon-style alternating-row specs table, collapsible condition report with A-F grade badges and mechanical/cosmetic/electrical score bars
+- **Ask Metal Gear AI chat** (`AskMetalGear` component + `POST /api/listings/[id]/ask`) — inline AI assistant on listing pages with streaming responses, 4 category-specific suggested question chips, session-only chat (no DB writes), 20 req/hr rate limit
+- **ListingReviews component** — seller reviews with star distribution bars (Amazon-style), AI reputation summary callout, individual review cards, "See all reviews" link to storefront
+- **ListingMainContent component** — title, badges, meta info, description with Read More truncation at 600 chars, share dropdown with QR code
+- **MobilePurchaseBar component** — fixed bottom bar with price + "Make Offer" CTA, expanding to full purchase panel via shadcn Sheet bottom drawer
+- **AI Help Assistant** — rebuilt floating help button as streaming AI chat panel (`POST /api/help/chat`), context-aware (current pathname), 4 starter question chips, Escape to close, 30 req/hr rate limit
+- **AnonInteractionGate component** — reusable signup prompt modal with action-specific copy (offer/contact/save/ask), redirect-aware signup/login links (`/signup?redirect=/listings/[id]`)
+- **Public listing access** — `/listings/[id]` now renders fully without authentication for QR codes and shared links; middleware exempts listing detail pattern from auth redirect
+- **Anonymous user gating** — visitors can view full listing, read reviews, use Ask Metal Gear (3 free messages); Make Offer / Contact Seller / Save require account creation
+- **Favorite toggle server action** (`favorite-action.ts`) — replaces old client-side Supabase favorite toggle
+- **Gallery slide animations** in `globals.css` — `slideInFromRight`/`slideInFromLeft` keyframes for mobile swipe transitions
+- **shadcn Sheet component** installed for mobile purchase drawer
+
+### Changed
+- **Listing detail page is now a Server Component** — data fetched server-side with `createAdminClient()`, passed to client sub-components; eliminates all client-side Supabase calls on the listing page
+- **Help button** — transformed from static link (`/help`) to floating AI chat panel with streaming Claude responses
+- **Middleware** — listing detail pages (`/listings/[id]`) and seller storefronts (`/sellers/[id]`) exempted from auth redirect for anonymous access
+- **Condition reports query** — fixed `is_verified` → `is_verified_dealer` column reference in `getConditionReport`
+- Draft listings remain auth-gated (404 for anonymous users)
+
+---
+
 ## [2.0.0] — 2026-03-06 · Cloudflare R2 + Stream, Light/Dark Mode, Listing Redesign (Cycle 16-0)
 
 ### Added

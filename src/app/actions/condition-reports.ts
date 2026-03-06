@@ -67,7 +67,7 @@ export async function getConditionReport(listingId: string) {
 
   const { data: report } = await admin
     .from('condition_reports')
-    .select('*, creator:profiles!condition_reports_created_by_fkey(full_name, display_name, is_verified)')
+    .select('*, creator:profiles!condition_reports_created_by_fkey(full_name, display_name, is_verified_dealer)')
     .eq('listing_id', listingId)
     .maybeSingle()
 
