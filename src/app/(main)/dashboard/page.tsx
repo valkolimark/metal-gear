@@ -41,6 +41,7 @@ import { TIER_LABELS, TIER_LIMITS } from '@/lib/constants'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
+import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
 import { updateLastLogin } from '@/app/actions/onboarding'
 import type { Tables } from '@/types/database'
 
@@ -257,6 +258,9 @@ export default function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {/* Describe Your Problem — AI Diagnostic */}
+      <ProblemDiagnoser />
 
       {/* === SELLER WIDGETS === */}
       {seller && (

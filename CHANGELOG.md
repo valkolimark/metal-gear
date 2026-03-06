@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [1.4.0] — 2026-03-05 · Conversational AI Search (Cycle 13-1)
+
+### Added
+- **AI Search API** (`/api/search/ai`) — Claude-powered natural language to structured filter mapping with multi-turn conversation support, equipment taxonomy awareness, and 1-hour response caching
+- **ConversationalSearch component** — full-width AI search input replacing keyword search bar on `/search`, with conversation thread, filter chips (removable), AI explanation in steel blue, clarifying questions, and no-results suggestions
+- **Problem Diagnoser** — "Describe your equipment problem" entry point on homepage hero and dashboard, routes to AI search with `intent_hint: 'problem'` for diagnostic reasoning mode
+- **Multi-turn conversations** — AI remembers context across turns (e.g., "show me cheaper ones" after "centrifuges under $50k"), conversation history displayed above search input
+- **Filter chip extraction** — AI-extracted filters shown as removable chips (tier1, tier2, subcategories, manufacturer, price, condition, radius, keywords); removing a chip re-runs search
+- **Keyword search fallback** — standard keyword search bar preserved below AI search; automatic fallback if AI route fails
+- **AI search history** — `saved_searches` table extended with `ai_query`, `ai_filters`, `is_ai_search` columns for saving/re-running AI searches
+- 5 unit tests: filter extraction (2 queries), clarifying question, multi-turn history, API failure fallback
+
+### Changed
+- Search page now shows AI conversational search as primary input with classic keyword search below
+- Homepage features "Describe your equipment problem" card between hero and featured listings
+- Dashboard includes Problem Diagnoser card above seller widgets
+
+---
+
 ## [1.3.0] — 2026-03-05 · Financial Dashboard, Analytics & System Settings (Cycle 12-2)
 
 ### Added

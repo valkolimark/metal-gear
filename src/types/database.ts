@@ -1079,6 +1079,9 @@ export type Database = {
           frequency: string
           last_notified_at: string | null
           created_at: string
+          ai_query: string | null
+          ai_filters: Json | null
+          is_ai_search: boolean
         }
         Insert: {
           id?: string
@@ -1089,6 +1092,9 @@ export type Database = {
           frequency?: string
           last_notified_at?: string | null
           created_at?: string
+          ai_query?: string | null
+          ai_filters?: Json | null
+          is_ai_search?: boolean
         }
         Update: {
           id?: string
@@ -1099,6 +1105,9 @@ export type Database = {
           frequency?: string
           last_notified_at?: string | null
           created_at?: string
+          ai_query?: string | null
+          ai_filters?: Json | null
+          is_ai_search?: boolean
         }
         Relationships: [
           {

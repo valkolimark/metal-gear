@@ -7,6 +7,7 @@ import { MarketingHeader } from '@/components/layout/marketing-header'
 import { Footer } from '@/components/layout/footer'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EQUIPMENT_CATEGORIES } from '@/lib/constants'
+import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
 
 function categorySlug(name: string): string {
   return name.toLowerCase().replace(/[&]/g, 'and').replace(/\s+/g, '-')
@@ -149,6 +150,13 @@ export default async function HomePage() {
                 <p>To List</p>
               </div>
             </div>
+          </div>
+        </section>
+
+        {/* Describe Your Problem */}
+        <section className="px-4 py-8">
+          <div className="mx-auto max-w-2xl">
+            <ProblemDiagnoser />
           </div>
         </section>
 

@@ -58,6 +58,7 @@ import {
 } from '@/lib/constants'
 import { getConditionReportsForListings } from '@/app/actions/condition-reports'
 import { DynamicListingMap } from '@/components/map/dynamic-map'
+import { ConversationalSearch } from '@/components/search/ConversationalSearch'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
@@ -178,6 +179,12 @@ function SearchContent() {
 
   // Condition grades
   const [conditionGrades, setConditionGrades] = useState<Record<string, string>>({})
+
+  // AI search state
+  const [aiMode, setAiMode] = useState(searchParams.get('ai') === '1')
+  const [aiLoading, setAiLoading] = useState(false)
+  const problemQuery = searchParams.get('problem') || ''
+  const [problemHandled, setProblemHandled] = useState(false)
 
   // Compare state
   const [compareIds, setCompareIds] = useState<string[]>([])
@@ -683,97 +690,122 @@ function SearchContent() {
           pullDistance={pullDistance}
           threshold={threshold}
         />
-        {/* Search bar with suggestions */}
-        <form onSubmit={handleSearch} className="relative flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              ref={searchInputRef}
-              type="search"
-              placeholder="Search equipment..."
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              onFocus={() => setShowSuggestions(true)}
-              className="pl-9 font-body"
-              autoComplete="off"
-            />
+        {/* AI Conversational Search */}
+        <ConversationalSearch
+          onResults={(results, count) => {
+            setListings(results as Listing[])
+            setTotalCount(count)
+            setAiMode(true)
+          }}
+          onLoading={(isLoading) => {
+            setAiLoading(isLoading)
+            if (isLoading) setLoading(true)
+            else setLoading(false)
+          }}
+          onFiltersChange={(params) => {
+            const urlParams = new URLSearchParams()
+            Object.entries(params).forEach(([k, v]) => {
+              if (v) urlParams.set(k, v)
+            })
+            router.push(`/search?${urlParams.toString()}`, { scroll: false })
+          }}
+          initialQuery={problemQuery || undefined}
+          intentHint={problemQuery ? 'problem' : undefined}
+        />
 
-            {/* Suggestions dropdown */}
-            {showSuggestions && (
-              <div
-                ref={suggestionsRef}
-                className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-border bg-card shadow-lg"
-              >
-                {/* Recent searches */}
-                {recentSearches.length > 0 && (
-                  <div className="border-b border-border p-2">
+        {/* Classic keyword search fallback */}
+        {!aiMode && (
+          <form onSubmit={handleSearch} className="relative flex gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                ref={searchInputRef}
+                type="search"
+                placeholder="...or search by keyword"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onFocus={() => setShowSuggestions(true)}
+                className="pl-9 font-body"
+                autoComplete="off"
+              />
+
+              {/* Suggestions dropdown */}
+              {showSuggestions && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-80 overflow-y-auto rounded-lg border border-border bg-card shadow-lg"
+                >
+                  {/* Recent searches */}
+                  {recentSearches.length > 0 && (
+                    <div className="border-b border-border p-2">
+                      <p className="px-2 py-1 font-body text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                        Recent
+                      </p>
+                      {recentSearches.slice(0, 5).map((term) => (
+                        <div
+                          key={term}
+                          className="flex items-center justify-between rounded px-2 py-1.5 transition-colors hover:bg-surface"
+                        >
+                          <button
+                            type="button"
+                            onClick={() => handleSuggestionClick(term)}
+                            className="flex flex-1 items-center gap-2 font-body text-sm text-foreground"
+                          >
+                            <Clock className="size-3 text-muted-foreground" />
+                            {term}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              removeRecentSearch(term)
+                              setRecentSearches(getRecentSearches())
+                            }}
+                            className="rounded p-0.5 text-muted-foreground hover:text-foreground"
+                          >
+                            <X className="size-3" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Suggestions */}
+                  <div className="p-2">
                     <p className="px-2 py-1 font-body text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                      Recent
+                      Suggestions
                     </p>
-                    {recentSearches.slice(0, 5).map((term) => (
-                      <div
+                    {filteredSuggestions.map((term) => (
+                      <button
                         key={term}
-                        className="flex items-center justify-between rounded px-2 py-1.5 transition-colors hover:bg-surface"
+                        type="button"
+                        onClick={() => handleSuggestionClick(term)}
+                        className="flex w-full items-center gap-2 rounded px-2 py-1.5 font-body text-sm text-foreground transition-colors hover:bg-surface"
                       >
-                        <button
-                          type="button"
-                          onClick={() => handleSuggestionClick(term)}
-                          className="flex flex-1 items-center gap-2 font-body text-sm text-foreground"
-                        >
-                          <Clock className="size-3 text-muted-foreground" />
-                          {term}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            removeRecentSearch(term)
-                            setRecentSearches(getRecentSearches())
-                          }}
-                          className="rounded p-0.5 text-muted-foreground hover:text-foreground"
-                        >
-                          <X className="size-3" />
-                        </button>
-                      </div>
+                        <Search className="size-3 text-muted-foreground" />
+                        {term}
+                      </button>
                     ))}
                   </div>
-                )}
-
-                {/* Suggestions */}
-                <div className="p-2">
-                  <p className="px-2 py-1 font-body text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
-                    Suggestions
-                  </p>
-                  {filteredSuggestions.map((term) => (
-                    <button
-                      key={term}
-                      type="button"
-                      onClick={() => handleSuggestionClick(term)}
-                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 font-body text-sm text-foreground transition-colors hover:bg-surface"
-                    >
-                      <Search className="size-3 text-muted-foreground" />
-                      {term}
-                    </button>
-                  ))}
                 </div>
-              </div>
-            )}
-          </div>
-          <Button type="submit" className="font-body">
-            Search
-          </Button>
-          {user && hasActiveFilters && (
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setSaveDialogOpen(true)}
-              title="Save this search"
-            >
-              <Bookmark className="size-4" />
+              )}
+            </div>
+            <Button type="submit" className="font-body">
+              Search
             </Button>
-          )}
-        </form>
+            {user && hasActiveFilters && (
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                onClick={() => setSaveDialogOpen(true)}
+                title="Save this search"
+              >
+                <Bookmark className="size-4" />
+              </Button>
+            )}
+          </form>
+        )}
 
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2">
