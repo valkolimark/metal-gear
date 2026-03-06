@@ -424,23 +424,13 @@ export async function uploadSosMedia(formData: FormData) {
   const file = formData.get('file') as File
   if (!file) return { error: 'No file provided' }
 
-  const admin = createAdminClient()
-  const ext = file.name.split('.').pop()
-  const path = `${user.id}/${Date.now()}.${ext}`
+  const { uploadSOSMedia } = await import('@/lib/media')
+  const buffer = Buffer.from(await file.arrayBuffer())
 
-  const { error } = await admin.storage
-    .from('sos-media')
-    .upload(path, file, {
-      contentType: file.type,
-      upsert: false,
-    })
-
-  if (error) return { error: error.message }
-
-  // Get signed URL (valid for 7 days)
-  const { data: urlData } = await admin.storage
-    .from('sos-media')
-    .createSignedUrl(path, 7 * 24 * 60 * 60)
-
-  return { path, url: urlData?.signedUrl || '' }
+  try {
+    const url = await uploadSOSMedia(buffer, user.id, file.type)
+    return { path: url, url }
+  } catch (err) {
+    return { error: `Upload failed: ${err instanceof Error ? err.message : 'R2 error'}` }
+  }
 }

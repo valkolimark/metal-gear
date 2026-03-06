@@ -146,20 +146,17 @@ export async function uploadStorefrontBanner(formData: FormData) {
   if (!file) return { error: 'No file provided' }
   if (file.size > 10 * 1024 * 1024) return { error: 'File must be under 10MB' }
 
-  const ext = file.name.split('.').pop()
-  const path = `${user.id}/banner-${Date.now()}.${ext}`
+  const { uploadStorefrontBannerFile } = await import('@/lib/media')
+  const buffer = Buffer.from(await file.arrayBuffer())
+
+  let publicUrl: string
+  try {
+    publicUrl = await uploadStorefrontBannerFile(buffer, user.id, file.type)
+  } catch (err) {
+    return { error: `Upload failed: ${err instanceof Error ? err.message : 'R2 error'}` }
+  }
 
   const admin = createAdminClient()
-
-  const { error: uploadError } = await admin.storage
-    .from('avatars')
-    .upload(path, file, { contentType: file.type })
-
-  if (uploadError) return { error: `Upload failed: ${uploadError.message}` }
-
-  const {
-    data: { publicUrl },
-  } = admin.storage.from('avatars').getPublicUrl(path)
 
   // Upsert storefront with banner
   const { data: storefront, error: updateError } = await admin

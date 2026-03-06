@@ -672,6 +672,12 @@ export type Database = {
           storage_path: string
           position: number
           created_at: string
+          stream_video_id: string | null
+          thumbnail_url: string | null
+          embed_url: string | null
+          hls_url: string | null
+          duration_seconds: number | null
+          status: string | null
         }
         Insert: {
           id?: string
@@ -680,6 +686,12 @@ export type Database = {
           storage_path: string
           position?: number
           created_at?: string
+          stream_video_id?: string | null
+          thumbnail_url?: string | null
+          embed_url?: string | null
+          hls_url?: string | null
+          duration_seconds?: number | null
+          status?: string | null
         }
         Update: {
           id?: string
@@ -688,6 +700,12 @@ export type Database = {
           storage_path?: string
           position?: number
           created_at?: string
+          stream_video_id?: string | null
+          thumbnail_url?: string | null
+          embed_url?: string | null
+          hls_url?: string | null
+          duration_seconds?: number | null
+          status?: string | null
         }
         Relationships: [
           {

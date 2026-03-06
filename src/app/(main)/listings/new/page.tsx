@@ -31,6 +31,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { checkListingLimit } from '@/app/actions/tier'
 import {
+  uploadListingImageAction,
+  uploadListingVideoAction,
+} from './actions'
+import {
   EQUIPMENT_CATEGORIES,
   INDUSTRIES,
   LISTING_CONDITIONS,
@@ -169,8 +173,6 @@ export default function CreateListingPage() {
         return
       }
 
-      const supabase = createClient()
-
       for (const file of toUpload) {
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`${file.name} exceeds 10MB limit`)
@@ -185,27 +187,22 @@ export default function CreateListingPage() {
           { id: tempId, file, preview, storage_path: '', url: '', uploading: true },
         ])
 
-        const ext = file.name.split('.').pop()
-        const path = `${user.id}/${tempId}.${ext}`
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('listingId', 'draft')
 
-        const { error: uploadError } = await supabase.storage
-          .from('listing-images')
-          .upload(path, file)
+        const result = await uploadListingImageAction(fd)
 
-        if (uploadError) {
+        if (result.error || !result.url) {
           toast.error(`Failed to upload ${file.name}`)
           setImages((prev) => prev.filter((i) => i.id !== tempId))
           continue
         }
 
-        const {
-          data: { publicUrl },
-        } = supabase.storage.from('listing-images').getPublicUrl(path)
-
         setImages((prev) =>
           prev.map((i) =>
             i.id === tempId
-              ? { ...i, storage_path: path, url: publicUrl, uploading: false }
+              ? { ...i, storage_path: result.url!, url: result.url!, uploading: false }
               : i
           )
         )
@@ -230,11 +227,9 @@ export default function CreateListingPage() {
         return
       }
 
-      const supabase = createClient()
-
       for (const file of toUpload) {
-        if (file.size > 100 * 1024 * 1024) {
-          toast.error(`${file.name} exceeds 100MB limit`)
+        if (file.size > 200 * 1024 * 1024) {
+          toast.error(`${file.name} exceeds 200MB limit`)
           continue
         }
 
@@ -246,27 +241,27 @@ export default function CreateListingPage() {
           { id: tempId, file, preview, storage_path: '', url: '', uploading: true },
         ])
 
-        const ext = file.name.split('.').pop()
-        const path = `${user.id}/${tempId}.${ext}`
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('listingId', 'draft')
 
-        const { error: uploadError } = await supabase.storage
-          .from('listing-videos')
-          .upload(path, file)
+        const result = await uploadListingVideoAction(fd)
 
-        if (uploadError) {
-          toast.error(`Failed to upload ${file.name}`)
+        if (result.error || !result.video) {
+          toast.error(result.error || `Failed to upload ${file.name}`)
           setVideos((prev) => prev.filter((v) => v.id !== tempId))
           continue
         }
 
-        const { data: { publicUrl } } = supabase.storage
-          .from('listing-videos')
-          .getPublicUrl(path)
-
         setVideos((prev) =>
           prev.map((v) =>
             v.id === tempId
-              ? { ...v, storage_path: path, url: publicUrl, uploading: false }
+              ? {
+                  ...v,
+                  storage_path: result.video!.videoId,
+                  url: result.video!.embedUrl,
+                  uploading: false,
+                }
               : v
           )
         )
@@ -485,6 +480,9 @@ export default function CreateListingPage() {
             url: vid.url,
             storage_path: vid.storage_path,
             position: idx,
+            stream_video_id: vid.storage_path, // storage_path holds videoId for Stream videos
+            embed_url: vid.url,
+            status: 'processing',
           }))
 
         if (videoRows.length > 0) {

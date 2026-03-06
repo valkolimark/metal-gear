@@ -24,25 +24,18 @@ export async function uploadAvatar(formData: FormData) {
     return { error: 'File must be under 10MB' }
   }
 
-  const ext = file.name.split('.').pop()
-  const path = `${user.id}/avatar-${Date.now()}.${ext}`
+  const { uploadAvatar } = await import('@/lib/media')
+  const buffer = Buffer.from(await file.arrayBuffer())
 
-  // Use admin client to bypass RLS for storage operations
-  const admin = createAdminClient()
-
-  const { error: uploadError } = await admin.storage
-    .from('avatars')
-    .upload(path, file, { contentType: file.type })
-
-  if (uploadError) {
-    return { error: `Upload failed: ${uploadError.message}` }
+  let publicUrl: string
+  try {
+    publicUrl = await uploadAvatar(buffer, user.id, file.type)
+  } catch (err) {
+    return { error: `Upload failed: ${err instanceof Error ? err.message : 'R2 error'}` }
   }
 
-  const {
-    data: { publicUrl },
-  } = admin.storage.from('avatars').getPublicUrl(path)
-
   // Update profile with new avatar URL and return full profile
+  const admin = createAdminClient()
   const { data: updatedProfile, error: updateError } = await admin
     .from('profiles')
     .update({ avatar_url: publicUrl })

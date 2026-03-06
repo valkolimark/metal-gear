@@ -42,19 +42,14 @@ export async function submitVerificationRequest(
     if (file && file.size > 0) {
       if (file.size > 10 * 1024 * 1024) return { error: 'Document must be under 10MB' }
 
-      const ext = file.name.split('.').pop()
-      const path = `${user.id}/verification-${Date.now()}.${ext}`
+      const { uploadVerificationDocument } = await import('@/lib/media')
+      const buffer = Buffer.from(await file.arrayBuffer())
 
-      const { error: uploadError } = await admin.storage
-        .from('avatars')
-        .upload(path, file, { contentType: file.type })
-
-      if (uploadError) return { error: `Upload failed: ${uploadError.message}` }
-
-      const {
-        data: { publicUrl },
-      } = admin.storage.from('avatars').getPublicUrl(path)
-      documentUrl = publicUrl
+      try {
+        documentUrl = await uploadVerificationDocument(buffer, user.id, file.type)
+      } catch (err) {
+        return { error: `Upload failed: ${err instanceof Error ? err.message : 'R2 error'}` }
+      }
     }
   }
 

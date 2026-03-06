@@ -5,7 +5,8 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 
 ## Tech Stack
 - **Framework:** Next.js 15 (App Router, RSC, TypeScript)
-- **Database/Auth:** Supabase (PostgreSQL, Auth, Storage)
+- **Database/Auth:** Supabase (PostgreSQL, Auth, Realtime)
+- **Media Storage:** Cloudflare R2 (images/docs via `media.metalgear.com`) + Cloudflare Stream (videos)
 - **Styling:** Tailwind CSS v4 (CSS-based config, no tailwind.config.ts) + shadcn/ui (new-york style)
 - **State:** Zustand (3 stores: auth, ui, search) + TanStack Query
 - **Error Tracking:** Sentry
@@ -30,6 +31,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 
 ## API Routes
 - `/api/webhooks/stripe` — Stripe subscription webhook
+- `/api/webhooks/cloudflare-stream` — Stream video processing status webhook
 - `/api/unsubscribe` — Email unsubscribe endpoint
 - `/api/search/ai` — Conversational AI search (Claude-powered NL→filter mapping)
 - `/api/listings/ai-copy` — AI description generator (streaming), title optimizer, quality scorer
@@ -48,10 +50,11 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/cron/market-gaps` — Weekly SOS demand gap analysis
 - `/api/cron/cleanup` — Periodic notification and data cleanup
 
-## Subscription Tiers
-- **Free:** 3 listings, 5 photos, 10 conversations, 100mi search
-- **Premium ($29.99/mo):** 15 listings, 15 photos, 3 videos, unlimited conversations, 500mi search
-- **Boost ($79.99/mo):** 50 listings, 25 photos, 5 videos, unlimited everything
+## Pricing Tiers
+- **Free:** 3 listings
+- **Pro ($179/mo):** Expanded limits, all AI features
+- **Business ($349/mo):** Expanded limits, all AI features
+- **Enterprise ($599/mo):** Expanded limits, all AI features + priority
 
 ## Key Infrastructure
 - **Supabase project:** fkcyfpdkcrhjieauhchn
@@ -60,6 +63,9 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Vercel team:** team_9n9GosoaraicsoDdbAFgzr5j
 - **Vercel project:** prj_HQBv7jMhui6LGW5vzVC5pmCMndlx
 - **Sentry org:** metal-gear, project: javascript-nextjs
+- **Cloudflare account:** c61e1a513e96a3b9df409959c2853c9c
+- **R2 bucket:** metal-gear-media → `media.metalgear.com`
+- **Stream subdomain:** customer-305dqqczrx52n91m.cloudflarestream.com
 
 ## Auth Providers
 - Email/password (Supabase Auth)
@@ -103,11 +109,20 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **AI columns on profiles:** `reputation_summary` (JSONB), `reputation_summary_updated_at`
 - **AI columns on disputes:** `ai_summary` (JSONB)
 - **AI columns on sos_requests:** `ai_categorized`, `ranked_response_ids`
-- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`
+- **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`, `VideoPlayer`
 - **AI utilities:** `src/lib/ai/churn-scorer.ts` — heuristic churn signal weights and scoring
 
+## Media Infrastructure
+- **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
+- **Stream client:** `src/lib/cloudflare-stream.ts` — video upload, status, delete via Cloudflare API
+- **Unified media:** `src/lib/media.ts` — `uploadListingImage()`, `uploadListingVideo()`, `uploadAvatar()`, `uploadSOSMedia()`, `uploadDisputeEvidence()`, `uploadConditionReport()`, `uploadMessageAttachmentFile()`, `uploadStorefrontBannerFile()`, `uploadVerificationDocument()`, `deleteMedia()`
+- **Key naming:** `listings/{id}/images/{uuid}.ext`, `avatars/{userId}/{uuid}.ext`, `sos/{sosId}/{uuid}.ext`, etc.
+- **Video columns on listing_videos:** `stream_video_id`, `thumbnail_url`, `embed_url`, `hls_url`, `duration_seconds`, `status` (processing/ready/error)
+- **Migration script:** `scripts/migrate-media.ts` — run with `--limit=N` for test batches
+- Supabase Storage URLs still resolve for legacy data; new uploads go exclusively to R2/Stream
+
 ## Critical Pattern
-All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. Server actions live in:
+All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. Server actions live in:
 - `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, etc.)
 - `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)

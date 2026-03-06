@@ -6,6 +6,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [2.0.0] — 2026-03-06 · Cloudflare R2 + Stream Media Migration (Cycle 16-0)
+
+### Added
+- **Cloudflare R2 storage** (`src/lib/r2.ts`) — S3-compatible client for all image/document uploads via `media.metalgear.com` CDN with zero egress fees
+- **Cloudflare Stream** (`src/lib/cloudflare-stream.ts`) — video upload, transcoding, adaptive bitrate streaming, thumbnail generation
+- **Unified media interface** (`src/lib/media.ts`) — single entry point for all upload/delete operations across listings, avatars, SOS, disputes, condition reports, messages, storefronts, verification docs
+- **VideoPlayer component** (`src/components/ui/video-player.tsx`) — Cloudflare Stream iframe embed with 16:9 aspect ratio, loading skeleton, thumbnail poster
+- **Stream webhook handler** (`/api/webhooks/cloudflare-stream`) — processes video ready/error events, updates `listing_videos.status`
+- **Listing media server actions** (`src/app/(main)/listings/new/actions.ts`) — `uploadListingImageAction`, `uploadListingVideoAction`, `deleteListingImageAction` replacing client-side Supabase Storage calls
+- **Migration script** (`scripts/migrate-media.ts`) — idempotent, concurrency-limited migration of existing Supabase Storage files to R2/Stream with `--limit` flag for test runs
+- Database: `stream_video_id`, `thumbnail_url`, `embed_url`, `hls_url`, `duration_seconds`, `status` columns on `listing_videos`; index on `stream_video_id`
+
+### Changed
+- All media uploads now route through Cloudflare R2 instead of Supabase Storage (listing images, avatars, SOS media, dispute evidence, condition reports, message attachments, storefront banners, verification documents)
+- Listing video uploads now use Cloudflare Stream with processing status tracking
+- Listing creation page uses server actions for media uploads instead of client-side Supabase Storage calls
+- Listing detail page uses `VideoPlayer` component for Stream videos, with fallback to HTML5 `<video>` for legacy URLs
+- `next.config.ts` updated with `media.metalgear.com`, `videodelivery.net`, and Cloudflare Stream domain patterns
+- Video size limit increased from 100MB to 200MB (Cloudflare Stream supports larger files)
+
+### Dependencies
+- Added `@aws-sdk/client-s3`, `@aws-sdk/lib-storage` for R2 uploads
+
+---
+
 ## [1.9.0] — 2026-03-06 · Weekly Brief, Churn Prediction, Market Gaps (Cycle 15-2)
 
 ### Added

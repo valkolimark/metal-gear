@@ -59,30 +59,23 @@ export async function uploadMessageAttachment(formData: FormData) {
 
   if (!conv) return { error: 'Not authorized' }
 
-  // Upload to storage
-  const ext = file.name.split('.').pop() || 'bin'
-  const path = `${user.id}/${messageId}/${Date.now()}.${ext}`
+  // Upload to R2
+  const { uploadMessageAttachmentFile } = await import('@/lib/media')
+  const buffer = Buffer.from(await file.arrayBuffer())
 
-  const arrayBuffer = await file.arrayBuffer()
-  const { error: uploadError } = await admin.storage
-    .from('message-attachments')
-    .upload(path, arrayBuffer, {
-      contentType: file.type,
-      upsert: false,
-    })
-
-  if (uploadError) return { error: 'Failed to upload file' }
-
-  const { data: urlData } = admin.storage
-    .from('message-attachments')
-    .getPublicUrl(path)
+  let fileUrl: string
+  try {
+    fileUrl = await uploadMessageAttachmentFile(buffer, user.id, messageId, file.type)
+  } catch {
+    return { error: 'Failed to upload file' }
+  }
 
   // Insert attachment record
   const { data: attachment, error: insertError } = await admin
     .from('message_attachments')
     .insert({
       message_id: messageId,
-      file_url: urlData.publicUrl,
+      file_url: fileUrl,
       file_name: file.name,
       file_type: file.type,
       file_size_bytes: file.size,

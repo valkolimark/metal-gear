@@ -22,6 +22,26 @@ const nextConfig: NextConfig = {
         hostname: 'api.qrserver.com',
         pathname: '/v1/create-qr-code/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'media.metalgear.com',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'videodelivery.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'iframe.videodelivery.net',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'customer-305dqqczrx52n91m.cloudflarestream.com',
+        pathname: '/**',
+      },
     ],
   },
 }

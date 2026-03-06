@@ -57,6 +57,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
+import { VideoPlayer } from '@/components/ui/video-player'
 import {
   Dialog,
   DialogContent,
@@ -653,15 +654,26 @@ export default function ListingDetailPage() {
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {videos.map((vid) => (
-              <div key={vid.id} className="overflow-hidden rounded-xl border border-border">
-                <video
-                  src={vid.url}
-                  controls
-                  preload="metadata"
-                  className="aspect-video w-full bg-black"
-                >
-                  Your browser does not support video playback.
-                </video>
+              <div key={vid.id}>
+                {vid.stream_video_id || vid.embed_url ? (
+                  <VideoPlayer
+                    videoId={vid.stream_video_id || undefined}
+                    embedUrl={vid.embed_url || undefined}
+                    thumbnailUrl={vid.thumbnail_url || undefined}
+                    title={listing?.title}
+                  />
+                ) : (
+                  <div className="overflow-hidden rounded-xl border border-border">
+                    <video
+                      src={vid.url}
+                      controls
+                      preload="metadata"
+                      className="aspect-video w-full bg-black"
+                    >
+                      Your browser does not support video playback.
+                    </video>
+                  </div>
+                )}
               </div>
             ))}
           </div>

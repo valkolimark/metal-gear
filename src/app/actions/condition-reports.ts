@@ -96,24 +96,18 @@ export async function uploadConditionPhoto(formData: FormData) {
 
   if (authError || !user) return { error: 'Not authenticated' }
 
-  const admin = createAdminClient()
   const file = formData.get('file') as File
   if (!file) return { error: 'No file provided' }
 
-  const ext = file.name.split('.').pop()
-  const path = `${user.id}/${Date.now()}.${ext}`
+  const { uploadConditionReport } = await import('@/lib/media')
+  const buffer = Buffer.from(await file.arrayBuffer())
 
-  const { error } = await admin.storage
-    .from('condition-reports')
-    .upload(path, file, { contentType: file.type })
-
-  if (error) return { error: error.message }
-
-  const { data: urlData } = admin.storage
-    .from('condition-reports')
-    .getPublicUrl(path)
-
-  return { url: urlData.publicUrl }
+  try {
+    const url = await uploadConditionReport(buffer, user.id, file.type)
+    return { url }
+  } catch (err) {
+    return { error: `Upload failed: ${err instanceof Error ? err.message : 'R2 error'}` }
+  }
 }
 
 export async function deleteConditionReport(listingId: string) {

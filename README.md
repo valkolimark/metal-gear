@@ -81,7 +81,8 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 | Layer | Technology |
 |-------|------------|
 | Framework | Next.js 15 (App Router, RSC, TypeScript) |
-| Database & Auth | Supabase (PostgreSQL, Auth, Storage, Realtime) |
+| Database & Auth | Supabase (PostgreSQL, Auth, Realtime) |
+| Media Storage | Cloudflare R2 (images/docs) + Cloudflare Stream (videos) via `media.metalgear.com` |
 | Styling | Tailwind CSS v4 + shadcn/ui (new-york style) |
 | State | Zustand + TanStack Query |
 | Payments | Stripe (escrow, subscriptions, Billing Portal) |
@@ -100,18 +101,16 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 
 ---
 
-## Subscription Tiers
+## Pricing Tiers
 
-| | Free | Premium ($29.99/mo) | Boost ($79.99/mo) |
-|---|---|---|---|
-| Listings | 3 | 15 | 50 |
-| Photos per listing | 5 | 15 | 25 |
-| Video uploads | — | 3 | 5 |
-| Conversations | 10 | Unlimited | Unlimited |
-| Search radius | 100 mi | 500 mi | Unlimited |
-| Active SOS | 1 | 3 | Unlimited |
-| SOS reach | 100 mi | 500 mi | Unlimited |
-| Market insights | — | Yes | Yes |
+| | Free | Pro ($179/mo) | Business ($349/mo) | Enterprise ($599/mo) |
+|---|---|---|---|---|
+| Listings | 3 | Expanded | Expanded | Expanded |
+| AI-powered features | Basic | All | All | All + priority |
+| Demand forecasts | — | Yes | Yes | Yes |
+| Negotiation coaching | — | Yes | Yes | Yes |
+| Smart search alerts | — | Yes | Yes | Yes |
+| Market insights | — | Yes | Yes | Yes |
 
 ---
 
@@ -146,7 +145,8 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 
 - Node.js 18+
 - npm
-- Supabase project (PostgreSQL, Auth, Storage)
+- Supabase project (PostgreSQL, Auth, Realtime)
+- Cloudflare account (R2 bucket + Stream for media)
 - Stripe account (for payments)
 - Resend account (for emails)
 - Anthropic API key (for AI features)
