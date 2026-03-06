@@ -25,6 +25,7 @@ import {
   getGeographicData,
   getAIAssistMetrics,
   getListingQualityMetrics,
+  getPricingIntelligenceMetrics,
 } from '@/app/actions/analytics'
 
 // ─── Types ───────────────────────────────────────────────────────────
@@ -120,11 +121,13 @@ export default function AdminAnalyticsPage() {
   const [aiData, setAIData] = useState<AIData | null>(null)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [qualityData, setQualityData] = useState<any>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pricingData, setPricingData] = useState<any>(null)
 
   useEffect(() => {
     let cancelled = false
     async function fetchData() {
-      const [ug, lh, sos, search, geo, ai, quality] = await Promise.all([
+      const [ug, lh, sos, search, geo, ai, quality, pricing] = await Promise.all([
         getUserGrowthData(),
         getListingHealth(),
         getSOSPerformance(),
@@ -132,6 +135,7 @@ export default function AdminAnalyticsPage() {
         getGeographicData(),
         getAIAssistMetrics(),
         getListingQualityMetrics(),
+        getPricingIntelligenceMetrics(),
       ])
       if (!cancelled) {
         setUserGrowth(ug)
@@ -141,6 +145,7 @@ export default function AdminAnalyticsPage() {
         setGeoData(geo)
         setAIData(ai)
         setQualityData(quality)
+        setPricingData(pricing)
       }
     }
     fetchData()
@@ -397,7 +402,46 @@ export default function AdminAnalyticsPage() {
         </div>
       )}
 
-      {/* ── Section 7: Geographic ──────────────────────────────────── */}
+      {/* ── Section 7: Pricing Intelligence ──────────────────────────── */}
+      {!pricingData ? (
+        <SectionSkeleton />
+      ) : (
+        <Card className="border-white/5 bg-[#0D0D14]">
+          <CardHeader>
+            <CardTitle className="font-display text-base text-foreground">Pricing Intelligence</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-4">
+              <KPICard label="AI-Priced Listings" value={pricingData.totalAIPriced} sub={`${pricingData.totalAccepted} accepted suggestion`} />
+              <KPICard label="Avg Price Accuracy" value={pricingData.avgAccuracy ? `${pricingData.avgAccuracy}%` : 'N/A'} sub="Final vs suggested" />
+              <KPICard
+                label="Avg Days on Market"
+                value={pricingData.aiAvgDOM ?? 'N/A'}
+                sub={pricingData.manualAvgDOM ? `vs ${pricingData.manualAvgDOM}d manual` : 'vs N/A manual'}
+              />
+              <KPICard label="Coaching Sessions" value={pricingData.coachingSessions} />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="rounded border border-white/5 p-3">
+                <p className="font-body text-xs text-muted-foreground">AI-Priced Offer Accept Rate</p>
+                <p className="font-display text-xl font-bold text-foreground">{pricingData.aiOfferAcceptRate}%</p>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/5">
+                  <div className="h-full rounded-full bg-primary" style={{ width: `${pricingData.aiOfferAcceptRate}%` }} />
+                </div>
+              </div>
+              <div className="rounded border border-white/5 p-3">
+                <p className="font-body text-xs text-muted-foreground">Manual-Priced Offer Accept Rate</p>
+                <p className="font-display text-xl font-bold text-foreground">{pricingData.manualOfferAcceptRate}%</p>
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/5">
+                  <div className="h-full rounded-full bg-secondary" style={{ width: `${pricingData.manualOfferAcceptRate}%` }} />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Section 8: Geographic ──────────────────────────────────── */}
       {!geoData ? (
         <SectionSkeleton />
       ) : (

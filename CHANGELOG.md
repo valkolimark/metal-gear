@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [1.6.0] — 2026-03-06 · AI Pricing Intelligence (Cycle 14-1)
+
+### Added
+- **AI Pricing API** (`/api/listings/ai-pricing`) — `suggest_price` fetches comparables from listings DB and uses Claude Sonnet 4 to generate market-data-driven price recommendations; `coach_negotiation` provides private per-side deal advice
+- **AI Price Suggestion Widget** — on listing creation pricing step, "Get AI Price Estimate" button shows suggested range, target price, confidence bar, top 3 comparables, market insight, and quick-use price buttons
+- **Offer Negotiation Coach** — private "Deal Coach" widget on listing detail offers section, visible only to the viewing user (buyer or seller), provides assessment, recommended action, acceptance probability, red flags, and talking points
+- **Admin Pricing Intelligence Dashboard** — new analytics section with AI-priced vs manual listings comparison, price accuracy %, days-on-market comparison, offer acceptance rates, and coaching session count
+- Database: `pricing_comparables` view, `offer_coaching_log` table, `listings.ai_price_suggested` and `listings.ai_price_accepted` columns
+- Server action: `getPricingIntelligenceMetrics()` for admin analytics
+
+### Changed
+- Listing creation form pricing step now includes AI price suggestion component
+- Listing detail page offers now show collapsible AI Deal Coach per active offer
+- Admin analytics page extended with Pricing Intelligence section
+
+---
+
 ## [1.5.0] — 2026-03-05 · AI Listing Copy Tools (Cycle 13-2)
 
 ### Added

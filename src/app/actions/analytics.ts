@@ -370,3 +370,79 @@ export async function getSellerAnalytics() {
     topListings,
   }
 }
+
+// ─── Pricing Intelligence Metrics ───────────────────────────────────
+
+export async function getPricingIntelligenceMetrics() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  // Get all listings with AI pricing data
+  const { data: aiPricedListings } = await admin
+    .from('listings')
+    .select('id, price_cents, ai_price_suggested, ai_price_accepted, status, created_at, updated_at')
+    .not('ai_price_suggested', 'is', null)
+
+  // Get all listings without AI pricing for comparison
+  const { data: manualListings } = await admin
+    .from('listings')
+    .select('id, price_cents, status, created_at, updated_at')
+    .is('ai_price_suggested', null)
+    .not('price_cents', 'is', null)
+
+  // Get coaching log count
+  const { count: coachingCount } = await admin
+    .from('offer_coaching_log')
+    .select('id', { count: 'exact', head: true })
+
+  // Get accepted offers on AI-priced vs manually-priced listings
+  const { data: allOffers } = await admin
+    .from('offers')
+    .select('listing_id, status')
+    .in('status', ['accepted', 'rejected', 'pending', 'countered'])
+
+  const aiPricedIds = new Set((aiPricedListings || []).map((l) => l.id))
+  const aiOffers = (allOffers || []).filter((o) => aiPricedIds.has(o.listing_id))
+  const manualOffers = (allOffers || []).filter((o) => !aiPricedIds.has(o.listing_id))
+
+  const aiAcceptRate = aiOffers.length > 0
+    ? Math.round((aiOffers.filter((o) => o.status === 'accepted').length / aiOffers.length) * 100)
+    : 0
+  const manualAcceptRate = manualOffers.length > 0
+    ? Math.round((manualOffers.filter((o) => o.status === 'accepted').length / manualOffers.length) * 100)
+    : 0
+
+  // Price accuracy: final price vs suggested price
+  const accepted = (aiPricedListings || []).filter((l) => l.ai_price_accepted && l.price_cents && l.ai_price_suggested)
+  let avgAccuracy = 0
+  if (accepted.length > 0) {
+    const accuracies = accepted.map((l) => {
+      const finalPrice = (l.price_cents || 0) / 100
+      const suggestedPrice = Number(l.ai_price_suggested) || 0
+      return suggestedPrice > 0 ? Math.round((finalPrice / suggestedPrice) * 100) : 100
+    })
+    avgAccuracy = Math.round(accuracies.reduce((a, b) => a + b, 0) / accuracies.length)
+  }
+
+  // Days on market comparison
+  function avgDOM(listings: Array<{ status: string; created_at: string; updated_at: string }> | null) {
+    const sold = (listings || []).filter((l) => l.status === 'sold')
+    if (sold.length === 0) return null
+    const totalDays = sold.reduce((sum, l) => {
+      const days = Math.floor((new Date(l.updated_at).getTime() - new Date(l.created_at).getTime()) / (1000 * 60 * 60 * 24))
+      return sum + days
+    }, 0)
+    return Math.round(totalDays / sold.length)
+  }
+
+  return {
+    totalAIPriced: (aiPricedListings || []).length,
+    totalAccepted: accepted.length,
+    avgAccuracy,
+    aiAvgDOM: avgDOM(aiPricedListings),
+    manualAvgDOM: avgDOM(manualListings),
+    aiOfferAcceptRate: aiAcceptRate,
+    manualOfferAcceptRate: manualAcceptRate,
+    coachingSessions: coachingCount || 0,
+  }
+}

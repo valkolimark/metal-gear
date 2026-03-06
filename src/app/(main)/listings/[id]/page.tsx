@@ -73,6 +73,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { useAuthStore } from '@/stores/auth-store'
 import { APP_URL } from '@/lib/constants'
+import { OfferCoach } from '@/components/listings/OfferCoach'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -1271,6 +1272,28 @@ export default function ListingDetailPage() {
                           <> &middot; expires {new Date(offer.expires_at).toLocaleDateString()}</>
                         )}
                       </p>
+                      {/* AI Deal Coach — private, per-side */}
+                      {(offer.status === 'pending' || offer.status === 'countered') && listing && (() => {
+                        const listingAge = Math.floor(
+                          (new Date().getTime() - new Date(listing.created_at).getTime()) / (1000 * 60 * 60 * 24)
+                        )
+                        return (
+                          <OfferCoach
+                            side={isSeller ? 'seller' : 'buyer'}
+                            listingId={listing.id}
+                            askPrice={(listing.price_cents || 0) / 100}
+                            offerPrice={
+                              offer.status === 'countered' && offer.counter_amount_cents
+                                ? offer.counter_amount_cents / 100
+                                : offer.amount_cents / 100
+                            }
+                            offerCount={1}
+                            daysOnMarket={listingAge}
+                            condition={listing.condition}
+                            subcategory={listing.category}
+                          />
+                        )
+                      })()}
                     </div>
                   )
                 })}

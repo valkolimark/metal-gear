@@ -776,6 +776,8 @@ export type Database = {
           ai_analyzed: boolean
           ai_fraud_flagged: boolean
           ai_fraud_reason: string | null
+          ai_price_accepted: boolean
+          ai_price_suggested: number | null
           auto_renew: boolean
           category: string
           condition: string
@@ -816,6 +818,8 @@ export type Database = {
           ai_analyzed?: boolean
           ai_fraud_flagged?: boolean
           ai_fraud_reason?: string | null
+          ai_price_accepted?: boolean
+          ai_price_suggested?: number | null
           auto_renew?: boolean
           category: string
           condition?: string
@@ -856,6 +860,8 @@ export type Database = {
           ai_analyzed?: boolean
           ai_fraud_flagged?: boolean
           ai_fraud_reason?: string | null
+          ai_price_accepted?: boolean
+          ai_price_suggested?: number | null
           auto_renew?: boolean
           category?: string
           condition?: string
@@ -1530,6 +1536,51 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      offer_coaching_log: {
+        Row: {
+          id: string
+          offer_id: string | null
+          user_id: string | null
+          side: string
+          recommended_price: number | null
+          reasoning: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          offer_id?: string | null
+          user_id?: string | null
+          side: string
+          recommended_price?: number | null
+          reasoning?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          offer_id?: string | null
+          user_id?: string | null
+          side?: string
+          recommended_price?: number | null
+          reasoning?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "offer_coaching_log_offer_id_fkey"
+            columns: ["offer_id"]
+            isOneToOne: false
+            referencedRelation: "offers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "offer_coaching_log_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       offers: {
         Row: {

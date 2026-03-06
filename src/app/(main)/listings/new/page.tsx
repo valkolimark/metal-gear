@@ -40,6 +40,7 @@ import AIImageCapture from '@/components/listings/AIImageCapture'
 import { AIDescriptionGenerator } from '@/components/listings/AIDescriptionGenerator'
 import { AITitleOptimizer } from '@/components/listings/AITitleOptimizer'
 import { ListingQualityScore } from '@/components/listings/ListingQualityScore'
+import { AIPriceSuggestion } from '@/components/listings/AIPriceSuggestion'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
 
 const STEPS = ['AI Assist', 'Details', 'Photos', 'Pricing', 'Review']
@@ -87,6 +88,8 @@ export default function CreateListingPage() {
   const [specValue, setSpecValue] = useState('')
   const [aiAssistUsed, setAiAssistUsed] = useState(false)
   const [aiAssistAccepted, setAiAssistAccepted] = useState(false)
+  const [aiPriceSuggested, setAiPriceSuggested] = useState<number | null>(null)
+  const [aiPriceAccepted, setAiPriceAccepted] = useState(false)
   const [aiFilledFields, setAiFilledFields] = useState<Set<string>>(new Set())
   const [limitInfo, setLimitInfo] = useState<{
     allowed: boolean
@@ -392,6 +395,8 @@ export default function CreateListingPage() {
         status: 'draft',
         ai_assist_used: aiAssistUsed,
         ai_assist_accepted: aiAssistAccepted,
+        ai_price_suggested: aiPriceSuggested,
+        ai_price_accepted: aiPriceAccepted,
       })
       if (error) throw error
       toast.success('Draft saved')
@@ -444,6 +449,8 @@ export default function CreateListingPage() {
           expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
           ai_assist_used: aiAssistUsed,
           ai_assist_accepted: aiAssistAccepted,
+          ai_price_suggested: aiPriceSuggested,
+          ai_price_accepted: aiPriceAccepted,
         })
         .select()
         .single()
@@ -946,45 +953,63 @@ export default function CreateListingPage() {
             </div>
 
             {!form.contact_for_price && (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="price" className="font-body">
-                    Price (USD) *
-                  </Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 font-body text-muted-foreground">
-                      $
-                    </span>
-                    <Input
-                      id="price"
-                      name="price_cents"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={form.price_cents}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                      className="pl-7 font-body"
-                    />
+              <>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="price" className="font-body">
+                      Price (USD) *
+                    </Label>
+                    <div className="relative">
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 font-body text-muted-foreground">
+                        $
+                      </span>
+                      <Input
+                        id="price"
+                        name="price_cents"
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={form.price_cents}
+                        onChange={handleChange}
+                        placeholder="0.00"
+                        className="pl-7 font-body"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-end">
+                    <label className="flex items-center gap-2 pb-2 font-body text-sm">
+                      <input
+                        type="checkbox"
+                        checked={form.negotiable}
+                        onChange={(e) =>
+                          setForm((prev) => ({
+                            ...prev,
+                            negotiable: e.target.checked,
+                          }))
+                        }
+                        className="size-4 rounded border-border"
+                      />
+                      Price is negotiable
+                    </label>
                   </div>
                 </div>
-                <div className="flex items-end">
-                  <label className="flex items-center gap-2 pb-2 font-body text-sm">
-                    <input
-                      type="checkbox"
-                      checked={form.negotiable}
-                      onChange={(e) =>
-                        setForm((prev) => ({
-                          ...prev,
-                          negotiable: e.target.checked,
-                        }))
-                      }
-                      className="size-4 rounded border-border"
-                    />
-                    Price is negotiable
-                  </label>
-                </div>
-              </div>
+
+                {/* AI Price Suggestion */}
+                <AIPriceSuggestion
+                  category={form.category}
+                  condition={form.condition}
+                  manufacturer={form.specifications?.manufacturer}
+                  model={form.specifications?.model}
+                  year={form.specifications?.year}
+                  specs={form.specifications}
+                  location={form.location_city && form.location_state ? `${form.location_city}, ${form.location_state}` : undefined}
+                  onUsePrice={(price) => {
+                    setForm((prev) => ({ ...prev, price_cents: String(price) }))
+                    setAiPriceSuggested(price)
+                    setAiPriceAccepted(true)
+                  }}
+                />
+              </>
             )}
 
             <Separator />
