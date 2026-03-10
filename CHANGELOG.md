@@ -6,6 +6,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [2.2.0] — 2026-03-09 · Mobile Nav Redesign, Admin CSS Isolation, Ocean Palette (Cycle 18)
+
+### Added
+- **MobileHeader** — fixed 52px header with wordmark, search, notification bell (dot badge), and hamburger; no horizontal overflow at any viewport width
+- **MobileBottomNav** — fixed 5-tab bottom nav (Home / Search / SOS / Messages / Profile); center SOS tab raised 16px above baseline with pulse glow; iOS safe area aware
+- **MobileMenuDrawer** — right-sliding drawer (260ms), dimmed backdrop, profile card, quick-action tiles, grouped nav sections, upgrade CTA for free-tier users, theme toggle + sign out footer
+- **MobileNavClient** — thin client wrapper for drawer state; all data fetched server-side in layout
+- **Admin CSS isolation** — `src/app/(admin)/admin.css` with scoped `[data-section="admin"]` tokens; dark and light admin palettes; sidebar always dark in both themes
+- **Ocean brand palette** — Deep Twilight (`#03045E`) to French Blue (`#023E8A`) to Teal Blue (`#0077B6`) to Turquoise (`#00B4D8`) to Light Cyan (`#CAF0F8`); full dark + light variants
+- **Brand Palette Switcher** — `BrandPaletteSelector` component in Admin Settings; visual swatches, active badge, live preview on apply; persisted in `system_config` + cookie
+- **`getPlatformPalette` / `setPlatformPalette`** server actions in `src/app/actions/palette.ts`
+- **`PaletteProvider`** client component for client-side `data-palette` sync
+- ThemeToggle added to admin header
+
+### Changed
+- `(main)/layout.tsx` — renders `MobileNavClient` server-side; adds `pt-[52px] pb-[72px]` on mobile, removed at `md:`
+- Root layout — reads palette from cookie (fast) or `system_config` (fallback); sets `data-palette` on `<html>` server-side (no flash)
+- `globals.css` — Ocean palette token blocks added under `[data-palette="ocean"]`; isolation comment added; no existing token changes
+
+### Fixed
+- Cycle 16 global `:root` CSS variables bleeding into admin section; scoped admin tokens now override correctly
+- Mobile header horizontal overflow/side-scroll eliminated
+
+---
+
 ## [2.1.0] — 2026-03-06 · Amazon-Style Listing Page, AI Help, Public QR Access (Cycle 17)
 
 ### Added

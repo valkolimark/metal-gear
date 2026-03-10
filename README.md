@@ -72,6 +72,8 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Internationalization (EN/ES) with cookie-based locale detection
 - Help center with 16 articles across 7 categories, keyword search, and FAQ
 - Social sharing with dynamic OG images via `@vercel/og`
+- **Mobile navigation** — Facebook-style fixed header, 5-tab bottom nav with raised SOS button, slide-in drawer with profile card, quick actions, and subscription upgrade CTA
+- **Brand palette switcher** — Admin-controlled Ocean / Industrial theme; persisted in system_config; applies instantly platform-wide with no deploy
 - Mobile PWA with pull-to-refresh, swipe gestures, and bottom nav
 
 ---
@@ -96,6 +98,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ### Design System
 
 - **Theme:** Light/dark mode toggle via `next-themes` (dark default, system preference detection); dark: `#0A0A0F` background; light: `#FAFAFA` background; `#FF6B2B` primary orange, `#3A8FD4` steel blue
+- **Brand palettes:** Industrial (default — orange/dark) and Ocean (navy/teal/cyan); switchable from Admin Settings
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body)
 - **Components:** 14 shadcn/ui components (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch)
 
