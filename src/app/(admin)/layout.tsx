@@ -1,5 +1,6 @@
 import { requireAdmin, hasPermission, type AdminRole } from '@/lib/admin/permissions'
 import AdminShell from './admin-shell'
+import '@/app/(admin)/admin.css'
 
 export default async function AdminLayout({
   children,

@@ -2,11 +2,14 @@ import type { Metadata } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from 'next-themes'
+import { cookies } from 'next/headers'
 import { chakraPetch, manrope } from '@/styles/fonts'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/components/providers/auth-provider'
 import { QueryProvider } from '@/components/providers/query-provider'
+import { PaletteProvider } from '@/components/palette-provider'
+import { getPlatformPalette } from '@/app/actions/palette'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -62,8 +65,15 @@ export default async function RootLayout({
   const locale = await getLocale()
   const messages = await getMessages()
 
+  // Read palette — cookie is fast, DB is fallback
+  const cookieStore = await cookies()
+  const paletteCookie = cookieStore.get('platform_palette')?.value
+  const palette = (paletteCookie === 'ocean' || paletteCookie === 'industrial')
+    ? paletteCookie
+    : await getPlatformPalette()
+
   return (
-    <html lang={locale} suppressHydrationWarning>
+    <html lang={locale} suppressHydrationWarning data-palette={palette}>
       <head>
         <meta name="theme-color" content="#0A0A0F" media="(prefers-color-scheme: dark)" />
         <meta name="theme-color" content="#FAFAFA" media="(prefers-color-scheme: light)" />
@@ -79,6 +89,7 @@ export default async function RootLayout({
           Skip to main content
         </a>
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+          <PaletteProvider palette={palette} />
           <NextIntlClientProvider messages={messages}>
             <QueryProvider>
               <TooltipProvider>

@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import type { AdminRole } from '@/lib/admin/permissions'
 
 const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -67,7 +68,7 @@ export default function AdminShell({
   }))
 
   return (
-    <div className="flex min-h-screen bg-[#0A0A0F]">
+    <div data-section="admin" className="flex min-h-screen bg-background">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
@@ -78,12 +79,12 @@ export default function AdminShell({
 
       {/* Sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-[#0D0D14] transition-transform duration-200 lg:static lg:translate-x-0 ${
+        className={`admin-sidebar fixed inset-y-0 left-0 z-50 flex w-64 flex-col transition-transform duration-200 lg:static lg:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Logo */}
-        <div className="flex h-16 items-center justify-between border-b border-white/5 px-5">
+        <div className="flex h-16 items-center justify-between border-b border-border/30 px-5">
           <Link href="/admin" className="flex items-center gap-2">
             <Settings className="size-5 text-primary" />
             <span className="font-display text-sm font-bold text-foreground">
@@ -116,7 +117,7 @@ export default function AdminShell({
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 font-body text-sm transition-colors ${
                       isActive
                         ? 'bg-primary/10 text-primary'
-                        : 'text-muted-foreground hover:bg-white/5 hover:text-foreground'
+                        : 'text-muted-foreground hover:bg-accent hover:text-foreground'
                     }`}
                   >
                     {isActive && (
@@ -132,7 +133,7 @@ export default function AdminShell({
         </nav>
 
         {/* Admin profile */}
-        <div className="border-t border-white/5 p-4">
+        <div className="border-t border-border/30 p-4">
           <div className="flex items-center gap-3">
             <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-surface">
               {avatarUrl ? (
@@ -165,7 +166,7 @@ export default function AdminShell({
       {/* Main content */}
       <div className="flex flex-1 flex-col">
         {/* Top bar */}
-        <header className="flex h-14 items-center gap-4 border-b border-white/5 bg-[#0D0D14]/80 px-4 backdrop-blur lg:px-6">
+        <header className="flex h-14 items-center gap-4 border-b border-border/30 bg-card/80 px-4 backdrop-blur lg:px-6">
           <Button
             variant="ghost"
             size="sm"
@@ -176,7 +177,7 @@ export default function AdminShell({
           </Button>
 
           {/* Breadcrumbs */}
-          <nav className="flex items-center gap-1.5 font-body text-sm">
+          <nav className="flex flex-1 items-center gap-1.5 font-body text-sm">
             {breadcrumbs.map((crumb, i) => (
               <span key={crumb.href} className="flex items-center gap-1.5">
                 {i > 0 && <span className="text-muted-foreground">/</span>}
@@ -193,6 +194,10 @@ export default function AdminShell({
               </span>
             ))}
           </nav>
+
+          <div className="ml-auto flex items-center gap-3">
+            <ThemeToggle />
+          </div>
         </header>
 
         {/* Page content */}

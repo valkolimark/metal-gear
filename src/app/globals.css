@@ -7,6 +7,9 @@
 /*
  * Metal Gear Design System
  * Industrial equipment marketplace — supports light + dark mode
+ *
+ * NOTE: Admin section uses scoped tokens in src/app/(admin)/admin.css
+ * under [data-section="admin"]. Do not add admin-specific tokens here.
  */
 
 /* ── Light Mode (default) ── */
@@ -183,6 +186,189 @@
 /* Safe area for mobile bottom bar */
 .safe-area-bottom {
   padding-bottom: max(env(safe-area-inset-bottom, 0px), 12px);
+}
+
+/* SOS button pulse */
+@keyframes sos-pulse {
+  0%, 100% {
+    box-shadow: 0 4px 14px rgba(255, 107, 43, 0.45);
+  }
+  50% {
+    box-shadow: 0 4px 22px rgba(255, 107, 43, 0.75);
+    transform: scale(1.04);
+  }
+}
+
+/* Drawer slide animations */
+@keyframes drawer-slide-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
+}
+@keyframes drawer-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(100%); }
+}
+@keyframes mobile-backdrop-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Body scroll lock when drawer is open */
+body.drawer-open {
+  overflow: hidden;
+  touch-action: none;
+}
+
+/* Bottom nav iOS safe area */
+.mobile-bottom-nav {
+  padding-bottom: max(8px, env(safe-area-inset-bottom));
+}
+
+/* ============================================================
+   OCEAN PALETTE — Dark Mode
+   Applied when: [data-palette="ocean"].dark or
+                 .dark [data-palette="ocean"]
+   ============================================================ */
+[data-palette="ocean"].dark,
+.dark [data-palette="ocean"] {
+  --background: #020D1C;
+  --card: #061525;
+  --popover: #061525;
+  --sidebar-bg: #040F1E;
+  --sidebar-border: #0F2540;
+
+  --foreground: #D4F5FB;
+  --card-foreground: #BDE8F2;
+  --popover-foreground: #BDE8F2;
+  --muted: #0E2038;
+  --muted-foreground: #5BA8C0;
+
+  --primary: #0077B6;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #006399;
+
+  --secondary: #00B4D8;
+  --secondary-foreground: #FFFFFF;
+  --secondary-hover: #009AB8;
+
+  --accent: #0F3048;
+  --accent-foreground: #90E0EF;
+
+  --border: #0E2540;
+  --input: #0A1C32;
+  --ring: #0077B6;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --surface: #040F1E;
+  --sidebar: #040F1E;
+  --sidebar-foreground: #D4F5FB;
+  --sidebar-primary: #0077B6;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #0E2038;
+  --sidebar-accent-foreground: #BDE8F2;
+  --sidebar-border: #0F2540;
+  --sidebar-ring: #0077B6;
+
+  --chart-1: #0077B6;
+  --chart-2: #00B4D8;
+  --chart-3: #48CAE4;
+  --chart-4: #90E0EF;
+  --chart-5: #ADE8F4;
+
+  --color-deep-twilight: #03045E;
+  --color-french-blue: #023E8A;
+  --color-teal-blue: #0077B6;
+  --color-blue-green: #0096C7;
+  --color-turquoise: #00B4D8;
+  --color-sky-aqua: #48CAE4;
+  --color-frosted-blue: #90E0EF;
+  --color-frosted-light: #ADE8F4;
+  --color-light-cyan: #CAF0F8;
+
+  --radius: 0.625rem;
+}
+
+/* ============================================================
+   OCEAN PALETTE — Light Mode
+   Applied when: .light [data-palette="ocean"]
+   Uses navy text on icy cyan surfaces.
+   ============================================================ */
+.light [data-palette="ocean"] {
+  --background: #EAF8FC;
+  --card: #FFFFFF;
+  --popover: #FFFFFF;
+  --sidebar-bg: #052C52;
+  --sidebar-border: #0A4070;
+
+  --foreground: #020347;
+  --card-foreground: #052C52;
+  --popover-foreground: #052C52;
+  --muted: #C2EDF7;
+  --muted-foreground: #1A5C80;
+
+  --primary: #023E8A;
+  --primary-foreground: #FFFFFF;
+  --primary-hover: #023070;
+
+  --secondary: #0077B6;
+  --secondary-foreground: #FFFFFF;
+  --secondary-hover: #006399;
+
+  --accent: #C2EDF7;
+  --accent-foreground: #03045E;
+
+  --border: #8DD4E8;
+  --input: #D4F0F8;
+  --ring: #023E8A;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --surface: #D4F0F8;
+  --sidebar: #052C52;
+  --sidebar-foreground: #D4F5FB;
+  --sidebar-primary: #023E8A;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #0A4070;
+  --sidebar-accent-foreground: #BDE8F2;
+  --sidebar-border: #0A4070;
+  --sidebar-ring: #023E8A;
+
+  --chart-1: #023E8A;
+  --chart-2: #0077B6;
+  --chart-3: #0096C7;
+  --chart-4: #00B4D8;
+  --chart-5: #48CAE4;
+
+  --color-deep-twilight: #03045E;
+  --color-french-blue: #023E8A;
+  --color-teal-blue: #0077B6;
+  --color-blue-green: #0096C7;
+  --color-turquoise: #00B4D8;
+  --color-sky-aqua: #48CAE4;
+  --color-frosted-blue: #90E0EF;
+  --color-frosted-light: #ADE8F4;
+  --color-light-cyan: #CAF0F8;
+
+  --radius: 0.625rem;
+}
+
+/* ============================================================
+   OCEAN PALETTE — SOS Button Glow Override
+   ============================================================ */
+[data-palette="ocean"] .sos-button,
+[data-palette="ocean"] [data-sos-trigger] {
+  background-color: var(--primary) !important;
+  box-shadow: 0 4px 14px rgba(0, 119, 182, 0.5) !important;
+}
+
+@keyframes sos-pulse-ocean {
+  0%, 100% { box-shadow: 0 4px 14px rgba(0, 119, 182, 0.5); }
+  50%       { box-shadow: 0 4px 24px rgba(0, 119, 182, 0.8); transform: scale(1.04); }
+}
+
+[data-palette="ocean"] .sos-pulse {
+  animation: sos-pulse-ocean 2.5s ease-in-out infinite !important;
 }
 
 /* Scrollbar styling */

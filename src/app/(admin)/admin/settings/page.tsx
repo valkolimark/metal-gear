@@ -38,6 +38,8 @@ import {
   exportAuditLogCSV,
 } from '@/app/actions/settings'
 import { getWeeklyBriefs } from '../actions'
+import { getPlatformPalette } from '@/app/actions/palette'
+import { BrandPaletteSelector } from '@/components/admin/BrandPaletteSelector'
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -172,13 +174,20 @@ function PlatformConfigSection() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState<string | null>(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [currentPalette, setCurrentPalette] = useState<'industrial' | 'ocean' | null>(null)
 
   useEffect(() => {
     let cancelled = false
     async function fetchConfig() {
       try {
-        const { config: data } = await getSystemConfig()
-        if (!cancelled) setConfig(data as ConfigItem[])
+        const [{ config: data }, palette] = await Promise.all([
+          getSystemConfig(),
+          getPlatformPalette(),
+        ])
+        if (!cancelled) {
+          setConfig(data as ConfigItem[])
+          setCurrentPalette(palette)
+        }
       } catch (err) {
         if (!cancelled) toast.error('Failed to load config: ' + (err instanceof Error ? err.message : 'Unknown error'))
       } finally {
@@ -218,6 +227,9 @@ function PlatformConfigSection() {
 
   return (
     <div className="space-y-4">
+      {/* Brand Palette */}
+      {currentPalette && <BrandPaletteSelector currentPalette={currentPalette} />}
+
       {/* Boolean Toggles */}
       <Card className="border-white/5 bg-[#0D0D14]">
         <CardHeader>

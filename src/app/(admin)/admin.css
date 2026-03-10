@@ -1,0 +1,188 @@
+/* ============================================================
+   ADMIN SECTION — Scoped CSS Custom Properties
+   Scope: [data-section="admin"]
+   Overrides globals.css for the entire admin subtree.
+   Both .dark and .light (next-themes) are handled.
+   ============================================================ */
+
+/* ----------------------------------------------------------
+   ADMIN DARK MODE (default — original admin design)
+   Applies when: .dark [data-section="admin"]
+   Also default (no theme class) since admin was dark-only.
+   ---------------------------------------------------------- */
+[data-section="admin"],
+.dark [data-section="admin"] {
+  --background: #090910;
+  --card: #131317;
+  --sidebar-bg: #0e0e14;
+  --sidebar-border: #1d1d22;
+  --popover: #131317;
+
+  --foreground: #f2f2f2;
+  --card-foreground: #ebebeb;
+  --popover-foreground: #ebebeb;
+  --muted: #222226;
+  --muted-foreground: #86868e;
+
+  --primary: #FF6B2B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #3A8FD4;
+  --secondary-foreground: #FFFFFF;
+
+  --border: #242428;
+  --input: #1d1d22;
+  --ring: #FF6B2B;
+  --accent: #222226;
+  --accent-foreground: #ebebeb;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --admin-sidebar-width: 240px;
+  --admin-header-height: 56px;
+  --admin-stat-card-bg: #16161c;
+  --admin-table-header-bg: #16161c;
+  --admin-table-stripe: #0e0f14;
+  --admin-badge-bg: #28282e;
+
+  --radius: 0.5rem;
+}
+
+/* ----------------------------------------------------------
+   ADMIN LIGHT MODE
+   Applies when: .light [data-section="admin"]
+   Intentionally NOT white — uses cool grey/slate surfaces
+   to preserve the industrial, professional character.
+   ---------------------------------------------------------- */
+.light [data-section="admin"] {
+  --background: #E8EAF0;
+  --card: #FFFFFF;
+  --sidebar-bg: #2B313A;
+  --sidebar-border: #3C4452;
+  --popover: #FFFFFF;
+
+  --foreground: #1B1F26;
+  --card-foreground: #222730;
+  --popover-foreground: #222730;
+  --muted: #DCDEE4;
+  --muted-foreground: #6A6F79;
+
+  --primary: #FF6B2B;
+  --primary-foreground: #FFFFFF;
+  --secondary: #3A8FD4;
+  --secondary-foreground: #FFFFFF;
+
+  --border: #C4C8D2;
+  --input: #DCDFE6;
+  --ring: #FF6B2B;
+  --accent: #DCDEE4;
+  --accent-foreground: #1B1F26;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --admin-stat-card-bg: #F2F3F6;
+  --admin-table-header-bg: #EEEFF3;
+  --admin-table-stripe: #F7F7F9;
+  --admin-badge-bg: #DCDEE4;
+
+  --radius: 0.5rem;
+}
+
+/* ----------------------------------------------------------
+   ADMIN SIDEBAR — Always dark regardless of theme
+   Dark mode:  near-black (#0e0e14)
+   Light mode: dark slate (#2B313A) — intentional
+   ---------------------------------------------------------- */
+[data-section="admin"] .admin-sidebar {
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+}
+
+/* Sidebar text always light (sidebar is always dark) */
+[data-section="admin"] .admin-sidebar {
+  --sidebar-fg: #e0e0e0;
+  --sidebar-muted: #8c8c8c;
+  --sidebar-active-bg: #3d1a0a;
+  color: var(--sidebar-fg);
+}
+
+/* ----------------------------------------------------------
+   ADMIN — OCEAN DARK MODE
+   ---------------------------------------------------------- */
+.dark [data-palette="ocean"] [data-section="admin"],
+[data-palette="ocean"] [data-section="admin"] {
+  --background: #020D1C;
+  --card: #061525;
+  --sidebar-bg: #051020;
+  --sidebar-border: #0F2540;
+  --popover: #061525;
+
+  --foreground: #D4F5FB;
+  --card-foreground: #BDE8F2;
+  --muted: #0E2038;
+  --muted-foreground: #5BA8C0;
+
+  --primary: #0077B6;
+  --primary-foreground: #FFFFFF;
+  --secondary: #00B4D8;
+  --secondary-foreground: #FFFFFF;
+
+  --border: #0E2540;
+  --input: #0A1C32;
+  --ring: #0077B6;
+  --accent: #0F3048;
+  --accent-foreground: #90E0EF;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --admin-stat-card-bg: #071828;
+  --admin-table-header-bg: #061422;
+  --admin-table-stripe: #051020;
+  --admin-badge-bg: #0E2540;
+}
+
+/* ----------------------------------------------------------
+   ADMIN — OCEAN LIGHT MODE
+   ---------------------------------------------------------- */
+.light [data-palette="ocean"] [data-section="admin"] {
+  --background: #EAF8FC;
+  --card: #FFFFFF;
+  --sidebar-bg: #052C52;
+  --sidebar-border: #0A4070;
+  --popover: #FFFFFF;
+
+  --foreground: #020347;
+  --card-foreground: #052C52;
+  --muted: #C2EDF7;
+  --muted-foreground: #1A5C80;
+
+  --primary: #023E8A;
+  --primary-foreground: #FFFFFF;
+  --secondary: #0077B6;
+  --secondary-foreground: #FFFFFF;
+
+  --border: #8DD4E8;
+  --input: #D4F0F8;
+  --ring: #023E8A;
+  --accent: #C2EDF7;
+  --accent-foreground: #03045E;
+  --destructive: #EF4444;
+  --destructive-foreground: #FFFFFF;
+
+  --admin-stat-card-bg: #D8F2FA;
+  --admin-table-header-bg: #D0EDF7;
+  --admin-table-stripe: #E5F6FB;
+  --admin-badge-bg: #C2EDF7;
+}
+
+/* ----------------------------------------------------------
+   SCOPED SCROLLBAR — admin only
+   ---------------------------------------------------------- */
+[data-section="admin"] ::-webkit-scrollbar { width: 6px; height: 6px; }
+[data-section="admin"] ::-webkit-scrollbar-track { background: var(--background); }
+[data-section="admin"] ::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+[data-section="admin"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
