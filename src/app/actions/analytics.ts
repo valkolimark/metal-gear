@@ -70,7 +70,7 @@ export async function getSOSPerformance() {
   let fulfilledCount = 0
 
   for (const s of recentSOS ?? []) {
-    const d = s.created_at.slice(0, 10)
+    const d = (s.created_at || '').slice(0, 10)
     sosByDate[d] = (sosByDate[d] || 0) + 1
     const sub = s.equipment_subcategory?.replace(/_/g, ' ') || 'Unknown'
     subcategoryCount[sub] = (subcategoryCount[sub] || 0) + 1

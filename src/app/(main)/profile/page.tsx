@@ -107,7 +107,7 @@ export default function ProfilePage() {
   const [userListings, setUserListings] = useState<{ id: string; title: string }[]>([])
   const [referralData, setReferralData] = useState<{
     referralLink: string
-    referrals: { id: string; status: string; reward_cents: number; created_at: string; referredName: string }[]
+    referrals: { id: string; status: string; reward_cents: number | null; created_at: string | null; referredName: string }[]
     totalEarnings: number
     totalReferrals: number
     completedReferrals: number
@@ -877,7 +877,7 @@ export default function ProfilePage() {
                           <div>
                             <p className="font-body text-sm text-foreground">{ref.referredName}</p>
                             <p className="font-body text-[10px] text-muted-foreground">
-                              {new Date(ref.created_at).toLocaleDateString()}
+                              {new Date(ref.created_at || '').toLocaleDateString()}
                             </p>
                           </div>
                           <div className="flex items-center gap-2">
@@ -893,10 +893,10 @@ export default function ProfilePage() {
                             >
                               {ref.status.replace('_', ' ')}
                             </Badge>
-                            {ref.reward_cents > 0 && (
+                            {(ref.reward_cents || 0) > 0 && (
                               <Badge className="bg-primary/20 font-body text-[10px] text-primary">
                                 <Gift className="mr-1 size-3" />
-                                ${(ref.reward_cents / 100).toFixed(0)}
+                                ${((ref.reward_cents || 0) / 100).toFixed(0)}
                               </Badge>
                             )}
                           </div>

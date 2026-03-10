@@ -45,7 +45,7 @@ export async function getControlTowerStats() {
     admin.from('profiles').select('*', { count: 'exact', head: true }),
     admin.from('listings').select('*', { count: 'exact', head: true }),
     admin.from('listings').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+    admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('reports').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
     admin.from('listings').select('*', { count: 'exact', head: true }).eq('ai_fraud_flagged', true),
     admin.from('profiles').select('*', { count: 'exact', head: true }).gte('created_at', new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
@@ -107,7 +107,7 @@ export async function getAlertQueue() {
     admin
       .from('sos_requests')
       .select('id, equipment_subcategory, brand, urgency, created_at')
-      .eq('status', 'open')
+      .eq('status', 'active')
       .lte('created_at', new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString())
       .order('created_at', { ascending: true })
       .limit(10),
@@ -157,7 +157,7 @@ export async function getActivityFeed() {
     id: string
     type: 'user' | 'listing' | 'sos' | 'admin'
     text: string
-    created_at: string
+    created_at: string | null
   }
 
   const feed: FeedItem[] = [
@@ -187,7 +187,7 @@ export async function getActivityFeed() {
     })),
   ]
 
-  return feed.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).slice(0, 30)
+  return feed.sort((a, b) => new Date(b.created_at || '').getTime() - new Date(a.created_at || '').getTime()).slice(0, 30)
 }
 
 export async function getChartData() {
@@ -537,9 +537,15 @@ export async function adminUpdateListing(
   const { profile } = await requireAdmin('moderate')
   const admin = createAdminClient()
 
+  const { admin_boost, ...rest } = updates
+  const dbUpdates = {
+    ...rest,
+    ...(admin_boost !== undefined ? { admin_boost: !!admin_boost } : {}),
+  }
+
   const { error } = await admin
     .from('listings')
-    .update(updates)
+    .update(dbUpdates)
     .eq('id', listingId)
 
   if (error) throw new Error(error.message)
@@ -566,9 +572,15 @@ export async function adminBulkUpdateListings(
   const { profile } = await requireAdmin('moderate')
   const admin = createAdminClient()
 
+  const { admin_boost: bulkBoost, ...bulkRest } = updates
+  const bulkDbUpdates = {
+    ...bulkRest,
+    ...(bulkBoost !== undefined ? { admin_boost: !!bulkBoost } : {}),
+  }
+
   const { error } = await admin
     .from('listings')
-    .update(updates)
+    .update(bulkDbUpdates)
     .in('id', listingIds)
 
   if (error) throw new Error(error.message)
@@ -677,10 +689,10 @@ export async function getAdminSOS(params: {
     )
 
   if (params.status && params.status !== 'all') {
-    query = query.eq('status', params.status)
+    query = query.eq('status', params.status as 'expired' | 'active' | 'fulfilled' | 'cancelled')
   }
   if (params.urgency && params.urgency !== 'all') {
-    query = query.eq('urgency', params.urgency)
+    query = query.eq('urgency', params.urgency as 'critical' | 'normal')
   }
 
   const { data, count } = await query
@@ -791,12 +803,12 @@ export async function getSOSStats() {
     { count: fulfilledCount },
     { data: recentSos },
   ] = await Promise.all([
-    admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'open'),
+    admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'active'),
     admin.from('sos_requests').select('*', { count: 'exact', head: true }).eq('status', 'fulfilled'),
     admin
       .from('sos_requests')
       .select('id')
-      .eq('status', 'open')
+      .eq('status', 'active')
       .gte('created_at', oneWeekAgo),
   ])
 
@@ -832,7 +844,7 @@ export async function adminUpdateSOS(
 
   const { error } = await admin
     .from('sos_requests')
-    .update(updates)
+    .update(updates as { status?: 'expired' | 'active' | 'fulfilled' | 'cancelled'; expires_at?: string })
     .eq('id', sosId)
 
   if (error) throw new Error(error.message)
@@ -1004,7 +1016,7 @@ export async function getChurnRiskMap(): Promise<Record<string, { risk_score: nu
 
   const map: Record<string, { risk_score: number; risk_level: string }> = {}
   for (const row of data || []) {
-    map[row.user_id] = { risk_score: row.risk_score, risk_level: row.risk_level }
+    if (row.user_id) map[row.user_id] = { risk_score: row.risk_score, risk_level: row.risk_level }
   }
   return map
 }

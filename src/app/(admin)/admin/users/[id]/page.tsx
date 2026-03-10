@@ -428,7 +428,7 @@ export default function AdminUserDetailPage() {
                     {entry.action}
                   </p>
                   <p className="font-body text-xs text-muted-foreground">
-                    {new Date(entry.created_at).toLocaleString()}
+                    {new Date(entry.created_at || '').toLocaleString()}
                   </p>
                 </div>
               ))}

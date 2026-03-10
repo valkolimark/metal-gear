@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
       .limit(1)
       .maybeSingle()
 
-    if (existing && new Date(existing.valid_until) > new Date()) {
+    if (existing && new Date(existing.valid_until || '') > new Date()) {
       continue // Still valid
     }
 

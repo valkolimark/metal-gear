@@ -141,7 +141,7 @@ export async function POST(request: NextRequest) {
 
         actualDetails = {
           subcategory: sos.equipment_subcategory || sos.equipment_category,
-          urgency: sos.urgency,
+          urgency: sos.urgency || 'normal',
         }
 
         const { data: dbResponses } = await admin
@@ -258,7 +258,7 @@ export async function POST(request: NextRequest) {
       // Group by month
       const monthlyData: Record<string, number> = {}
       for (const sos of sosHistory || []) {
-        const month = sos.created_at.slice(0, 7) // YYYY-MM
+        const month = (sos.created_at || '').slice(0, 7) // YYYY-MM
         monthlyData[month] = (monthlyData[month] || 0) + 1
       }
 
@@ -278,7 +278,7 @@ export async function POST(request: NextRequest) {
         '',
         `Fulfillment:`,
         `  Fulfilled: ${(sosHistory || []).filter((s) => s.status === 'fulfilled').length}`,
-        `  Expired/Cancelled: ${(sosHistory || []).filter((s) => ['expired', 'cancelled'].includes(s.status)).length}`,
+        `  Expired/Cancelled: ${(sosHistory || []).filter((s) => ['expired', 'cancelled'].includes(s.status || '')).length}`,
       ].filter(Boolean).join('\n')
 
       const response = await anthropic.messages.create({

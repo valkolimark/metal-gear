@@ -75,7 +75,7 @@ type ListingRow = {
   ai_fraud_reason: string | null
   admin_reviewed_at: string | null
   is_featured: boolean
-  admin_boost: number
+  admin_boost: boolean
   specifications: Record<string, unknown> | null
 }
 
@@ -632,10 +632,10 @@ export default function AdminListingsPage() {
                                 Featured
                               </span>
                             )}
-                            {listing.admin_boost > 0 && (
+                            {listing.admin_boost && (
                               <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] text-primary">
                                 <Zap className="size-3" />
-                                {listing.admin_boost}
+                                Boosted
                               </span>
                             )}
                           </td>

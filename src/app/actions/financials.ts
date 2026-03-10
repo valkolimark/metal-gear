@@ -38,7 +38,7 @@ export async function getFinancialKPIs() {
 
   const boostRevenueTotal = (allBoosts ?? []).reduce((acc, b) => acc + b.amount_cents, 0)
   const boostRevenueMonth = (allBoosts ?? []).filter(
-    (b) => new Date(b.created_at) >= firstOfMonth
+    (b) => new Date(b.created_at || '') >= firstOfMonth
   ).reduce((acc, b) => acc + b.amount_cents, 0)
 
   // Churn: cancelled in last 30 days / total at start
@@ -108,7 +108,7 @@ export async function getRevenueByMonth() {
   }
 
   for (const b of boosts ?? []) {
-    const key = b.created_at.slice(0, 7)
+    const key = (b.created_at || '').slice(0, 7)
     if (months[key]) months[key].boosts += b.amount_cents
   }
 

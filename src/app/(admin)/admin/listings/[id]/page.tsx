@@ -518,7 +518,7 @@ export default function AdminListingDetailPage() {
                     )}
                   </div>
                   <p className="font-body text-xs text-muted-foreground shrink-0 ml-4">
-                    {new Date(entry.created_at).toLocaleString()}
+                    {new Date(entry.created_at || '').toLocaleString()}
                   </p>
                 </div>
               ))}

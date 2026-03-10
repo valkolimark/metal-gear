@@ -149,7 +149,7 @@ export async function capturePayment(transactionId: string) {
         .single()
 
       const name = sellerProfile?.display_name || sellerProfile?.full_name?.split(' ')[0] || 'there'
-      const netAmount = ((transaction.amount_cents - transaction.platform_fee_cents) / 100).toLocaleString()
+      const netAmount = ((transaction.amount_cents - (transaction.platform_fee_cents || 0)) / 100).toLocaleString()
 
       await sendEmail({
         to: sellerAuth.user.email,

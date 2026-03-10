@@ -263,7 +263,7 @@ export default function ControlTowerPage() {
                       {item.text}
                     </p>
                     <p className="font-body text-[10px] text-muted-foreground">
-                      {new Date(item.created_at).toLocaleString()}
+                      {new Date(item.created_at || '').toLocaleString()}
                     </p>
                   </div>
                 </div>

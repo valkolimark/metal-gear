@@ -63,7 +63,7 @@ export async function getAdminUsers() {
         .order('created_at', { ascending: false })
         .limit(1)
       if (actions && actions.length > 0) {
-        lastActionMap[id] = actions[0].created_at
+        lastActionMap[id] = actions[0].created_at || ''
       }
     }
   }
