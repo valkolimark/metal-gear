@@ -14,14 +14,17 @@ import { AnonInteractionGate } from '@/components/AnonInteractionGate'
 import type { Tables } from '@/types/database'
 import type { User } from '@supabase/supabase-js'
 
+type CompanyProfileRow = Tables<'company_profiles'>
+
 interface Props {
   listing: Tables<'listings'>
   seller: Tables<'profiles'>
   currentUser: User | null
   isFavorited: boolean
+  company?: CompanyProfileRow | null
 }
 
-export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited }: Props) {
+export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, company }: Props) {
   const [gateOpen, setGateOpen] = useState(false)
 
   const price = listing.contact_for_price
@@ -67,6 +70,7 @@ export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited }:
                 seller={seller}
                 currentUser={currentUser}
                 isFavorited={isFavorited}
+                company={company}
               />
             </div>
           </SheetContent>

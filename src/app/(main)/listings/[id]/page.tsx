@@ -48,11 +48,17 @@ export default async function ListingDetailPage({
     notFound()
   }
 
+  // Fetch company profile if listing has company_id
+  const companyPromise = listing.company_id
+    ? admin.from('company_profiles').select('*').eq('id', listing.company_id).maybeSingle()
+    : Promise.resolve({ data: null })
+
   // Fetch all related data in parallel
   const [
     { data: images },
     { data: videos },
     { data: seller },
+    { data: company },
     conditionResult,
     reviewsResult,
     favoriteResult,
@@ -72,6 +78,7 @@ export default async function ListingDetailPage({
       .select('*')
       .eq('id', listing.seller_id)
       .single(),
+    companyPromise,
     getConditionReport(id),
     getSellerReviews(listing.seller_id),
     currentUser
@@ -162,6 +169,7 @@ export default async function ListingDetailPage({
               seller={seller}
               currentUser={currentUser}
               isFavorited={!!favoriteResult.data}
+              company={company}
             />
           </div>
         </div>
@@ -173,6 +181,7 @@ export default async function ListingDetailPage({
         seller={seller}
         currentUser={currentUser}
         isFavorited={!!favoriteResult.data}
+        company={company}
       />
     </div>
   )

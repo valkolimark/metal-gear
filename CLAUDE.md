@@ -89,6 +89,17 @@ curl -s -X POST "https://api.vercel.com/v13/deployments?teamId=team_9n9Gosoaraic
 ## Prompts
 Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant prompt file.
 
+## Multi-Company Architecture (Cycle 19)
+- **Architecture:** `profiles` = human identity, `company_profiles` = B2B entity, `company_memberships` = junction (user/company/role)
+- **Active company:** Cookie (`active_company_id`) → Zustand (`activeCompany`) → DB (`profiles.active_company_id`); cookie is source of truth for SSR
+- **Company-scoped tables:** `listings.company_id`, `subscriptions.company_id`, `seller_storefronts.company_id`, `sos_requests.company_id`
+- **Company guard:** Middleware redirects users without companies to `/companies/new`; exempt: auth, onboarding, API, marketing routes
+- **Company server actions:** `src/app/actions/company.ts` (CRUD) + `src/app/actions/company-context.ts` (switch/get active)
+- **Company types:** `src/types/company.ts` — `CompanyProfile`, `CompanyMembership`, `CompanyWithRole`, `CompanyWithMembers`
+- **Company UI:** `CompanyAvatar`, `CompanyContextProvider`, `CompanySwitcher` (header pill + drawer variant)
+- **Company pages:** `/companies/new`, `/settings/company`, `/settings/company/members`
+- **Migration script:** `scripts/migrate-companies.ts` — idempotent, creates companies from `user_business_profiles`
+
 ## Database Tables (notable)
 - `listing_views` — Timestamped view events per listing (viewer_id, listing_id, viewed_at)
 - `saved_searches` — User-saved search filter sets (user_id, name, filters JSONB, ai_query, ai_filters, is_ai_search)
@@ -105,6 +116,8 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `weekly_briefs` — Monday AI business briefs (period, raw_data JSONB, ai_brief text, sent_to emails)
 - `churn_risk` — Nightly churn scoring for paid subscribers (user_id UNIQUE, risk_score, risk_level, signals JSONB)
 - `market_gap_reports` — Weekly SOS demand gap analysis (gaps JSONB, ai_analysis JSONB)
+- `company_profiles` — B2B company entities (name, slug, logo_url, banner_url, industry, company_size, website, city, state)
+- `company_memberships` — User-company junction (user_id, company_id, role enum, is_active, joined_at)
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
@@ -120,7 +133,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
 - **Stream client:** `src/lib/cloudflare-stream.ts` — video upload, status, delete via Cloudflare API
-- **Unified media:** `src/lib/media.ts` — `uploadListingImage()`, `uploadListingVideo()`, `uploadAvatar()`, `uploadSOSMedia()`, `uploadDisputeEvidence()`, `uploadConditionReport()`, `uploadMessageAttachmentFile()`, `uploadStorefrontBannerFile()`, `uploadVerificationDocument()`, `deleteMedia()`
+- **Unified media:** `src/lib/media.ts` — `uploadListingImage()`, `uploadListingVideo()`, `uploadAvatar()`, `uploadSOSMedia()`, `uploadDisputeEvidence()`, `uploadConditionReport()`, `uploadMessageAttachmentFile()`, `uploadStorefrontBannerFile()`, `uploadVerificationDocument()`, `uploadCompanyLogo()`, `uploadCompanyBanner()`, `deleteMedia()`
 - **Key naming:** `listings/{id}/images/{uuid}.ext`, `avatars/{userId}/{uuid}.ext`, `sos/{sosId}/{uuid}.ext`, etc.
 - **Video columns on listing_videos:** `stream_video_id`, `thumbnail_url`, `embed_url`, `hls_url`, `duration_seconds`, `status` (processing/ready/error)
 - **Migration script:** `scripts/migrate-media.ts` — run with `--limit=N` for test batches

@@ -43,6 +43,7 @@ import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklist'
 import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
 import { DemandForecast } from '@/components/dashboard/DemandForecast'
+import { CompanyAvatar } from '@/components/company/CompanyAvatar'
 import { updateLastLogin } from '@/app/actions/onboarding'
 import type { Tables } from '@/types/database'
 
@@ -114,7 +115,7 @@ interface AnalyticsData {
 }
 
 export default function DashboardPage() {
-  const { user, profile } = useAuthStore()
+  const { user, profile, activeCompany } = useAuthStore()
   const tier = profile?.subscription_tier ?? 'free'
   const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS]
 
@@ -170,6 +171,26 @@ export default function DashboardPage() {
         pullDistance={pullDistance}
         threshold={threshold}
       />
+
+      {/* Company context banner */}
+      {activeCompany && (
+        <div className="flex items-center justify-between px-4 py-3 rounded-xl
+          bg-primary/5 border border-primary/15">
+          <div className="flex items-center gap-3">
+            <CompanyAvatar name={activeCompany.name} logoUrl={activeCompany.logo_url} size={36} />
+            <div>
+              <div className="text-xs text-muted-foreground uppercase tracking-wide font-medium">
+                Acting as
+              </div>
+              <div className="font-semibold text-foreground">{activeCompany.name}</div>
+            </div>
+          </div>
+          <Link href="/settings/company"
+            className="text-xs text-muted-foreground hover:text-foreground transition-colors">
+            Settings &rarr;
+          </Link>
+        </div>
+      )}
 
       {/* Welcome */}
       <div>

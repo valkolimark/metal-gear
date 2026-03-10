@@ -4,8 +4,12 @@ import { MobileDrawer } from '@/components/layout/mobile-drawer'
 import { HelpButton } from '@/components/layout/help-button'
 import { SosButton } from '@/components/layout/sos-button'
 import { MobileNavClient } from '@/components/mobile-nav/MobileNavClient'
+import { CompanyContextProvider } from '@/components/company/CompanyContextProvider'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getActiveCompanyId } from '@/app/actions/company-context'
+import { getUserCompanies } from '@/app/actions/company'
+import type { CompanyWithRole } from '@/types/company'
 
 export default async function MainLayout({
   children,
@@ -19,7 +23,12 @@ export default async function MainLayout({
     unreadMessages: number
     unreadNotifications: number
     hasStorefront: boolean
+    activeCompany: CompanyWithRole | null
+    userCompanies: CompanyWithRole[]
   } | null = null
+
+  let activeCompany: CompanyWithRole | null = null
+  let userCompanies: CompanyWithRole[] = []
 
   try {
     const supabase = await createClient()
@@ -28,7 +37,7 @@ export default async function MainLayout({
     if (user) {
       const admin = createAdminClient()
 
-      const [profileRes, messagesRes, notificationsRes, storefrontRes] = await Promise.all([
+      const [profileRes, messagesRes, notificationsRes, storefrontRes, companies] = await Promise.all([
         admin
           .from('profiles')
           .select('full_name, avatar_url, subscription_tier')
@@ -48,10 +57,15 @@ export default async function MainLayout({
           .from('seller_storefronts')
           .select('id', { count: 'exact', head: true })
           .eq('user_id', user.id),
+        getUserCompanies(user.id),
       ])
 
       const profile = profileRes.data
       const tier = (profile?.subscription_tier || 'free') as 'free' | 'pro' | 'business' | 'enterprise'
+
+      userCompanies = companies
+      const activeCompanyId = await getActiveCompanyId(user.id)
+      activeCompany = userCompanies.find(c => c.id === activeCompanyId) ?? userCompanies[0] ?? null
 
       mobileNavProps = {
         user: {
@@ -63,6 +77,8 @@ export default async function MainLayout({
         unreadMessages: messagesRes.count ?? 0,
         unreadNotifications: notificationsRes.count ?? 0,
         hasStorefront: (storefrontRes.count ?? 0) > 0,
+        activeCompany,
+        userCompanies,
       }
     }
   } catch {
@@ -71,6 +87,7 @@ export default async function MainLayout({
 
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      <CompanyContextProvider activeCompany={activeCompany} userCompanies={userCompanies} />
       <Header />
       <DesktopNav />
       <MobileDrawer />

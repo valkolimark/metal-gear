@@ -29,6 +29,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { AnonInteractionGate } from '@/components/AnonInteractionGate'
+import { CompanyAvatar } from '@/components/company/CompanyAvatar'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { makeOffer } from '@/app/actions/offers'
 import { toggleFavoriteAction } from './favorite-action'
@@ -37,12 +38,14 @@ import type { User } from '@supabase/supabase-js'
 
 type Listing = Tables<'listings'>
 type Profile = Tables<'profiles'>
+type CompanyProfileRow = Tables<'company_profiles'>
 
 interface Props {
   listing: Listing
   seller: Profile
   currentUser: User | null
   isFavorited: boolean
+  company?: CompanyProfileRow | null
 }
 
 export function ListingPurchasePanel({
@@ -50,6 +53,7 @@ export function ListingPurchasePanel({
   seller,
   currentUser,
   isFavorited,
+  company,
 }: Props) {
   const router = useRouter()
   const [gateOpen, setGateOpen] = useState(false)
@@ -252,24 +256,33 @@ export function ListingPurchasePanel({
         {/* Seller info */}
         <div className="border-t border-zinc-200 dark:border-zinc-700/60 pt-3">
           <Link
-            href={`/sellers/${seller.id}`}
+            href={company ? `/companies/${company.slug}` : `/sellers/${seller.id}`}
             className="flex items-center gap-3 transition-colors hover:text-primary"
           >
-            <Avatar className="size-10">
-              <AvatarImage src={seller.avatar_url || undefined} crossOrigin="anonymous" />
-              <AvatarFallback className="bg-primary/20 font-display text-xs text-primary">
-                {seller.full_name
-                  ?.split(' ')
-                  .map((n) => n[0])
-                  .join('')
-                  .toUpperCase()
-                  .slice(0, 2) || 'MG'}
-              </AvatarFallback>
-            </Avatar>
+            {company ? (
+              <CompanyAvatar name={company.name} logoUrl={company.logo_url} size={40} />
+            ) : (
+              <Avatar className="size-10">
+                <AvatarImage src={seller.avatar_url || undefined} crossOrigin="anonymous" />
+                <AvatarFallback className="bg-primary/20 font-display text-xs text-primary">
+                  {seller.full_name
+                    ?.split(' ')
+                    .map((n) => n[0])
+                    .join('')
+                    .toUpperCase()
+                    .slice(0, 2) || 'MG'}
+                </AvatarFallback>
+              </Avatar>
+            )}
             <div className="min-w-0 flex-1">
               <p className="truncate font-body text-sm font-medium text-foreground">
-                {seller.company_name || seller.display_name || seller.full_name || 'Seller'}
+                {company?.name || seller.company_name || seller.display_name || seller.full_name || 'Seller'}
               </p>
+              {company && (
+                <p className="truncate font-body text-xs text-muted-foreground">
+                  Listed by {seller.display_name || seller.full_name}
+                </p>
+              )}
               <div className="flex items-center gap-1.5 font-body text-xs text-muted-foreground">
                 {seller.trust_score != null && (
                   <>

@@ -6,6 +6,44 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.0.0] — 2026-03-10 · Multi-Company Profiles (Cycle 19)
+
+### Added
+- **`company_profiles` table** — B2B company entities with name, slug, logo, banner, industry, size, website, city/state
+- **`company_memberships` table** — junction table linking users to companies with `owner`/`admin`/`member` roles; unique constraint on (company_id, user_id)
+- **`company_role` enum** — PostgreSQL enum for membership roles
+- **RLS policies** — row-level security on both new tables (members can read, owners can write)
+- **`profiles.active_company_id`** column — persistent active company selection per user
+- **`company_id` columns** — added to `listings`, `subscriptions`, `seller_storefronts`, `sos_requests` for company-scoped activity
+- **`listings.display_name_override`** column — optional per-listing display name override
+- **Company server actions** — `getUserCompanies`, `getCompanyBySlug`, `getCompanyById`, `getCompanyWithMembers`, `createCompany`, `updateCompany`, `removeMember` in `src/app/actions/company.ts`
+- **Company context actions** — `switchActiveCompany`, `getActiveCompanyId` (cookie-first, DB fallback) in `src/app/actions/company-context.ts`
+- **`CompanyAvatar`** component — logo with initials fallback
+- **`CompanyContextProvider`** — Zustand hydration from SSR data
+- **`CompanySwitcher`** — header pill variant (desktop) + drawer full-width variant (mobile)
+- **Create Company page** — `/companies/new` with `CreateCompanyForm` client component
+- **Company Settings page** — `/settings/company` with `CompanySettingsForm` client component
+- **Team Members page** — `/settings/company/members` with `MembersList` and remove member action
+- **Company guard in middleware** — redirects users without companies to `/companies/new` (exempt paths: auth, onboarding, API, marketing)
+- **Migration script** — `scripts/migrate-companies.ts` creates companies from `user_business_profiles`, backfills `company_id` on listings/subscriptions/storefronts/sos_requests
+- **`uploadCompanyLogo`** and **`uploadCompanyBanner`** media functions in `src/lib/media.ts`
+- **`getActiveTier`** — company-first subscription tier check with user fallback in `src/app/actions/tier.ts`
+- **Company types** — `CompanyProfile`, `CompanyMembership`, `CompanyWithRole`, `CompanyWithMembers` in `src/types/company.ts`
+
+### Changed
+- **Auth store** — added `activeCompany`, `userCompanies`, `setActiveCompany` (with cookie sync), `setUserCompanies`; cleared on sign out
+- **Main layout** — fetches company data server-side; renders `CompanyContextProvider`; passes company data to mobile nav
+- **Desktop header** — added `CompanySwitcher` (pill variant) + "Company Settings" link in user dropdown
+- **Mobile menu drawer** — replaced subscription badge with `CompanySwitcher` (drawer variant); added "Company Settings" nav link
+- **Dashboard** — shows "Acting as [Company Name]" banner with settings link
+- **Listing detail page** — fetches and passes `company_profiles` to purchase panel and mobile bar
+- **Listing purchase panel** — shows company logo/name as primary seller identity with "Listed by [user]" secondary line
+- **Mobile purchase bar** — passes `company` prop through to purchase panel
+- **Listing creation** — injects `company_id` from active company into both draft and publish inserts
+- **Database types** — regenerated `src/types/database.ts` with all new tables/columns
+
+---
+
 ## [2.2.0] — 2026-03-09 · Mobile Nav Redesign, Admin CSS Isolation, Ocean Palette (Cycle 18)
 
 ### Added

@@ -12,6 +12,7 @@ import {
   LogOut,
   User,
   Settings,
+  Building2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -27,6 +28,7 @@ import {
 import { NotificationDropdown } from '@/components/layout/notification-dropdown'
 import { LanguageSwitcher } from '@/components/layout/language-switcher'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { CompanySwitcher } from '@/components/company/CompanySwitcher'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
 import { useTranslations } from 'next-intl'
@@ -104,6 +106,11 @@ export function Header() {
             />
           </div>
         </form>
+
+        {/* Company Switcher — desktop only */}
+        <div className="hidden md:block">
+          <CompanySwitcher variant="header" />
+        </div>
 
         {/* Right side actions */}
         <div className="ml-auto flex items-center gap-1 sm:gap-2">
@@ -198,6 +205,12 @@ export function Header() {
                 <Link href="/profile" className="font-body">
                   <Settings className="mr-2 size-4" />
                   {t('header.settings')}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/settings/company" className="font-body">
+                  <Building2 className="mr-2 size-4" />
+                  Company Settings
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />

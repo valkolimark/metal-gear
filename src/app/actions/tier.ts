@@ -5,6 +5,47 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { TIER_LIMITS } from '@/lib/constants'
 import type { SubscriptionTier } from '@/lib/constants'
 
+/**
+ * Get the active subscription tier for a company (primary) or user (fallback).
+ * Company-first: checks subscriptions.company_id, falls back to subscriptions.user_id.
+ */
+export async function getActiveTier(
+  userId: string,
+  companyId?: string | null
+): Promise<SubscriptionTier> {
+  const admin = createAdminClient()
+
+  // Try company subscription first
+  if (companyId) {
+    const { data } = await admin
+      .from('subscriptions')
+      .select('tier, status')
+      .eq('company_id', companyId)
+      .eq('status', 'active')
+      .maybeSingle()
+    if (data) return data.tier as SubscriptionTier
+  }
+
+  // Fallback to user subscription (backward compat during migration)
+  const { data } = await admin
+    .from('subscriptions')
+    .select('tier, status')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (data) return data.tier as SubscriptionTier
+
+  // Check profile subscription_tier as final fallback
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', userId)
+    .single()
+
+  return (profile?.subscription_tier ?? 'free') as SubscriptionTier
+}
+
 export async function checkListingLimit() {
   const supabase = await createClient()
   const {

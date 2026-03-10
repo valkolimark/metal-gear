@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { MobileHeader } from './MobileHeader'
 import { MobileBottomNav } from './MobileBottomNav'
 import { MobileMenuDrawer } from './MobileMenuDrawer'
+import type { CompanyWithRole } from '@/types/company'
 
 interface MobileNavClientProps {
   user: { name: string; avatarUrl: string | null; id: string }
@@ -11,6 +12,8 @@ interface MobileNavClientProps {
   unreadMessages: number
   unreadNotifications: number
   hasStorefront: boolean
+  activeCompany: CompanyWithRole | null
+  userCompanies: CompanyWithRole[]
 }
 
 export function MobileNavClient(props: MobileNavClientProps) {

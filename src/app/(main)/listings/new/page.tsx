@@ -370,8 +370,10 @@ export default function CreateListingPage() {
     setSaving(true)
     try {
       const supabase = createClient()
+      const activeCompanyId = useAuthStore.getState().activeCompany?.id ?? null
       const { error } = await supabase.from('listings').insert({
         seller_id: user.id,
+        company_id: activeCompanyId,
         title: form.title || 'Untitled Draft',
         description: form.description,
         category: form.category || 'Other',
@@ -421,10 +423,12 @@ export default function CreateListingPage() {
         ? Math.round(parseFloat(form.price_cents) * 100)
         : null
 
+      const activeCompanyId = useAuthStore.getState().activeCompany?.id ?? null
       const { data: listing, error: listingError } = await supabase
         .from('listings')
         .insert({
           seller_id: user.id,
+          company_id: activeCompanyId,
           title: form.title,
           description: form.description,
           category: form.category,

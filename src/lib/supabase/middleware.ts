@@ -117,5 +117,52 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Company guard: redirect to /companies/new if user has no company membership
+  // Only runs when active_company_id cookie is absent (fast path: cookie present = skip)
+  const companyGuardExempt = [
+    '/companies/new',
+    '/onboarding',
+    '/api/',
+    '/login',
+    '/signup',
+    '/pricing',
+    '/about',
+    '/terms',
+    '/privacy',
+    '/callback',
+    '/forgot-password',
+    '/reset-password',
+  ]
+  const isCompanyExempt = companyGuardExempt.some(p => pathname.startsWith(p))
+
+  if (user && !isCompanyExempt && isProtectedRoute) {
+    const activeCompanyCookie = request.cookies.get('active_company_id')?.value
+    if (!activeCompanyCookie) {
+      try {
+        // Use service role to check company membership (bypasses RLS)
+        const serviceUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+        const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+        if (serviceUrl && serviceKey) {
+          const adminClient = createServerClient<Database>(serviceUrl, serviceKey, {
+            cookies: { getAll: () => [], setAll: () => {} },
+          })
+          const { count } = await adminClient
+            .from('company_memberships')
+            .select('id', { count: 'exact', head: true })
+            .eq('user_id', user.id)
+            .eq('is_active', true)
+
+          if ((count ?? 0) === 0) {
+            const url = request.nextUrl.clone()
+            url.pathname = '/companies/new'
+            return NextResponse.redirect(url)
+          }
+        }
+      } catch {
+        // Fail-open: don't block users if company check fails
+      }
+    }
+  }
+
   return supabaseResponse
 }

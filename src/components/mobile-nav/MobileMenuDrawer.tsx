@@ -18,6 +18,7 @@ import {
   MessageSquare,
   User,
   Store,
+  Building2,
   HelpCircle,
   CreditCard,
   ChevronRight,
@@ -25,7 +26,9 @@ import {
   X,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
+import { CompanySwitcher } from '@/components/company/CompanySwitcher'
 import { useAuthStore } from '@/stores/auth-store'
+import type { CompanyWithRole } from '@/types/company'
 
 interface MobileMenuDrawerProps {
   open: boolean
@@ -35,6 +38,8 @@ interface MobileMenuDrawerProps {
   unreadMessages: number
   unreadNotifications: number
   hasStorefront: boolean
+  activeCompany?: CompanyWithRole | null
+  userCompanies?: CompanyWithRole[]
 }
 
 const TIER_LABELS: Record<string, string> = {
@@ -165,9 +170,9 @@ export function MobileMenuDrawer({
           <X className="size-5" />
         </button>
 
-        {/* A. Profile Card */}
+        {/* A. Profile Card + Company Switcher */}
         <div className="bg-gradient-to-b from-primary/15 to-transparent px-5 pb-5 pt-6">
-          <Link href="/profile" className="flex items-center gap-3">
+          <Link href="/profile" className="flex items-center gap-3 mb-3">
             <div className="flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-muted">
               {user.avatarUrl ? (
                 <Image
@@ -185,14 +190,11 @@ export function MobileMenuDrawer({
               <p className="truncate font-display text-sm font-bold text-foreground">
                 {user.name || 'User'}
               </p>
-              <span
-                className={`mt-0.5 inline-block rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${TIER_COLORS[subscriptionTier]}`}
-              >
-                {TIER_LABELS[subscriptionTier]}
-              </span>
+              <span className="text-xs text-muted-foreground">View personal profile &rarr;</span>
             </div>
             <ChevronRight className="size-4 text-muted-foreground" />
           </Link>
+          <CompanySwitcher variant="drawer" />
         </div>
 
         {/* B. Quick Action Tiles */}
@@ -243,6 +245,7 @@ export function MobileMenuDrawer({
             badge={unreadMessages > 0 ? String(unreadMessages) : undefined}
           />
           <NavRow href="/profile" icon={User} label="Profile & Settings" />
+          <NavRow href="/settings/company" icon={Building2} label="Company Settings" />
           {hasStorefront && (
             <NavRow href={`/sellers/${user.id}`} icon={Store} label="Seller Storefront" />
           )}

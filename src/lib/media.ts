@@ -112,6 +112,26 @@ export async function uploadVerificationDocument(
   return uploadToR2(file, key, contentType)
 }
 
+export async function uploadCompanyLogo(
+  file: Buffer,
+  companyId: string,
+  contentType: string
+): Promise<string> {
+  const ext = extFromContentType(contentType)
+  const key = `companies/${companyId}/logo/${randomUUID()}.${ext}`
+  return uploadToR2(file, key, contentType)
+}
+
+export async function uploadCompanyBanner(
+  file: Buffer,
+  companyId: string,
+  contentType: string
+): Promise<string> {
+  const ext = extFromContentType(contentType)
+  const key = `companies/${companyId}/banner/${randomUUID()}.${ext}`
+  return uploadToR2(file, key, contentType)
+}
+
 export async function deleteMedia(url: string): Promise<void> {
   // Cloudflare Stream URLs
   if (
