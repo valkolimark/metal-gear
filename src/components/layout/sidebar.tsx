@@ -33,47 +33,22 @@ export function Sidebar({
 }: SidebarProps) {
   return (
     <>
-      {/* Mobile/tablet overlay */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 lg:hidden"
-          onClick={onClose}
-        />
-      )}
-
-      {/* Sidebar panel */}
+      {/* Sidebar panel — desktop only, hidden on mobile (use MobileFilterSheet instead) */}
       <aside
         className={cn(
           // Base styles
-          'z-40 flex w-72 shrink-0 flex-col border-border bg-surface',
-          // Mobile/tablet: fixed drawer
-          'fixed inset-y-0 transition-transform duration-200 ease-in-out lg:relative lg:translate-x-0 lg:transition-none',
+          'z-40 hidden w-72 shrink-0 flex-col border-border bg-surface lg:flex',
+          // Desktop: relative positioning
+          'lg:relative',
           // Position
           side === 'left'
             ? 'left-0 border-r'
             : 'right-0 border-l',
-          // Visibility
-          open
-            ? 'translate-x-0'
-            : side === 'left'
-              ? '-translate-x-full'
-              : 'translate-x-full',
           // Desktop: only show when open
           !open && 'lg:hidden',
           className
         )}
       >
-        {/* Sidebar header — mobile only */}
-        {title && (
-          <div className="flex h-14 items-center justify-between border-b border-border px-4 lg:hidden">
-            <span className="font-display text-sm font-semibold text-foreground">
-              {title}
-            </span>
-            <Button variant="ghost" size="icon-sm" onClick={onClose}>
-              <X className="size-4" />
-            </Button>
-          </div>
-        )}
 
         {/* Desktop header with collapse */}
         {title && (

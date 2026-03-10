@@ -549,7 +549,7 @@ export default function AdminListingsPage() {
                             selectedIds.size === listings.length
                           }
                           onChange={toggleSelectAll}
-                          className="size-4 rounded border-white/20 bg-transparent accent-[#FF6B2B]"
+                          className="size-4 rounded border-white/20 bg-transparent accent-primary"
                         />
                       </th>
                       <th className="px-3 py-3 text-left font-body text-xs font-medium text-muted-foreground">
@@ -614,7 +614,7 @@ export default function AdminListingsPage() {
                               type="checkbox"
                               checked={selectedIds.has(listing.id)}
                               onChange={() => toggleSelect(listing.id)}
-                              className="size-4 rounded border-white/20 bg-transparent accent-[#FF6B2B]"
+                              className="size-4 rounded border-white/20 bg-transparent accent-primary"
                             />
                           </td>
 
@@ -633,7 +633,7 @@ export default function AdminListingsPage() {
                               </span>
                             )}
                             {listing.admin_boost > 0 && (
-                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] text-[#3A8FD4]">
+                              <span className="ml-1.5 inline-flex items-center gap-0.5 text-[10px] text-primary">
                                 <Zap className="size-3" />
                                 {listing.admin_boost}
                               </span>

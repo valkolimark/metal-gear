@@ -59,6 +59,7 @@ import {
 import { getConditionReportsForListings } from '@/app/actions/condition-reports'
 import { DynamicListingMap } from '@/components/map/dynamic-map'
 import { ConversationalSearch } from '@/components/search/ConversationalSearch'
+import { MobileFilterSheet } from './components/MobileFilterSheet'
 import { usePullToRefresh } from '@/hooks/use-pull-to-refresh'
 import { PullToRefreshIndicator } from '@/components/ui/pull-to-refresh'
 import type { Tables } from '@/types/database'
@@ -807,6 +808,20 @@ function SearchContent() {
           </form>
         )}
 
+        {/* Mobile filter sheet */}
+        <MobileFilterSheet
+          category={category}
+          industry={industry}
+          condition={condition}
+          priceMin={priceMin}
+          priceMax={priceMax}
+          radius={radius}
+          activeFilterCount={activeFilterCount}
+          resultCount={totalCount}
+          onUpdateParams={updateParams}
+          onClearFilters={clearFilters}
+        />
+
         {/* Toolbar */}
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div className="flex items-center gap-2">
@@ -815,7 +830,7 @@ function SearchContent() {
                 variant="outline"
                 size="sm"
                 onClick={() => setFiltersOpen(true)}
-                className="font-body"
+                className="hidden font-body lg:inline-flex"
               >
                 <SlidersHorizontal className="mr-1 size-3.5" />
                 Filters
@@ -826,7 +841,7 @@ function SearchContent() {
                 )}
               </Button>
             )}
-            <p className="font-body text-sm text-muted-foreground">
+            <p className="hidden font-body text-sm text-muted-foreground lg:block">
               {totalCount} result{totalCount !== 1 ? 's' : ''}
               {query && (
                 <>
@@ -916,7 +931,7 @@ function SearchContent() {
             />
           </div>
         ) : viewMode === 'grid' ? (
-          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {listings.map((listing) => (
               <div key={listing.id} className="relative">
                 <Link href={`/listings/${listing.id}`}>

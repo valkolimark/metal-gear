@@ -185,7 +185,7 @@ export function ListingPurchasePanel({
               </div>
               <div className="h-1.5 w-full rounded-full bg-zinc-200 dark:bg-zinc-800">
                 <div
-                  className="h-1.5 rounded-full bg-[#FF6B2B]"
+                  className="h-1.5 rounded-full bg-primary"
                   style={{ width: `${listing.listing_quality_score}%` }}
                 />
               </div>
@@ -221,7 +221,7 @@ export function ListingPurchasePanel({
             <>
               <Button
                 onClick={handleMakeOffer}
-                className="w-full bg-[#FF6B2B] hover:bg-[#e55e25] font-body text-white"
+                className="w-full bg-primary hover:bg-primary/90 font-body text-white"
               >
                 <DollarSign className="mr-2 size-4" />
                 Make an Offer
@@ -229,7 +229,7 @@ export function ListingPurchasePanel({
               <Button
                 onClick={handleContact}
                 variant="outline"
-                className="w-full border-[#3A8FD4] text-[#3A8FD4] hover:bg-[#3A8FD4]/10 font-body"
+                className="w-full border-primary text-primary hover:bg-primary/10 font-body"
                 disabled={contacting}
               >
                 {contacting ? (
@@ -304,7 +304,7 @@ export function ListingPurchasePanel({
             <Clock className="size-3" />
             Responds in ~2 hours
           </div>
-          <Button asChild variant="link" className="mt-1 h-auto p-0 font-body text-xs text-[#3A8FD4]">
+          <Button asChild variant="link" className="mt-1 h-auto p-0 font-body text-xs text-primary">
             <Link href={`/sellers/${seller.id}`}>
               View Storefront &rarr;
             </Link>

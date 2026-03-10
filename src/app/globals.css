@@ -12,102 +12,111 @@
  * under [data-section="admin"]. Do not add admin-specific tokens here.
  */
 
-/* ── Light Mode (default) ── */
+/* ── Light Mode — Facebook-inspired ── */
 :root {
   --radius: 0.625rem;
 
-  /* Metal Gear Core Palette */
-  --mg-primary: #FF6B2B;
-  --mg-primary-hover: #e55e25;
-  --mg-secondary: #3A8FD4;
-  --mg-secondary-hover: #327bb8;
-
-  --background: #FAFAFA;
-  --foreground: #18181B;
+  /* Backgrounds */
+  --background: #F0F2F5;
+  --foreground: #050505;
 
   --card: #FFFFFF;
-  --card-foreground: #18181B;
+  --card-foreground: #050505;
 
   --popover: #FFFFFF;
-  --popover-foreground: #18181B;
+  --popover-foreground: #050505;
 
-  --primary: #FF6B2B;
+  /* Brand — Facebook blue */
+  --primary: #1877F2;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #3A8FD4;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #E7F3FF;
+  --secondary-foreground: #1877F2;
 
-  --muted: #F4F4F5;
-  --muted-foreground: #71717A;
+  /* Text */
+  --muted: #F0F2F5;
+  --muted-foreground: #65676B;
 
-  --accent: #F4F4F5;
-  --accent-foreground: #18181B;
+  --accent: #E7F3FF;
+  --accent-foreground: #1877F2;
 
-  --destructive: #EF4444;
+  --destructive: #FA3E3E;
 
-  --border: #E4E4E7;
-  --input: #E4E4E7;
-  --ring: #FF6B2B;
+  --border: #CED0D4;
+  --input: #FFFFFF;
+  --ring: #1877F2;
 
-  --chart-1: #FF6B2B;
-  --chart-2: #3A8FD4;
-  --chart-3: #22C55E;
-  --chart-4: #EAB308;
+  /* Status */
+  --success: #31A24C;
+  --warning: #F7B928;
+  --info: #1877F2;
+
+  --chart-1: #1877F2;
+  --chart-2: #42B72A;
+  --chart-3: #F7B928;
+  --chart-4: #FA3E3E;
   --chart-5: #A855F7;
 
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #18181B;
-  --sidebar-primary: #FF6B2B;
+  --sidebar-foreground: #050505;
+  --sidebar-primary: #1877F2;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F4F4F5;
-  --sidebar-accent-foreground: #18181B;
-  --sidebar-border: #E4E4E7;
-  --sidebar-ring: #FF6B2B;
+  --sidebar-accent: #E7F3FF;
+  --sidebar-accent-foreground: #050505;
+  --sidebar-border: #CED0D4;
+  --sidebar-ring: #1877F2;
 
-  --surface: #F4F4F5;
-  --primary-hover: #e55e25;
-  --secondary-hover: #327bb8;
+  --surface: #F0F2F5;
+  --primary-hover: #1668D9;
+  --secondary-hover: #D4EAFF;
 }
 
-/* ── Dark Mode ── */
+/* ── Dark Mode — Facebook dark theme ── */
 .dark {
-  --background: #0A0A0F;
-  --foreground: #E4E4E7;
+  /* Layered charcoal system */
+  --background: #18191A;
+  --foreground: #E4E6EB;
 
-  --card: #1C1C24;
-  --card-foreground: #E4E4E7;
+  --card: #242526;
+  --card-foreground: #E4E6EB;
 
-  --popover: #14141A;
-  --popover-foreground: #E4E4E7;
+  --popover: #3A3B3C;
+  --popover-foreground: #E4E6EB;
 
-  --primary: #FF6B2B;
+  /* Brand — same blue on dark */
+  --primary: #1877F2;
   --primary-foreground: #FFFFFF;
 
-  --secondary: #3A8FD4;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #3A3B3C;
+  --secondary-foreground: #E4E6EB;
 
-  --muted: #27272A;
-  --muted-foreground: #A1A1AA;
+  --muted: #3A3B3C;
+  --muted-foreground: #B0B3B8;
 
-  --accent: #1C1C24;
-  --accent-foreground: #E4E4E7;
+  --accent: #3A3B3C;
+  --accent-foreground: #E4E6EB;
 
-  --destructive: #EF4444;
+  --destructive: #FA3E3E;
 
-  --border: #27272A;
-  --input: #27272A;
-  --ring: #FF6B2B;
+  --border: #3A3B3C;
+  --input: #3A3B3C;
+  --ring: #1877F2;
 
-  --sidebar: #14141A;
-  --sidebar-foreground: #E4E4E7;
-  --sidebar-primary: #FF6B2B;
+  /* Status */
+  --success: #31A24C;
+  --warning: #F7B928;
+  --info: #1877F2;
+
+  --sidebar: #242526;
+  --sidebar-foreground: #E4E6EB;
+  --sidebar-primary: #1877F2;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #1C1C24;
-  --sidebar-accent-foreground: #E4E4E7;
-  --sidebar-border: #27272A;
-  --sidebar-ring: #FF6B2B;
+  --sidebar-accent: #3A3B3C;
+  --sidebar-accent-foreground: #E4E6EB;
+  --sidebar-border: #3A3B3C;
+  --sidebar-ring: #1877F2;
 
-  --surface: #14141A;
+  --surface: #242526;
 }
 
 @theme inline {
@@ -164,6 +173,10 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
   }
   body {
     @apply bg-background text-foreground;

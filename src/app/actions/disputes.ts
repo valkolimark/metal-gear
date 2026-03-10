@@ -105,13 +105,13 @@ export async function openDispute(
       to: sellerAuth.user.email,
       subject: `Dispute Opened: ${listing.title}`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#0A0A0F;color:#ccc;">
-        <h2 style="color:#FF6B2B;">Metal Gear</h2>
+        <h2 style="color:#1877F2;">Metal Gear</h2>
         <p>Hi ${name},</p>
         <p>A dispute has been opened for <strong style="color:#fff;">${listing.title}</strong>.</p>
         <p><strong>Reason:</strong> ${DISPUTE_REASONS[reason] || reason}</p>
         <p><strong>Details:</strong> ${description}</p>
         <p>Please respond with your side of the story and any supporting evidence.</p>
-        <a href="${APP_URL}/transactions/${transactionId}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View & Respond</a>
+        <a href="${APP_URL}/transactions/${transactionId}" style="display:inline-block;background:#1877F2;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View & Respond</a>
       </div>`,
     })
   }
@@ -187,10 +187,10 @@ export async function respondToDispute(
       to: buyerAuth.user.email,
       subject: `Seller Response: ${listing.title} Dispute`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#0A0A0F;color:#ccc;">
-        <h2 style="color:#FF6B2B;">Metal Gear</h2>
+        <h2 style="color:#1877F2;">Metal Gear</h2>
         <p>Hi ${name},</p>
         <p>The seller has responded to your dispute for <strong style="color:#fff;">${listing.title}</strong>.</p>
-        <a href="${APP_URL}/transactions/${dispute.transaction_id}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View Response</a>
+        <a href="${APP_URL}/transactions/${dispute.transaction_id}" style="display:inline-block;background:#1877F2;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View Response</a>
       </div>`,
     })
   }
@@ -318,11 +318,11 @@ export async function resolveDispute(
         to: partyAuth.user.email,
         subject: `Dispute Resolved: ${listing.title}`,
         html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#0A0A0F;color:#ccc;">
-          <h2 style="color:#FF6B2B;">Metal Gear</h2>
+          <h2 style="color:#1877F2;">Metal Gear</h2>
           <p>Hi ${name},</p>
           <p>The dispute for <strong style="color:#fff;">${listing.title}</strong> has been ${resolutionMsg}</p>
           ${notes ? `<p><strong>Resolution Notes:</strong> ${notes}</p>` : ''}
-          <a href="${APP_URL}/transactions/${transaction.id}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View Transaction</a>
+          <a href="${APP_URL}/transactions/${transaction.id}" style="display:inline-block;background:#1877F2;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View Transaction</a>
         </div>`,
       })
     }

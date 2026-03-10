@@ -67,7 +67,7 @@ export function ListingMap({
       html: `<div style="
         width: 32px;
         height: 32px;
-        background: #FF6B2B;
+        background: var(--primary);
         border: 2px solid #fff;
         border-radius: 50% 50% 50% 0;
         transform: rotate(-45deg);
@@ -108,7 +108,7 @@ export function ListingMap({
       marker.bindPopup(
         `<div style="min-width: 180px; font-family: system-ui, sans-serif;">
           <p style="font-weight: 600; font-size: 13px; margin: 0 0 4px 0; color: #e5e5e5;">${listing.title}</p>
-          <p style="font-size: 16px; font-weight: 700; color: #FF6B2B; margin: 0 0 4px 0;">${price}</p>
+          <p style="font-size: 16px; font-weight: 700; color: var(--primary); margin: 0 0 4px 0;">${price}</p>
           <p style="font-size: 11px; color: #999; margin: 0;">
             ${listing.category} &middot; ${listing.condition.replace('_', ' ')}
           </p>

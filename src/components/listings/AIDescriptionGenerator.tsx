@@ -188,7 +188,7 @@ export function AIDescriptionGenerator({
               </Badge>
             </div>
 
-            <p className="whitespace-pre-wrap rounded-md border border-border bg-[#0A0A0F] p-3 font-body text-sm text-foreground max-h-60 overflow-y-auto">
+            <p className="whitespace-pre-wrap rounded-md border border-border bg-background p-3 font-body text-sm text-foreground max-h-60 overflow-y-auto">
               {result.description}
             </p>
 

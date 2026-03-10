@@ -146,7 +146,7 @@ export default function AdminSettingsPage() {
             onClick={() => setActiveTab(tab.key)}
             className={`font-body rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.key
-                ? 'bg-[#FF6B2B] text-white'
+                ? 'bg-primary text-white'
                 : 'bg-[#0D0D14] text-muted-foreground hover:text-foreground border border-white/5'
             }`}
           >
@@ -557,7 +557,7 @@ function AdminUsersSection() {
               {searchResults.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between rounded-md border border-white/5 bg-[#0A0A0F] px-4 py-3"
+                  className="flex items-center justify-between rounded-md border border-white/5 bg-background px-4 py-3"
                 >
                   <div>
                     <p className="font-body text-sm font-medium text-foreground">
@@ -634,9 +634,9 @@ function PricingSection() {
                       variant={tier.name === 'Free' ? 'secondary' : 'default'}
                       className={
                         tier.name === 'Premium'
-                          ? 'bg-[#3A8FD4] text-white'
+                          ? 'bg-primary text-white'
                           : tier.name === 'Boost'
-                            ? 'bg-[#FF6B2B] text-white'
+                            ? 'bg-primary text-white'
                             : ''
                       }
                     >
@@ -738,7 +738,7 @@ function IntegrationsSection() {
           {integrations.map((integration) => (
             <div
               key={integration.name}
-              className="flex items-center justify-between rounded-md border border-white/5 bg-[#0A0A0F] px-4 py-3"
+              className="flex items-center justify-between rounded-md border border-white/5 bg-background px-4 py-3"
             >
               <div className="flex items-center gap-3">
                 {integration.status === 'ok' && (
@@ -1050,7 +1050,7 @@ function AuditLogSection() {
                       <td className="py-3">
                         {log.metadata && Object.keys(log.metadata).length > 0 && (
                           <button
-                            className="font-body text-xs text-[#3A8FD4] hover:underline"
+                            className="font-body text-xs text-primary hover:underline"
                             onClick={() =>
                               setExpandedRow(expandedRow === log.id ? null : log.id)
                             }
@@ -1069,7 +1069,7 @@ function AuditLogSection() {
                       Object.keys(log.metadata).length > 0 && (
                         <tr key={`${log.id}-meta`} className="border-b border-white/5">
                           <td colSpan={5} className="px-4 py-3">
-                            <pre className="overflow-x-auto rounded bg-[#0A0A0F] p-3 font-mono text-xs text-muted-foreground">
+                            <pre className="overflow-x-auto rounded bg-background p-3 font-mono text-xs text-muted-foreground">
                               {JSON.stringify(log.metadata, null, 2)}
                             </pre>
                           </td>

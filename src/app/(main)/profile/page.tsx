@@ -270,7 +270,7 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">
             Profile
@@ -484,8 +484,8 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="min-w-0">
                 <p className="font-body font-medium text-foreground">
                   {TIER_LABELS[profile?.subscription_tier ?? 'free']} Plan
                 </p>
@@ -555,9 +555,9 @@ export default function ProfilePage() {
             ].map((item) => (
               <div
                 key={item.key}
-                className="flex items-center justify-between"
+                className="flex items-center justify-between gap-3"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-body text-sm font-medium text-foreground">
                     {item.label}
                   </p>
@@ -624,7 +624,7 @@ export default function ProfilePage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <p className="font-body text-sm text-muted-foreground">
                 Customize your public seller storefront.
               </p>
@@ -824,7 +824,7 @@ export default function ProfilePage() {
             {referralData && (
               <>
                 {/* Stats */}
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div className="rounded-lg border border-border p-3 text-center">
                     <p className="font-display text-xl font-bold text-foreground">{referralData.totalReferrals}</p>
                     <p className="font-body text-[10px] text-muted-foreground">Referrals</p>
@@ -844,11 +844,11 @@ export default function ProfilePage() {
                 {/* Referral Link */}
                 <div className="space-y-2">
                   <Label className="font-body">Your Referral Link</Label>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 min-w-0">
                     <Input
                       readOnly
                       value={referralData.referralLink}
-                      className="font-body text-sm"
+                      className="font-body text-sm min-w-0"
                     />
                     <Button
                       type="button"

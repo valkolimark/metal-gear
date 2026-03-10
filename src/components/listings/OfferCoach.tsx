@@ -109,12 +109,12 @@ export function OfferCoach({
   }
 
   return (
-    <Card className="border-[#3A8FD4]/30 bg-card/50">
+    <Card className="border-primary/30 bg-card/50">
       <CardContent className="space-y-4 p-4">
         {/* Header */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Handshake className="size-5 text-[#3A8FD4]" />
+            <Handshake className="size-5 text-primary" />
             <h4 className="font-display text-sm font-semibold">Private Deal Coach</h4>
           </div>
           <Badge variant="outline" className="font-body text-[10px] text-muted-foreground">
@@ -125,7 +125,7 @@ export function OfferCoach({
 
         {loading && (
           <div className="flex items-center gap-2 py-4">
-            <Loader2 className="size-4 animate-spin text-[#3A8FD4]" />
+            <Loader2 className="size-4 animate-spin text-primary" />
             <span className="font-body text-sm text-muted-foreground">Analyzing deal...</span>
           </div>
         )}
@@ -161,9 +161,9 @@ export function OfferCoach({
             <p className="font-body text-sm text-foreground/80">{result.assessment}</p>
 
             {/* Recommendation */}
-            <div className="rounded border border-[#3A8FD4]/20 bg-[#3A8FD4]/5 p-3">
+            <div className="rounded border border-primary/20 bg-primary/5 p-3">
               <div className="flex items-center gap-2">
-                <span className="font-body text-xs text-[#3A8FD4]">Recommendation</span>
+                <span className="font-body text-xs text-primary">Recommendation</span>
               </div>
               <p className="mt-1 font-display text-base font-semibold text-foreground">
                 {result.recommendedAction}

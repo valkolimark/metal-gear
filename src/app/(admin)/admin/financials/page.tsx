@@ -234,7 +234,7 @@ export default function AdminFinancialsPage() {
           label="ARPU"
           value={kpis ? formatCents(kpis.arpuCents) : null}
           icon={<DollarSign className="size-4" />}
-          accent="text-[#3A8FD4]"
+          accent="text-primary"
         />
         <KPICard
           label="Churn Rate"
@@ -294,8 +294,8 @@ export default function AdminFinancialsPage() {
                     }) as never}
                   />
                   <Legend wrapperStyle={{ fontSize: '12px', fontFamily: 'Manrope, sans-serif' }} />
-                  <Bar dataKey="subscriptions" stackId="a" fill="#3A8FD4" name="Subscriptions" radius={[0, 0, 0, 0]} />
-                  <Bar dataKey="boosts" stackId="a" fill="#FF6B2B" name="Boosts" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="subscriptions" stackId="a" fill="#1877F2" name="Subscriptions" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="boosts" stackId="a" fill="#1877F2" name="Boosts" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             )}
@@ -325,7 +325,7 @@ export default function AdminFinancialsPage() {
                     label="Premium"
                     count={kpis.premiumCount}
                     total={kpis.totalUsers}
-                    color="bg-[#3A8FD4]"
+                    color="bg-primary"
                   />
                   <DistributionBar
                     label="Boost"

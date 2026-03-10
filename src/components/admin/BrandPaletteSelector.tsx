@@ -29,11 +29,11 @@ const PALETTES: Array<{
   {
     id: 'industrial',
     name: 'Industrial',
-    tagline: 'Combustion orange on deep black. The original Metal Gear identity.',
+    tagline: 'Bold blue on deep black. The Metal Gear identity.',
     dark: {
       bg: '#0A0A0F',
       card: '#111118',
-      primary: '#FF6B2B',
+      primary: '#1877F2',
       secondary: '#3A8FD4',
       text: '#F2F2F2',
       muted: '#555568',
@@ -41,7 +41,7 @@ const PALETTES: Array<{
     light: {
       bg: '#FAFAFA',
       card: '#FFFFFF',
-      primary: '#FF6B2B',
+      primary: '#1877F2',
       secondary: '#3A8FD4',
       text: '#18181B',
       muted: '#71717A',

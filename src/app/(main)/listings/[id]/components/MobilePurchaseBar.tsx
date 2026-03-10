@@ -55,7 +55,7 @@ export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, c
 
         <Sheet>
           <SheetTrigger asChild>
-            <button className="bg-[#FF6B2B] hover:bg-[#e55e25] text-white px-6 py-2.5 rounded-lg font-body font-semibold text-sm transition-colors">
+            <button className="bg-primary hover:bg-primary/90 text-white px-6 py-2.5 rounded-lg font-body font-semibold text-sm transition-colors">
               <DollarSign className="inline-block size-4 mr-1 -mt-0.5" />
               Make Offer
             </button>

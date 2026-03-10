@@ -59,8 +59,8 @@ type AIData = {
 
 // ─── Chart Colors ────────────────────────────────────────────────────
 
-const PRIMARY = '#FF6B2B'
-const SECONDARY = '#3A8FD4'
+const PRIMARY = '#1877F2'
+const SECONDARY = '#1877F2'
 const TERTIARY = '#10b981'
 const PIE_COLORS = [PRIMARY, SECONDARY, TERTIARY, '#f59e0b', '#8b5cf6', '#ec4899', '#06b6d4', '#84cc16']
 
@@ -424,7 +424,7 @@ export default function AdminAnalyticsPage() {
                         dataKey="value"
                         label={((props: { name: string; percent: number }) => `${props.name}: ${(props.percent * 100).toFixed(0)}%`) as never}
                       >
-                        {['#10b981', '#3A8FD4', '#f59e0b', '#FF6B2B', '#ef4444'].map((color, i) => (
+                        {['#10b981', '#1877F2', '#f59e0b', '#1877F2', '#ef4444'].map((color, i) => (
                           <Cell key={i} fill={color} />
                         ))}
                       </Pie>

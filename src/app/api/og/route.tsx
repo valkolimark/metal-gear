@@ -22,7 +22,7 @@ export async function GET(request: Request) {
             color: '#FFFFFF',
           }}
         >
-          <div style={{ fontSize: 64, fontWeight: 700, color: '#FF6B2B', display: 'flex' }}>
+          <div style={{ fontSize: 64, fontWeight: 700, color: '#1877F2', display: 'flex' }}>
             Metal Gear
           </div>
           <div style={{ fontSize: 28, color: '#999', marginTop: 16, display: 'flex' }}>
@@ -56,7 +56,7 @@ export async function GET(request: Request) {
             color: '#FFFFFF',
           }}
         >
-          <div style={{ fontSize: 48, fontWeight: 700, color: '#FF6B2B', display: 'flex' }}>
+          <div style={{ fontSize: 48, fontWeight: 700, color: '#1877F2', display: 'flex' }}>
             Metal Gear
           </div>
           <div style={{ fontSize: 24, color: '#999', marginTop: 12, display: 'flex' }}>
@@ -126,7 +126,7 @@ export async function GET(request: Request) {
           }}
         >
           {/* Brand */}
-          <div style={{ fontSize: 24, fontWeight: 700, color: '#FF6B2B', marginBottom: 24, display: 'flex' }}>
+          <div style={{ fontSize: 24, fontWeight: 700, color: '#1877F2', marginBottom: 24, display: 'flex' }}>
             METAL GEAR
           </div>
 
@@ -152,7 +152,7 @@ export async function GET(request: Request) {
               style={{
                 display: 'flex',
                 backgroundColor: '#1A1A2F',
-                color: '#3A8FD4',
+                color: '#1877F2',
                 padding: '8px 16px',
                 borderRadius: 6,
                 fontSize: 16,
@@ -178,7 +178,7 @@ export async function GET(request: Request) {
           </div>
 
           {/* Price */}
-          <div style={{ fontSize: 42, fontWeight: 700, color: '#FF6B2B', display: 'flex' }}>
+          <div style={{ fontSize: 42, fontWeight: 700, color: '#1877F2', display: 'flex' }}>
             {price}
           </div>
 

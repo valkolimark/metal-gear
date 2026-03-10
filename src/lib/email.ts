@@ -40,7 +40,7 @@ export async function sendEmail({ to, subject, html }: SendEmailOptions) {
 
 // ─── Email Templates ─────────────────────────────────────────
 
-const BRAND_COLOR = '#FF6B2B'
+const BRAND_COLOR = '#1877F2'
 const BG_COLOR = '#0A0A0F'
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'
 

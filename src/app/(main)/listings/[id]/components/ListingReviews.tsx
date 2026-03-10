@@ -162,7 +162,7 @@ export function ListingReviews({ reviews, averageRating, totalReviews, seller }:
           {totalReviews > 5 && (
             <Link
               href={`/sellers/${seller.id}`}
-              className="font-body text-sm text-[#3A8FD4] hover:underline"
+              className="font-body text-sm text-primary hover:underline"
             >
               See all {totalReviews} reviews &rarr;
             </Link>

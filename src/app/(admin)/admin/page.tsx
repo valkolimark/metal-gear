@@ -284,7 +284,7 @@ export default function ControlTowerPage() {
           </CardHeader>
           <CardContent>
             {charts ? (
-              <MiniChart data={charts.signupsByDate} color="#3A8FD4" />
+              <MiniChart data={charts.signupsByDate} color="#1877F2" />
             ) : (
               <div className="h-20 animate-pulse rounded bg-surface" />
             )}

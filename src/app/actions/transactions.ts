@@ -211,11 +211,11 @@ export async function updateTransactionStatus(
       to: recipientAuth.user.email,
       subject: `Transaction Update: ${listing.title}`,
       html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#0A0A0F;color:#ccc;">
-        <h2 style="color:#FF6B2B;">Metal Gear</h2>
+        <h2 style="color:#1877F2;">Metal Gear</h2>
         <p>Hi ${name},</p>
         <p>${statusMessages[newStatus] || `Transaction status: ${newStatus}`}</p>
         <p>Listing: <strong style="color:#fff;">${listing.title}</strong></p>
-        <a href="${APP_URL}/transactions/${transactionId}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View Transaction</a>
+        <a href="${APP_URL}/transactions/${transactionId}" style="display:inline-block;background:#1877F2;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">View Transaction</a>
       </div>`,
     })
   }

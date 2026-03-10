@@ -83,10 +83,10 @@ export function ResponseRanker({ sosRequestId, responseCount }: ResponseRankerPr
   }
 
   return (
-    <Card className="mb-4 border-[#3A8FD4]/20 bg-[#3A8FD4]/5">
+    <Card className="mb-4 border-[#1877F2]/20 bg-[#1877F2]/5">
       <CardContent className="space-y-3 p-4">
         <div className="flex items-center gap-2">
-          <BarChart3 className="size-4 text-[#3A8FD4]" />
+          <BarChart3 className="size-4 text-[#1877F2]" />
           <h4 className="font-display text-sm font-semibold">Best Match</h4>
         </div>
 
@@ -109,7 +109,7 @@ export function ResponseRanker({ sosRequestId, responseCount }: ResponseRankerPr
                 key={r.responseId}
                 className={`rounded border p-2 ${
                   isTop
-                    ? 'border-[#3A8FD4]/30 bg-[#3A8FD4]/10'
+                    ? 'border-[#1877F2]/30 bg-[#1877F2]/10'
                     : hasFlags
                       ? 'border-amber-500/20 bg-amber-500/5'
                       : 'border-border/30 bg-background/30'
@@ -117,7 +117,7 @@ export function ResponseRanker({ sosRequestId, responseCount }: ResponseRankerPr
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    {isTop && <Star className="size-3 text-[#3A8FD4]" />}
+                    {isTop && <Star className="size-3 text-[#1877F2]" />}
                     <span className="font-display text-sm font-semibold">
                       #{r.rank}
                     </span>
@@ -126,7 +126,7 @@ export function ResponseRanker({ sosRequestId, responseCount }: ResponseRankerPr
                     </span>
                   </div>
                   {isTop && (
-                    <Badge className="bg-[#3A8FD4]/20 text-[#3A8FD4] font-body text-[10px]">
+                    <Badge className="bg-[#1877F2]/20 text-[#1877F2] font-body text-[10px]">
                       Best Match
                     </Badge>
                   )}

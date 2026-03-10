@@ -13,7 +13,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Hosting:** Vercel
 
 ## Design System
-- **Theme:** Light/dark mode via `next-themes` (dark default, `enableSystem`); dark: `#0A0A0F` bg; light: `#FAFAFA` bg; `#FF6B2B` primary orange, `#3A8FD4` steel blue; `ThemeToggle` in header + admin header
+- **Theme:** Light/dark mode via `next-themes` (dark default, `enableSystem`); Facebook palette: dark `#18191A`/`#242526`/`#3A3B3C` bg layers, light `#F0F2F5`/`#FFFFFF` bg; `#1877F2` primary blue; SOS stays orange `#FF6B2B`; `ThemeToggle` in header + admin header
 - **Brand palettes:** Industrial (default) and Ocean (navy/teal/cyan); `data-palette` attribute on `<html>`; switchable from Admin Settings → Brand Palette; persisted in `system_config` + cookie
 - **Admin CSS isolation:** `src/app/(admin)/admin.css` with scoped `[data-section="admin"]` tokens; sidebar always dark
 - **Mobile nav:** `MobileHeader` (52px) + `MobileBottomNav` (5 tabs, raised SOS) + `MobileMenuDrawer` (slide from right) via `MobileNavClient` wrapper; `md:hidden`

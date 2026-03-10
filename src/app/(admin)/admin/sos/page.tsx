@@ -770,7 +770,7 @@ export default function AdminSOSPage() {
                       <div>
                         <Link
                           href={`/admin/users/${selectedSOS.requester.id}`}
-                          className="font-body text-sm font-medium text-foreground hover:text-[#FF6B2B]"
+                          className="font-body text-sm font-medium text-foreground hover:text-primary"
                         >
                           {selectedSOS.requester.full_name || 'Unknown'}
                         </Link>
@@ -828,7 +828,7 @@ export default function AdminSOSPage() {
                             {(resp.price_estimate || resp.lead_time || resp.condition) && (
                               <div className="mt-2 flex flex-wrap gap-2">
                                 {resp.price_estimate && (
-                                  <Badge className="border-0 bg-[#3A8FD4]/20 text-[#3A8FD4] font-body text-[10px]">
+                                  <Badge className="border-0 bg-primary/20 text-primary font-body text-[10px]">
                                     Est. {resp.price_estimate}
                                   </Badge>
                                 )}

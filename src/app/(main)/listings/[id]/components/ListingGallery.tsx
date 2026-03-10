@@ -100,7 +100,7 @@ export function ListingGallery({ images, videos, title }: Props) {
               }}
               className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
                 active === i
-                  ? 'border-[#FF6B2B]'
+                  ? 'border-primary'
                   : 'border-transparent hover:border-zinc-600 dark:hover:border-zinc-600'
               }`}
             >
@@ -213,7 +213,7 @@ export function ListingGallery({ images, videos, title }: Props) {
                 key={i}
                 onClick={() => setActive(i)}
                 className={`h-2 rounded-full transition-all duration-200 ${
-                  active === i ? 'bg-[#FF6B2B] w-4' : 'bg-zinc-600 dark:bg-zinc-600 bg-zinc-300 w-2'
+                  active === i ? 'bg-primary w-4' : 'bg-zinc-600 dark:bg-zinc-600 bg-zinc-300 w-2'
                 }`}
               />
             ))}

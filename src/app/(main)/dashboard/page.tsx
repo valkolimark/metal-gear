@@ -315,7 +315,7 @@ export default function DashboardPage() {
                 This month vs last month (${(seller.lastMonthRevenue / 100).toLocaleString()})
               </p>
               <Separator />
-              <div className="grid grid-cols-3 gap-4 text-center">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
                 <div>
                   <p className="font-display text-lg font-bold text-foreground">{seller.weeklyViews}</p>
                   <p className="font-body text-[10px] text-muted-foreground">Views/week</p>
@@ -566,7 +566,7 @@ export default function DashboardPage() {
       {analytics && (analytics.topListings.length > 0 || analytics.viewsByDay.some(d => d.views > 0)) && (
         <CollapsibleWidget widgetKey="performance" title="Listing Performance" icon={BarChart3}>
           <div className="space-y-6">
-            <div className="grid grid-cols-3 gap-4 text-center">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
               <div>
                 <p className="font-display text-2xl font-bold text-foreground">{analytics.totalViews.toLocaleString()}</p>
                 <p className="font-body text-xs text-muted-foreground">Total Views</p>
@@ -761,7 +761,7 @@ function StatCard({
 function ViewsChart({ data }: { data: { date: string; views: number }[] }) {
   const maxViews = Math.max(...data.map((d) => d.views), 1)
   return (
-    <div className="flex h-32 items-end gap-[2px]">
+    <div className="flex h-32 items-end gap-[2px] overflow-x-auto min-w-0">
       {data.map((day) => {
         const height = (day.views / maxViews) * 100
         const date = new Date(day.date + 'T12:00:00')

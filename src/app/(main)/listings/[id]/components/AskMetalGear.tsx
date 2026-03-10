@@ -146,7 +146,7 @@ export function AskMetalGear({ listing, currentUser }: Props) {
         {/* Header */}
         <div className="border-b border-zinc-200 dark:border-zinc-700/60 px-4 py-3">
           <h2 className="flex items-center gap-2 font-display text-lg font-semibold text-foreground">
-            <Settings className="size-5 text-[#3A8FD4]" />
+            <Settings className="size-5 text-primary" />
             Ask Metal Gear
           </h2>
           <p className="font-body text-xs text-muted-foreground">
@@ -161,7 +161,7 @@ export function AskMetalGear({ listing, currentUser }: Props) {
               <button
                 key={q}
                 onClick={() => handleSubmit(q)}
-                className="border border-zinc-300 dark:border-zinc-600 rounded-full px-4 py-1.5 font-body text-sm text-foreground hover:border-[#3A8FD4] hover:text-[#3A8FD4] transition-colors cursor-pointer"
+                className="border border-zinc-300 dark:border-zinc-600 rounded-full px-4 py-1.5 font-body text-sm text-foreground hover:border-primary hover:text-primary transition-colors cursor-pointer"
               >
                 {q}
               </button>
@@ -178,14 +178,14 @@ export function AskMetalGear({ listing, currentUser }: Props) {
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.role === 'ai' && (
-                  <div className="mr-2 mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-[#3A8FD4]/20">
-                    <Settings className="size-3 text-[#3A8FD4]" />
+                  <div className="mr-2 mt-1 flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                    <Settings className="size-3 text-primary" />
                   </div>
                 )}
                 <div
                   className={`max-w-[80%] rounded-xl px-4 py-2 font-body text-sm ${
                     msg.role === 'user'
-                      ? 'bg-[#FF6B2B]/20 border border-[#FF6B2B]/30 text-foreground'
+                      ? 'bg-primary/20 border border-primary/30 text-foreground'
                       : 'bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-foreground'
                   }`}
                 >
@@ -214,14 +214,14 @@ export function AskMetalGear({ listing, currentUser }: Props) {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
             placeholder="Ask a question about this listing..."
-            className="flex-1 font-body text-sm focus-visible:ring-[#FF6B2B]"
+            className="flex-1 font-body text-sm focus-visible:ring-primary"
             disabled={loading}
           />
           <Button
             onClick={() => handleSubmit()}
             disabled={loading || !input.trim()}
             size="sm"
-            className="bg-[#FF6B2B] hover:bg-[#e55e25] text-white px-3"
+            className="bg-primary hover:bg-primary/90 text-white px-3"
           >
             <Send className="size-4" />
           </Button>

@@ -155,7 +155,7 @@ export default async function SellerStorefrontPage({
               <div
                 className="h-48 w-full sm:h-56 lg:h-64"
                 style={{
-                  background: `linear-gradient(135deg, ${storefront?.theme_color || '#FF6B2B'}22 0%, #0A0A0F 100%)`,
+                  background: `linear-gradient(135deg, ${storefront?.theme_color || 'var(--primary)'}22 0%, var(--background) 100%)`,
                 }}
               />
             )}
@@ -178,7 +178,7 @@ export default async function SellerStorefrontPage({
         {/* Profile Info */}
         <div className="pt-14">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
                 <h1 className="font-display text-3xl font-bold text-foreground">
                   {name}
@@ -240,7 +240,7 @@ export default async function SellerStorefrontPage({
         </div>
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatBox icon={Package} label="Listings" value={stats.totalListings} />
           <StatBox
             icon={Star}
@@ -279,7 +279,7 @@ export default async function SellerStorefrontPage({
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {featuredListings.map((listing) => (
                   <ListingCard key={listing.id} listing={listing} featured />
                 ))}
@@ -402,7 +402,7 @@ export default async function SellerStorefrontPage({
           </CardHeader>
           <CardContent>
             {regularListings.length > 0 || featuredListings.length > 0 ? (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {(featuredListings.length > 0 ? regularListings : listings).map(
                   (listing) => (
                     <ListingCard key={listing.id} listing={listing} />

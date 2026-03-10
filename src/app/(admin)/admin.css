@@ -15,37 +15,37 @@
    ---------------------------------------------------------- */
 [data-section="admin"],
 html.dark [data-section="admin"] {
-  --background: #090910;
-  --card: #131317;
-  --sidebar-bg: #0e0e14;
-  --sidebar-border: #1d1d22;
-  --popover: #131317;
+  --background: #18191A;
+  --card: #242526;
+  --sidebar-bg: #18191A;
+  --sidebar-border: #3A3B3C;
+  --popover: #3A3B3C;
 
-  --foreground: #f2f2f2;
-  --card-foreground: #ebebeb;
-  --popover-foreground: #ebebeb;
-  --muted: #222226;
-  --muted-foreground: #86868e;
+  --foreground: #E4E6EB;
+  --card-foreground: #E4E6EB;
+  --popover-foreground: #E4E6EB;
+  --muted: #3A3B3C;
+  --muted-foreground: #B0B3B8;
 
-  --primary: #FF6B2B;
+  --primary: #1877F2;
   --primary-foreground: #FFFFFF;
-  --secondary: #3A8FD4;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #3A3B3C;
+  --secondary-foreground: #E4E6EB;
 
-  --border: #242428;
-  --input: #1d1d22;
-  --ring: #FF6B2B;
-  --accent: #222226;
-  --accent-foreground: #ebebeb;
-  --destructive: #EF4444;
+  --border: #3A3B3C;
+  --input: #3A3B3C;
+  --ring: #1877F2;
+  --accent: #3A3B3C;
+  --accent-foreground: #E4E6EB;
+  --destructive: #FA3E3E;
   --destructive-foreground: #FFFFFF;
 
   --admin-sidebar-width: 240px;
   --admin-header-height: 56px;
-  --admin-stat-card-bg: #16161c;
-  --admin-table-header-bg: #16161c;
-  --admin-table-stripe: #0e0f14;
-  --admin-badge-bg: #28282e;
+  --admin-stat-card-bg: #242526;
+  --admin-table-header-bg: #242526;
+  --admin-table-stripe: #18191A;
+  --admin-badge-bg: #3A3B3C;
 
   --radius: 0.5rem;
 }
@@ -57,35 +57,35 @@ html.dark [data-section="admin"] {
    to preserve the industrial, professional character.
    ---------------------------------------------------------- */
 html:not(.dark) [data-section="admin"] {
-  --background: #E8EAF0;
+  --background: #F0F2F5;
   --card: #FFFFFF;
-  --sidebar-bg: #2B313A;
-  --sidebar-border: #3C4452;
+  --sidebar-bg: #242526;
+  --sidebar-border: #3A3B3C;
   --popover: #FFFFFF;
 
-  --foreground: #1B1F26;
-  --card-foreground: #222730;
-  --popover-foreground: #222730;
-  --muted: #DCDEE4;
-  --muted-foreground: #6A6F79;
+  --foreground: #050505;
+  --card-foreground: #050505;
+  --popover-foreground: #050505;
+  --muted: #E7F3FF;
+  --muted-foreground: #65676B;
 
-  --primary: #FF6B2B;
+  --primary: #1877F2;
   --primary-foreground: #FFFFFF;
-  --secondary: #3A8FD4;
-  --secondary-foreground: #FFFFFF;
+  --secondary: #E7F3FF;
+  --secondary-foreground: #1877F2;
 
-  --border: #C4C8D2;
-  --input: #DCDFE6;
-  --ring: #FF6B2B;
-  --accent: #DCDEE4;
-  --accent-foreground: #1B1F26;
-  --destructive: #EF4444;
+  --border: #CED0D4;
+  --input: #FFFFFF;
+  --ring: #1877F2;
+  --accent: #E7F3FF;
+  --accent-foreground: #050505;
+  --destructive: #FA3E3E;
   --destructive-foreground: #FFFFFF;
 
-  --admin-stat-card-bg: #F2F3F6;
-  --admin-table-header-bg: #EEEFF3;
-  --admin-table-stripe: #F7F7F9;
-  --admin-badge-bg: #DCDEE4;
+  --admin-stat-card-bg: #F0F2F5;
+  --admin-table-header-bg: #F0F2F5;
+  --admin-table-stripe: #F8F9FA;
+  --admin-badge-bg: #E7F3FF;
 
   --radius: 0.5rem;
 }
@@ -100,7 +100,7 @@ html:not(.dark) [data-section="admin"] {
   border-right: 1px solid var(--sidebar-border);
   --sidebar-fg: #e0e0e0;
   --sidebar-muted: #8c8c8c;
-  --sidebar-active-bg: #3d1a0a;
+  --sidebar-active-bg: #1877F2;
   color: var(--sidebar-fg);
 }
 

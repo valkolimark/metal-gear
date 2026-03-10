@@ -187,7 +187,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
     return (
       <Card className="border-border bg-card">
         <CardContent className="flex flex-col items-center gap-5 p-8 text-center">
-          <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-[#FF6B2B]/20 to-[#3A8FD4]/20">
+          <div className="flex size-14 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10">
             <Camera className="size-7 text-primary" />
           </div>
           <div>
@@ -417,7 +417,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
           <div className="w-full max-w-sm">
             <div className="h-2 overflow-hidden rounded-full bg-surface">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[#FF6B2B] to-[#3A8FD4] transition-all duration-300"
+                className="h-full rounded-full bg-gradient-to-r from-primary to-primary/70 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               />
             </div>

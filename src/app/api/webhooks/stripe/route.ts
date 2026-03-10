@@ -368,11 +368,11 @@ async function handlePaymentIntentFailed(
         to: buyerAuth.user.email,
         subject: `Payment Failed: ${listingTitle}`,
         html: `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:20px;background:#0A0A0F;color:#ccc;">
-          <h2 style="color:#FF6B2B;">Metal Gear</h2>
+          <h2 style="color:#1877F2;">Metal Gear</h2>
           <p>Hi ${name},</p>
           <p>Your payment for <strong style="color:#fff;">${listingTitle}</strong> could not be processed.</p>
           <p>Please try again with a different payment method.</p>
-          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'}/transactions/${transactionId}" style="display:inline-block;background:#FF6B2B;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">Retry Payment</a>
+          <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'}/transactions/${transactionId}" style="display:inline-block;background:#1877F2;color:#fff;padding:10px 24px;border-radius:6px;text-decoration:none;margin-top:12px;">Retry Payment</a>
         </div>`,
       })
     }

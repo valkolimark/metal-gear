@@ -99,7 +99,7 @@ export function HelpButton() {
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 right-4 z-50 flex size-12 items-center justify-center rounded-full bg-[#3A8FD4] text-white shadow-lg transition-all duration-200 hover:bg-[#2a7fc4] hover:scale-110 active:scale-95 lg:bottom-6 lg:right-6"
+          className="fixed bottom-20 right-4 z-50 flex size-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all duration-200 hover:bg-primary/90 hover:scale-110 active:scale-95 lg:bottom-6 lg:right-6"
           aria-label="Get help"
         >
           <MessageCircle className="size-5" />
@@ -171,7 +171,7 @@ function HelpPanel({
       <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-700 px-4 py-3">
         <div>
           <h3 className="flex items-center gap-2 font-display text-sm font-semibold text-foreground">
-            <Settings className="size-4 text-[#3A8FD4]" />
+            <Settings className="size-4 text-primary" />
             Metal Gear Help
           </h3>
           <p className="font-body text-[10px] text-muted-foreground">
@@ -197,7 +197,7 @@ function HelpPanel({
               <button
                 key={q}
                 onClick={() => onSubmit(q)}
-                className="block w-full rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-left font-body text-sm text-foreground hover:border-[#3A8FD4] hover:text-[#3A8FD4] transition-colors"
+                className="block w-full rounded-lg border border-zinc-200 dark:border-zinc-700 px-3 py-2 text-left font-body text-sm text-foreground hover:border-primary hover:text-primary transition-colors"
               >
                 {q}
               </button>
@@ -210,14 +210,14 @@ function HelpPanel({
               className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               {msg.role === 'ai' && (
-                <div className="mr-1.5 mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-[#3A8FD4]/20">
-                  <Settings className="size-2.5 text-[#3A8FD4]" />
+                <div className="mr-1.5 mt-1 flex size-5 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                  <Settings className="size-2.5 text-primary" />
                 </div>
               )}
               <div
                 className={`max-w-[85%] rounded-xl px-3 py-2 font-body text-xs ${
                   msg.role === 'user'
-                    ? 'bg-[#FF6B2B]/20 border border-[#FF6B2B]/30 text-foreground'
+                    ? 'bg-primary/20 border border-primary/30 text-foreground'
                     : 'bg-zinc-100 dark:bg-zinc-800/60 border border-zinc-200 dark:border-zinc-700 text-foreground'
                 }`}
               >
@@ -244,14 +244,14 @@ function HelpPanel({
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && onSubmit()}
           placeholder="Ask anything..."
-          className="flex-1 h-8 font-body text-xs focus-visible:ring-[#3A8FD4]"
+          className="flex-1 h-8 font-body text-xs focus-visible:ring-primary"
           disabled={loading}
         />
         <Button
           onClick={() => onSubmit()}
           disabled={loading || !input.trim()}
           size="sm"
-          className="h-8 w-8 p-0 bg-[#3A8FD4] hover:bg-[#2a7fc4] text-white"
+          className="h-8 w-8 p-0 bg-primary hover:bg-primary/90 text-white"
         >
           <Send className="size-3.5" />
         </Button>

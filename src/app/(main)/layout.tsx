@@ -86,7 +86,7 @@ export default async function MainLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col overflow-x-hidden bg-background">
       <CompanyContextProvider activeCompany={activeCompany} userCompanies={userCompanies} />
       <Header />
       <DesktopNav />

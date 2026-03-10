@@ -517,12 +517,12 @@ function LineChartSVG({
         })}
 
         {/* Line */}
-        <path d={pathD} fill="none" stroke="#FF6B2B" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
+        <path d={pathD} fill="none" stroke="var(--primary)" strokeWidth={2.5} strokeLinecap="round" strokeLinejoin="round" />
 
         {/* Dots */}
         {points.map((p, i) => (
           <g key={i}>
-            <circle cx={p.x} cy={p.y} r={4} fill="#FF6B2B" />
+            <circle cx={p.x} cy={p.y} r={4} fill="var(--primary)" />
             <text
               x={p.x}
               y={height - 8}

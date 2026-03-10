@@ -7,7 +7,7 @@ export const runtime = 'nodejs'
 export const maxDuration = 120
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://metal-gear-five.vercel.app'
-const BRAND_COLOR = '#FF6B2B'
+const BRAND_COLOR = '#1877F2'
 const BG_COLOR = '#0A0A0F'
 
 interface WeeklyBriefData {
@@ -258,9 +258,9 @@ Return plain text formatted with markdown.`,
   // Convert markdown to simple HTML
   const briefHtml = aiBrief
     .replace(/\*\*(.*?)\*\*/g, '<strong style="color:#fff;">$1</strong>')
-    .replace(/^### (.*$)/gm, '<h3 style="color:#FF6B2B;font-size:16px;margin:16px 0 8px;">$1</h3>')
-    .replace(/^## (.*$)/gm, '<h2 style="color:#FF6B2B;font-size:18px;margin:20px 0 10px;">$1</h2>')
-    .replace(/^# (.*$)/gm, '<h1 style="color:#FF6B2B;font-size:20px;margin:24px 0 12px;">$1</h1>')
+    .replace(/^### (.*$)/gm, '<h3 style="color:#1877F2;font-size:16px;margin:16px 0 8px;">$1</h3>')
+    .replace(/^## (.*$)/gm, '<h2 style="color:#1877F2;font-size:18px;margin:20px 0 10px;">$1</h2>')
+    .replace(/^# (.*$)/gm, '<h1 style="color:#1877F2;font-size:20px;margin:24px 0 12px;">$1</h1>')
     .replace(/^- (.*$)/gm, '<li style="color:#ccc;font-size:14px;line-height:1.6;margin:4px 0;">$1</li>')
     .replace(/\n\n/g, '<br/><br/>')
     .replace(/\n/g, '<br/>')

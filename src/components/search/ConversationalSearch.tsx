@@ -244,7 +244,7 @@ export function ConversationalSearch({
       {showConversation && conversationHistory.length > 2 && (
         <div className="rounded-lg border border-border bg-card/50 p-3">
           <div className="flex items-center gap-2 mb-2">
-            <MessageSquare className="size-3.5 text-[#3A8FD4]" />
+            <MessageSquare className="size-3.5 text-primary" />
             <span className="font-body text-xs font-medium text-muted-foreground">
               Conversation
             </span>
@@ -256,7 +256,7 @@ export function ConversationalSearch({
                   className={
                     msg.role === 'user'
                       ? 'text-foreground font-medium'
-                      : 'text-[#3A8FD4] italic'
+                      : 'text-primary italic'
                   }
                 >
                   {msg.role === 'user' ? 'You: ' : 'AI: '}
@@ -265,7 +265,7 @@ export function ConversationalSearch({
                   className={
                     msg.role === 'user'
                       ? 'text-foreground'
-                      : 'text-[#3A8FD4]'
+                      : 'text-primary'
                   }
                 >
                   {msg.content}
@@ -322,8 +322,8 @@ export function ConversationalSearch({
       {/* Loading state */}
       {loading && (
         <div className="flex items-center gap-2 rounded-lg border border-border bg-card/50 p-3">
-          <Loader2 className="size-4 animate-spin text-[#3A8FD4]" />
-          <p className="font-body text-sm italic text-[#3A8FD4]">
+          <Loader2 className="size-4 animate-spin text-primary" />
+          <p className="font-body text-sm italic text-primary">
             Analyzing your query...
           </p>
         </div>
@@ -332,14 +332,14 @@ export function ConversationalSearch({
       {/* AI explanation */}
       {aiResponse && !loading && (
         <div className="rounded-lg border border-border bg-card/50 p-3 space-y-2">
-          <p className="font-body text-sm italic text-[#3A8FD4]">
+          <p className="font-body text-sm italic text-primary">
             {aiResponse.explanation}
           </p>
 
           {/* Clarifying question */}
           {aiResponse.intent === 'clarify' && aiResponse.clarifyingQuestion && (
-            <div className="mt-2 rounded-md bg-[#3A8FD4]/10 p-3">
-              <p className="font-body text-sm text-[#3A8FD4]">
+            <div className="mt-2 rounded-md bg-primary/10 p-3">
+              <p className="font-body text-sm text-primary">
                 {aiResponse.clarifyingQuestion}
               </p>
             </div>

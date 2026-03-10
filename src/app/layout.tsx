@@ -80,7 +80,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body
-        className={`${chakraPetch.variable} ${manrope.variable} font-body antialiased`}
+        className={`${chakraPetch.variable} ${manrope.variable} font-body antialiased overflow-x-hidden`}
       >
         <a
           href="#main-content"

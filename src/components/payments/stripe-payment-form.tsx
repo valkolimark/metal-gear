@@ -53,7 +53,7 @@ function CheckoutForm({ amount, platformFee, onSuccess, onCancel }: Omit<Payment
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="rounded-lg border border-border bg-[#0d0d14] p-4">
+      <div className="rounded-lg border border-border bg-background p-4">
         <PaymentElement
           onReady={() => setReady(true)}
           options={{
@@ -140,7 +140,7 @@ export function StripePaymentForm({
         appearance: {
           theme: 'night',
           variables: {
-            colorPrimary: '#FF6B2B',
+            colorPrimary: '#1877F2', // Matches --primary CSS variable
             colorBackground: '#0d0d14',
             colorText: '#e5e5e5',
             colorTextSecondary: '#888',
@@ -155,16 +155,16 @@ export function StripePaymentForm({
               backgroundColor: '#0d0d14',
             },
             '.Input:focus': {
-              border: '1px solid #FF6B2B',
-              boxShadow: '0 0 0 1px #FF6B2B33',
+              border: '1px solid #1877F2',
+              boxShadow: '0 0 0 1px #1877F233',
             },
             '.Tab': {
               border: '1px solid #2a2a35',
               backgroundColor: '#0d0d14',
             },
             '.Tab--selected': {
-              border: '1px solid #FF6B2B',
-              backgroundColor: '#FF6B2B1a',
+              border: '1px solid #1877F2',
+              backgroundColor: '#1877F21a',
             },
           },
         },

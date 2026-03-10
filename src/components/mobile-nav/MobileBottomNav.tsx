@@ -41,7 +41,7 @@ export function MobileBottomNav({ unreadMessages }: MobileBottomNavProps) {
                 style={{ overflow: 'visible' }}
               >
                 <div
-                  className="sos-pulse flex size-12 items-center justify-center rounded-full bg-primary text-primary-foreground"
+                  className="sos-pulse flex size-12 items-center justify-center rounded-full bg-[#FF6B2B] text-white"
                   style={{
                     marginTop: '-16px',
                     animation: 'sos-pulse 2.5s ease-in-out infinite',
@@ -50,7 +50,7 @@ export function MobileBottomNav({ unreadMessages }: MobileBottomNavProps) {
                 >
                   <span className="text-xs font-bold">SOS</span>
                 </div>
-                <span className="mt-0.5 text-[10px] font-medium text-primary">
+                <span className="mt-0.5 text-[10px] font-medium text-[#FF6B2B]">
                   SOS
                 </span>
               </Link>

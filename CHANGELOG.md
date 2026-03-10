@@ -6,6 +6,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.1.0] — 2026-03-10 · Facebook Color Palette + Mobile Responsive Overhaul (Cycle 20)
+
+### Changed
+- **Design system rebranded** — color palette migrated to Facebook's calm blue system:
+  light mode (#F0F2F5 bg, #FFFFFF cards, #1877F2 primary blue, #050505 text, #CED0D4 borders);
+  dark mode (#18191A bg, #242526 cards, #3A3B3C elevated surfaces, #E4E6EB text, #B0B3B8 muted)
+- **Primary action color** — all primary buttons, links, and focus rings now use #1877F2 (Facebook blue)
+  replacing the previous #FF6B2B orange (SOS elements intentionally preserved in orange)
+- **Browse/search mobile UX** — filter sidebar replaced with bottom-sheet drawer on mobile (<lg);
+  trigger bar shows active filter count badge; results grid responsive 1/2/3 columns
+- **Post a listing** — step indicator abbreviated to "Step N of 5" on mobile; form sections stack
+  vertically on narrow screens; navigation bar reordered for mobile
+- **Global overflow** — html/body overflow-x-hidden; all layout wrappers audited
+- **Admin CSS** — updated to match new Facebook palette; sidebar active color now blue
+
+### Fixed
+- Horizontal side scrolling eliminated on all pages at 390px viewport
+- Filter sidebar no longer takes 75% of screen on mobile browse page
+- Dashboard stat cards, profile form, storefront stats, listing creation — all responsive
+- Hardcoded #FF6B2B orange and #3A8FD4 steel blue replaced with CSS variable references across 40+ files
+- Email templates updated from orange to blue brand color
+
+---
+
 ## [3.0.0] — 2026-03-10 · Multi-Company Profiles (Cycle 19)
 
 ### Added

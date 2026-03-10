@@ -17,7 +17,7 @@ export function ErrorDisplay({
         {retry && (
           <button
             onClick={retry}
-            className="mt-2 rounded-lg bg-[#FF6B2B] px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-[#e55e25]"
+            className="mt-2 rounded-lg bg-primary px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-primary/90"
           >
             Try Again
           </button>

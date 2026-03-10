@@ -556,7 +556,8 @@ export default function CreateListingPage() {
       </div>
 
       {/* Step indicators */}
-      <div className="flex items-center gap-2">
+      <div className="block sm:hidden text-sm text-muted-foreground mb-4 font-body">Step {step + 1} of {STEPS.length} — {STEPS[step]}</div>
+      <div className="hidden sm:flex items-center gap-2">
         {STEPS.map((label, i) => (
           <div key={label} className="flex items-center gap-2">
             <button
@@ -608,7 +609,7 @@ export default function CreateListingPage() {
               <Label htmlFor="title" className="font-body">
                 Title *
               </Label>
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <Input
                   id="title"
                   name="title"
@@ -738,7 +739,7 @@ export default function CreateListingPage() {
             {/* Specifications */}
             <div className="space-y-2">
               <Label className="font-body">Specifications</Label>
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <Input
                   placeholder="Key (e.g. Weight)"
                   value={specKey}
@@ -751,7 +752,7 @@ export default function CreateListingPage() {
                   onChange={(e) => setSpecValue(e.target.value)}
                   className="font-body"
                 />
-                <Button type="button" variant="outline" onClick={addSpec}>
+                <Button type="button" variant="outline" onClick={addSpec} className="sm:w-auto">
                   Add
                 </Button>
               </div>
@@ -937,7 +938,7 @@ export default function CreateListingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <label className="flex items-center gap-2 font-body text-sm">
                 <input
                   type="checkbox"
@@ -1017,7 +1018,7 @@ export default function CreateListingPage() {
             <Separator />
 
             {/* Inventory */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
               <div className="space-y-2">
                 <Label htmlFor="quantity" className="font-body">
                   Quantity
@@ -1159,7 +1160,7 @@ export default function CreateListingPage() {
                   <h3 className="mb-2 font-display text-sm font-semibold text-foreground">
                     Specifications
                   </h3>
-                  <dl className="grid grid-cols-2 gap-2">
+                  <dl className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {Object.entries(form.specifications).map(([k, v]) => (
                       <div key={k}>
                         <dt className="font-body text-xs text-muted-foreground">
@@ -1213,7 +1214,7 @@ export default function CreateListingPage() {
 
       {/* Navigation (hidden on AI step which has its own flow) */}
       {step > 0 && (
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-3">
         <div className="flex gap-2">
           {step > 1 && (
             <Button

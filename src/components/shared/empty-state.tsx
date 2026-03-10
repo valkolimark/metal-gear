@@ -16,7 +16,7 @@ export function EmptyState({ title, message, action }: EmptyStateProps) {
         {action && (
           <a
             href={action.href}
-            className="mt-2 rounded-lg bg-[#FF6B2B] px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-[#e55e25]"
+            className="mt-2 rounded-lg bg-primary px-4 py-2 font-body text-sm font-semibold text-white transition-colors hover:bg-primary/90"
           >
             {action.label}
           </a>

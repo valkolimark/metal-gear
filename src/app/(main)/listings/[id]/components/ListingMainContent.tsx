@@ -185,7 +185,7 @@ export function ListingMainContent({ listing, seller }: Props) {
             {listing.description.length > 600 && (
               <button
                 onClick={() => setDescriptionExpanded(!descriptionExpanded)}
-                className="mt-1 font-body text-sm font-medium text-[#3A8FD4] hover:underline"
+                className="mt-1 font-body text-sm font-medium text-primary hover:underline"
               >
                 {descriptionExpanded ? 'Show less' : 'Read more'}
               </button>
