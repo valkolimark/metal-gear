@@ -224,13 +224,13 @@ body.drawer-open {
   padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
 
-/* ============================================================
-   OCEAN PALETTE — Dark Mode
-   Applied when: [data-palette="ocean"].dark or
-                 .dark [data-palette="ocean"]
-   ============================================================ */
-[data-palette="ocean"].dark,
-.dark [data-palette="ocean"] {
+/* ================================================================
+   OCEAN PALETTE — DARK MODE
+   Selector: html.dark[data-palette="ocean"]
+   next-themes adds .dark class for dark mode.
+   NEVER use .light — next-themes does NOT add that class.
+   ================================================================ */
+html.dark[data-palette="ocean"] {
   --background: #020D1C;
   --card: #061525;
   --popover: #061525;
@@ -276,25 +276,25 @@ body.drawer-open {
   --chart-4: #90E0EF;
   --chart-5: #ADE8F4;
 
-  --color-deep-twilight: #03045E;
-  --color-french-blue: #023E8A;
-  --color-teal-blue: #0077B6;
-  --color-blue-green: #0096C7;
-  --color-turquoise: #00B4D8;
-  --color-sky-aqua: #48CAE4;
-  --color-frosted-blue: #90E0EF;
-  --color-frosted-light: #ADE8F4;
-  --color-light-cyan: #CAF0F8;
+  --ocean-deep-twilight: #03045E;
+  --ocean-french-blue: #023E8A;
+  --ocean-teal-blue: #0077B6;
+  --ocean-blue-green: #0096C7;
+  --ocean-turquoise: #00B4D8;
+  --ocean-sky-aqua: #48CAE4;
+  --ocean-frosted-blue: #90E0EF;
+  --ocean-frosted-light: #ADE8F4;
+  --ocean-light-cyan: #CAF0F8;
 
   --radius: 0.625rem;
 }
 
-/* ============================================================
-   OCEAN PALETTE — Light Mode
-   Applied when: .light [data-palette="ocean"]
-   Uses navy text on icy cyan surfaces.
-   ============================================================ */
-.light [data-palette="ocean"] {
+/* ================================================================
+   OCEAN PALETTE — LIGHT MODE
+   Selector: html WITHOUT .dark class, with data-palette="ocean"
+   next-themes removes .dark for light mode — it does NOT add .light.
+   ================================================================ */
+html[data-palette="ocean"]:not(.dark) {
   --background: #EAF8FC;
   --card: #FFFFFF;
   --popover: #FFFFFF;
@@ -340,35 +340,42 @@ body.drawer-open {
   --chart-4: #00B4D8;
   --chart-5: #48CAE4;
 
-  --color-deep-twilight: #03045E;
-  --color-french-blue: #023E8A;
-  --color-teal-blue: #0077B6;
-  --color-blue-green: #0096C7;
-  --color-turquoise: #00B4D8;
-  --color-sky-aqua: #48CAE4;
-  --color-frosted-blue: #90E0EF;
-  --color-frosted-light: #ADE8F4;
-  --color-light-cyan: #CAF0F8;
+  --ocean-deep-twilight: #03045E;
+  --ocean-french-blue: #023E8A;
+  --ocean-teal-blue: #0077B6;
+  --ocean-blue-green: #0096C7;
+  --ocean-turquoise: #00B4D8;
+  --ocean-sky-aqua: #48CAE4;
+  --ocean-frosted-blue: #90E0EF;
+  --ocean-frosted-light: #ADE8F4;
+  --ocean-light-cyan: #CAF0F8;
 
   --radius: 0.625rem;
 }
 
-/* ============================================================
-   OCEAN PALETTE — SOS Button Glow Override
-   ============================================================ */
-[data-palette="ocean"] .sos-button,
-[data-palette="ocean"] [data-sos-trigger] {
+/* ================================================================
+   OCEAN PALETTE — SOS Button (both modes)
+   ================================================================ */
+html[data-palette="ocean"] .sos-button,
+html[data-palette="ocean"] [data-sos-trigger] {
   background-color: var(--primary) !important;
   box-shadow: 0 4px 14px rgba(0, 119, 182, 0.5) !important;
 }
 
-@keyframes sos-pulse-ocean {
+@keyframes sos-pulse-ocean-dark {
   0%, 100% { box-shadow: 0 4px 14px rgba(0, 119, 182, 0.5); }
   50%       { box-shadow: 0 4px 24px rgba(0, 119, 182, 0.8); transform: scale(1.04); }
 }
+@keyframes sos-pulse-ocean-light {
+  0%, 100% { box-shadow: 0 4px 14px rgba(2, 62, 138, 0.45); }
+  50%       { box-shadow: 0 4px 22px rgba(2, 62, 138, 0.70); transform: scale(1.04); }
+}
 
-[data-palette="ocean"] .sos-pulse {
-  animation: sos-pulse-ocean 2.5s ease-in-out infinite !important;
+html.dark[data-palette="ocean"] .sos-pulse {
+  animation: sos-pulse-ocean-dark 2.5s ease-in-out infinite !important;
+}
+html[data-palette="ocean"]:not(.dark) .sos-pulse {
+  animation: sos-pulse-ocean-light 2.5s ease-in-out infinite !important;
 }
 
 /* Scrollbar styling */

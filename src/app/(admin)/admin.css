@@ -2,16 +2,19 @@
    ADMIN SECTION — Scoped CSS Custom Properties
    Scope: [data-section="admin"]
    Overrides globals.css for the entire admin subtree.
-   Both .dark and .light (next-themes) are handled.
+
+   IMPORTANT: next-themes only toggles .dark class on <html>.
+   It does NOT add .light. Light mode = absence of .dark.
+   All light selectors use :not(.dark), never .light.
    ============================================================ */
 
 /* ----------------------------------------------------------
    ADMIN DARK MODE (default — original admin design)
-   Applies when: .dark [data-section="admin"]
+   Matches: html.dark [data-section="admin"]
    Also default (no theme class) since admin was dark-only.
    ---------------------------------------------------------- */
 [data-section="admin"],
-.dark [data-section="admin"] {
+html.dark [data-section="admin"] {
   --background: #090910;
   --card: #131317;
   --sidebar-bg: #0e0e14;
@@ -49,11 +52,11 @@
 
 /* ----------------------------------------------------------
    ADMIN LIGHT MODE
-   Applies when: .light [data-section="admin"]
+   Matches: html:not(.dark) [data-section="admin"]
    Intentionally NOT white — uses cool grey/slate surfaces
    to preserve the industrial, professional character.
    ---------------------------------------------------------- */
-.light [data-section="admin"] {
+html:not(.dark) [data-section="admin"] {
   --background: #E8EAF0;
   --card: #FFFFFF;
   --sidebar-bg: #2B313A;
@@ -95,21 +98,17 @@
 [data-section="admin"] .admin-sidebar {
   background-color: var(--sidebar-bg);
   border-right: 1px solid var(--sidebar-border);
-}
-
-/* Sidebar text always light (sidebar is always dark) */
-[data-section="admin"] .admin-sidebar {
   --sidebar-fg: #e0e0e0;
   --sidebar-muted: #8c8c8c;
   --sidebar-active-bg: #3d1a0a;
   color: var(--sidebar-fg);
 }
 
-/* ----------------------------------------------------------
+/* ==============================================================
    ADMIN — OCEAN DARK MODE
-   ---------------------------------------------------------- */
-.dark [data-palette="ocean"] [data-section="admin"],
-[data-palette="ocean"] [data-section="admin"] {
+   html.dark + data-palette="ocean" + data-section="admin"
+   ============================================================== */
+html.dark[data-palette="ocean"] [data-section="admin"] {
   --background: #020D1C;
   --card: #061525;
   --sidebar-bg: #051020;
@@ -140,10 +139,12 @@
   --admin-badge-bg: #0E2540;
 }
 
-/* ----------------------------------------------------------
+/* ==============================================================
    ADMIN — OCEAN LIGHT MODE
-   ---------------------------------------------------------- */
-.light [data-palette="ocean"] [data-section="admin"] {
+   html:not(.dark) + data-palette="ocean" + data-section="admin"
+   Sidebar ALWAYS stays dark (navy) — only content area lightens.
+   ============================================================== */
+html[data-palette="ocean"]:not(.dark) [data-section="admin"] {
   --background: #EAF8FC;
   --card: #FFFFFF;
   --sidebar-bg: #052C52;
@@ -172,6 +173,16 @@
   --admin-table-header-bg: #D0EDF7;
   --admin-table-stripe: #E5F6FB;
   --admin-badge-bg: #C2EDF7;
+}
+
+/* Admin sidebar in Ocean palette — always dark navy */
+html[data-palette="ocean"] [data-section="admin"] .admin-sidebar {
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--sidebar-border);
+  --sidebar-fg: #BDE8F2;
+  --sidebar-muted: #5BA8C0;
+  --sidebar-active-bg: #0A3050;
+  color: var(--sidebar-fg);
 }
 
 /* ----------------------------------------------------------
