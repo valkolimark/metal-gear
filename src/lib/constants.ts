@@ -9,17 +9,42 @@ export const TIER_LIMITS = {
     searchRadius: 100,
     matchExpiry: 48,
   },
+  pro: {
+    listings: 25,
+    photos: 20,
+    videos: 3,
+    conversations: Infinity,
+    searchRadius: 500,
+    matchExpiry: 168,
+  },
+  business: {
+    listings: 100,
+    photos: 30,
+    videos: 5,
+    conversations: Infinity,
+    searchRadius: Infinity,
+    matchExpiry: 336,
+  },
+  enterprise: {
+    listings: Infinity,
+    photos: 50,
+    videos: 10,
+    conversations: Infinity,
+    searchRadius: Infinity,
+    matchExpiry: 720,
+  },
+  // Legacy tier aliases (DB may still contain these)
   premium: {
-    listings: 15,
-    photos: 15,
+    listings: 25,
+    photos: 20,
     videos: 3,
     conversations: Infinity,
     searchRadius: 500,
     matchExpiry: 168,
   },
   boost: {
-    listings: 50,
-    photos: 25,
+    listings: 100,
+    photos: 30,
     videos: 5,
     conversations: Infinity,
     searchRadius: Infinity,
@@ -31,14 +56,20 @@ export type SubscriptionTier = keyof typeof TIER_LIMITS
 
 export const TIER_PRICES = {
   free: 0,
-  premium: 2999, // $29.99/mo in cents
-  boost: 7999,   // $79.99/mo in cents
+  pro: 17900,        // $179/mo in cents
+  business: 34900,    // $349/mo in cents
+  enterprise: 59900,  // $599/mo in cents
+  premium: 17900,     // legacy alias
+  boost: 34900,       // legacy alias
 } as const
 
-export const TIER_LABELS: Record<SubscriptionTier, string> = {
+export const TIER_LABELS: Record<string, string> = {
   free: 'Free',
-  premium: 'Premium',
-  boost: 'Boost',
+  pro: 'Pro',
+  business: 'Business',
+  enterprise: 'Enterprise',
+  premium: 'Pro',     // legacy alias
+  boost: 'Business',  // legacy alias
 }
 
 // ─── Boost Products ─────────────────────────────────────────────────
