@@ -22,6 +22,10 @@ interface UIStore {
   setUnreadMessages: (count: number) => void
   setUnreadNotifications: (count: number) => void
   incrementUnreadNotifications: () => void
+
+  // Help chat
+  helpChatOpen: boolean
+  setHelpChatOpen: (open: boolean) => void
 }
 
 export const useUIStore = create<UIStore>((set) => ({
@@ -49,4 +53,8 @@ export const useUIStore = create<UIStore>((set) => ({
     set({ unreadNotifications }),
   incrementUnreadNotifications: () =>
     set((state) => ({ unreadNotifications: state.unreadNotifications + 1 })),
+
+  // Help chat
+  helpChatOpen: false,
+  setHelpChatOpen: (helpChatOpen) => set({ helpChatOpen }),
 }))

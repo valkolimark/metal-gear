@@ -414,6 +414,70 @@ export async function adminGrantRole(userId: string, role: AdminRole | null) {
   return { success: true }
 }
 
+// ─── Subscription Tier Override ──────────────────────────────────────
+
+export async function setUserSubscriptionTier(
+  userId: string,
+  tier: 'free' | 'pro' | 'business' | 'enterprise'
+) {
+  const { profile: adminProfile } = await requireAdmin('manage_subscriptions')
+  const admin = createAdminClient()
+
+  // Update the profile's subscription_tier (used as fallback in getActiveTier)
+  const { error: profileError } = await admin
+    .from('profiles')
+    .update({ subscription_tier: tier })
+    .eq('id', userId)
+
+  if (profileError) throw new Error(profileError.message)
+
+  // Upsert admin-override subscription record
+  // Check for existing active subscription
+  const { data: existingSub } = await admin
+    .from('subscriptions')
+    .select('id, stripe_subscription_id')
+    .eq('user_id', userId)
+    .eq('status', 'active')
+    .maybeSingle()
+
+  if (existingSub) {
+    // Update existing subscription tier (keep Stripe ID if present)
+    await admin
+      .from('subscriptions')
+      .update({ tier })
+      .eq('id', existingSub.id)
+  } else if (tier !== 'free') {
+    // Create new admin-override subscription (placeholder Stripe IDs for admin overrides)
+    await admin
+      .from('subscriptions')
+      .insert({
+        user_id: userId,
+        tier,
+        status: 'active',
+        stripe_price_id: 'admin_override',
+        stripe_subscription_id: `admin_override_${Date.now()}`,
+      })
+  }
+
+  // If setting to free and had an existing sub, deactivate it
+  if (tier === 'free' && existingSub) {
+    await admin
+      .from('subscriptions')
+      .update({ status: 'cancelled' })
+      .eq('id', existingSub.id)
+  }
+
+  await logAdminAction(
+    adminProfile.id,
+    'set_subscription_tier',
+    'user',
+    userId,
+    { tier, admin_override: true }
+  )
+
+  return { success: true }
+}
+
 // ─── Listing Management ─────────────────────────────────────────────
 
 export async function getAdminListings(params: {

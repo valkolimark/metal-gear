@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState, useCallback, useRef } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import {
   SlidersHorizontal,
   Grid3X3,
@@ -18,6 +19,7 @@ import {
   Trash2,
   MapIcon,
   GitCompareArrows,
+  Package,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -57,6 +59,7 @@ import {
   DEFAULT_LOCATION,
 } from '@/lib/constants'
 import { getConditionReportsForListings } from '@/app/actions/condition-reports'
+import { toggleFavoriteAction } from '@/app/(main)/listings/[id]/components/favorite-action'
 import { DynamicListingMap } from '@/components/map/dynamic-map'
 import { ConversationalSearch } from '@/components/search/ConversationalSearch'
 import { MobileFilterSheet } from './components/MobileFilterSheet'
@@ -186,6 +189,12 @@ function SearchContent() {
   const [aiLoading, setAiLoading] = useState(false)
   const problemQuery = searchParams.get('problem') || ''
   const [problemHandled, setProblemHandled] = useState(false)
+
+  // Listing images (primary thumbnail per listing)
+  const [listingImages, setListingImages] = useState<Record<string, string>>({})
+
+  // User favorites
+  const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set())
 
   // Compare state
   const [compareIds, setCompareIds] = useState<string[]>([])
@@ -368,7 +377,7 @@ function SearchContent() {
         setTotalCount(count ?? 0)
       }
 
-      // Fetch condition grades for displayed listings
+      // Fetch condition grades and images for displayed listings
       const ids = pageResults.map((l) => l.id)
       if (ids.length > 0) {
         getConditionReportsForListings(ids).then(({ reports }) => {
@@ -378,8 +387,25 @@ function SearchContent() {
           }
           setConditionGrades(grades)
         })
+        // Fetch primary images for listings
+        supabase
+          .from('listing_images')
+          .select('listing_id, url, position')
+          .in('listing_id', ids)
+          .order('position', { ascending: true })
+          .then(({ data: images }) => {
+            const imageMap: Record<string, string> = {}
+            for (const img of images ?? []) {
+              // Only keep the first (primary) image per listing
+              if (!imageMap[img.listing_id]) {
+                imageMap[img.listing_id] = img.url
+              }
+            }
+            setListingImages(imageMap)
+          })
       } else {
         setConditionGrades({})
+        setListingImages({})
       }
     }
     setLoading(false)
@@ -389,6 +415,44 @@ function SearchContent() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount/filter change
     fetchListings()
   }, [fetchListings])
+
+  // Load user favorites
+  useEffect(() => {
+    if (!user) return
+    const supabase = createClient()
+    supabase
+      .from('favorites')
+      .select('listing_id')
+      .eq('user_id', user.id)
+      .then(({ data }) => {
+        setFavoriteIds(new Set((data ?? []).map((f) => f.listing_id)))
+      })
+  }, [user])
+
+  async function handleToggleFavorite(listingId: string) {
+    if (!user) {
+      toast.error('Sign in to save favorites')
+      return
+    }
+    // Optimistic update
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(listingId)) next.delete(listingId)
+      else next.add(listingId)
+      return next
+    })
+    const result = await toggleFavoriteAction(listingId)
+    if (result.error) {
+      toast.error(result.error)
+      // Revert
+      setFavoriteIds((prev) => {
+        const next = new Set(prev)
+        if (next.has(listingId)) next.delete(listingId)
+        else next.add(listingId)
+        return next
+      })
+    }
+  }
 
   const { pulling, refreshing, pullDistance, threshold } = usePullToRefresh(fetchListings)
 
@@ -935,17 +999,33 @@ function SearchContent() {
             {listings.map((listing) => (
               <div key={listing.id} className="relative">
                 <Link href={`/listings/${listing.id}`}>
-                  <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
-                    <CardContent className="flex h-full flex-col p-4">
+                  <Card className="h-full overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
+                    {/* Thumbnail */}
+                    <div className="relative aspect-[16/10] bg-muted">
+                      {listingImages[listing.id] ? (
+                        <Image
+                          src={listingImages[listing.id]}
+                          alt={listing.title}
+                          fill
+                          className="object-cover"
+                          sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                        />
+                      ) : (
+                        <div className="flex size-full items-center justify-center">
+                          <Package className="size-10 text-muted-foreground/40" />
+                        </div>
+                      )}
+                      {listing.is_featured && (
+                        <Badge className="absolute left-2 top-2 bg-primary/90 font-body text-[11px] text-white">
+                          Featured
+                        </Badge>
+                      )}
+                    </div>
+                    <CardContent className="flex flex-col p-4">
                       <p className="truncate pr-8 font-body font-medium text-foreground">
                         {listing.title}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
-                        {listing.is_featured && (
-                          <Badge className="bg-primary/20 font-body text-[11px] text-primary">
-                            Featured
-                          </Badge>
-                        )}
                         {listing.pinned_position && (
                           <Badge className="bg-blue-500/20 font-body text-[11px] text-blue-400">
                             Pinned
@@ -992,18 +1072,29 @@ function SearchContent() {
                         <p className="mt-1 flex items-center gap-1 font-body text-xs text-muted-foreground">
                           <MapPin className="size-3" />
                           {listing.location_city}, {listing.location_state}
-                          <span className="ml-auto flex items-center gap-1">
-                            <Heart className="size-3" />
-                            {listing.favorites_count}
-                          </span>
                         </p>
                       </div>
                     </CardContent>
                   </Card>
                 </Link>
+                {/* Favorite button */}
+                <button
+                  onClick={(e) => {
+                    e.preventDefault()
+                    handleToggleFavorite(listing.id)
+                  }}
+                  className={`absolute right-10 top-[calc(62.5%+12px)] z-10 flex size-7 items-center justify-center rounded-full border transition-colors ${
+                    favoriteIds.has(listing.id)
+                      ? 'border-red-400 bg-red-500 text-white'
+                      : 'border-border bg-card/80 text-muted-foreground hover:border-red-400 hover:text-red-400'
+                  }`}
+                  title={favoriteIds.has(listing.id) ? 'Remove from favorites' : 'Add to favorites'}
+                >
+                  <Heart className={`size-3.5 ${favoriteIds.has(listing.id) ? 'fill-current' : ''}`} />
+                </button>
                 <button
                   onClick={() => toggleCompare(listing.id)}
-                  className={`absolute right-3 top-3 z-10 flex size-6 items-center justify-center rounded border transition-colors ${
+                  className={`absolute right-3 top-[calc(62.5%+12px)] z-10 flex size-7 items-center justify-center rounded-full border transition-colors ${
                     compareIds.includes(listing.id)
                       ? 'border-primary bg-primary text-white'
                       : 'border-border bg-card/80 text-muted-foreground hover:border-primary hover:text-primary'
@@ -1022,6 +1113,22 @@ function SearchContent() {
                 <Link href={`/listings/${listing.id}`}>
                   <Card className="border-border bg-card transition-colors hover:border-primary/50">
                     <CardContent className="flex items-center gap-4 p-4">
+                      {/* List view thumbnail */}
+                      <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">
+                        {listingImages[listing.id] ? (
+                          <Image
+                            src={listingImages[listing.id]}
+                            alt={listing.title}
+                            fill
+                            className="object-cover"
+                            sizes="64px"
+                          />
+                        ) : (
+                          <div className="flex size-full items-center justify-center">
+                            <Package className="size-6 text-muted-foreground/40" />
+                          </div>
+                        )}
+                      </div>
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-body font-medium text-foreground">
                           {listing.title}

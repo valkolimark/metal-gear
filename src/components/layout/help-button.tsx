@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { MessageCircle, X, Send, Settings } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { useUIStore } from '@/stores/ui-store'
 
 interface Message {
   role: 'user' | 'ai'
@@ -27,6 +28,15 @@ export function HelpButton() {
   const [error, setError] = useState<string | null>(null)
   const threadRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
+  const { helpChatOpen, setHelpChatOpen } = useUIStore()
+
+  // Open from external trigger (e.g., MobileMenuDrawer)
+  useEffect(() => {
+    if (helpChatOpen && !open) {
+      setOpen(true)
+      setHelpChatOpen(false)
+    }
+  }, [helpChatOpen, open, setHelpChatOpen])
 
   // Don't show on the help page itself
   if (pathname.startsWith('/help')) return null
@@ -95,11 +105,11 @@ export function HelpButton() {
 
   return (
     <>
-      {/* Floating help button */}
+      {/* Floating help button — desktop only, mobile uses MobileMenuDrawer */}
       {!open && (
         <button
           onClick={() => setOpen(true)}
-          className="fixed bottom-20 right-4 z-50 flex size-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all duration-200 hover:bg-primary/90 hover:scale-110 active:scale-95 lg:bottom-6 lg:right-6"
+          className="fixed bottom-6 right-6 z-50 hidden size-12 items-center justify-center rounded-full bg-primary text-white shadow-lg transition-all duration-200 hover:bg-primary/90 hover:scale-110 active:scale-95 md:flex"
           aria-label="Get help"
         >
           <MessageCircle className="size-5" />

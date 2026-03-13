@@ -12,6 +12,7 @@ import {
   AlertTriangle,
   Shield,
   Save,
+  CreditCard,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -33,6 +34,7 @@ import {
   adminBanUser,
   adminGrantRole,
   getChurnRiskDetail,
+  setUserSubscriptionTier,
 } from '../../actions'
 
 const ROLE_COLORS: Record<string, string> = {
@@ -52,14 +54,30 @@ export default function AdminUserDetailPage() {
   const [churnRisk, setChurnRisk] = useState<any>(null)
   const [outreach, setOutreach] = useState<{ subject: string; body: string } | null>(null)
   const [generatingOutreach, setGeneratingOutreach] = useState(false)
+  const [tierOverride, setTierOverride] = useState<string>('')
+  const [savingTier, setSavingTier] = useState(false)
 
   useEffect(() => {
     getAdminUserDetail(userId).then((d) => {
       setData(d)
       setNotes(d.profile?.admin_notes || '')
+      setTierOverride(d.profile?.subscription_tier || 'free')
     })
     getChurnRiskDetail(userId).then(setChurnRisk)
   }, [userId])
+
+  async function handleSaveTier() {
+    setSavingTier(true)
+    try {
+      await setUserSubscriptionTier(userId, tierOverride as 'free' | 'pro' | 'business' | 'enterprise')
+      toast.success(`Tier updated to ${tierOverride}`)
+      const d = await getAdminUserDetail(userId)
+      setData(d)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update tier')
+    }
+    setSavingTier(false)
+  }
 
   async function handleGenerateOutreach() {
     setGeneratingOutreach(true)
@@ -155,7 +173,7 @@ export default function AdminUserDetailPage() {
         )}
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
         {/* Profile Info */}
         <Card className="border-white/5 bg-[#0D0D14]">
           <CardHeader className="pb-3">
@@ -277,6 +295,55 @@ export default function AdminUserDetailPage() {
                 Save Notes
               </Button>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Subscription Override */}
+        <Card className="border-white/5 bg-[#0D0D14]">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <CreditCard className="size-4 text-primary" />
+              Subscription
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="font-body text-muted-foreground">Current Tier</span>
+              <Badge className="bg-primary/20 text-primary border-0 font-body text-xs uppercase">
+                {profile.subscription_tier || 'free'}
+              </Badge>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-body text-xs">Change Tier (Admin Override)</Label>
+              <Select
+                value={tierOverride}
+                onValueChange={setTierOverride}
+              >
+                <SelectTrigger className="font-body text-sm">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="free">Free</SelectItem>
+                  <SelectItem value="pro">Pro ($179/mo)</SelectItem>
+                  <SelectItem value="business">Business ($349/mo)</SelectItem>
+                  <SelectItem value="enterprise">Enterprise ($599/mo)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <Button
+              size="sm"
+              onClick={handleSaveTier}
+              disabled={savingTier || tierOverride === (profile.subscription_tier || 'free')}
+            >
+              <Save className="mr-1 size-3" />
+              {savingTier ? 'Saving...' : 'Save Tier'}
+            </Button>
+
+            <p className="font-body text-[10px] text-muted-foreground">
+              Admin overrides bypass Stripe. Existing Stripe subscriptions are not affected.
+            </p>
           </CardContent>
         </Card>
 

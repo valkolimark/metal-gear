@@ -222,7 +222,11 @@ function MessagesContent() {
         },
         (payload) => {
           const newMsg = payload.new as Message
-          setMessages((prev) => [...prev, newMsg])
+          setMessages((prev) => {
+            // Avoid duplicates (sender already has it from optimistic add)
+            if (prev.some((m) => m.id === newMsg.id)) return prev
+            return [...prev, newMsg]
+          })
           setTimeout(scrollToBottom, 100)
 
           // Auto-mark as read if from other person
@@ -233,12 +237,65 @@ function MessagesContent() {
               .eq('id', newMsg.id)
               .then(() => {})
           }
+
+          // Fetch attachments for new message (may arrive after a brief delay)
+          const fetchAttachments = () => {
+            getMessageAttachments([newMsg.id]).then((result) => {
+              if (result.attachments && result.attachments.length > 0) {
+                setAttachments((prev) => {
+                  const updated = { ...prev }
+                  for (const att of result.attachments!) {
+                    if (!updated[att.message_id]) updated[att.message_id] = []
+                    if (!updated[att.message_id].some((a) => a.id === att.id)) {
+                      updated[att.message_id] = [...updated[att.message_id], att]
+                    }
+                  }
+                  return updated
+                })
+              }
+            })
+          }
+          // Try immediately and again after 2s (attachment upload may still be in progress)
+          fetchAttachments()
+          setTimeout(fetchAttachments, 2000)
+        }
+      )
+      .subscribe()
+
+    // Also subscribe to new attachments for this conversation's messages
+    const attachChannel = supabase
+      .channel(`attachments:${activeConvId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'message_attachments',
+        },
+        (payload) => {
+          const newAtt = payload.new as Attachment
+          // Only add if it belongs to a message in our current conversation
+          setMessages((prev) => {
+            const msgIds = new Set(prev.map((m) => m.id))
+            if (msgIds.has(newAtt.message_id)) {
+              setAttachments((prevAtt) => {
+                const updated = { ...prevAtt }
+                if (!updated[newAtt.message_id]) updated[newAtt.message_id] = []
+                if (!updated[newAtt.message_id].some((a) => a.id === newAtt.id)) {
+                  updated[newAtt.message_id] = [...updated[newAtt.message_id], newAtt]
+                }
+                return updated
+              })
+            }
+            return prev
+          })
         }
       )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
+      supabase.removeChannel(attachChannel)
     }
   }, [activeConvId, user, scrollToBottom])
 
@@ -256,8 +313,8 @@ function MessagesContent() {
 
     setSending(true)
 
-    // Send text message
-    const content = newMessage.trim() || (pendingFile ? `📎 ${pendingFile.name}` : '')
+    // Send text message (use descriptive text for file-only messages)
+    const content = newMessage.trim() || (pendingFile ? `Sent ${pendingFile.type.startsWith('image/') ? 'an image' : 'a file'}` : '')
     const result = await sendMessageAction(activeConvId, content)
 
     if (result.error) {

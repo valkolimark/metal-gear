@@ -2,7 +2,6 @@ import { Header } from '@/components/layout/header'
 import { DesktopNav } from '@/components/layout/desktop-nav'
 import { MobileDrawer } from '@/components/layout/mobile-drawer'
 import { HelpButton } from '@/components/layout/help-button'
-import { SosButton } from '@/components/layout/sos-button'
 import { MobileNavClient } from '@/components/mobile-nav/MobileNavClient'
 import { CompanyContextProvider } from '@/components/company/CompanyContextProvider'
 import { createClient } from '@/lib/supabase/server'
@@ -37,17 +36,28 @@ export default async function MainLayout({
     if (user) {
       const admin = createAdminClient()
 
+      // First get the user's conversation IDs for accurate unread count
+      const { data: userConvs } = await admin
+        .from('conversations')
+        .select('id')
+        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
+
+      const convIds = (userConvs ?? []).map((c) => c.id)
+
       const [profileRes, messagesRes, notificationsRes, storefrontRes, companies] = await Promise.all([
         admin
           .from('profiles')
           .select('full_name, avatar_url, subscription_tier')
           .eq('id', user.id)
           .single(),
-        admin
-          .from('messages')
-          .select('id', { count: 'exact', head: true })
-          .neq('sender_id', user.id)
-          .is('read_at', null),
+        convIds.length > 0
+          ? admin
+              .from('messages')
+              .select('id', { count: 'exact', head: true })
+              .in('conversation_id', convIds)
+              .neq('sender_id', user.id)
+              .is('read_at', null)
+          : Promise.resolve({ count: 0 }),
         admin
           .from('notifications')
           .select('id', { count: 'exact', head: true })
@@ -103,7 +113,6 @@ export default async function MainLayout({
       </main>
 
       <HelpButton />
-      <SosButton />
     </div>
   )
 }

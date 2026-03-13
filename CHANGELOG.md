@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.2.0] — 2026-03-13 · Mobile Cleanup, Thumbnail Restore & Admin Tier Control (Cycle 21)
+
+### Fixed
+- **Floating SOS FAB removed** — orange siren button no longer overlaps mobile content; SOS tab in bottom nav is the sole entry point
+- **Floating help bubble removed from mobile** — no longer blocks taps on bottom-right content; AI Help Assistant now accessible via hamburger menu drawer
+- **Listing thumbnails restored** — browse/search cards show primary image (16:10 aspect ratio) with gray placeholder for listings without photos
+- **SOS nav tab** — now opens a two-option bottom sheet (Send SOS / SOS Dashboard) instead of navigating directly
+- **Unread message badge** — Messages tab in mobile bottom nav now shows accurate unread count badge with real-time Zustand store updates
+- **Favorites button** — heart icon on search/browse listing cards now properly toggles favorites with optimistic UI updates
+- **Message image delivery** — recipients see images immediately via Realtime attachment subscription + retry polling; file-only messages show "Sent an image" instead of paperclip filename
+- **Unread message count accuracy** — layout query now filters by user's conversations instead of all messages in the system
+
+### Added
+- **Admin subscription tier override** — superadmins can change any user's tier (Free/Pro/Business/Enterprise) from the user detail page without Stripe; logged to admin audit trail
+- **AI Help Assistant** menu entry in MobileMenuDrawer (opens the same chat panel as the floating button)
+- Favorite toggle + listing image state in search page for improved card UX
+
+---
+
 ## [3.1.0] — 2026-03-10 · Facebook Color Palette + Mobile Responsive Overhaul (Cycle 20)
 
 ### Changed

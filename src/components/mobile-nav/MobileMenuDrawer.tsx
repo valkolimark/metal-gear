@@ -24,10 +24,12 @@ import {
   ChevronRight,
   LogOut,
   X,
+  MessageCircle,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { CompanySwitcher } from '@/components/company/CompanySwitcher'
 import { useAuthStore } from '@/stores/auth-store'
+import { useUIStore } from '@/stores/ui-store'
 import type { CompanyWithRole } from '@/types/company'
 
 interface MobileMenuDrawerProps {
@@ -72,6 +74,7 @@ export function MobileMenuDrawer({
   const drawerRef = useRef<HTMLDivElement>(null)
   const touchStartX = useRef(0)
   const { signOut } = useAuthStore()
+  const { setHelpChatOpen } = useUIStore()
 
   useEffect(() => setMounted(true), [])
 
@@ -252,6 +255,17 @@ export function MobileMenuDrawer({
 
           {/* Support */}
           <NavGroupHeader>Support</NavGroupHeader>
+          <button
+            onClick={() => {
+              setHelpChatOpen(true)
+              handleClose()
+            }}
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 active:bg-accent"
+          >
+            <MessageCircle className="size-4 text-primary" />
+            <span className="flex-1 text-left text-sm text-foreground">AI Help Assistant</span>
+            <ChevronRight className="size-3.5 text-muted-foreground/50" />
+          </button>
           <NavRow href="/help" icon={HelpCircle} label="Help Center" />
           <NavRow href="/pricing" icon={CreditCard} label="Pricing" />
         </div>
