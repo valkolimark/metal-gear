@@ -466,7 +466,7 @@ export async function setUserSubscriptionTier(
     if (tier === 'free' && existingSub) {
       await admin
         .from('subscriptions')
-        .update({ status: 'cancelled' })
+        .update({ status: 'canceled' })
         .eq('id', existingSub.id)
     }
 
