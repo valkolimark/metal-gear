@@ -68,13 +68,13 @@ export default function AdminUserDetailPage() {
 
   async function handleSaveTier() {
     setSavingTier(true)
-    try {
-      await setUserSubscriptionTier(userId, tierOverride as 'free' | 'pro' | 'business' | 'enterprise')
+    const result = await setUserSubscriptionTier(userId, tierOverride as 'free' | 'pro' | 'business' | 'enterprise')
+    if (result.error) {
+      toast.error(result.error)
+    } else {
       toast.success(`Tier updated to ${tierOverride}`)
       const d = await getAdminUserDetail(userId)
       setData(d)
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to update tier')
     }
     setSavingTier(false)
   }
