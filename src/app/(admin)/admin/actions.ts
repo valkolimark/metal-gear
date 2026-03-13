@@ -1093,7 +1093,7 @@ export async function getChurnRiskDetail(userId: string) {
     .from('churn_risk')
     .select('*')
     .eq('user_id', userId)
-    .single()
+    .maybeSingle()
 
   return data
 }
