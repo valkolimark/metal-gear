@@ -158,14 +158,14 @@ export default function AdminListingDetailPage() {
         {/* ─── Left Column (2/3 width) ─────────────────────────────── */}
         <div className="space-y-6 lg:col-span-2">
           {/* Image Gallery */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="font-display text-base">Images</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {images.length > 0 ? (
                 <>
-                  <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-surface">
+                  <div className="relative aspect-video w-full overflow-hidden rounded-lg bg-muted">
                     <Image
                       src={images[selectedImage].url}
                       alt={listing.title}
@@ -195,7 +195,7 @@ export default function AdminListingDetailPage() {
                   )}
                 </>
               ) : (
-                <div className="flex aspect-video items-center justify-center rounded-lg bg-surface">
+                <div className="flex aspect-video items-center justify-center rounded-lg bg-muted">
                   <p className="font-body text-sm text-muted-foreground">No images</p>
                 </div>
               )}
@@ -226,7 +226,7 @@ export default function AdminListingDetailPage() {
           )}
 
           {/* Listing Details */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="font-display text-base">Details</CardTitle>
             </CardHeader>
@@ -238,7 +238,7 @@ export default function AdminListingDetailPage() {
                 </p>
               </div>
 
-              <div className="h-px bg-white/5" />
+              <div className="h-px bg-border" />
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -296,12 +296,12 @@ export default function AdminListingDetailPage() {
               {/* Specifications */}
               {specs && Object.keys(specs).length > 0 && (
                 <>
-                  <div className="h-px bg-white/5" />
+                  <div className="h-px bg-border" />
                   <div>
                     <p className="font-body text-xs text-muted-foreground mb-2">Specifications</p>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {Object.entries(specs).map(([key, value]) => (
-                        <div key={key} className="rounded-md bg-surface px-3 py-2">
+                        <div key={key} className="rounded-md bg-muted px-3 py-2">
                           <p className="font-body text-[10px] text-muted-foreground uppercase">
                             {key.replace(/_/g, ' ')}
                           </p>
@@ -319,7 +319,7 @@ export default function AdminListingDetailPage() {
         {/* ─── Right Column (1/3 width) ────────────────────────────── */}
         <div className="space-y-6">
           {/* Seller Info */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="font-display text-base">Seller</CardTitle>
             </CardHeader>
@@ -327,9 +327,9 @@ export default function AdminListingDetailPage() {
               {seller ? (
                 <Link
                   href={`/admin/users/${seller.id}`}
-                  className="flex items-center gap-3 rounded-lg p-2 hover:bg-white/5"
+                  className="flex items-center gap-3 rounded-lg p-2 hover:bg-accent"
                 >
-                  <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-surface">
+                  <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-muted">
                     {seller.avatar_url ? (
                       <Image
                         src={seller.avatar_url}
@@ -360,17 +360,17 @@ export default function AdminListingDetailPage() {
           </Card>
 
           {/* Stats */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="font-display text-base">Stats</CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-3">
-              <div className="rounded-lg bg-surface p-3 text-center">
+              <div className="rounded-lg bg-muted p-3 text-center">
                 <Eye className="mx-auto mb-1 size-4 text-blue-400" />
                 <p className="font-display text-lg font-bold">{viewCount}</p>
                 <p className="font-body text-[10px] text-muted-foreground">Views</p>
               </div>
-              <div className="rounded-lg bg-surface p-3 text-center">
+              <div className="rounded-lg bg-muted p-3 text-center">
                 <Heart className="mx-auto mb-1 size-4 text-red-400" />
                 <p className="font-display text-lg font-bold">{listing.favorites_count}</p>
                 <p className="font-body text-[10px] text-muted-foreground">Favorites</p>
@@ -379,7 +379,7 @@ export default function AdminListingDetailPage() {
           </Card>
 
           {/* Action Panel */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="font-display text-base">Actions</CardTitle>
             </CardHeader>
@@ -441,7 +441,7 @@ export default function AdminListingDetailPage() {
                 {saving ? 'Saving...' : 'Save Changes'}
               </Button>
 
-              <div className="h-px bg-white/5" />
+              <div className="h-px bg-border" />
 
               {/* Flag */}
               <Button
@@ -479,7 +479,7 @@ export default function AdminListingDetailPage() {
 
           {/* Admin Notes */}
           {listing.admin_flag_reason && (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="font-display text-base">Admin Notes</CardTitle>
               </CardHeader>
@@ -495,7 +495,7 @@ export default function AdminListingDetailPage() {
 
       {/* ─── Below Grid: Audit Log ──────────────────────────────────── */}
       {auditLog.length > 0 && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Shield className="size-4 text-purple-400" />
@@ -507,7 +507,7 @@ export default function AdminListingDetailPage() {
               {auditLog.map((entry) => (
                 <div
                   key={entry.id}
-                  className="flex items-center justify-between rounded px-3 py-2 hover:bg-white/5"
+                  className="flex items-center justify-between rounded px-3 py-2 hover:bg-accent"
                 >
                   <div>
                     <p className="font-body text-sm text-foreground">{entry.action}</p>

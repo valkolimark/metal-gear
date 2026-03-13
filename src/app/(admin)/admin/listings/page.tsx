@@ -385,7 +385,7 @@ export default function AdminListingsPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-lg bg-[#0D0D14] p-1 border border-white/5 w-fit">
+      <div className="flex gap-1 rounded-lg p-1 border border-border bg-card w-fit">
         <button
           onClick={() => setActiveTab('all')}
           className={`rounded-md px-4 py-2 font-body text-sm font-medium transition-colors ${
@@ -417,7 +417,7 @@ export default function AdminListingsPage() {
       {activeTab === 'all' && (
         <>
           {/* Filters */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardContent className="flex flex-wrap items-end gap-3 p-4">
               <div className="flex-1 min-w-[200px]">
                 <Input
@@ -535,12 +535,12 @@ export default function AdminListingsPage() {
           )}
 
           {/* Listings Table */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
-                    <tr className="border-b border-white/5">
+                    <tr className="border-b border-border">
                       <th className="px-3 py-3 text-left">
                         <input
                           type="checkbox"
@@ -602,7 +602,7 @@ export default function AdminListingsPage() {
                       listings.map((listing) => (
                         <tr
                           key={listing.id}
-                          className={`border-b border-white/5 hover:bg-white/[0.02] transition-colors ${
+                          className={`border-b border-border hover:bg-white/[0.02] transition-colors ${
                             selectedIds.has(listing.id)
                               ? 'bg-primary/[0.03]'
                               : ''
@@ -808,7 +808,7 @@ export default function AdminListingsPage() {
 
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex items-center justify-between border-t border-white/5 px-4 py-3">
+                <div className="flex items-center justify-between border-t border-border px-4 py-3">
                   <p className="font-body text-xs text-muted-foreground">
                     Page {page} of {totalPages} ({total} total)
                   </p>
@@ -841,7 +841,7 @@ export default function AdminListingsPage() {
       {activeTab === 'fraud' && (
         <div className="space-y-4">
           {fraudLoading ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-8 text-center">
                 <p className="font-body text-sm text-muted-foreground">
                   Loading fraud queue...
@@ -849,7 +849,7 @@ export default function AdminListingsPage() {
               </CardContent>
             </Card>
           ) : fraudQueue.length === 0 ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="flex flex-col items-center gap-3 p-12">
                 <ShieldCheck className="size-10 text-green-400/60" />
                 <p className="font-body text-sm text-muted-foreground">
@@ -861,7 +861,7 @@ export default function AdminListingsPage() {
             fraudQueue.map((listing) => (
               <Card
                 key={listing.id}
-                className="border-red-500/10 bg-[#0D0D14] hover:border-red-500/20 transition-colors"
+                className="border-red-500/10 hover:border-red-500/20 transition-colors"
               >
                 <CardHeader className="pb-3">
                   <div className="flex items-start justify-between">

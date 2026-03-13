@@ -213,7 +213,7 @@ export default function AdminModerationPage() {
       </h1>
 
       {/* Stats header */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="flex flex-wrap items-center gap-6 p-4">
           <div className="flex items-center gap-2">
             <Flag className="size-4 text-amber-400" />
@@ -260,7 +260,7 @@ export default function AdminModerationPage() {
 
       {/* Tab 1 — Reports */}
       {activeTab === 'reports' && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Flag className="size-4 text-amber-400" />
@@ -271,7 +271,7 @@ export default function AdminModerationPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5">
+                  <tr className="border-b border-border">
                     <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Type</th>
                     <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Target ID</th>
                     <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Reporter</th>
@@ -295,7 +295,7 @@ export default function AdminModerationPage() {
                     </tr>
                   ) : (
                     reports.map((report) => (
-                      <tr key={report.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                      <tr key={report.id} className="border-b border-border hover:bg-white/[0.02]">
                         <td className="px-4 py-3">
                           <Badge
                             className={`border-0 font-body text-[10px] uppercase ${
@@ -370,7 +370,7 @@ export default function AdminModerationPage() {
       {/* Tab 2 — AI Fraud Queue */}
       {activeTab === 'fraud' && (
         <div className="space-y-4">
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <AlertTriangle className="size-4 text-red-400" />
@@ -380,20 +380,20 @@ export default function AdminModerationPage() {
           </Card>
 
           {fraudLoading ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-6 text-center">
                 <p className="font-body text-sm text-muted-foreground">Loading...</p>
               </CardContent>
             </Card>
           ) : fraudListings.length === 0 ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-6 text-center">
                 <p className="font-body text-sm text-muted-foreground">No fraud-flagged listings</p>
               </CardContent>
             </Card>
           ) : (
             fraudListings.map((listing) => (
-              <Card key={listing.id} className="border-white/5 bg-[#0D0D14]">
+              <Card key={listing.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1 space-y-2">
@@ -457,7 +457,7 @@ export default function AdminModerationPage() {
       {/* Tab 3 — Review Disputes */}
       {activeTab === 'disputes' && (
         <div className="space-y-4">
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <Star className="size-4 text-blue-400" />
@@ -467,20 +467,20 @@ export default function AdminModerationPage() {
           </Card>
 
           {disputesLoading ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-6 text-center">
                 <p className="font-body text-sm text-muted-foreground">Loading...</p>
               </CardContent>
             </Card>
           ) : disputedReviews.length === 0 ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-6 text-center">
                 <p className="font-body text-sm text-muted-foreground">No disputed reviews</p>
               </CardContent>
             </Card>
           ) : (
             disputedReviews.map((review) => (
-              <Card key={review.id} className="border-white/5 bg-[#0D0D14]">
+              <Card key={review.id}>
                 <CardContent className="p-4">
                   <div className="flex items-start justify-between gap-4">
                     <div className="min-w-0 flex-1 space-y-2">
@@ -545,7 +545,7 @@ export default function AdminModerationPage() {
       {/* Tab 4 — Transaction Disputes with AI Mediation */}
       {activeTab === 'transaction_disputes' && (
         <div className="space-y-4">
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 font-display text-base">
                 <Gavel className="size-4 text-purple-400" />
@@ -555,13 +555,13 @@ export default function AdminModerationPage() {
           </Card>
 
           {txDisputesLoading ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-6 text-center">
                 <p className="font-body text-sm text-muted-foreground">Loading...</p>
               </CardContent>
             </Card>
           ) : txDisputes.length === 0 ? (
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardContent className="p-6 text-center">
                 <p className="font-body text-sm text-muted-foreground">No transaction disputes</p>
               </CardContent>
@@ -579,7 +579,7 @@ export default function AdminModerationPage() {
               }
 
               return (
-                <Card key={dispute.id} className="border-white/5 bg-[#0D0D14]">
+                <Card key={dispute.id}>
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1 space-y-2">
@@ -613,17 +613,17 @@ export default function AdminModerationPage() {
                     </div>
 
                     {isExpanded && (
-                      <div className="mt-4 space-y-4 border-t border-white/5 pt-4">
+                      <div className="mt-4 space-y-4 border-t border-border pt-4">
                         {/* Buyer statement */}
                         <div>
                           <p className="mb-1 font-body text-xs font-semibold text-blue-400">Buyer Statement</p>
-                          <p className="rounded bg-surface p-3 font-body text-sm text-foreground">{dispute.description}</p>
+                          <p className="rounded bg-muted p-3 font-body text-sm text-foreground">{dispute.description}</p>
                         </div>
 
                         {/* Seller response */}
                         <div>
                           <p className="mb-1 font-body text-xs font-semibold text-purple-400">Seller Response</p>
-                          <p className="rounded bg-surface p-3 font-body text-sm text-foreground">
+                          <p className="rounded bg-muted p-3 font-body text-sm text-foreground">
                             {dispute.seller_response || 'No response yet'}
                           </p>
                         </div>

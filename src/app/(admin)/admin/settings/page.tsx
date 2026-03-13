@@ -147,7 +147,7 @@ export default function AdminSettingsPage() {
             className={`font-body rounded-md px-4 py-2 text-sm font-medium transition-colors ${
               activeTab === tab.key
                 ? 'bg-primary text-white'
-                : 'bg-[#0D0D14] text-muted-foreground hover:text-foreground border border-white/5'
+                : 'text-muted-foreground hover:text-foreground border border-border'
             }`}
           >
             {tab.label}
@@ -213,7 +213,7 @@ function PlatformConfigSection() {
 
   if (loading) {
     return (
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="space-y-4 pt-6">
           {Array.from({ length: 5 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />
@@ -231,7 +231,7 @@ function PlatformConfigSection() {
       {currentPalette && <BrandPaletteSelector currentPalette={currentPalette} />}
 
       {/* Boolean Toggles */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Feature Flags</CardTitle>
         </CardHeader>
@@ -264,7 +264,7 @@ function PlatformConfigSection() {
       </Card>
 
       {/* Numeric Inputs */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Numeric Settings</CardTitle>
         </CardHeader>
@@ -314,7 +314,7 @@ function PlatformConfigSection() {
       </Card>
 
       {/* Sitewide Banner */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Sitewide Banner</CardTitle>
         </CardHeader>
@@ -444,7 +444,7 @@ function AdminUsersSection() {
 
   if (loading) {
     return (
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="space-y-4 pt-6">
           {Array.from({ length: 3 }).map((_, i) => (
             <Skeleton key={i} className="h-16 w-full" />
@@ -457,7 +457,7 @@ function AdminUsersSection() {
   return (
     <div className="space-y-4">
       {/* Admin Table */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Current Admins</CardTitle>
         </CardHeader>
@@ -465,7 +465,7 @@ function AdminUsersSection() {
           <div className="overflow-x-auto">
             <table className="font-body w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-left text-muted-foreground">
+                <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="pb-3 pr-4">User</th>
                   <th className="pb-3 pr-4">Role</th>
                   <th className="pb-3 pr-4">Granted By</th>
@@ -475,7 +475,7 @@ function AdminUsersSection() {
               </thead>
               <tbody>
                 {admins.map((admin) => (
-                  <tr key={admin.id} className="border-b border-white/5">
+                  <tr key={admin.id} className="border-b border-border">
                     <td className="py-3 pr-4">
                       <div>
                         <p className="font-medium text-foreground">{admin.full_name || 'Unknown'}</p>
@@ -519,7 +519,7 @@ function AdminUsersSection() {
       </Card>
 
       {/* Add Admin */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Add Admin</CardTitle>
         </CardHeader>
@@ -557,7 +557,7 @@ function AdminUsersSection() {
               {searchResults.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between rounded-md border border-white/5 bg-background px-4 py-3"
+                  className="flex items-center justify-between rounded-md border border-border bg-background px-4 py-3"
                 >
                   <div>
                     <p className="font-body text-sm font-medium text-foreground">
@@ -612,7 +612,7 @@ function AdminUsersSection() {
 
 function PricingSection() {
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader>
         <CardTitle className="font-display text-base">Subscription Tiers</CardTitle>
       </CardHeader>
@@ -620,7 +620,7 @@ function PricingSection() {
         <div className="overflow-x-auto">
           <table className="font-body w-full text-sm">
             <thead>
-              <tr className="border-b border-white/5 text-left text-muted-foreground">
+              <tr className="border-b border-border text-left text-muted-foreground">
                 <th className="pb-3 pr-4">Tier</th>
                 <th className="pb-3 pr-4">Price</th>
                 <th className="pb-3">Features</th>
@@ -628,7 +628,7 @@ function PricingSection() {
             </thead>
             <tbody>
               {TIER_PRICES.map((tier) => (
-                <tr key={tier.name} className="border-b border-white/5">
+                <tr key={tier.name} className="border-b border-border">
                   <td className="py-3 pr-4">
                     <Badge
                       variant={tier.name === 'Free' ? 'secondary' : 'default'}
@@ -653,7 +653,7 @@ function PricingSection() {
           </table>
         </div>
 
-        <Separator className="bg-white/5" />
+        <Separator className="bg-border" />
 
         <div className="flex items-center gap-3">
           <p className="font-body text-sm text-muted-foreground">
@@ -718,7 +718,7 @@ function IntegrationsSection() {
 
   if (loading) {
     return (
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="space-y-4 pt-6">
           {Array.from({ length: 4 }).map((_, i) => (
             <Skeleton key={i} className="h-10 w-full" />
@@ -730,7 +730,7 @@ function IntegrationsSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Integration Health</CardTitle>
         </CardHeader>
@@ -738,7 +738,7 @@ function IntegrationsSection() {
           {integrations.map((integration) => (
             <div
               key={integration.name}
-              className="flex items-center justify-between rounded-md border border-white/5 bg-background px-4 py-3"
+              className="flex items-center justify-between rounded-md border border-border bg-background px-4 py-3"
             >
               <div className="flex items-center gap-3">
                 {integration.status === 'ok' && (
@@ -799,7 +799,7 @@ function IntegrationsSection() {
 
       {/* Apple JWT Expiry */}
       {appleJwtExpiry && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base">Apple SSO JWT</CardTitle>
           </CardHeader>
@@ -872,7 +872,7 @@ function DataManagementSection() {
 
   if (loading) {
     return (
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="space-y-4 pt-6">
           {Array.from({ length: 6 }).map((_, i) => (
             <Skeleton key={i} className="h-8 w-full" />
@@ -884,7 +884,7 @@ function DataManagementSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Database Row Counts</CardTitle>
         </CardHeader>
@@ -892,16 +892,16 @@ function DataManagementSection() {
           <div className="overflow-x-auto">
             <table className="font-body w-full text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-left text-muted-foreground">
+                <tr className="border-b border-border text-left text-muted-foreground">
                   <th className="pb-3 pr-4">Table</th>
                   <th className="pb-3 text-right">Rows</th>
                 </tr>
               </thead>
               <tbody>
                 {tableCounts.map(({ table, count }) => (
-                  <tr key={table} className="border-b border-white/5">
+                  <tr key={table} className="border-b border-border">
                     <td className="py-2.5 pr-4">
-                      <code className="rounded bg-white/5 px-1.5 py-0.5 text-xs text-foreground">
+                      <code className="rounded bg-border px-1.5 py-0.5 text-xs text-foreground">
                         {table}
                       </code>
                     </td>
@@ -916,7 +916,7 @@ function DataManagementSection() {
         </CardContent>
       </Card>
 
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base">Maintenance Actions</CardTitle>
         </CardHeader>
@@ -995,7 +995,7 @@ function AuditLogSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <div>
             <CardTitle className="font-display text-base">Audit Log</CardTitle>
@@ -1022,7 +1022,7 @@ function AuditLogSection() {
             <div className="overflow-x-auto">
               <table className="font-body w-full text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 text-left text-muted-foreground">
+                  <tr className="border-b border-border text-left text-muted-foreground">
                     <th className="pb-3 pr-4">Admin</th>
                     <th className="pb-3 pr-4">Action</th>
                     <th className="pb-3 pr-4">Target</th>
@@ -1032,7 +1032,7 @@ function AuditLogSection() {
                 </thead>
                 <tbody>
                   {logs.map((log) => (
-                    <tr key={log.id} className="border-b border-white/5">
+                    <tr key={log.id} className="border-b border-border">
                       <td className="py-3 pr-4 font-medium text-foreground">{log.admin_name}</td>
                       <td className="py-3 pr-4">
                         <Badge variant="secondary" className="font-mono text-xs">
@@ -1067,7 +1067,7 @@ function AuditLogSection() {
                       expandedRow === log.id &&
                       log.metadata &&
                       Object.keys(log.metadata).length > 0 && (
-                        <tr key={`${log.id}-meta`} className="border-b border-white/5">
+                        <tr key={`${log.id}-meta`} className="border-b border-border">
                           <td colSpan={5} className="px-4 py-3">
                             <pre className="overflow-x-auto rounded bg-background p-3 font-mono text-xs text-muted-foreground">
                               {JSON.stringify(log.metadata, null, 2)}
@@ -1140,7 +1140,7 @@ function WeeklyBriefsSection() {
 
   return (
     <div className="space-y-4">
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base text-foreground">
             Weekly Briefs Archive
@@ -1156,7 +1156,7 @@ function WeeklyBriefsSection() {
               {briefs.map((brief) => (
                 <div
                   key={brief.id}
-                  className="rounded-lg border border-white/5 bg-surface p-4"
+                  className="rounded-lg border border-border bg-muted p-4"
                 >
                   <div className="flex items-center justify-between">
                     <div>
@@ -1177,9 +1177,9 @@ function WeeklyBriefsSection() {
                     </Button>
                   </div>
                   {expanded === brief.id && (
-                    <div className="mt-4 space-y-3 border-t border-white/5 pt-4">
+                    <div className="mt-4 space-y-3 border-t border-border pt-4">
                       <div className="prose prose-invert max-w-none">
-                        <pre className="whitespace-pre-wrap rounded bg-[#0D0D14] p-4 font-body text-sm text-foreground">
+                        <pre className="whitespace-pre-wrap rounded p-4 font-body text-sm text-foreground">
                           {brief.ai_brief}
                         </pre>
                       </div>

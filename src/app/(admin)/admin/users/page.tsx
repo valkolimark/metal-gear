@@ -156,7 +156,7 @@ export default function AdminUsersPage() {
       </div>
 
       {/* Filters */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="flex flex-wrap items-end gap-3 p-4">
           <div className="flex-1 min-w-[200px]">
             <Input
@@ -208,12 +208,12 @@ export default function AdminUsersPage() {
       </Card>
 
       {/* User Table */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-border">
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">
                     User
                   </th>
@@ -258,14 +258,14 @@ export default function AdminUsersPage() {
                   users.filter((u) => churnFilter === 'all' || churnMap[u.id]?.risk_level === churnFilter).map((user) => (
                     <tr
                       key={user.id}
-                      className="border-b border-white/5 hover:bg-white/[0.02]"
+                      className="border-b border-border hover:bg-white/[0.02]"
                     >
                       <td className="px-4 py-3">
                         <Link
                           href={`/admin/users/${user.id}`}
                           className="flex items-center gap-3"
                         >
-                          <div className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-surface">
+                          <div className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-muted">
                             {user.avatar_url ? (
                               <Image
                                 src={user.avatar_url}
@@ -390,7 +390,7 @@ export default function AdminUsersPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-white/5 px-4 py-3">
+            <div className="flex items-center justify-between border-t border-border px-4 py-3">
               <p className="font-body text-xs text-muted-foreground">
                 Page {page} of {totalPages}
               </p>

@@ -47,6 +47,11 @@ const nextConfig: NextConfig = {
         hostname: 'customer-305dqqczrx52n91m.cloudflarestream.com',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'lh3.googleusercontent.com',
+        pathname: '/**',
+      },
     ],
   },
 }

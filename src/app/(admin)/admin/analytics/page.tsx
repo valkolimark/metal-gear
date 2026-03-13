@@ -73,7 +73,7 @@ function formatDate(dateStr: string) {
 
 function KPICard({ label, value, sub }: { label: string; value: string | number; sub?: string }) {
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardContent className="p-4">
         <p className="font-body text-xs text-muted-foreground">{label}</p>
         <p className="font-display text-2xl font-bold text-foreground">{value}</p>
@@ -85,7 +85,7 @@ function KPICard({ label, value, sub }: { label: string; value: string | number;
 
 function SectionSkeleton() {
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader>
         <Skeleton className="h-5 w-40" />
       </CardHeader>
@@ -101,7 +101,7 @@ function SectionSkeleton() {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: Array<{ name: string; value: number; color: string }>; label?: string }) {
   if (!active || !payload?.length) return null
   return (
-    <div className="rounded-md border border-white/10 bg-[#0D0D14] px-3 py-2 shadow-lg">
+    <div className="rounded-md border border-white/10 px-3 py-2 shadow-lg">
       <p className="font-body text-xs text-muted-foreground">{label}</p>
       {payload.map((entry) => (
         <p key={entry.name} className="font-body text-sm" style={{ color: entry.color }}>
@@ -197,7 +197,7 @@ export default function AdminAnalyticsPage() {
       {!userGrowth ? (
         <SectionSkeleton />
       ) : (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">User Growth (90 days)</CardTitle>
           </CardHeader>
@@ -230,7 +230,7 @@ export default function AdminAnalyticsPage() {
         <SectionSkeleton />
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader>
               <CardTitle className="font-display text-base text-foreground">Listings per Day (90 days)</CardTitle>
             </CardHeader>
@@ -247,7 +247,7 @@ export default function AdminAnalyticsPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader>
               <CardTitle className="font-display text-base text-foreground">Category Distribution</CardTitle>
             </CardHeader>
@@ -296,7 +296,7 @@ export default function AdminAnalyticsPage() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardHeader>
                 <CardTitle className="font-display text-base text-foreground">SOS Requests per Day</CardTitle>
               </CardHeader>
@@ -313,7 +313,7 @@ export default function AdminAnalyticsPage() {
               </CardContent>
             </Card>
 
-            <Card className="border-white/5 bg-[#0D0D14]">
+            <Card>
               <CardHeader>
                 <CardTitle className="font-display text-base text-foreground">Top 10 Requested Equipment</CardTitle>
               </CardHeader>
@@ -345,7 +345,7 @@ export default function AdminAnalyticsPage() {
       {!searchData ? (
         <SectionSkeleton />
       ) : (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">Top Search Terms</CardTitle>
           </CardHeader>
@@ -399,7 +399,7 @@ export default function AdminAnalyticsPage() {
             <KPICard label="Manual Avg" value={qualityData.avgManual} sub={`${qualityData.manualScoredCount} listings`} />
             <KPICard label="AI Advantage" value={qualityData.avgAI > qualityData.avgManual ? `+${qualityData.avgAI - qualityData.avgManual}` : `${qualityData.avgAI - qualityData.avgManual}`} sub="AI vs manual score diff" />
           </div>
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader>
               <CardTitle className="font-display text-base text-foreground">Grade Distribution</CardTitle>
             </CardHeader>
@@ -443,7 +443,7 @@ export default function AdminAnalyticsPage() {
       {!pricingData ? (
         <SectionSkeleton />
       ) : (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">Pricing Intelligence</CardTitle>
           </CardHeader>
@@ -459,17 +459,17 @@ export default function AdminAnalyticsPage() {
               <KPICard label="Coaching Sessions" value={pricingData.coachingSessions} />
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="rounded border border-white/5 p-3">
+              <div className="rounded border border-border p-3">
                 <p className="font-body text-xs text-muted-foreground">AI-Priced Offer Accept Rate</p>
                 <p className="font-display text-xl font-bold text-foreground">{pricingData.aiOfferAcceptRate}%</p>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/5">
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-border">
                   <div className="h-full rounded-full bg-primary" style={{ width: `${pricingData.aiOfferAcceptRate}%` }} />
                 </div>
               </div>
-              <div className="rounded border border-white/5 p-3">
+              <div className="rounded border border-border p-3">
                 <p className="font-body text-xs text-muted-foreground">Manual-Priced Offer Accept Rate</p>
                 <p className="font-display text-xl font-bold text-foreground">{pricingData.manualOfferAcceptRate}%</p>
-                <div className="mt-1 h-2 overflow-hidden rounded-full bg-white/5">
+                <div className="mt-1 h-2 overflow-hidden rounded-full bg-border">
                   <div className="h-full rounded-full bg-secondary" style={{ width: `${pricingData.manualOfferAcceptRate}%` }} />
                 </div>
               </div>
@@ -482,7 +482,7 @@ export default function AdminAnalyticsPage() {
       {!geoData ? (
         <SectionSkeleton />
       ) : (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">Top 10 Cities by Users</CardTitle>
           </CardHeader>
@@ -493,7 +493,7 @@ export default function AdminAnalyticsPage() {
               <div className="overflow-x-auto">
                 <table className="w-full font-body text-sm">
                   <thead>
-                    <tr className="border-b border-white/5 text-left">
+                    <tr className="border-b border-border text-left">
                       <th className="px-3 py-2 text-xs font-medium text-muted-foreground">#</th>
                       <th className="px-3 py-2 text-xs font-medium text-muted-foreground">City</th>
                       <th className="px-3 py-2 text-right text-xs font-medium text-muted-foreground">Users</th>
@@ -523,7 +523,7 @@ export default function AdminAnalyticsPage() {
       {!marketGaps ? (
         <SectionSkeleton />
       ) : (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">
               Market Gaps — Top Recruitment Opportunities
@@ -542,7 +542,7 @@ export default function AdminAnalyticsPage() {
                     medium: 'bg-blue-500/20 text-blue-400',
                   }
                   return (
-                    <div key={i} className="rounded-lg border border-white/5 bg-surface p-4 space-y-2">
+                    <div key={i} className="rounded-lg border border-border bg-muted p-4 space-y-2">
                       <div className="flex items-center gap-2">
                         <Badge className={`border-0 font-body text-[10px] ${priorityColors[gap.priority] || 'bg-zinc-500/20 text-zinc-400'}`}>
                           #{i + 1} {gap.priority}
@@ -578,7 +578,7 @@ export default function AdminAnalyticsPage() {
                     </CardHeader>
                     <CardContent className="space-y-2">
                       <p className="font-body text-xs text-muted-foreground">Subject: <strong className="text-foreground">{outreachDraft.subject}</strong></p>
-                      <pre className="whitespace-pre-wrap rounded bg-surface p-3 font-body text-sm text-foreground">{outreachDraft.body}</pre>
+                      <pre className="whitespace-pre-wrap rounded bg-muted p-3 font-body text-sm text-foreground">{outreachDraft.body}</pre>
                       <Button
                         variant="outline"
                         size="sm"

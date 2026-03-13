@@ -35,7 +35,7 @@ function StatCard({
   color: string
 }) {
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardContent className="flex items-center gap-3 p-4">
         <div className={`flex size-10 items-center justify-center rounded-lg ${color}`}>
           <Icon className="size-5" />
@@ -159,7 +159,7 @@ export default function ControlTowerPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Alert Queue */}
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <AlertTriangle className="size-4 text-red-400" />
@@ -230,7 +230,7 @@ export default function ControlTowerPage() {
         </Card>
 
         {/* Activity Feed */}
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Clock className="size-4 text-blue-400" />
@@ -275,7 +275,7 @@ export default function ControlTowerPage() {
 
       {/* Charts */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <TrendingUp className="size-4 text-blue-400" />
@@ -286,11 +286,11 @@ export default function ControlTowerPage() {
             {charts ? (
               <MiniChart data={charts.signupsByDate} color="#1877F2" />
             ) : (
-              <div className="h-20 animate-pulse rounded bg-surface" />
+              <div className="h-20 animate-pulse rounded bg-muted" />
             )}
           </CardContent>
         </Card>
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <TrendingUp className="size-4 text-green-400" />
@@ -301,14 +301,14 @@ export default function ControlTowerPage() {
             {charts ? (
               <MiniChart data={charts.listingsByDate} color="#22c55e" />
             ) : (
-              <div className="h-20 animate-pulse rounded bg-surface" />
+              <div className="h-20 animate-pulse rounded bg-muted" />
             )}
           </CardContent>
         </Card>
       </div>
 
       {/* Today's Snapshot */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader className="pb-3">
           <CardTitle className="font-display text-base">
             Today&apos;s Snapshot

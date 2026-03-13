@@ -69,7 +69,7 @@ export default function AdminPriorityPage() {
       <h1 className="font-display text-2xl font-bold text-foreground">Priority Engine</h1>
 
       {/* Tab Nav */}
-      <div className="flex gap-1 overflow-x-auto rounded-lg border border-white/5 bg-[#0D0D14] p-1">
+      <div className="flex gap-1 overflow-x-auto rounded-lg border border-border bg-card p-1">
         {[
           { id: 'tiers' as const, label: 'Company Tiers', icon: Star },
           { id: 'boosts' as const, label: 'Active Boosts', icon: Zap },
@@ -149,7 +149,7 @@ function CompanyTiersSection() {
   }
 
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
         <CardTitle className="font-display text-base">Company Priority Tiers</CardTitle>
         <div className="flex items-center gap-2">
@@ -186,7 +186,7 @@ function CompanyTiersSection() {
             <div className="overflow-x-auto">
               <table className="w-full font-body text-sm">
                 <thead>
-                  <tr className="border-b border-white/5 text-left text-xs text-muted-foreground">
+                  <tr className="border-b border-border text-left text-xs text-muted-foreground">
                     <th className="pb-2 pr-4">User / Company</th>
                     <th className="pb-2 pr-4">Listings</th>
                     <th className="pb-2 pr-4">Tier</th>
@@ -199,7 +199,7 @@ function CompanyTiersSection() {
                   {companies.map((c) => {
                     const badge = TIER_BADGES[c.priority_tier] || TIER_BADGES.standard
                     return (
-                      <tr key={c.id} className="border-b border-white/5">
+                      <tr key={c.id} className="border-b border-border">
                         <td className="py-3 pr-4">
                           <p className="font-medium text-foreground">{c.company_name || c.full_name}</p>
                           {c.company_name && (
@@ -360,7 +360,7 @@ function ActiveBoostsSection() {
   }
 
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader className="flex-row items-center justify-between gap-4 space-y-0">
         <CardTitle className="font-display text-base">Active Boosts</CardTitle>
         <div className="flex items-center gap-2">
@@ -391,7 +391,7 @@ function ActiveBoostsSection() {
           <div className="overflow-x-auto">
             <table className="w-full font-body text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-left text-xs text-muted-foreground">
+                <tr className="border-b border-border text-left text-xs text-muted-foreground">
                   <th className="pb-2 pr-4">User</th>
                   <th className="pb-2 pr-4">Type</th>
                   <th className="pb-2 pr-4">Listing</th>
@@ -402,7 +402,7 @@ function ActiveBoostsSection() {
               </thead>
               <tbody>
                 {boosts.map((b) => (
-                  <tr key={b.id} className="border-b border-white/5">
+                  <tr key={b.id} className="border-b border-border">
                     <td className="py-3 pr-4 text-foreground">{b.user_name}</td>
                     <td className="py-3 pr-4">
                       <Badge variant="secondary" className="text-[10px]">
@@ -548,7 +548,7 @@ function HomepageSlotsSection() {
   }
 
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="font-display text-base">
           Homepage Featured Slots ({slots.length}/6)
@@ -569,7 +569,7 @@ function HomepageSlotsSection() {
             {slots.map((slot, i) => (
               <div
                 key={slot.id}
-                className="flex items-center justify-between rounded-lg border border-white/5 bg-surface/30 p-3"
+                className="flex items-center justify-between rounded-lg border border-border bg-muted/30 p-3"
               >
                 <div className="flex items-center gap-3">
                   <span className="font-display text-lg font-bold text-muted-foreground">
@@ -699,7 +699,7 @@ function CategoryPinsSection() {
   }
 
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="font-display text-base">Category Pins</CardTitle>
         <Button size="sm" onClick={() => setAddModal(true)} className="font-body text-xs">
@@ -717,7 +717,7 @@ function CategoryPinsSection() {
           <div className="overflow-x-auto">
             <table className="w-full font-body text-sm">
               <thead>
-                <tr className="border-b border-white/5 text-left text-xs text-muted-foreground">
+                <tr className="border-b border-border text-left text-xs text-muted-foreground">
                   <th className="pb-2 pr-4">Listing</th>
                   <th className="pb-2 pr-4">Category</th>
                   <th className="pb-2 pr-4">Position</th>
@@ -726,7 +726,7 @@ function CategoryPinsSection() {
               </thead>
               <tbody>
                 {pins.map((p) => (
-                  <tr key={p.id} className="border-b border-white/5">
+                  <tr key={p.id} className="border-b border-border">
                     <td className="py-3 pr-4 text-foreground">{p.title}</td>
                     <td className="py-3 pr-4 text-muted-foreground">{p.pinned_category}</td>
                     <td className="py-3 pr-4 text-muted-foreground">#{p.pinned_position}</td>
@@ -795,7 +795,7 @@ function CategoryPinsSection() {
 
 function SOSPrioritySection() {
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardHeader>
         <CardTitle className="font-display text-base">SOS Priority Boosts</CardTitle>
       </CardHeader>

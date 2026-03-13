@@ -247,7 +247,7 @@ export default function AdminFinancialsPage() {
       {/* ─── Revenue Chart + Distribution ──────────────────────── */}
       <div className="grid gap-4 lg:grid-cols-3">
         {/* Revenue Chart */}
-        <Card className="border-white/5 bg-[#0D0D14] lg:col-span-2">
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">
               Revenue (Last 12 Months)
@@ -280,7 +280,7 @@ export default function AdminFinancialsPage() {
                   />
                   <Tooltip
                     contentStyle={{
-                      backgroundColor: '#0D0D14',
+                      backgroundColor: 'var(--card)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       borderRadius: '8px',
                       fontFamily: 'Manrope, sans-serif',
@@ -304,7 +304,7 @@ export default function AdminFinancialsPage() {
 
         {/* Subscription Distribution + Forecast */}
         <div className="space-y-4">
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader>
               <CardTitle className="font-display text-base text-foreground">
                 Subscription Distribution
@@ -333,7 +333,7 @@ export default function AdminFinancialsPage() {
                     total={kpis.totalUsers}
                     color="bg-primary"
                   />
-                  <Separator className="border-white/5" />
+                  <Separator className="border-border" />
                   <div className="flex justify-between font-body text-xs text-muted-foreground">
                     <span>Total Users</span>
                     <span className="text-foreground">{kpis.totalUsers}</span>
@@ -348,7 +348,7 @@ export default function AdminFinancialsPage() {
           </Card>
 
           {/* Revenue Forecast */}
-          <Card className="border-white/5 bg-[#0D0D14]">
+          <Card>
             <CardHeader>
               <CardTitle className="font-display text-base text-foreground">
                 Revenue Forecast
@@ -367,7 +367,7 @@ export default function AdminFinancialsPage() {
                     <span className="text-muted-foreground">Projected ARR</span>
                     <span className="text-green-400">{formatCents(kpis.mrrCents * 12)}</span>
                   </div>
-                  <Separator className="border-white/5" />
+                  <Separator className="border-border" />
                   <div className="flex justify-between font-body text-sm">
                     <span className="text-muted-foreground">90-Day MRR</span>
                     <span className="text-foreground">
@@ -377,7 +377,7 @@ export default function AdminFinancialsPage() {
                   <p className="font-body text-[10px] text-muted-foreground">
                     Based on current MRR and {kpis.churnRate}% monthly churn
                   </p>
-                  <Separator className="border-white/5" />
+                  <Separator className="border-border" />
                   <div className="flex justify-between font-body text-sm">
                     <span className="text-muted-foreground">Boost Rev (All-Time)</span>
                     <span className="text-primary">{formatCents(kpis.boostRevenueTotalCents)}</span>
@@ -390,7 +390,7 @@ export default function AdminFinancialsPage() {
       </div>
 
       {/* ─── Subscriptions Table ───────────────────────────────── */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="font-display text-base text-foreground">
             Subscriptions
@@ -434,7 +434,7 @@ export default function AdminFinancialsPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-border">
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">User</th>
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Plan</th>
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Status</th>
@@ -457,7 +457,7 @@ export default function AdminFinancialsPage() {
                   </tr>
                 ) : (
                   subs.map((sub) => (
-                    <tr key={sub.stripe_subscription_id || sub.user_id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <tr key={sub.stripe_subscription_id || sub.user_id} className="border-b border-border hover:bg-white/[0.02]">
                       <td className="px-4 py-3 font-body text-sm text-foreground">
                         {sub.user_name}
                       </td>
@@ -488,7 +488,7 @@ export default function AdminFinancialsPage() {
 
           {/* Pagination */}
           {subsTotalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-white/5 pt-3">
+            <div className="flex items-center justify-between border-t border-border pt-3">
               <p className="font-body text-xs text-muted-foreground">
                 Page {subsPage} of {subsTotalPages}
               </p>
@@ -506,7 +506,7 @@ export default function AdminFinancialsPage() {
       </Card>
 
       {/* ─── Boost Revenue Table ───────────────────────────────── */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader className="flex-row items-center justify-between space-y-0">
           <CardTitle className="font-display text-base text-foreground">
             Boost Revenue
@@ -526,7 +526,7 @@ export default function AdminFinancialsPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-border">
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">User</th>
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Type</th>
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Listing</th>
@@ -551,7 +551,7 @@ export default function AdminFinancialsPage() {
                   </tr>
                 ) : (
                   boosts.map((b, i) => (
-                    <tr key={`${b.user_id}-${b.starts_at}-${i}`} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <tr key={`${b.user_id}-${b.starts_at}-${i}`} className="border-b border-border hover:bg-white/[0.02]">
                       <td className="px-4 py-3 font-body text-sm text-foreground">{b.user_name}</td>
                       <td className="px-4 py-3">
                         <Badge className="border-0 bg-primary/20 font-body text-[10px] uppercase text-primary">
@@ -583,7 +583,7 @@ export default function AdminFinancialsPage() {
           </div>
 
           {boostsTotalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4">
+            <div className="flex items-center justify-between border-t border-border pt-3 mt-4">
               <p className="font-body text-xs text-muted-foreground">
                 Page {boostsPage} of {boostsTotalPages}
               </p>
@@ -601,7 +601,7 @@ export default function AdminFinancialsPage() {
       </Card>
 
       {/* ─── Failed Payments ───────────────────────────────────── */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardHeader>
           <CardTitle className="font-display text-base text-foreground flex items-center gap-2">
             <AlertTriangle className="size-4 text-red-400" />
@@ -622,7 +622,7 @@ export default function AdminFinancialsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-white/5">
+                  <tr className="border-b border-border">
                     <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">User</th>
                     <th className="px-4 py-3 text-right font-body text-xs font-medium text-muted-foreground">Amount</th>
                     <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Description</th>
@@ -631,7 +631,7 @@ export default function AdminFinancialsPage() {
                 </thead>
                 <tbody>
                   {failedPayments.map((p) => (
-                    <tr key={p.id} className="border-b border-white/5 hover:bg-white/[0.02]">
+                    <tr key={p.id} className="border-b border-border hover:bg-white/[0.02]">
                       <td className="px-4 py-3 font-body text-sm text-foreground">{p.user_name}</td>
                       <td className="px-4 py-3 text-right font-body text-sm text-red-400">
                         {formatCents(p.amount_cents)}
@@ -668,7 +668,7 @@ function KPICard({
   accent: string
 }) {
   return (
-    <Card className="border-white/5 bg-[#0D0D14]">
+    <Card>
       <CardContent className="p-4">
         <div className="flex items-center justify-between">
           <span className="font-body text-[11px] text-muted-foreground">{label}</span>
@@ -703,7 +703,7 @@ function DistributionBar({
           {count} ({pct.toFixed(1)}%)
         </span>
       </div>
-      <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
+      <div className="h-2 w-full overflow-hidden rounded-full bg-border">
         <div
           className={`h-full rounded-full ${color}`}
           style={{ width: `${Math.max(pct, 0.5)}%` }}

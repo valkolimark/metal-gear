@@ -135,7 +135,7 @@ export default function AdminShell({
         {/* Admin profile */}
         <div className="border-t border-border/30 p-4">
           <div className="flex items-center gap-3">
-            <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-surface">
+            <div className="flex size-9 items-center justify-center overflow-hidden rounded-full bg-muted">
               {avatarUrl ? (
                 <Image src={avatarUrl} alt="" width={36} height={36} className="size-full object-cover" />
               ) : (

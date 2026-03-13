@@ -175,15 +175,15 @@ export default function AdminUserDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
         {/* Profile Info */}
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">Profile</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex items-center gap-3">
-              <div className="flex size-16 items-center justify-center overflow-hidden rounded-full bg-surface">
+              <div className="flex size-16 items-center justify-center overflow-hidden rounded-full bg-muted">
                 {profile.avatar_url ? (
-                  <Image src={profile.avatar_url} alt="" width={64} height={64} className="size-full object-cover" />
+                  <Image src={profile.avatar_url} alt="" width={64} height={64} unoptimized className="size-full object-cover" />
                 ) : (
                   <span className="font-display text-xl text-muted-foreground">
                     {(profile.full_name || '?')[0]}
@@ -233,7 +233,7 @@ export default function AdminUserDetailPage() {
         </Card>
 
         {/* Actions */}
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">Actions</CardTitle>
           </CardHeader>
@@ -256,7 +256,7 @@ export default function AdminUserDetailPage() {
               </Select>
             </div>
 
-            <div className="h-px bg-white/5" />
+            <div className="h-px bg-border" />
 
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="outline" onClick={() => handleSuspend('24h')}>
@@ -279,7 +279,7 @@ export default function AdminUserDetailPage() {
               Ban Account
             </Button>
 
-            <div className="h-px bg-white/5" />
+            <div className="h-px bg-border" />
 
             <div className="space-y-2">
               <Label className="font-body text-xs">Admin Notes</Label>
@@ -299,7 +299,7 @@ export default function AdminUserDetailPage() {
         </Card>
 
         {/* Subscription Override */}
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <CreditCard className="size-4 text-primary" />
@@ -348,27 +348,27 @@ export default function AdminUserDetailPage() {
         </Card>
 
         {/* Stats Summary */}
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">Activity</CardTitle>
           </CardHeader>
           <CardContent className="grid grid-cols-2 gap-3">
-            <div className="rounded-lg bg-surface p-3 text-center">
+            <div className="rounded-lg bg-muted p-3 text-center">
               <Package className="mx-auto mb-1 size-4 text-green-400" />
               <p className="font-display text-lg font-bold">{listings.length}</p>
               <p className="font-body text-[10px] text-muted-foreground">Listings</p>
             </div>
-            <div className="rounded-lg bg-surface p-3 text-center">
+            <div className="rounded-lg bg-muted p-3 text-center">
               <Megaphone className="mx-auto mb-1 size-4 text-orange-400" />
               <p className="font-display text-lg font-bold">{sosRequests.length}</p>
               <p className="font-body text-[10px] text-muted-foreground">SOS Requests</p>
             </div>
-            <div className="rounded-lg bg-surface p-3 text-center">
+            <div className="rounded-lg bg-muted p-3 text-center">
               <Star className="mx-auto mb-1 size-4 text-amber-400" />
               <p className="font-display text-lg font-bold">{reviews.length}</p>
               <p className="font-body text-[10px] text-muted-foreground">Reviews</p>
             </div>
-            <div className="rounded-lg bg-surface p-3 text-center">
+            <div className="rounded-lg bg-muted p-3 text-center">
               <AlertTriangle className="mx-auto mb-1 size-4 text-red-400" />
               <p className="font-display text-lg font-bold">{reports.length}</p>
               <p className="font-body text-[10px] text-muted-foreground">Reports</p>
@@ -379,7 +379,7 @@ export default function AdminUserDetailPage() {
 
       {/* Listings */}
       {listings.length > 0 && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">
               Listings ({listings.length})
@@ -391,7 +391,7 @@ export default function AdminUserDetailPage() {
                 <Link
                   key={l.id}
                   href={`/admin/listings/${l.id}`}
-                  className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-white/5"
+                  className="flex items-center justify-between rounded-lg px-3 py-2 hover:bg-accent"
                 >
                   <div>
                     <p className="font-body text-sm text-foreground">{l.title}</p>
@@ -424,7 +424,7 @@ export default function AdminUserDetailPage() {
 
       {/* Churn Risk */}
       {churnRisk && (churnRisk.risk_level === 'at_risk' || churnRisk.risk_level === 'high_risk') && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <AlertTriangle className={`size-4 ${churnRisk.risk_level === 'high_risk' ? 'text-red-400' : 'text-yellow-400'}`} />
@@ -457,7 +457,7 @@ export default function AdminUserDetailPage() {
             {outreach && (
               <div className="mt-3 space-y-2 rounded-lg border border-primary/20 bg-primary/5 p-4">
                 <p className="font-body text-xs text-muted-foreground">Subject: <strong className="text-foreground">{outreach.subject}</strong></p>
-                <pre className="whitespace-pre-wrap rounded bg-surface p-3 font-body text-sm text-foreground">{outreach.body}</pre>
+                <pre className="whitespace-pre-wrap rounded bg-muted p-3 font-body text-sm text-foreground">{outreach.body}</pre>
                 <Button
                   variant="outline"
                   size="sm"
@@ -477,7 +477,7 @@ export default function AdminUserDetailPage() {
 
       {/* Audit Log */}
       {auditLog.length > 0 && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 font-display text-base">
               <Shield className="size-4 text-purple-400" />

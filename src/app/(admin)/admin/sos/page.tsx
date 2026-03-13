@@ -333,7 +333,7 @@ export default function AdminSOSPage() {
 
       {/* Stats Strip */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardContent className="flex items-center gap-4 p-4">
             <div className="flex size-10 items-center justify-center rounded-lg bg-[#FF6B2B]/10">
               <Radio className="size-5 text-[#FF6B2B]" />
@@ -344,7 +344,7 @@ export default function AdminSOSPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardContent className="flex items-center gap-4 p-4">
             <div className="flex size-10 items-center justify-center rounded-lg bg-green-500/10">
               <CheckCircle2 className="size-5 text-green-400" />
@@ -355,7 +355,7 @@ export default function AdminSOSPage() {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardContent className="flex items-center gap-4 p-4">
             <div className="flex size-10 items-center justify-center rounded-lg bg-amber-500/10">
               <AlertTriangle className="size-5 text-amber-400" />
@@ -369,12 +369,12 @@ export default function AdminSOSPage() {
       </div>
 
       {/* Tab Navigation */}
-      <div className="flex gap-2 border-b border-white/5 pb-2">
+      <div className="flex gap-2 border-b border-border pb-2">
         <button
           onClick={() => setActiveTab('list')}
           className={`rounded-t px-4 py-2 font-body text-sm transition-colors ${
             activeTab === 'list'
-              ? 'bg-white/5 text-foreground'
+              ? 'bg-border text-foreground'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -384,7 +384,7 @@ export default function AdminSOSPage() {
           onClick={() => setActiveTab('demand_gap')}
           className={`rounded-t px-4 py-2 font-body text-sm transition-colors ${
             activeTab === 'demand_gap'
-              ? 'bg-white/5 text-foreground'
+              ? 'bg-border text-foreground'
               : 'text-muted-foreground hover:text-foreground'
           }`}
         >
@@ -394,7 +394,7 @@ export default function AdminSOSPage() {
 
       {/* Demand Gap Tab */}
       {activeTab === 'demand_gap' && (
-        <Card className="border-white/5 bg-[#0D0D14]">
+        <Card>
           <CardHeader>
             <CardTitle className="font-display text-base text-foreground">
               Demand Gap Analysis (90 days)
@@ -407,11 +407,11 @@ export default function AdminSOSPage() {
               <div className="space-y-4">
                 {/* AI Stats */}
                 <div className="flex gap-4">
-                  <div className="rounded border border-white/5 px-3 py-2">
+                  <div className="rounded border border-border px-3 py-2">
                     <p className="font-body text-xs text-muted-foreground">Total SOSs</p>
                     <p className="font-display text-lg font-bold text-foreground">{demandGap.aiStats.totalSos}</p>
                   </div>
-                  <div className="rounded border border-white/5 px-3 py-2">
+                  <div className="rounded border border-border px-3 py-2">
                     <p className="font-body text-xs text-muted-foreground">AI Categorized</p>
                     <p className="font-display text-lg font-bold text-foreground">
                       {demandGap.aiStats.aiCategorized}
@@ -429,7 +429,7 @@ export default function AdminSOSPage() {
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead>
-                        <tr className="border-b border-white/5">
+                        <tr className="border-b border-border">
                           <th className="px-4 py-2 text-left font-body text-xs font-medium text-muted-foreground">Category</th>
                           <th className="px-4 py-2 text-right font-body text-xs font-medium text-muted-foreground">SOSs</th>
                           <th className="px-4 py-2 text-right font-body text-xs font-medium text-muted-foreground">Response Rate</th>
@@ -478,7 +478,7 @@ export default function AdminSOSPage() {
       {/* Filters — only show on list tab */}
       {activeTab === 'list' && (
       <>
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="flex flex-wrap items-end gap-3 p-4">
           <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1) }}>
             <SelectTrigger className="w-[160px] font-body">
@@ -507,13 +507,13 @@ export default function AdminSOSPage() {
       </Card>
 
       {/* SOS Table */}
-      <Card className="border-white/5 bg-[#0D0D14]">
+      <Card>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
 
-                <tr className="border-b border-white/5">
+                <tr className="border-b border-border">
                   <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">
                     Equipment
                   </th>
@@ -557,7 +557,7 @@ export default function AdminSOSPage() {
                   sosList.map((sos) => (
                     <tr
                       key={sos.id}
-                      className="border-b border-white/5 hover:bg-white/[0.02]"
+                      className="border-b border-border hover:bg-white/[0.02]"
                     >
                       <td className="px-4 py-3">
                         <span className="font-body text-sm text-foreground">
@@ -629,7 +629,7 @@ export default function AdminSOSPage() {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-white/5 px-4 py-3">
+            <div className="flex items-center justify-between border-t border-border px-4 py-3">
               <p className="font-body text-xs text-muted-foreground">
                 Page {page} of {totalPages}
               </p>
@@ -668,9 +668,9 @@ export default function AdminSOSPage() {
           />
 
           {/* Panel */}
-          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg overflow-y-auto border-l border-white/5 bg-[#0A0A0F] shadow-2xl">
+          <div className="fixed inset-y-0 right-0 z-50 w-full max-w-lg overflow-y-auto border-l border-border bg-card shadow-2xl">
             {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/5 bg-[#0A0A0F] px-6 py-4">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card px-6 py-4">
               <h2 className="font-display text-lg font-bold text-foreground">SOS Detail</h2>
               <Button variant="ghost" size="sm" onClick={closeDrawer}>
                 <X className="size-5" />
@@ -745,14 +745,14 @@ export default function AdminSOSPage() {
 
                 {/* Requester Info Card */}
                 {selectedSOS.requester && (
-                  <Card className="border-white/5 bg-[#0D0D14]">
+                  <Card>
                     <CardHeader className="pb-2">
                       <CardTitle className="font-body text-xs font-medium uppercase text-muted-foreground">
                         Requester
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="flex items-center gap-3">
-                      <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-surface">
+                      <div className="flex size-10 items-center justify-center overflow-hidden rounded-full bg-muted">
                         {selectedSOS.requester.avatar_url ? (
                           <Image
                             src={selectedSOS.requester.avatar_url}
@@ -795,10 +795,10 @@ export default function AdminSOSPage() {
                   ) : (
                     <div className="mt-2 space-y-3">
                       {selectedSOS.responses.map((resp) => (
-                        <Card key={resp.id} className="border-white/5 bg-[#0D0D14]">
+                        <Card key={resp.id}>
                           <CardContent className="p-4">
                             <div className="flex items-center gap-3">
-                              <div className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-surface">
+                              <div className="flex size-8 items-center justify-center overflow-hidden rounded-full bg-muted">
                                 {resp.responder?.avatar_url ? (
                                   <Image
                                     src={resp.responder.avatar_url}
@@ -852,7 +852,7 @@ export default function AdminSOSPage() {
                 </div>
 
                 {/* Admin Action Buttons */}
-                <div className="flex flex-wrap gap-2 border-t border-white/5 pt-4">
+                <div className="flex flex-wrap gap-2 border-t border-border pt-4">
                   <Button
                     variant="outline"
                     size="sm"
