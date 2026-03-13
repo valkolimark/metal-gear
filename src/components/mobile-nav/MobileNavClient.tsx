@@ -12,6 +12,7 @@ interface MobileNavClientProps {
   unreadMessages: number
   unreadNotifications: number
   hasStorefront: boolean
+  isAdmin?: boolean
   activeCompany: CompanyWithRole | null
   userCompanies: CompanyWithRole[]
 }

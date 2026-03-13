@@ -25,6 +25,7 @@ import {
   LogOut,
   X,
   MessageCircle,
+  Shield,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { CompanySwitcher } from '@/components/company/CompanySwitcher'
@@ -40,6 +41,7 @@ interface MobileMenuDrawerProps {
   unreadMessages: number
   unreadNotifications: number
   hasStorefront: boolean
+  isAdmin?: boolean
   activeCompany?: CompanyWithRole | null
   userCompanies?: CompanyWithRole[]
 }
@@ -66,6 +68,7 @@ export function MobileMenuDrawer({
   unreadMessages,
   unreadNotifications,
   hasStorefront,
+  isAdmin,
 }: MobileMenuDrawerProps) {
   const [mounted, setMounted] = useState(false)
   const [closing, setClosing] = useState(false)
@@ -251,6 +254,9 @@ export function MobileMenuDrawer({
           <NavRow href="/settings/company" icon={Building2} label="Company Settings" />
           {hasStorefront && (
             <NavRow href={`/sellers/${user.id}`} icon={Store} label="Seller Storefront" />
+          )}
+          {isAdmin && (
+            <NavRow href="/admin" icon={Shield} label="Admin Panel" />
           )}
 
           {/* Support */}

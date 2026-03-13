@@ -17,6 +17,7 @@ import {
   Menu,
   X,
   LogOut,
+  ArrowLeft,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -148,10 +149,10 @@ export default function AdminShell({
           </div>
           <Link
             href="/dashboard"
-            className="mt-3 flex items-center gap-2 font-body text-xs opacity-50 hover:opacity-100"
+            className="mt-3 flex items-center gap-2 rounded-lg px-2 py-1.5 font-body text-xs opacity-60 hover:opacity-100 hover:bg-white/10 transition-all"
           >
-            <LogOut className="size-3" />
-            Exit admin
+            <ArrowLeft className="size-3.5" />
+            Back to Marketplace
           </Link>
         </div>
       </aside>
@@ -189,6 +190,13 @@ export default function AdminShell({
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
+            <Link
+              href="/dashboard"
+              className="flex items-center gap-1.5 rounded-md px-2.5 py-1.5 font-body text-xs text-muted-foreground hover:text-foreground hover:bg-accent transition-colors"
+            >
+              <ArrowLeft className="size-3.5" />
+              <span className="hidden sm:inline">Marketplace</span>
+            </Link>
             <ThemeToggle />
           </div>
         </header>

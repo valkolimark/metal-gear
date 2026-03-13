@@ -13,6 +13,7 @@ import {
   User,
   Settings,
   Building2,
+  Shield,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -213,6 +214,17 @@ export function Header() {
                   Company Settings
                 </Link>
               </DropdownMenuItem>
+              {profile?.is_admin && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link href="/admin" className="font-body">
+                      <Shield className="mr-2 size-4" />
+                      Admin Panel
+                    </Link>
+                  </DropdownMenuItem>
+                </>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={handleSignOut}

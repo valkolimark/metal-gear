@@ -22,6 +22,7 @@ export default async function MainLayout({
     unreadMessages: number
     unreadNotifications: number
     hasStorefront: boolean
+    isAdmin?: boolean
     activeCompany: CompanyWithRole | null
     userCompanies: CompanyWithRole[]
   } | null = null
@@ -47,7 +48,7 @@ export default async function MainLayout({
       const [profileRes, messagesRes, notificationsRes, storefrontRes, companies] = await Promise.all([
         admin
           .from('profiles')
-          .select('full_name, avatar_url, subscription_tier')
+          .select('full_name, avatar_url, subscription_tier, is_admin')
           .eq('id', user.id)
           .single(),
         convIds.length > 0
@@ -87,6 +88,7 @@ export default async function MainLayout({
         unreadMessages: messagesRes.count ?? 0,
         unreadNotifications: notificationsRes.count ?? 0,
         hasStorefront: (storefrontRes.count ?? 0) > 0,
+        isAdmin: profile?.is_admin === true,
         activeCompany,
         userCompanies,
       }
