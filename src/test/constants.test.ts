@@ -10,8 +10,11 @@ import {
 
 describe('Constants', () => {
   describe('TIER_LIMITS', () => {
-    it('has all three tiers', () => {
+    it('has all tiers including legacy aliases', () => {
       expect(TIER_LIMITS).toHaveProperty('free')
+      expect(TIER_LIMITS).toHaveProperty('pro')
+      expect(TIER_LIMITS).toHaveProperty('business')
+      expect(TIER_LIMITS).toHaveProperty('enterprise')
       expect(TIER_LIMITS).toHaveProperty('premium')
       expect(TIER_LIMITS).toHaveProperty('boost')
     })
@@ -23,16 +26,26 @@ describe('Constants', () => {
       expect(TIER_LIMITS.free.searchRadius).toBe(100)
     })
 
-    it('premium tier has higher limits than free', () => {
-      expect(TIER_LIMITS.premium.listings).toBeGreaterThan(TIER_LIMITS.free.listings)
-      expect(TIER_LIMITS.premium.photos).toBeGreaterThan(TIER_LIMITS.free.photos)
-      expect(TIER_LIMITS.premium.conversations).toBe(Infinity)
+    it('pro tier has higher limits than free', () => {
+      expect(TIER_LIMITS.pro.listings).toBeGreaterThan(TIER_LIMITS.free.listings)
+      expect(TIER_LIMITS.pro.photos).toBeGreaterThan(TIER_LIMITS.free.photos)
+      expect(TIER_LIMITS.pro.conversations).toBe(Infinity)
     })
 
-    it('boost tier has highest limits', () => {
-      expect(TIER_LIMITS.boost.listings).toBeGreaterThan(TIER_LIMITS.premium.listings)
-      expect(TIER_LIMITS.boost.photos).toBeGreaterThan(TIER_LIMITS.premium.photos)
-      expect(TIER_LIMITS.boost.searchRadius).toBe(Infinity)
+    it('business tier has higher limits than pro', () => {
+      expect(TIER_LIMITS.business.listings).toBeGreaterThan(TIER_LIMITS.pro.listings)
+      expect(TIER_LIMITS.business.photos).toBeGreaterThan(TIER_LIMITS.pro.photos)
+      expect(TIER_LIMITS.business.searchRadius).toBe(Infinity)
+    })
+
+    it('enterprise tier has highest limits', () => {
+      expect(TIER_LIMITS.enterprise.listings).toBe(Infinity)
+      expect(TIER_LIMITS.enterprise.photos).toBeGreaterThan(TIER_LIMITS.business.photos)
+    })
+
+    it('legacy aliases match their counterparts', () => {
+      expect(TIER_LIMITS.premium.listings).toBe(TIER_LIMITS.pro.listings)
+      expect(TIER_LIMITS.boost.listings).toBe(TIER_LIMITS.business.listings)
     })
   })
 
@@ -41,12 +54,21 @@ describe('Constants', () => {
       expect(TIER_PRICES.free).toBe(0)
     })
 
-    it('premium costs $29.99', () => {
-      expect(TIER_PRICES.premium).toBe(2999)
+    it('pro costs $179/mo', () => {
+      expect(TIER_PRICES.pro).toBe(17900)
     })
 
-    it('boost costs $79.99', () => {
-      expect(TIER_PRICES.boost).toBe(7999)
+    it('business costs $349/mo', () => {
+      expect(TIER_PRICES.business).toBe(34900)
+    })
+
+    it('enterprise costs $599/mo', () => {
+      expect(TIER_PRICES.enterprise).toBe(59900)
+    })
+
+    it('legacy aliases match their counterparts', () => {
+      expect(TIER_PRICES.premium).toBe(TIER_PRICES.pro)
+      expect(TIER_PRICES.boost).toBe(TIER_PRICES.business)
     })
   })
 
