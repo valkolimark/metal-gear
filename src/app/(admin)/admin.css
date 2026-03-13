@@ -92,16 +92,37 @@ html:not(.dark) [data-section="admin"] {
 
 /* ----------------------------------------------------------
    ADMIN SIDEBAR — Always dark regardless of theme
-   Dark mode:  near-black (#0e0e14)
-   Light mode: dark slate (#2B313A) — intentional
    ---------------------------------------------------------- */
 [data-section="admin"] .admin-sidebar {
-  background-color: var(--sidebar-bg);
-  border-right: 1px solid var(--sidebar-border);
-  --sidebar-fg: #e0e0e0;
-  --sidebar-muted: #8c8c8c;
-  --sidebar-active-bg: #1877F2;
-  color: var(--sidebar-fg);
+  background-color: #1B2838;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  color: #C2D0E0;
+}
+
+/* Sidebar logo banner — Facebook blue */
+[data-section="admin"] .admin-sidebar-logo {
+  background-color: #1877F2;
+  color: #FFFFFF;
+}
+
+/* Sidebar nav items */
+[data-section="admin"] .admin-sidebar-nav a {
+  color: #8899AA;
+  transition: all 0.15s ease;
+}
+[data-section="admin"] .admin-sidebar-nav a:hover {
+  color: #E4E8EE;
+  background-color: rgba(255,255,255,0.06);
+}
+[data-section="admin"] .admin-sidebar-nav a.active {
+  color: #FFFFFF;
+  background-color: #1877F2;
+}
+
+/* Sidebar footer */
+[data-section="admin"] .admin-sidebar-footer {
+  border-top: 1px solid rgba(255,255,255,0.06);
+  color: #C2D0E0;
 }
 
 /* ==============================================================
@@ -177,12 +198,23 @@ html[data-palette="ocean"]:not(.dark) [data-section="admin"] {
 
 /* Admin sidebar in Ocean palette — always dark navy */
 html[data-palette="ocean"] [data-section="admin"] .admin-sidebar {
-  background-color: var(--sidebar-bg);
-  border-right: 1px solid var(--sidebar-border);
-  --sidebar-fg: #BDE8F2;
-  --sidebar-muted: #5BA8C0;
-  --sidebar-active-bg: #0A3050;
-  color: var(--sidebar-fg);
+  background-color: #051A30;
+  border-right: 1px solid rgba(255,255,255,0.06);
+  color: #8ECAE6;
+}
+html[data-palette="ocean"] [data-section="admin"] .admin-sidebar-logo {
+  background-color: #023E8A;
+}
+html[data-palette="ocean"] [data-section="admin"] .admin-sidebar-nav a {
+  color: #5BA8C0;
+}
+html[data-palette="ocean"] [data-section="admin"] .admin-sidebar-nav a:hover {
+  color: #BDE8F2;
+  background-color: rgba(255,255,255,0.06);
+}
+html[data-palette="ocean"] [data-section="admin"] .admin-sidebar-nav a.active {
+  color: #FFFFFF;
+  background-color: #0077B6;
 }
 
 /* ----------------------------------------------------------
