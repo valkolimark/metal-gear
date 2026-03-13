@@ -74,6 +74,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Social sharing with dynamic OG images via `@vercel/og`
 - **Mobile navigation** — Facebook-style fixed header, 5-tab bottom nav with raised SOS button, slide-in drawer with profile card, quick actions, and subscription upgrade CTA
 - **Brand palette switcher** — Admin-controlled Ocean / Industrial theme; persisted in system_config; applies instantly platform-wide with no deploy
+- **Multi-company profiles** — `profiles` = human identity, `company_profiles` = B2B entity, `company_memberships` = junction; company switcher in header; all listings/subscriptions/storefronts scoped to active company
 - Mobile PWA with pull-to-refresh, swipe gestures, and bottom nav
 
 ---
@@ -97,10 +98,11 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 
 ### Design System
 
-- **Theme:** Light/dark mode toggle via `next-themes` (dark default, system preference detection); dark: `#0A0A0F` background; light: `#FAFAFA` background; `#FF6B2B` primary orange, `#3A8FD4` steel blue
-- **Brand palettes:** Industrial (default — orange/dark) and Ocean (navy/teal/cyan); switchable from Admin Settings
+- **Theme:** Light/dark mode toggle via `next-themes` (dark default, system preference detection); Facebook palette — dark: `#18191A`/`#242526`/`#3A3B3C` bg layers, light: `#F0F2F5`/`#FFFFFF` bg; `#1877F2` primary blue; SOS stays orange `#FF6B2B`
+- **Brand palettes:** Industrial (default — Facebook blue) and Ocean (navy/teal/cyan); switchable from Admin Settings; `data-palette` attribute on `<html>`
+- **Admin CSS:** Scoped via `[data-section="admin"]` in `admin.css`; sidebar always dark navy
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body)
-- **Components:** 14 shadcn/ui components (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch)
+- **Components:** 15 shadcn/ui components (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch, sheet)
 
 ---
 
@@ -108,7 +110,10 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 
 | | Free | Pro ($179/mo) | Business ($349/mo) | Enterprise ($599/mo) |
 |---|---|---|---|---|
-| Listings | 3 | Expanded | Expanded | Expanded |
+| Listings | 3 | 25 | 100 | Unlimited |
+| Photos per listing | 5 | 20 | 30 | 50 |
+| Videos per listing | — | 3 | 5 | 10 |
+| Search radius (mi) | 100 | 500 | Unlimited | Unlimited |
 | AI-powered features | Basic | All | All | All + priority |
 | Demand forecasts | — | Yes | Yes | Yes |
 | Negotiation coaching | — | Yes | Yes | Yes |
@@ -140,6 +145,8 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 | `/api/cron/churn-prediction` | GET | Nightly churn risk scoring for subscribers |
 | `/api/cron/market-gaps` | GET | Weekly SOS demand gap analysis |
 | `/api/cron/cleanup` | GET | Periodic notification and data cleanup |
+| `/api/listings/[id]/ask` | POST | Ask Metal Gear streaming AI chat (listing-context) |
+| `/api/help/chat` | POST | AI Help Assistant streaming chat (platform-context) |
 
 ---
 

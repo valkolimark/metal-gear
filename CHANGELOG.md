@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.2.1] — 2026-03-13 · Admin Light Theme, Sidebar Redesign & Tier Fix (Cycle 21 Polish)
+
+### Fixed
+- **Admin light theme** — replaced hardcoded dark colors (`bg-[#0D0D14]`, `border-white/5`, `bg-surface`) with CSS variable classes (`bg-card`, `border-border`, `bg-muted`) across all 12 admin pages so light/dark theme works correctly
+- **Admin avatar display** — added `unoptimized` prop for external avatar URLs; replaced invalid `bg-surface` with `bg-muted` for avatar placeholder circle; added `lh3.googleusercontent.com` to Next.js image remotePatterns for Google OAuth avatars
+- **Dashboard crash for new tiers** — `TIER_LIMITS` in `src/lib/constants.ts` only had old tier names (`free`/`premium`/`boost`); accessing `TIER_LIMITS['enterprise']` returned `undefined` causing `TypeError: Cannot read properties of undefined (reading 'listings')`; added `pro`/`business`/`enterprise` tiers with legacy aliases
+- **Subscription DB constraints** — updated `subscriptions_tier_check` to allow `pro`/`business`/`enterprise`; fixed `canceled` spelling (single L) in `setUserSubscriptionTier` to match `subscriptions_status_check` constraint
+- **Admin tier override** — fixed return-based error handling in `setUserSubscriptionTier`; fixed `getChurnRiskDetail` from `.single()` to `.maybeSingle()` to prevent crash on missing churn data
+
+### Changed
+- **Admin sidebar redesigned** — logo header now Facebook blue (`#1877F2`) with white text; sidebar body dark navy (`#1B2838`); active nav item solid blue pill; Ocean palette variant with deep navy + teal accents
+- **Tier constants updated** — `TIER_LIMITS`, `TIER_PRICES`, `TIER_LABELS` in `src/lib/constants.ts` now include `pro` ($179/mo, 25 listings), `business` ($349/mo, 100 listings), `enterprise` ($599/mo, unlimited) with `premium`/`boost` kept as legacy aliases
+
+---
+
 ## [3.2.0] — 2026-03-13 · Mobile Cleanup, Thumbnail Restore & Admin Tier Control (Cycle 21)
 
 ### Fixed

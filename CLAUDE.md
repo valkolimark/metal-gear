@@ -56,10 +56,11 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
 
 ## Pricing Tiers
-- **Free:** 3 listings
-- **Pro ($179/mo):** Expanded limits, all AI features
-- **Business ($349/mo):** Expanded limits, all AI features
-- **Enterprise ($599/mo):** Expanded limits, all AI features + priority
+- **Free:** 3 listings, 5 photos, 100mi search radius
+- **Pro ($179/mo):** 25 listings, 20 photos, 3 videos, 500mi radius, all AI features
+- **Business ($349/mo):** 100 listings, 30 photos, 5 videos, unlimited radius, all AI features
+- **Enterprise ($599/mo):** Unlimited listings, 50 photos, 10 videos, unlimited radius, all AI + priority
+- **Legacy aliases:** `premium` → Pro, `boost` → Business (DB may still contain these; constants handle both)
 
 ## Key Infrastructure
 - **Supabase project:** fkcyfpdkcrhjieauhchn
