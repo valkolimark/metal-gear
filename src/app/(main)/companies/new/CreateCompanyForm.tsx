@@ -39,7 +39,18 @@ export function CreateCompanyForm({
     if (!form.name.trim()) { toast.error('Company name is required'); return }
 
     startTransition(async () => {
-      const result = await createCompany(userId, form)
+      // Convert empty strings to null for nullable DB columns
+      const payload = {
+        name: form.name.trim(),
+        industry: form.industry || undefined,
+        company_size: form.company_size || undefined,
+        website: form.website.trim() || undefined,
+        phone: form.phone.trim() || undefined,
+        city: form.city.trim() || undefined,
+        state: form.state.trim() || undefined,
+        tagline: form.tagline.trim() || undefined,
+      }
+      const result = await createCompany(userId, payload)
       if (!result.success || !result.company) {
         toast.error(result.error ?? 'Failed to create company')
         return

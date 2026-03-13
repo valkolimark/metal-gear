@@ -36,7 +36,19 @@ export function CompanySettingsForm({
     if (!form.name.trim()) { toast.error('Company name is required'); return }
 
     startTransition(async () => {
-      const result = await updateCompany(company.id, userId, form)
+      // Convert empty strings to null for nullable DB columns
+      const payload = {
+        ...form,
+        tagline: form.tagline.trim() || null,
+        description: form.description.trim() || null,
+        industry: form.industry || null,
+        company_size: form.company_size || null,
+        website: form.website.trim() || null,
+        phone: form.phone.trim() || null,
+        city: form.city.trim() || null,
+        state: form.state.trim() || null,
+      }
+      const result = await updateCompany(company.id, userId, payload)
       if (result.success) {
         toast.success('Company settings saved')
       } else {
