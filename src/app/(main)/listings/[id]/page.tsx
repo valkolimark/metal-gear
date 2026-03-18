@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getConditionReport } from '@/app/actions/condition-reports'
 import { getSellerReviews } from '@/app/actions/reputation'
 import { recordListingView } from '@/app/actions/analytics'
+import { getActiveTier } from '@/app/actions/tier'
 import { ListingGallery } from './components/ListingGallery'
 import { ListingPurchasePanel } from './components/ListingPurchasePanel'
 import { ListingSpecs } from './components/ListingSpecs'
@@ -93,6 +94,40 @@ export default async function ListingDetailPage({
 
   if (!seller) notFound()
 
+  // Compute seller contact visibility server-side
+  let sellerContact: {
+    canSee: boolean
+    phone: string | null
+    email: string | null
+    visibility: string
+  } | null = null
+
+  const sellerVisibility = (seller as { contact_visibility?: string }).contact_visibility ?? 'pro_plus'
+
+  if (sellerVisibility !== 'hidden') {
+    const isSelf = currentUser?.id === seller.id
+    let canSee = isSelf
+
+    if (!canSee && currentUser && sellerVisibility === 'public') {
+      canSee = true
+    }
+
+    if (!canSee && currentUser && sellerVisibility === 'pro_plus') {
+      const viewerTier = await getActiveTier(currentUser.id)
+      canSee = ['pro', 'business', 'enterprise'].includes(viewerTier)
+    }
+
+    const contactPhone = seller.phone || null
+    const contactEmail = (seller as { contact_email?: string | null }).contact_email || null
+
+    sellerContact = {
+      canSee,
+      phone: canSee ? contactPhone : null,
+      email: canSee ? contactEmail : null,
+      visibility: sellerVisibility,
+    }
+  }
+
   // Record view (fire and forget, server-side)
   recordListingView(id).catch(() => {})
 
@@ -170,6 +205,7 @@ export default async function ListingDetailPage({
               currentUser={currentUser}
               isFavorited={!!favoriteResult.data}
               company={company}
+              sellerContact={sellerContact}
             />
           </div>
         </div>
@@ -182,6 +218,7 @@ export default async function ListingDetailPage({
         currentUser={currentUser}
         isFavorited={!!favoriteResult.data}
         company={company}
+        sellerContact={sellerContact}
       />
     </div>
   )

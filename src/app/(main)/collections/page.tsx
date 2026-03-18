@@ -71,7 +71,7 @@ export default function CollectionsPage() {
     if ('error' in result) {
       toast.error(result.error)
     } else {
-      toast.success('Collection created')
+      toast.success('Radar list created')
       setCreateOpen(false)
       setNewName('')
       setNewDesc('')
@@ -86,7 +86,7 @@ export default function CollectionsPage() {
     if ('error' in result) {
       toast.error(result.error)
     } else {
-      toast.success('Collection deleted')
+      toast.success('Radar list deleted')
       setCollections((prev) => prev.filter((c) => c.id !== id))
     }
   }
@@ -99,7 +99,7 @@ export default function CollectionsPage() {
       setCollections((prev) =>
         prev.map((c) => (c.id === id ? { ...c, is_public: !isPublic } : c))
       )
-      toast.success(isPublic ? 'Collection is now private' : 'Collection is now public')
+      toast.success(isPublic ? 'Radar list is now private' : 'Radar list is now public')
     }
   }
 
@@ -108,15 +108,15 @@ export default function CollectionsPage() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold text-foreground">
-            Collections
+            My Radar
           </h1>
           <p className="mt-1 font-body text-muted-foreground">
-            Organize your saved equipment into collections
+            Organize equipment you&rsquo;ve got on your radar
           </p>
         </div>
         <Button onClick={() => setCreateOpen(true)} className="font-body">
           <Plus className="mr-2 size-4" />
-          New Collection
+          New Radar List
         </Button>
       </div>
 
@@ -129,15 +129,15 @@ export default function CollectionsPage() {
           <CardContent className="flex flex-col items-center gap-4 py-16">
             <FolderOpen className="size-12 text-muted-foreground" />
             <p className="font-display text-lg font-semibold text-foreground">
-              No collections yet
+              Nothing on your radar yet
             </p>
             <p className="max-w-md text-center font-body text-sm text-muted-foreground">
-              Create collections to organize equipment you&rsquo;re interested in.
+              Create radar lists to organize equipment you&rsquo;re tracking.
               Group listings by project, budget, or equipment type.
             </p>
             <Button onClick={() => setCreateOpen(true)} className="font-body">
               <Plus className="mr-2 size-4" />
-              Create Your First Collection
+              Create Your First Radar List
             </Button>
           </CardContent>
         </Card>
@@ -246,7 +246,7 @@ export default function CollectionsPage() {
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="font-display">New Collection</DialogTitle>
+            <DialogTitle className="font-display">New Radar List</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
@@ -275,17 +275,17 @@ export default function CollectionsPage() {
                 id="collection-desc"
                 value={newDesc}
                 onChange={(e) => setNewDesc(e.target.value)}
-                placeholder="What is this collection for?"
+                placeholder="What is this radar list for?"
                 className="font-body"
               />
             </div>
             <div className="flex items-center justify-between">
               <div>
                 <Label htmlFor="collection-public" className="font-body">
-                  Public collection
+                  Public radar list
                 </Label>
                 <p className="font-body text-xs text-muted-foreground">
-                  Anyone can view this collection
+                  Anyone can view this radar list
                 </p>
               </div>
               <Switch

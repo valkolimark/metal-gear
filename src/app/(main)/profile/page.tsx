@@ -21,7 +21,7 @@ import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
-import { uploadAvatar, updateProfile, updateNotificationPreferences } from './actions'
+import { uploadAvatar, updateProfile, updateNotificationPreferences, updateContactSettings } from './actions'
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/actions/storefront'
 import { getVerificationStatus, submitVerificationRequest } from '@/app/actions/verification'
@@ -112,6 +112,9 @@ export default function ProfilePage() {
     totalReferrals: number
     completedReferrals: number
   } | null>(null)
+  const [contactEmail, setContactEmail] = useState('')
+  const [contactVisibility, setContactVisibility] = useState<'pro_plus' | 'public' | 'hidden'>('pro_plus')
+  const [savingContact, setSavingContact] = useState(false)
   const [form, setForm] = useState({
     full_name: '',
     display_name: '',
@@ -135,6 +138,13 @@ export default function ProfilePage() {
         location_city: profile.location_city || 'Houston',
         location_state: profile.location_state || 'TX',
       })
+      // Load contact settings
+      const profileAny = profile as Record<string, unknown>
+      setContactEmail((profileAny.contact_email as string) || '')
+      setContactVisibility(
+        (profileAny.contact_visibility as 'pro_plus' | 'public' | 'hidden') || 'pro_plus'
+      )
+
       // Load notification preferences
       const prefs = profile.email_notifications as Record<string, boolean> | null
       if (prefs) {
@@ -472,6 +482,124 @@ export default function ProfilePage() {
                   className="font-body"
                 />
               </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Contact Information */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="font-display text-lg">
+              Contact Information
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="font-body text-sm text-muted-foreground">
+              Add contact details so buyers can reach you directly. Your phone number from the Personal Information section above is used if no separate contact phone is needed.
+            </p>
+
+            <div className="space-y-2">
+              <Label htmlFor="contact_email" className="font-body">
+                Contact Email
+              </Label>
+              <Input
+                id="contact_email"
+                type="email"
+                value={contactEmail}
+                onChange={(e) => setContactEmail(e.target.value)}
+                placeholder="Leave blank to use your account email"
+                className="font-body"
+              />
+            </div>
+
+            <Separator />
+
+            <div className="space-y-3">
+              <Label className="font-body">Who can see your contact info?</Label>
+              {[
+                {
+                  value: 'pro_plus' as const,
+                  label: 'Pro & above only',
+                  desc: 'Only Pro, Business, and Enterprise subscribers can see your contact info',
+                },
+                {
+                  value: 'public' as const,
+                  label: 'Everyone',
+                  desc: 'Any logged-in user can view your phone and email',
+                },
+                {
+                  value: 'hidden' as const,
+                  label: 'Hidden',
+                  desc: 'Never show my contact info; buyers must use internal messaging',
+                },
+              ].map((option) => (
+                <label
+                  key={option.value}
+                  className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                    contactVisibility === option.value
+                      ? 'border-primary/50 bg-primary/5'
+                      : 'border-border hover:bg-surface'
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="contact_visibility"
+                    value={option.value}
+                    checked={contactVisibility === option.value}
+                    onChange={() => setContactVisibility(option.value)}
+                    className="mt-1 accent-primary"
+                  />
+                  <div>
+                    <p className="font-body text-sm font-medium text-foreground">
+                      {option.label}
+                    </p>
+                    <p className="font-body text-xs text-muted-foreground">
+                      {option.desc}
+                    </p>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            <Separator />
+
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={savingContact}
+                onClick={async () => {
+                  setSavingContact(true)
+                  try {
+                    const result = await updateContactSettings({
+                      contact_email: contactEmail || null,
+                      contact_visibility: contactVisibility,
+                    })
+                    if (result.error) {
+                      toast.error(result.error)
+                    } else {
+                      if (result.profile) {
+                        setProfile(result.profile as Profile)
+                      }
+                      toast.success('Contact settings saved')
+                    }
+                  } catch {
+                    toast.error('Failed to save contact settings')
+                  } finally {
+                    setSavingContact(false)
+                  }
+                }}
+                className="font-body"
+              >
+                {savingContact ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  'Save Contact Settings'
+                )}
+              </Button>
             </div>
           </CardContent>
         </Card>

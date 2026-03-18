@@ -58,7 +58,7 @@ export default function CollectionDetailPage() {
       toast.error(result.error)
     } else {
       setItems((prev) => prev.filter((i) => i.listing_id !== listingId))
-      toast.success('Removed from collection')
+      toast.success('Removed from radar list')
     }
   }
 
@@ -90,7 +90,7 @@ export default function CollectionDetailPage() {
           className="font-body text-muted-foreground"
         >
           <ArrowLeft className="mr-1 size-3.5" />
-          Back to Collections
+          Back to Radar
         </Button>
       )}
 
@@ -160,11 +160,11 @@ export default function CollectionDetailPage() {
           <CardContent className="flex flex-col items-center gap-4 py-16">
             <FolderOpen className="size-12 text-muted-foreground" />
             <p className="font-display text-lg font-semibold text-foreground">
-              This collection is empty
+              This radar list is empty
             </p>
             <p className="max-w-md text-center font-body text-sm text-muted-foreground">
               {isOwner
-                ? 'Add listings to this collection from listing pages.'
+                ? 'Add listings to this radar list from listing pages.'
                 : 'No items have been added yet.'}
             </p>
             {isOwner && (

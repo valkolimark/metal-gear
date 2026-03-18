@@ -14,6 +14,7 @@ import {
   Settings,
   Building2,
   Shield,
+  LayoutDashboard,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -84,7 +85,7 @@ export function Header() {
 
         {/* Logo */}
         <Link
-          href="/dashboard"
+          href="/search"
           className="shrink-0 font-display text-xl font-bold text-foreground"
         >
           Metal <span className="text-primary">Gear</span>
@@ -196,6 +197,12 @@ export function Header() {
                   <DropdownMenuSeparator />
                 </>
               )}
+              <DropdownMenuItem asChild>
+                <Link href="/dashboard" className="font-body">
+                  <LayoutDashboard className="mr-2 size-4" />
+                  Dashboard
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem asChild>
                 <Link href="/profile" className="font-body">
                   <User className="mr-2 size-4" />

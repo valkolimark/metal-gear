@@ -40,12 +40,20 @@ type Listing = Tables<'listings'>
 type Profile = Tables<'profiles'>
 type CompanyProfileRow = Tables<'company_profiles'>
 
+interface SellerContact {
+  canSee: boolean
+  phone: string | null
+  email: string | null
+  visibility: string
+}
+
 interface Props {
   listing: Listing
   seller: Profile
   currentUser: User | null
   isFavorited: boolean
   company?: CompanyProfileRow | null
+  sellerContact?: SellerContact | null
 }
 
 export function ListingPurchasePanel({
@@ -54,6 +62,7 @@ export function ListingPurchasePanel({
   currentUser,
   isFavorited,
   company,
+  sellerContact,
 }: Props) {
   const router = useRouter()
   const [gateOpen, setGateOpen] = useState(false)
@@ -110,7 +119,7 @@ export function ListingPurchasePanel({
       toast.error(result.error)
     } else {
       setFavorited(result.favorited)
-      toast.success(result.favorited ? 'Added to favorites' : 'Removed from favorites')
+      toast.success(result.favorited ? 'Added to Radar' : 'Removed from Radar')
     }
   }
 
@@ -247,7 +256,7 @@ export function ListingPurchasePanel({
                 <Heart
                   className={`mr-2 size-4 ${favorited ? 'fill-red-500 text-red-500' : ''}`}
                 />
-                {favorited ? 'Saved' : 'Save Listing'}
+                {favorited ? 'Saved' : 'Save to Radar'}
               </Button>
             </>
           )}
@@ -310,6 +319,47 @@ export function ListingPurchasePanel({
             </Link>
           </Button>
         </div>
+
+        {/* Seller contact info */}
+        {sellerContact && sellerContact.visibility !== 'hidden' && (
+          <div className="border-t border-zinc-200 dark:border-zinc-700/60 pt-3">
+            {sellerContact.canSee ? (
+              (sellerContact.phone || sellerContact.email) ? (
+                <div className="space-y-1.5">
+                  {sellerContact.phone && (
+                    <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                      <span>📞</span>
+                      <span className="text-foreground">{sellerContact.phone}</span>
+                    </p>
+                  )}
+                  {sellerContact.email && (
+                    <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                      <span>✉️</span>
+                      <span className="text-foreground">{sellerContact.email}</span>
+                    </p>
+                  )}
+                </div>
+              ) : null
+            ) : (
+              <div className="space-y-2">
+                <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                  <span>📞</span>
+                  <span className="tracking-wider">••••••••••</span>
+                </p>
+                <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
+                  <span>✉️</span>
+                  <span className="tracking-wider">••••••••••</span>
+                </p>
+                <Link
+                  href="/pricing"
+                  className="font-body text-xs text-primary hover:underline"
+                >
+                  Upgrade to Pro to see contact info →
+                </Link>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Buyer protection */}
         <div className="border-t border-zinc-200 dark:border-zinc-700/60 pt-3">

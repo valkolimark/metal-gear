@@ -17,7 +17,7 @@ interface MobileBottomNavProps {
 }
 
 const NAV_ITEMS = [
-  { href: '/dashboard', label: 'Home', icon: Home },
+  { href: '/search', label: 'Home', icon: Home },
   { href: '/search', label: 'Search', icon: Search },
   { href: '/sos/new', label: 'SOS', icon: null }, // center SOS
   { href: '/messages', label: 'Messages', icon: MessageSquare },
@@ -33,8 +33,8 @@ export function MobileBottomNav({ unreadMessages: initialUnread }: MobileBottomN
   // Use store value if it's been updated (> 0 or explicitly set), otherwise use SSR prop
   const unreadMessages = storeUnread > 0 ? storeUnread : initialUnread
 
-  const isActive = (href: string) => {
-    if (href === '/dashboard') return pathname === '/dashboard'
+  const isActive = (href: string, label: string) => {
+    if (label === 'Home') return pathname === '/search' || pathname === '/'
     return pathname.startsWith(href)
   }
 
@@ -73,7 +73,7 @@ export function MobileBottomNav({ unreadMessages: initialUnread }: MobileBottomN
             }
 
             const Icon = item.icon!
-            const active = isActive(item.href)
+            const active = isActive(item.href, item.label)
 
             return (
               <Link

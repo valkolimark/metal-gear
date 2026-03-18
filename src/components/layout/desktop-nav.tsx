@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, List, MessageSquare, Heart, User, FolderOpen, Siren } from 'lucide-react'
+import { Home, Search, List, MessageSquare, Heart, User, FolderOpen, Siren, LayoutDashboard } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 
@@ -11,11 +11,11 @@ export function DesktopNav() {
   const t = useTranslations('nav')
 
   const navItems = [
-    { href: '/dashboard', label: t('home'), icon: Home },
-    { href: '/search', label: t('browseEquipment'), icon: Search },
+    { href: '/search', label: t('home'), icon: Home },
+    { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/listings', label: t('myListings'), icon: List },
     { href: '/favorites', label: t('favorites'), icon: Heart },
-    { href: '/collections', label: t('collections'), icon: FolderOpen },
+    { href: '/collections', label: 'Radar', icon: FolderOpen },
     { href: '/sos', label: t('sos'), icon: Siren, highlight: true },
     { href: '/messages', label: t('messages'), icon: MessageSquare },
     { href: '/profile', label: t('profile'), icon: User },
