@@ -166,6 +166,128 @@ export type Database = {
           },
         ]
       }
+      contact_credits: {
+        Row: {
+          id: string
+          user_id: string
+          credits_remaining: number
+          credits_used_this_month: number
+          period_start: string
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          credits_remaining?: number
+          credits_used_this_month?: number
+          period_start?: string
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          credits_remaining?: number
+          credits_used_this_month?: number
+          period_start?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_reveals: {
+        Row: {
+          id: string
+          viewer_id: string
+          seller_id: string
+          credits_spent: number
+          revealed_at: string | null
+          listing_id: string | null
+          period_month: string
+        }
+        Insert: {
+          id?: string
+          viewer_id: string
+          seller_id: string
+          credits_spent?: number
+          revealed_at?: string | null
+          listing_id?: string | null
+          period_month?: string
+        }
+        Update: {
+          id?: string
+          viewer_id?: string
+          seller_id?: string
+          credits_spent?: number
+          revealed_at?: string | null
+          listing_id?: string | null
+          period_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_reveals_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_purchases: {
+        Row: {
+          id: string
+          user_id: string
+          credits_purchased: number
+          amount_paid: number
+          stripe_payment_intent_id: string | null
+          purchased_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          credits_purchased: number
+          amount_paid: number
+          stripe_payment_intent_id?: string | null
+          purchased_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          credits_purchased?: number
+          amount_paid?: number
+          stripe_payment_intent_id?: string | null
+          purchased_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       collection_items: {
         Row: {
           added_at: string | null

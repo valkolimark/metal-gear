@@ -15,6 +15,7 @@ import {
   Building2,
   Shield,
   LayoutDashboard,
+  Coins,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -213,6 +214,12 @@ export function Header() {
                 <Link href="/profile" className="font-body">
                   <Settings className="mr-2 size-4" />
                   {t('header.settings')}
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/credits" className="font-body">
+                  <Coins className="mr-2 size-4" />
+                  My Credits
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

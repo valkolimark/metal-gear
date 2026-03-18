@@ -15,6 +15,7 @@ import {
   MapPin,
   CheckCircle,
   Clock,
+  Eye,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ import { AnonInteractionGate } from '@/components/AnonInteractionGate'
 import { CompanyAvatar } from '@/components/company/CompanyAvatar'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { makeOffer } from '@/app/actions/offers'
+import { revealContactInfo } from '@/app/actions/credits'
 import { toggleFavoriteAction } from './favorite-action'
 import type { Tables } from '@/types/database'
 import type { User } from '@supabase/supabase-js'
@@ -45,6 +47,14 @@ interface SellerContact {
   phone: string | null
   email: string | null
   visibility: string
+  alreadyRevealed?: boolean
+}
+
+interface CreditBalanceInfo {
+  creditsRemaining: number
+  creditsUsedThisMonth: number
+  monthlyAllowance: number
+  tier: string
 }
 
 interface Props {
@@ -54,6 +64,7 @@ interface Props {
   isFavorited: boolean
   company?: CompanyProfileRow | null
   sellerContact?: SellerContact | null
+  creditBalance?: CreditBalanceInfo | null
 }
 
 export function ListingPurchasePanel({
@@ -63,6 +74,7 @@ export function ListingPurchasePanel({
   isFavorited,
   company,
   sellerContact,
+  creditBalance,
 }: Props) {
   const router = useRouter()
   const [gateOpen, setGateOpen] = useState(false)
@@ -73,6 +85,13 @@ export function ListingPurchasePanel({
   const [submittingOffer, setSubmittingOffer] = useState(false)
   const [contacting, setContacting] = useState(false)
   const [favorited, setFavorited] = useState(isFavorited)
+
+  // Credit reveal state
+  const [revealing, setRevealing] = useState(false)
+  const [revealedPhone, setRevealedPhone] = useState<string | null>(sellerContact?.phone ?? null)
+  const [revealedEmail, setRevealedEmail] = useState<string | null>(sellerContact?.email ?? null)
+  const [isRevealed, setIsRevealed] = useState(sellerContact?.canSee ?? false)
+  const [remainingCredits, setRemainingCredits] = useState(creditBalance?.creditsRemaining ?? 0)
 
   const isOwner = currentUser?.id === listing.seller_id
   const isDisabled = listing.status === 'sold' || listing.status === 'expired'
@@ -123,6 +142,30 @@ export function ListingPurchasePanel({
     }
   }
 
+  const handleRevealContact = async () => {
+    if (!currentUser) {
+      setGateAction('contact')
+      setGateOpen(true)
+      return
+    }
+    setRevealing(true)
+    const result = await revealContactInfo(seller.id, listing.id)
+    if (result.error === 'insufficient_credits') {
+      toast.error('Not enough credits')
+    } else if (result.error) {
+      toast.error(result.error)
+    } else {
+      setRevealedPhone(result.phone)
+      setRevealedEmail(result.email)
+      setIsRevealed(true)
+      if (result.creditsRemaining !== undefined) {
+        setRemainingCredits(result.creditsRemaining)
+      }
+      toast.success('Contact info revealed!')
+    }
+    setRevealing(false)
+  }
+
   const handleSubmitOffer = async () => {
     const cents = Math.round(parseFloat(offerAmount) * 100)
     if (isNaN(cents) || cents <= 0) {
@@ -149,6 +192,11 @@ export function ListingPurchasePanel({
     : listing.condition === 'fair' ? 'Fair'
     : listing.condition === 'poor' ? 'Poor'
     : listing.condition
+
+  // Determine contact section state
+  const isEnterprise = creditBalance?.monthlyAllowance === -1 || creditBalance?.tier === 'enterprise'
+  const isPublicVisibility = sellerContact?.visibility === 'public'
+  const isFreeUser = creditBalance?.monthlyAllowance === 0 && creditBalance?.tier === 'free'
 
   return (
     <>
@@ -320,27 +368,29 @@ export function ListingPurchasePanel({
           </Button>
         </div>
 
-        {/* Seller contact info */}
+        {/* Seller contact info — credit-based reveal */}
         {sellerContact && sellerContact.visibility !== 'hidden' && (
           <div className="border-t border-zinc-200 dark:border-zinc-700/60 pt-3">
-            {sellerContact.canSee ? (
-              (sellerContact.phone || sellerContact.email) ? (
+            {isRevealed || isEnterprise || isPublicVisibility ? (
+              // Revealed state — show contact info
+              (revealedPhone || revealedEmail) ? (
                 <div className="space-y-1.5">
-                  {sellerContact.phone && (
+                  {revealedPhone && (
                     <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
                       <span>📞</span>
-                      <span className="text-foreground">{sellerContact.phone}</span>
+                      <span className="text-foreground">{revealedPhone}</span>
                     </p>
                   )}
-                  {sellerContact.email && (
+                  {revealedEmail && (
                     <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
                       <span>✉️</span>
-                      <span className="text-foreground">{sellerContact.email}</span>
+                      <span className="text-foreground">{revealedEmail}</span>
                     </p>
                   )}
                 </div>
               ) : null
             ) : (
+              // Not yet revealed — show credit reveal UI
               <div className="space-y-2">
                 <p className="flex items-center gap-2 font-body text-sm text-muted-foreground">
                   <span>📞</span>
@@ -350,12 +400,55 @@ export function ListingPurchasePanel({
                   <span>✉️</span>
                   <span className="tracking-wider">••••••••••</span>
                 </p>
-                <Link
-                  href="/pricing"
-                  className="font-body text-xs text-primary hover:underline"
-                >
-                  Upgrade to Pro to see contact info →
-                </Link>
+
+                {isFreeUser ? (
+                  // Free user — upgrade prompt
+                  <Link
+                    href="/pricing"
+                    className="flex items-center justify-center gap-2 w-full rounded-lg border border-primary bg-primary/5 px-4 py-2.5 font-body text-sm font-medium text-primary hover:bg-primary/10 transition-colors"
+                  >
+                    Upgrade to Pro for 25 monthly credits →
+                  </Link>
+                ) : remainingCredits > 0 ? (
+                  // Has credits — reveal button
+                  <>
+                    <Button
+                      onClick={handleRevealContact}
+                      disabled={revealing}
+                      className="w-full font-body"
+                      variant="outline"
+                    >
+                      {revealing ? (
+                        <Loader2 className="mr-2 size-4 animate-spin" />
+                      ) : (
+                        <Eye className="mr-2 size-4" />
+                      )}
+                      Reveal Contact Info — 1 credit
+                    </Button>
+                    <p className="text-center font-body text-xs text-muted-foreground">
+                      You have {remainingCredits} credit{remainingCredits !== 1 ? 's' : ''} remaining
+                    </p>
+                  </>
+                ) : (
+                  // No credits — buy more or upgrade
+                  <>
+                    <Button
+                      onClick={handleRevealContact}
+                      disabled
+                      className="w-full font-body"
+                      variant="outline"
+                    >
+                      <Eye className="mr-2 size-4" />
+                      Reveal Contact Info — 1 credit
+                    </Button>
+                    <p className="text-center font-body text-xs text-muted-foreground">
+                      You have 0 credits.{' '}
+                      <Link href="/credits" className="text-primary hover:underline">Buy more credits</Link>
+                      {' or '}
+                      <Link href="/pricing" className="text-primary hover:underline">Upgrade plan</Link>
+                    </p>
+                  </>
+                )}
               </div>
             )}
           </div>

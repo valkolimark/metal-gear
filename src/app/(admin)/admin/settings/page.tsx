@@ -37,13 +37,13 @@ import {
   getAuditLog,
   exportAuditLogCSV,
 } from '@/app/actions/settings'
-import { getWeeklyBriefs } from '../actions'
+import { getWeeklyBriefs, getCreditSystemConfig, updateCreditSystemConfig } from '../actions'
 import { getPlatformPalette } from '@/app/actions/palette'
 import { BrandPaletteSelector } from '@/components/admin/BrandPaletteSelector'
 
 // ─── Types ──────────────────────────────────────────────────────────
 
-type Tab = 'config' | 'admins' | 'pricing' | 'integrations' | 'data' | 'audit' | 'briefs'
+type Tab = 'config' | 'admins' | 'pricing' | 'credits' | 'integrations' | 'data' | 'audit' | 'briefs'
 
 interface ConfigItem {
   key: string
@@ -96,6 +96,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'config', label: 'Platform Config' },
   { key: 'admins', label: 'Admin Users' },
   { key: 'pricing', label: 'Pricing' },
+  { key: 'credits', label: 'Contact Credits' },
   { key: 'integrations', label: 'Integrations' },
   { key: 'data', label: 'Data Management' },
   { key: 'audit', label: 'Audit Log' },
@@ -159,6 +160,7 @@ export default function AdminSettingsPage() {
       {activeTab === 'config' && <PlatformConfigSection />}
       {activeTab === 'admins' && <AdminUsersSection />}
       {activeTab === 'pricing' && <PricingSection />}
+      {activeTab === 'credits' && <CreditSettingsSection />}
       {activeTab === 'integrations' && <IntegrationsSection />}
       {activeTab === 'data' && <DataManagementSection />}
       {activeTab === 'audit' && <AuditLogSection />}
@@ -680,6 +682,200 @@ function PricingSection() {
         </div>
       </CardContent>
     </Card>
+  )
+}
+
+// ─── Section: Contact Credit Settings ────────────────────────────────
+
+function CreditSettingsSection() {
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState<string | null>(null)
+  const [allowances, setAllowances] = useState<Record<string, number>>({})
+  const [extraCost, setExtraCost] = useState<Record<string, number>>({})
+  const [packs, setPacks] = useState<Array<{ id: string; credits: number; priceCents: number; label: string }>>([])
+
+  useEffect(() => {
+    getCreditSystemConfig().then((cfg) => {
+      setAllowances(cfg.allowances)
+      setExtraCost(cfg.extraCost)
+      setPacks(cfg.packs)
+      setLoading(false)
+    })
+  }, [])
+
+  async function saveAllowances() {
+    setSaving('allowances')
+    const result = await updateCreditSystemConfig('credit_allowances', allowances)
+    if (result.error) toast.error(result.error)
+    else toast.success('Allowances updated')
+    setSaving(null)
+  }
+
+  async function saveExtraCost() {
+    setSaving('extraCost')
+    const result = await updateCreditSystemConfig('credit_extra_cost', extraCost)
+    if (result.error) toast.error(result.error)
+    else toast.success('Extra credit costs updated')
+    setSaving(null)
+  }
+
+  async function savePacks() {
+    setSaving('packs')
+    const result = await updateCreditSystemConfig('credit_packs', packs)
+    if (result.error) toast.error(result.error)
+    else toast.success('Credit packs updated')
+    setSaving(null)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-4">
+        <Skeleton className="h-40 w-full" />
+        <Skeleton className="h-40 w-full" />
+      </div>
+    )
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Monthly Allowances */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-base">Monthly Credit Allowances</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="font-body text-xs text-muted-foreground">
+            Number of free contact credits each tier receives monthly. Use -1 for unlimited.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {['free', 'pro', 'business', 'enterprise'].map((tier) => (
+              <div key={tier} className="space-y-1">
+                <Label className="font-body text-xs capitalize">{tier}</Label>
+                <Input
+                  type="number"
+                  value={allowances[tier] ?? 0}
+                  onChange={(e) =>
+                    setAllowances((prev) => ({ ...prev, [tier]: parseInt(e.target.value) || 0 }))
+                  }
+                  className="font-body text-sm"
+                />
+              </div>
+            ))}
+          </div>
+          <Button size="sm" onClick={saveAllowances} disabled={saving === 'allowances'}>
+            {saving === 'allowances' ? 'Saving...' : 'Save Allowances'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Extra Credit Cost */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-base">Cost per Extra Credit (cents)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="font-body text-xs text-muted-foreground">
+            Price in cents for individual credits beyond the monthly allowance.
+          </p>
+          <div className="grid grid-cols-2 gap-3">
+            {['free', 'pro', 'business', 'enterprise'].map((tier) => (
+              <div key={tier} className="space-y-1">
+                <Label className="font-body text-xs capitalize">
+                  {tier} (${((extraCost[tier] ?? 0) / 100).toFixed(2)})
+                </Label>
+                <Input
+                  type="number"
+                  value={extraCost[tier] ?? 0}
+                  onChange={(e) =>
+                    setExtraCost((prev) => ({ ...prev, [tier]: parseInt(e.target.value) || 0 }))
+                  }
+                  className="font-body text-sm"
+                />
+              </div>
+            ))}
+          </div>
+          <Button size="sm" onClick={saveExtraCost} disabled={saving === 'extraCost'}>
+            {saving === 'extraCost' ? 'Saving...' : 'Save Costs'}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Credit Packs */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="font-display text-base">Credit Packs (Stripe)</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="font-body text-xs text-muted-foreground">
+            One-time purchase credit packs. Changes here affect the checkout UI immediately.
+          </p>
+          {packs.map((pack, idx) => (
+            <div key={pack.id} className="grid grid-cols-4 gap-2 items-end">
+              <div className="space-y-1">
+                <Label className="font-body text-[10px]">Label</Label>
+                <Input
+                  value={pack.label}
+                  onChange={(e) => {
+                    const updated = [...packs]
+                    updated[idx] = { ...pack, label: e.target.value }
+                    setPacks(updated)
+                  }}
+                  className="font-body text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="font-body text-[10px]">Credits</Label>
+                <Input
+                  type="number"
+                  value={pack.credits}
+                  onChange={(e) => {
+                    const updated = [...packs]
+                    updated[idx] = { ...pack, credits: parseInt(e.target.value) || 0 }
+                    setPacks(updated)
+                  }}
+                  className="font-body text-sm"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="font-body text-[10px]">Price (cents)</Label>
+                <Input
+                  type="number"
+                  value={pack.priceCents}
+                  onChange={(e) => {
+                    const updated = [...packs]
+                    updated[idx] = { ...pack, priceCents: parseInt(e.target.value) || 0 }
+                    setPacks(updated)
+                  }}
+                  className="font-body text-sm"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="ghost"
+                className="text-destructive hover:text-destructive"
+                onClick={() => setPacks(packs.filter((_, i) => i !== idx))}
+              >
+                Remove
+              </Button>
+            </div>
+          ))}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() =>
+                setPacks([...packs, { id: `pack_${Date.now()}`, credits: 10, priceCents: 2900, label: 'New Pack' }])
+              }
+            >
+              Add Pack
+            </Button>
+            <Button size="sm" onClick={savePacks} disabled={saving === 'packs'}>
+              {saving === 'packs' ? 'Saving...' : 'Save Packs'}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
   )
 }
 

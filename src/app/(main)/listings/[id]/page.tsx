@@ -5,6 +5,7 @@ import { getConditionReport } from '@/app/actions/condition-reports'
 import { getSellerReviews } from '@/app/actions/reputation'
 import { recordListingView } from '@/app/actions/analytics'
 import { getActiveTier } from '@/app/actions/tier'
+import { getCreditBalance, getRevealedContacts } from '@/app/actions/credits'
 import { ListingGallery } from './components/ListingGallery'
 import { ListingPurchasePanel } from './components/ListingPurchasePanel'
 import { ListingSpecs } from './components/ListingSpecs'
@@ -94,27 +95,57 @@ export default async function ListingDetailPage({
 
   if (!seller) notFound()
 
-  // Compute seller contact visibility server-side
+  // Compute seller contact visibility + credit state server-side
+  const sellerVisibility = (seller as { contact_visibility?: string }).contact_visibility ?? 'pro_plus'
+  const isSelf = currentUser?.id === seller.id
+
   let sellerContact: {
     canSee: boolean
     phone: string | null
     email: string | null
     visibility: string
+    alreadyRevealed?: boolean
   } | null = null
 
-  const sellerVisibility = (seller as { contact_visibility?: string }).contact_visibility ?? 'pro_plus'
+  let creditBalance: {
+    creditsRemaining: number
+    creditsUsedThisMonth: number
+    monthlyAllowance: number
+    tier: string
+  } | null = null
 
   if (sellerVisibility !== 'hidden') {
-    const isSelf = currentUser?.id === seller.id
     let canSee = isSelf
 
     if (!canSee && currentUser && sellerVisibility === 'public') {
       canSee = true
     }
 
+    let alreadyRevealed = false
     if (!canSee && currentUser && sellerVisibility === 'pro_plus') {
-      const viewerTier = await getActiveTier(currentUser.id)
-      canSee = ['pro', 'business', 'enterprise'].includes(viewerTier)
+      // Check if already revealed this month
+      const revealedContacts = await getRevealedContacts(currentUser.id)
+      alreadyRevealed = revealedContacts.includes(seller.id)
+      if (alreadyRevealed) canSee = true
+
+      // Enterprise gets unlimited
+      if (!canSee) {
+        const viewerTier = await getActiveTier(currentUser.id)
+        if (viewerTier === 'enterprise') canSee = true
+      }
+    }
+
+    // Fetch credit balance for non-enterprise users who haven't revealed yet
+    if (currentUser && !canSee && sellerVisibility === 'pro_plus') {
+      const balance = await getCreditBalance(currentUser.id)
+      if (balance) {
+        creditBalance = {
+          creditsRemaining: balance.creditsRemaining,
+          creditsUsedThisMonth: balance.creditsUsedThisMonth,
+          monthlyAllowance: balance.monthlyAllowance,
+          tier: balance.tier,
+        }
+      }
     }
 
     const contactPhone = seller.phone || null
@@ -125,6 +156,7 @@ export default async function ListingDetailPage({
       phone: canSee ? contactPhone : null,
       email: canSee ? contactEmail : null,
       visibility: sellerVisibility,
+      alreadyRevealed,
     }
   }
 
@@ -206,6 +238,7 @@ export default async function ListingDetailPage({
               isFavorited={!!favoriteResult.data}
               company={company}
               sellerContact={sellerContact}
+              creditBalance={creditBalance}
             />
           </div>
         </div>
@@ -219,6 +252,7 @@ export default async function ListingDetailPage({
         isFavorited={!!favoriteResult.data}
         company={company}
         sellerContact={sellerContact}
+        creditBalance={creditBalance}
       />
     </div>
   )

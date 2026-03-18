@@ -137,6 +137,34 @@ export const BOOST_PRODUCTS: Record<BoostType, {
   },
 } as const
 
+// ─── Contact Credits ────────────────────────────────────────────────
+
+export const CONTACT_CREDIT_ALLOWANCES: Record<string, number> = {
+  free: 0,
+  pro: 25,
+  business: 75,
+  enterprise: Infinity,
+  premium: 25,    // legacy alias
+  boost: 75,      // legacy alias
+}
+
+export const CREDIT_COST_PER_EXTRA: Record<string, number> = {
+  free: 500,       // $5.00
+  pro: 300,        // $3.00
+  business: 200,   // $2.00
+  enterprise: 0,
+  premium: 300,    // legacy alias
+  boost: 200,      // legacy alias
+}
+
+export const CREDIT_PACKS = [
+  { id: 'starter', credits: 10, priceCents: 2900, label: 'Starter' },
+  { id: 'standard', credits: 30, priceCents: 6900, label: 'Standard' },
+  { id: 'pro_pack', credits: 100, priceCents: 17900, label: 'Pro Pack' },
+] as const
+
+export type CreditPackId = typeof CREDIT_PACKS[number]['id']
+
 export const PRIORITY_TIER_BOOSTS: Record<string, number> = {
   standard: 0,
   preferred: 10,

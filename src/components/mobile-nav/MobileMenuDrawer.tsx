@@ -21,6 +21,7 @@ import {
   Building2,
   HelpCircle,
   CreditCard,
+  Coins,
   ChevronRight,
   LogOut,
   X,
@@ -251,6 +252,7 @@ export function MobileMenuDrawer({
             badge={unreadMessages > 0 ? String(unreadMessages) : undefined}
           />
           <NavRow href="/profile" icon={User} label="Profile & Settings" />
+          <NavRow href="/credits" icon={Coins} label="My Credits" />
           <NavRow href="/settings/company" icon={Building2} label="Company Settings" />
           {hasStorefront && (
             <NavRow href={`/sellers/${user.id}`} icon={Store} label="Seller Storefront" />

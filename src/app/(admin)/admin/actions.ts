@@ -1135,3 +1135,141 @@ export async function getWeeklyBriefs(limit = 10) {
 
   return data || []
 }
+
+// ─── Contact Credits (Admin) ────────────────────────────────────────
+
+export async function getAdminUserCreditBalance(userId: string) {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const now = new Date()
+  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+  const { data } = await admin
+    .from('contact_credits')
+    .select('credits_remaining, credits_used_this_month, period_start')
+    .eq('user_id', userId)
+    .eq('period_start', periodStart)
+    .maybeSingle()
+
+  // Get tier for monthly allowance info
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('subscription_tier')
+    .eq('id', userId)
+    .single()
+
+  return {
+    creditsRemaining: data?.credits_remaining ?? 0,
+    creditsUsed: data?.credits_used_this_month ?? 0,
+    tier: profile?.subscription_tier || 'free',
+    hasCreditRow: !!data,
+  }
+}
+
+export async function adminGrantCredits(
+  userId: string,
+  amount: number
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { profile: adminProfile } = await requireAdmin('manage_subscriptions')
+    const admin = createAdminClient()
+
+    const now = new Date()
+    const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+    // Get or create credit row
+    const { data: existing } = await admin
+      .from('contact_credits')
+      .select('id, credits_remaining')
+      .eq('user_id', userId)
+      .eq('period_start', periodStart)
+      .maybeSingle()
+
+    if (existing) {
+      await admin
+        .from('contact_credits')
+        .update({
+          credits_remaining: existing.credits_remaining + amount,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existing.id)
+    } else {
+      await admin.from('contact_credits').insert({
+        user_id: userId,
+        credits_remaining: amount,
+        credits_used_this_month: 0,
+        period_start: periodStart,
+      })
+    }
+
+    await logAdminAction(
+      adminProfile.id,
+      'grant_credits',
+      'user',
+      userId,
+      { amount, admin_override: true }
+    )
+
+    return { success: true }
+  } catch (err) {
+    if (err && typeof err === 'object' && 'digest' in err) throw err
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
+export async function getCreditSystemConfig() {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data: rows } = await admin
+    .from('system_config')
+    .select('key, value')
+    .in('key', ['credit_allowances', 'credit_extra_cost', 'credit_packs'])
+
+  const config: Record<string, unknown> = {}
+  for (const row of rows ?? []) {
+    try {
+      config[row.key] = typeof row.value === 'string' ? JSON.parse(row.value as string) : row.value
+    } catch {
+      // ignore
+    }
+  }
+
+  return {
+    allowances: (config.credit_allowances ?? { free: 0, pro: 25, business: 75, enterprise: -1 }) as Record<string, number>,
+    extraCost: (config.credit_extra_cost ?? { free: 500, pro: 300, business: 200, enterprise: 0 }) as Record<string, number>,
+    packs: (config.credit_packs ?? []) as Array<{ id: string; credits: number; priceCents: number; label: string }>,
+  }
+}
+
+export async function updateCreditSystemConfig(
+  key: 'credit_allowances' | 'credit_extra_cost' | 'credit_packs',
+  value: unknown
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { profile: adminProfile } = await requireAdmin('manage_subscriptions')
+    const admin = createAdminClient()
+
+    const jsonValue = JSON.stringify(value)
+
+    const { error } = await admin
+      .from('system_config')
+      .upsert({ key, value: jsonValue }, { onConflict: 'key' })
+
+    if (error) return { success: false, error: error.message }
+
+    await logAdminAction(
+      adminProfile.id,
+      'update_credit_config',
+      'system',
+      key,
+      { value }
+    )
+
+    return { success: true }
+  } catch (err) {
+    if (err && typeof err === 'object' && 'digest' in err) throw err
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}

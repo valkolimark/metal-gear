@@ -31,10 +31,17 @@ interface Props {
     phone: string | null
     email: string | null
     visibility: string
+    alreadyRevealed?: boolean
+  } | null
+  creditBalance?: {
+    creditsRemaining: number
+    creditsUsedThisMonth: number
+    monthlyAllowance: number
+    tier: string
   } | null
 }
 
-export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, company, sellerContact }: Props) {
+export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, company, sellerContact, creditBalance }: Props) {
   const router = useRouter()
   const [gateOpen, setGateOpen] = useState(false)
   const [gateAction, setGateAction] = useState<'offer' | 'contact' | 'save'>('offer')
@@ -120,6 +127,7 @@ export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, c
                 isFavorited={favorited}
                 company={company}
                 sellerContact={sellerContact}
+                creditBalance={creditBalance}
               />
             </div>
           </SheetContent>

@@ -41,7 +41,9 @@ export async function POST(request: NextRequest) {
     switch (event.type) {
       case 'checkout.session.completed': {
         const session = event.data.object as Stripe.Checkout.Session
-        if (session.metadata?.type === 'boost_purchase') {
+        if (session.metadata?.type === 'credit_purchase') {
+          await handleCreditPurchaseCompleted(admin, session)
+        } else if (session.metadata?.type === 'boost_purchase') {
           await handleBoostCheckoutCompleted(admin, session)
         } else {
           await handleCheckoutCompleted(admin, session)
@@ -376,6 +378,67 @@ async function handlePaymentIntentFailed(
         </div>`,
       })
     }
+  }
+}
+
+// ─── Credit Purchase Handler ──────────────────────────────────
+
+async function handleCreditPurchaseCompleted(
+  admin: ReturnType<typeof createAdminClient>,
+  session: Stripe.Checkout.Session
+) {
+  const userId = session.metadata?.user_id
+  const credits = parseInt(session.metadata?.credits || '0')
+  const paymentIntentId = session.payment_intent as string
+
+  if (!userId || !credits || !paymentIntentId) {
+    console.error('Missing credit purchase metadata in checkout session')
+    return
+  }
+
+  // Idempotency check on stripe_payment_intent_id
+  const { data: existing } = await admin
+    .from('credit_purchases')
+    .select('id')
+    .eq('stripe_payment_intent_id', paymentIntentId)
+    .maybeSingle()
+
+  if (existing) return
+
+  // Record the purchase
+  await admin.from('credit_purchases').insert({
+    user_id: userId,
+    credits_purchased: credits,
+    amount_paid: session.amount_total ?? 0,
+    stripe_payment_intent_id: paymentIntentId,
+  })
+
+  // Add credits to user's current period ledger
+  const now = new Date()
+  const periodStart = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+
+  const { data: creditRow } = await admin
+    .from('contact_credits')
+    .select('id, credits_remaining')
+    .eq('user_id', userId)
+    .eq('period_start', periodStart)
+    .maybeSingle()
+
+  if (creditRow) {
+    await admin
+      .from('contact_credits')
+      .update({
+        credits_remaining: creditRow.credits_remaining + credits,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', creditRow.id)
+  } else {
+    await admin.from('contact_credits').insert({
+      user_id: userId,
+      credits_remaining: credits,
+      credits_used_this_month: 0,
+      period_start: periodStart,
+    })
   }
 }
 

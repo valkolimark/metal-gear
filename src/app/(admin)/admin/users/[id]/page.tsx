@@ -13,6 +13,7 @@ import {
   Shield,
   Save,
   CreditCard,
+  Coins,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Input } from '@/components/ui/input'
 import {
   getAdminUserDetail,
   adminUpdateUser,
@@ -35,6 +37,8 @@ import {
   adminGrantRole,
   getChurnRiskDetail,
   setUserSubscriptionTier,
+  getAdminUserCreditBalance,
+  adminGrantCredits,
 } from '../../actions'
 
 const ROLE_COLORS: Record<string, string> = {
@@ -56,6 +60,9 @@ export default function AdminUserDetailPage() {
   const [generatingOutreach, setGeneratingOutreach] = useState(false)
   const [tierOverride, setTierOverride] = useState<string>('')
   const [savingTier, setSavingTier] = useState(false)
+  const [creditInfo, setCreditInfo] = useState<{ creditsRemaining: number; creditsUsed: number; tier: string } | null>(null)
+  const [grantAmount, setGrantAmount] = useState('')
+  const [granting, setGranting] = useState(false)
 
   useEffect(() => {
     getAdminUserDetail(userId).then((d) => {
@@ -64,7 +71,26 @@ export default function AdminUserDetailPage() {
       setTierOverride(d.profile?.subscription_tier || 'free')
     })
     getChurnRiskDetail(userId).then(setChurnRisk)
+    getAdminUserCreditBalance(userId).then(setCreditInfo)
   }, [userId])
+
+  async function handleGrantCredits() {
+    const amount = parseInt(grantAmount)
+    if (isNaN(amount) || amount <= 0) {
+      toast.error('Enter a valid amount')
+      return
+    }
+    setGranting(true)
+    const result = await adminGrantCredits(userId, amount)
+    if (result.error) {
+      toast.error(result.error)
+    } else {
+      toast.success(`Granted ${amount} credits`)
+      setGrantAmount('')
+      getAdminUserCreditBalance(userId).then(setCreditInfo)
+    }
+    setGranting(false)
+  }
 
   async function handleSaveTier() {
     setSavingTier(true)
@@ -343,6 +369,55 @@ export default function AdminUserDetailPage() {
 
             <p className="font-body text-[10px] text-muted-foreground">
               Admin overrides bypass Stripe. Existing Stripe subscriptions are not affected.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Contact Credits */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <Coins className="size-4 text-primary" />
+              Contact Credits
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <div className="flex justify-between text-sm">
+              <span className="font-body text-muted-foreground">Balance</span>
+              <span className="font-display text-lg font-bold text-foreground">
+                {creditInfo?.creditsRemaining ?? 0}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="font-body text-muted-foreground">Used This Month</span>
+              <span className="font-body text-foreground">{creditInfo?.creditsUsed ?? 0}</span>
+            </div>
+
+            <div className="h-px bg-border" />
+
+            <div className="space-y-2">
+              <Label className="font-body text-xs">Grant Credits</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number"
+                  value={grantAmount}
+                  onChange={(e) => setGrantAmount(e.target.value)}
+                  placeholder="Amount"
+                  className="font-body text-sm"
+                  min={1}
+                />
+                <Button
+                  size="sm"
+                  onClick={handleGrantCredits}
+                  disabled={granting || !grantAmount}
+                >
+                  {granting ? 'Granting...' : 'Grant'}
+                </Button>
+              </div>
+            </div>
+
+            <p className="font-body text-[10px] text-muted-foreground">
+              Granted credits are added to the current month&apos;s balance.
             </p>
           </CardContent>
         </Card>
