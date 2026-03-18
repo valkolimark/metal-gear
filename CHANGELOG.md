@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.6.0] — 2026-03-18 · AI Professor Mode (Cycle 25)
+
+### Added
+- **AI Professor Mode** — Ask Metal Gear detects compatibility/suitability questions and enters follow-up mode, gathering 2–4 process-specific questions before rendering a direct yes/no verdict with reasoning
+- **Equipment-category-aware question bank** — professor follow-up questions tailored by equipment type (centrifuges, pumps, mixers, heat exchangers, compressors, generators, CNC machines)
+- **Alternative equipment suggestions** — AI honestly recommends against the listed item when it's a poor fit, names specific alternatives, and provides clickable search suggestion buttons
+- **Search suggestion cards** — `[SEARCH_SUGGESTION]` markers in AI responses render as styled "Search for X →" buttons that navigate to `/search?q=...` for conversational AI search
+- **Updated starter question chips** — professor-mode prompts ("Is this compatible with my process?", "What specs should I verify?", "What's the alternative?", "Help me evaluate") replace generic Q&A chips; category-aware variants per equipment type
+
+### Changed
+- **Ask Metal Gear system prompt** — upgraded from simple Q&A assistant to senior process engineer persona with 20+ year expertise; injected listing specs, condition, and category at request time
+- **Rate limiting** — changed from 20 req/hr IP-based to daily caps: 10/day for free users, 100/day for Pro+ subscribers; tier detected via `x-user-id` header
+- **Max tokens** — increased from 512 to 768 to accommodate professor-mode multi-question responses
+- **Subtitle copy** — "Get instant answers" → "AI equipment expert — ask about compatibility, specs, or alternatives"
+- **Input placeholder** — updated to "Ask about compatibility, specs, or alternatives..."
+
+---
+
 ## [3.5.0] — 2026-03-18 · Contact Credit System (Cycle 24)
 
 ### Added

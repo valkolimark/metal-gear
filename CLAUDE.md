@@ -53,7 +53,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/cron/market-gaps` — Weekly SOS demand gap analysis
 - `/api/cron/cleanup` — Periodic notification and data cleanup
 - `/api/cron/reset-credits` — Monthly contact credit reset (schedule: `0 6 1 * *`)
-- `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat (listing-context, 20 req/hr rate limit)
+- `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat with professor mode (listing-context, 10/day free, 100/day Pro+)
 - `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
 
 ## Pricing Tiers
@@ -134,6 +134,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **AI columns on sos_requests:** `ai_categorized`, `ranked_response_ids`
 - **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`, `VideoPlayer`, `AskMetalGear`, `HelpButton` (AI chat)
 - **AI utilities:** `src/lib/ai/churn-scorer.ts` — heuristic churn signal weights and scoring
+- **AI Professor Mode (Cycle 25):** Ask Metal Gear (`/api/listings/[id]/ask`) detects compatibility/suitability questions via regex triggers and enters professor mode — asks 2–4 targeted follow-up questions based on equipment category before rendering a direct verdict; recommends alternatives with `[SEARCH_SUGGESTION:{"query":"...","label":"..."}]` markers rendered as clickable search buttons in `AskMetalGear.tsx`; rate limit: 10/day free, 100/day Pro+ (daily IP-based); system prompt injects listing title, specs, condition, category at request time
 
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2

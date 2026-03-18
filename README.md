@@ -52,6 +52,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - **Title Optimizer** — 3 SEO-optimized title suggestions with issue warnings
 - **Quality Scorer** — 0-100 listing quality grade (A-F) with per-category breakdown and improvement tips
 - **Image Recognition** — equipment identification, nameplate OCR, and fraud detection via Claude Vision
+- **AI Professor Mode (Ask Metal Gear)** — compatibility questions trigger expert follow-up flow: 2–4 targeted process questions, then direct yes/no verdict with reasoning; honest alternative equipment recommendations with clickable search suggestions
 - **Pricing Intelligence** — market-based price suggestions from comparable sales
 - **Smart Search Alerts** — AI relevance scoring (0-100) for saved search notifications; only notifies on high-quality matches with explanation
 - **Seller Reputation Summarizer** — AI-generated reputation summaries with evidence-backed strengths, watchouts, and buyer recommendation %
