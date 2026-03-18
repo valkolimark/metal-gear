@@ -351,3 +351,142 @@ export async function checkEnhancedOnboardingStatus() {
 
   return { completed: profile?.onboarding_completed ?? false }
 }
+
+// ─── Cycle 23: Role-Aware Onboarding ────────────────────────────────
+
+import type { OnboardingFormData } from '@/lib/constants/onboarding'
+import { getTier1ForTier2 } from '@/lib/constants/equipment-taxonomy'
+
+export async function getOnboardingPrefill() {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+  const { data: profile } = await admin
+    .from('profiles')
+    .select('full_name, display_name, company_name, phone, location_city, location_state, contact_visibility')
+    .eq('id', user.id)
+    .maybeSingle()
+
+  return {
+    prefill: {
+      display_name: profile?.display_name || profile?.full_name || user.user_metadata?.full_name || '',
+      company_name: profile?.company_name || '',
+      phone: profile?.phone || '',
+      city: profile?.location_city || '',
+      state: profile?.location_state || '',
+      contact_visibility: profile?.contact_visibility || 'pro_plus',
+    },
+  }
+}
+
+export async function submitOnboarding(data: OnboardingFormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Not authenticated' }
+
+  if (!data.archetype) return { error: 'Archetype is required' }
+  if (data.industries.length === 0) return { error: 'At least one industry is required' }
+  if (!data.company_name.trim()) return { error: 'Company name is required' }
+  if (!data.city.trim() || !data.state.trim()) return { error: 'City and state are required' }
+
+  const admin = createAdminClient()
+  const now = new Date().toISOString()
+
+  // Map archetype to legacy primary_role for backward compatibility
+  const primaryRoleMap: Record<string, string> = {
+    operator: 'end_user',
+    trader: 'dealer',
+    service_provider: 'services',
+  }
+
+  // Combine industries — add custom "Other" value if specified
+  const industries = [...data.industries]
+  if (data.industries_other.trim() && !industries.includes(data.industries_other.trim())) {
+    industries.push(data.industries_other.trim())
+  }
+
+  // Build user_business_profiles row
+  const bizProfile = {
+    user_id: user.id,
+    company_name: data.company_name.trim(),
+    archetype: data.archetype,
+    primary_role: primaryRoleMap[data.archetype] || 'end_user',
+    industries,
+    sos_opted_in: data.sos_opted_in,
+    sos_responder: data.sos_opted_in,
+    onboarding_completed: true,
+    onboarding_completed_at: now,
+    onboarding_step: 6,
+    updated_at: now,
+    // Archetype-specific fields
+    sub_role: data.archetype === 'operator' && data.sub_role ? data.sub_role : null,
+    sourcing_methods: data.archetype === 'operator' && data.sourcing_methods.length > 0 ? data.sourcing_methods : null,
+    trading_activities: data.archetype === 'trader' && data.trading_activities.length > 0 ? data.trading_activities : null,
+    monthly_volume: data.archetype === 'trader' && data.monthly_volume ? data.monthly_volume : null,
+    service_types: data.archetype === 'service_provider' && data.service_types.length > 0 ? data.service_types : null,
+    service_area: data.archetype === 'service_provider' && data.service_area ? data.service_area : null,
+  }
+
+  // Upsert user_business_profiles
+  const { data: existing } = await admin
+    .from('user_business_profiles')
+    .select('id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (existing) {
+    const { error } = await admin
+      .from('user_business_profiles')
+      .update(bizProfile)
+      .eq('user_id', user.id)
+    if (error) return { error: error.message }
+  } else {
+    const { error } = await admin
+      .from('user_business_profiles')
+      .insert(bizProfile)
+    if (error) return { error: error.message }
+  }
+
+  // Save equipment interests (tier2 selections → user_equipment_interests)
+  if (data.equipment_tier2s.length > 0) {
+    await admin.from('user_equipment_interests').delete().eq('user_id', user.id)
+    const rows = data.equipment_tier2s.map((tier2) => ({
+      user_id: user.id,
+      tier1: getTier1ForTier2(tier2),
+      tier2,
+      subcategories: [] as string[],
+      brands: [] as string[],
+    }))
+    const { error: eqError } = await admin.from('user_equipment_interests').insert(rows)
+    if (eqError) console.error('Equipment interests insert error:', eqError.message)
+  }
+
+  // Update profiles table
+  const profileUpdate: Record<string, unknown> = {
+    updated_at: now,
+    company_name: data.company_name.trim(),
+    contact_visibility: data.contact_visibility,
+  }
+  if (data.display_name.trim()) {
+    profileUpdate.full_name = data.display_name.trim()
+    profileUpdate.display_name = data.display_name.trim()
+  }
+  if (data.city.trim()) profileUpdate.location_city = data.city.trim()
+  if (data.state.trim()) profileUpdate.location_state = data.state.trim()
+  if (data.phone.trim()) profileUpdate.phone = data.phone.trim()
+
+  await admin.from('profiles').update(profileUpdate).eq('id', user.id)
+
+  // Mark legacy onboarding as complete
+  await admin
+    .from('onboarding_progress')
+    .upsert({
+      user_id: user.id,
+      steps_completed: ['profile', 'location', 'browse', 'action'],
+      completed_at: now,
+    })
+
+  return { success: true }
+}

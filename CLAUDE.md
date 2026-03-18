@@ -147,6 +147,16 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - `src/app/(main)/listings/[id]/components/favorite-action.ts` — Listing favorite toggle
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
 
+## Onboarding (Cycle 23)
+- **Flow:** 5-step role-aware wizard at `/onboarding` (route group `(onboarding)`)
+- **Archetypes:** `operator` (plant/facility), `trader` (dealer/reseller), `service_provider` (logistics/rigging/etc.)
+- **Step 1:** Archetype selection → **Step 2:** Multi-industry select → **Step 3:** Branching role-specific questions → **Step 4:** SOS opt-in + contact visibility → **Step 5:** Profile (name, company, city/state)
+- **Single-submit:** All data held in client state; written to DB via `submitOnboarding()` server action on final step
+- **DB columns (Cycle 23):** `user_business_profiles.archetype`, `sub_role`, `trading_activities`, `service_types`, `service_area`, `sourcing_methods`, `monthly_volume`, `sos_opted_in`
+- **Equipment interests:** Tier 2 group selections saved to `user_equipment_interests` table
+- **Middleware guard:** `src/lib/supabase/middleware.ts` redirects users without `onboarding_completed: true` to `/onboarding`
+- **Constants:** `src/lib/constants/onboarding.ts` — `OnboardingFormData`, archetype options, industry list, role-specific option arrays
+
 ## Seller Contact Info (Cycle 22)
 - **DB columns:** `profiles.contact_email` (TEXT), `profiles.contact_visibility` (TEXT, default `pro_plus`, check: `public`/`pro_plus`/`hidden`)
 - **Visibility logic:** `public` = any logged-in user; `pro_plus` = Pro/Business/Enterprise only; `hidden` = no contact section shown

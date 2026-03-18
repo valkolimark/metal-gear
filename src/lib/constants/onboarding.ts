@@ -7,6 +7,7 @@ export const ONBOARDING_STEPS = [
   { id: 'action', label: 'Create a listing or save a search', description: 'Start buying or selling' },
 ]
 
+// Legacy interface — kept for backward compatibility with existing onboarding server actions
 export interface EnhancedOnboardingData {
   // Step 1: Identity
   full_name?: string
@@ -42,3 +43,125 @@ export interface EnhancedOnboardingData {
   // Step 6: Quality Agreement
   quality_agreement_accepted?: boolean
 }
+
+// ─── Cycle 23: Role-Aware Onboarding ────────────────────────────────
+
+export type Archetype = 'operator' | 'trader' | 'service_provider'
+
+export interface OnboardingFormData {
+  // Step 1: Archetype
+  archetype: Archetype | null
+
+  // Step 2: Industries
+  industries: string[]
+  industries_other: string
+
+  // Step 3: Role-specific (branch by archetype)
+  // Operator
+  sub_role: string
+  equipment_tier2s: string[]
+  sourcing_methods: string[]
+  // Trader
+  trading_activities: string[]
+  monthly_volume: string
+  // Service Provider
+  service_types: string[]
+  service_area: string
+
+  // Step 4: SOS & Transparency
+  sos_opted_in: boolean
+  contact_visibility: 'pro_plus' | 'public' | 'hidden'
+
+  // Step 5: Profile
+  display_name: string
+  company_name: string
+  city: string
+  state: string
+  phone: string
+}
+
+export const INITIAL_ONBOARDING_DATA: OnboardingFormData = {
+  archetype: null,
+  industries: [],
+  industries_other: '',
+  sub_role: '',
+  equipment_tier2s: [],
+  sourcing_methods: [],
+  trading_activities: [],
+  monthly_volume: '',
+  service_types: [],
+  service_area: '',
+  sos_opted_in: true,
+  contact_visibility: 'pro_plus',
+  display_name: '',
+  company_name: '',
+  city: '',
+  state: '',
+  phone: '',
+}
+
+export const ONBOARDING_INDUSTRIES = [
+  'Oil & Gas',
+  'Petrochemical',
+  'Mining',
+  'Manufacturing',
+  'CNC Machining',
+  'Food & Beverage',
+  'Pharmaceutical',
+  'Plastics & Chemicals',
+  'Dairy',
+  'Pulp & Paper',
+  'Power Generation',
+  'Other',
+] as const
+
+export const OPERATOR_SUB_ROLES = [
+  { id: 'plant_manager', label: 'Plant Manager' },
+  { id: 'maintenance_manager', label: 'Maintenance Manager' },
+  { id: 'process_engineer', label: 'Process Engineer' },
+  { id: 'procurement', label: 'Procurement / Purchasing' },
+  { id: 'operations_manager', label: 'Operations Manager' },
+  { id: 'other', label: 'Other' },
+] as const
+
+export const SOURCING_METHODS = [
+  { id: 'purchase_new', label: 'Purchase new' },
+  { id: 'purchase_used', label: 'Purchase used/surplus' },
+  { id: 'rental', label: 'Rental' },
+  { id: 'rebuild_inhouse', label: 'Rebuild/refurbish in-house' },
+  { id: 'contract_repairs', label: 'Contract out for repairs' },
+] as const
+
+export const TRADING_ACTIVITY_OPTIONS = [
+  { id: 'buy', label: 'Buy equipment' },
+  { id: 'sell', label: 'Sell equipment' },
+  { id: 'rebuild', label: 'Rebuild / refurbish equipment' },
+  { id: 'rent', label: 'Rent equipment' },
+] as const
+
+export const MONTHLY_VOLUME_OPTIONS = [
+  { id: '1-5', label: '1–5' },
+  { id: '6-20', label: '6–20' },
+  { id: '21-50', label: '21–50' },
+  { id: '50+', label: '50+' },
+] as const
+
+export const SERVICE_TYPE_OPTIONS = [
+  { id: 'trucking_freight', label: 'Trucking / Freight' },
+  { id: 'rigging_crane', label: 'Rigging & Crane' },
+  { id: 'forklift', label: 'Forklift Rental / Sales' },
+  { id: 'machine_shop', label: 'Machine Shop / Machining' },
+  { id: 'rebuilding_repair', label: 'Rebuilding / Repair' },
+  { id: 'inspection', label: 'Inspection & Certification' },
+  { id: 'demolition', label: 'Demolition' },
+  { id: 'scrap_recycling', label: 'Scrap & Recycling / Boneyard' },
+  { id: 'millwright', label: 'Millwright Services' },
+  { id: 'other', label: 'Other' },
+] as const
+
+export const SERVICE_AREA_OPTIONS = [
+  { id: 'local', label: 'Local (within 100 miles)' },
+  { id: 'regional', label: 'Regional / Statewide' },
+  { id: 'national', label: 'National' },
+  { id: 'international', label: 'International' },
+] as const

@@ -67,7 +67,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Referral program with unique codes, 30-day tracking, and $10 reward
 
 ### Platform
-- 6-step B2B onboarding wizard (identity, equipment interests, industry, trading intent, SOS opt-in, quality agreement)
+- Role-aware onboarding wizard with 3 archetypes (Operator, Trader, Service Provider), branching role-specific questions, multi-industry selection, equipment interest seeding, SOS opt-in, and contact visibility
 - Web Push notifications with category filters and per-category preferences
 - Internationalization (EN/ES) with cookie-based locale detection
 - Help center with 16 articles across 7 categories, keyword search, and FAQ
@@ -228,7 +228,7 @@ src/
 │   ├── (main)/          # Protected routes (dashboard, search, listings, messages, etc.)
 │   ├── (admin)/         # Super admin dashboard with RBAC (superadmin, moderator, analyst)
 │   ├── (marketing)/     # Public pages (pricing, about, terms, privacy)
-│   ├── (onboarding)/    # 6-step onboarding wizard
+│   ├── (onboarding)/    # 5-step role-aware onboarding wizard (3 archetypes)
 │   ├── api/             # Webhooks, crons, AI endpoints, OG images
 │   └── actions/         # Shared server actions (30+ files)
 ├── components/

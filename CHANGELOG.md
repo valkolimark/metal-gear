@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.4.0] — 2026-03-18 · Role-Aware Onboarding Redesign (Cycle 23)
+
+### Added
+- **Three user archetypes** — Operator (plant/facility managers), Trader (dealers/rebuilders/resellers), Service Provider (logistics/rigging/machine shops); archetype selection is the first onboarding step
+- **Branching Step 3** — role-specific questions per archetype: operators get sub-role + sourcing methods, traders get trading activities + monthly volume, service providers get service types + service area
+- **Multi-industry selection** — users pick from 12 industry options (with "Other" free-text); replaces single industry dropdown
+- **Equipment type multi-select** — all 28 Tier 2 taxonomy groups as toggle chips; seeds feed and SOS matching via `user_equipment_interests`
+- **SOS opt-in at onboarding** — toggle (default ON) captured during Step 4
+- **Contact visibility at onboarding** — three options (Pro+, Everyone, Messaging only) mapped to `profiles.contact_visibility`
+- **New DB columns** — `archetype`, `sub_role`, `trading_activities`, `service_types`, `service_area`, `sourcing_methods`, `monthly_volume`, `sos_opted_in` on `user_business_profiles`
+
+### Changed
+- **Onboarding flow redesigned** — from 6 generic steps to 5 role-aware steps with archetype branching
+- **Single-submit pattern** — all form data held in client state until final "Finish Setup"; no partial DB saves during onboarding
+- **Existing users unaffected** — onboarding guard only redirects users without `onboarding_completed: true`
+
+---
+
 ## [3.3.0] — 2026-03-18 · Mobile Listing Actions, Radar, Feed Nav & Seller Contact (Cycle 22)
 
 ### Added

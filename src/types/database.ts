@@ -2568,11 +2568,13 @@ export type Database = {
       }
       user_business_profiles: {
         Row: {
+          archetype: string | null
           company_name: string
           created_at: string | null
           id: string
           industries: string[] | null
           job_title: string | null
+          monthly_volume: string | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
           onboarding_step: number | null
@@ -2582,6 +2584,8 @@ export type Database = {
           quality_agreement_accepted: boolean | null
           quality_agreement_accepted_at: string | null
           secondary_roles: string[] | null
+          service_area: string | null
+          service_types: string[] | null
           show_company: boolean | null
           show_email_to: string | null
           show_name: boolean | null
@@ -2589,19 +2593,25 @@ export type Database = {
           sos_allow_realtime_contact: boolean | null
           sos_categories: string[] | null
           sos_notify_methods: string[] | null
+          sos_opted_in: boolean | null
           sos_responder: boolean | null
           sos_urgency_level: string | null
+          sourcing_methods: string[] | null
+          sub_role: string | null
+          trading_activities: string[] | null
           trading_intents: string[] | null
           updated_at: string | null
           user_id: string
           work_phone: string | null
         }
         Insert: {
+          archetype?: string | null
           company_name: string
           created_at?: string | null
           id?: string
           industries?: string[] | null
           job_title?: string | null
+          monthly_volume?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           onboarding_step?: number | null
@@ -2611,6 +2621,8 @@ export type Database = {
           quality_agreement_accepted?: boolean | null
           quality_agreement_accepted_at?: string | null
           secondary_roles?: string[] | null
+          service_area?: string | null
+          service_types?: string[] | null
           show_company?: boolean | null
           show_email_to?: string | null
           show_name?: boolean | null
@@ -2618,19 +2630,25 @@ export type Database = {
           sos_allow_realtime_contact?: boolean | null
           sos_categories?: string[] | null
           sos_notify_methods?: string[] | null
+          sos_opted_in?: boolean | null
           sos_responder?: boolean | null
           sos_urgency_level?: string | null
+          sourcing_methods?: string[] | null
+          sub_role?: string | null
+          trading_activities?: string[] | null
           trading_intents?: string[] | null
           updated_at?: string | null
           user_id: string
           work_phone?: string | null
         }
         Update: {
+          archetype?: string | null
           company_name?: string
           created_at?: string | null
           id?: string
           industries?: string[] | null
           job_title?: string | null
+          monthly_volume?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
           onboarding_step?: number | null
@@ -2640,6 +2658,8 @@ export type Database = {
           quality_agreement_accepted?: boolean | null
           quality_agreement_accepted_at?: string | null
           secondary_roles?: string[] | null
+          service_area?: string | null
+          service_types?: string[] | null
           show_company?: boolean | null
           show_email_to?: string | null
           show_name?: boolean | null
@@ -2647,8 +2667,12 @@ export type Database = {
           sos_allow_realtime_contact?: boolean | null
           sos_categories?: string[] | null
           sos_notify_methods?: string[] | null
+          sos_opted_in?: boolean | null
           sos_responder?: boolean | null
           sos_urgency_level?: string | null
+          sourcing_methods?: string[] | null
+          sub_role?: string | null
+          trading_activities?: string[] | null
           trading_intents?: string[] | null
           updated_at?: string | null
           user_id?: string
