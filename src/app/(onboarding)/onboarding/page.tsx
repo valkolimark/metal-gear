@@ -299,7 +299,7 @@ function StepIndustries({
               key={industry}
               type="button"
               onClick={() => toggleArrayItem('industries', industry)}
-              className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+              className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
                 selected
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border text-foreground hover:border-primary/40'
@@ -367,7 +367,7 @@ function OperatorBranch({
                 key={role.id}
                 type="button"
                 onClick={() => setFormData((prev) => ({ ...prev, sub_role: role.id }))}
-                className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
                   selected
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -397,7 +397,7 @@ function OperatorBranch({
                 key={method.id}
                 type="button"
                 onClick={() => toggleArrayItem('sourcing_methods', method.id)}
-                className={`rounded-lg border px-4 py-3 text-left text-sm font-medium transition-all ${
+                className={`rounded-lg border-2 px-4 py-3 text-left text-sm font-medium transition-all ${
                   selected
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -438,7 +438,7 @@ function TraderBranch({
                 key={opt.id}
                 type="button"
                 onClick={() => toggleArrayItem('trading_activities', opt.id)}
-                className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
                   selected
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -467,7 +467,7 @@ function TraderBranch({
                 key={opt.id}
                 type="button"
                 onClick={() => setFormData((prev) => ({ ...prev, monthly_volume: opt.id }))}
-                className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
                   selected
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -508,7 +508,7 @@ function ServiceProviderBranch({
                 key={opt.id}
                 type="button"
                 onClick={() => toggleArrayItem('service_types', opt.id)}
-                className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
                   selected
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -531,7 +531,7 @@ function ServiceProviderBranch({
                 key={opt.id}
                 type="button"
                 onClick={() => setFormData((prev) => ({ ...prev, service_area: opt.id }))}
-                className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
+                className={`rounded-lg border-2 px-4 py-3 text-sm font-medium transition-all ${
                   selected
                     ? 'border-primary bg-primary/10 text-primary'
                     : 'border-border text-foreground hover:border-primary/40'
@@ -587,7 +587,7 @@ function EquipmentPicker({
               key={group.id}
               type="button"
               onClick={() => onToggle(group.id)}
-              className={`rounded-lg border px-3 py-2.5 text-left text-xs font-medium transition-all sm:text-sm ${
+              className={`rounded-lg border-2 px-3 py-2.5 text-left text-xs font-medium transition-all sm:text-sm ${
                 isSelected
                   ? 'border-primary bg-primary/10 text-primary'
                   : 'border-border text-foreground hover:border-primary/40'
@@ -691,7 +691,7 @@ function StepSOSTransparency({
                 key={opt.value}
                 type="button"
                 onClick={() => setFormData((prev) => ({ ...prev, contact_visibility: opt.value }))}
-                className={`w-full rounded-lg border p-4 text-left transition-all ${
+                className={`w-full rounded-lg border-2 p-4 text-left transition-all ${
                   selected ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/40'
                 }`}
               >

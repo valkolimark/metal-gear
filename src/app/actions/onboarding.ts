@@ -382,6 +382,7 @@ export async function getOnboardingPrefill() {
 }
 
 export async function submitOnboarding(data: OnboardingFormData) {
+  try {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Not authenticated' }
@@ -451,42 +452,59 @@ export async function submitOnboarding(data: OnboardingFormData) {
 
   // Save equipment interests (tier2 selections → user_equipment_interests)
   if (data.equipment_tier2s.length > 0) {
-    await admin.from('user_equipment_interests').delete().eq('user_id', user.id)
-    const rows = data.equipment_tier2s.map((tier2) => ({
-      user_id: user.id,
-      tier1: getTier1ForTier2(tier2),
-      tier2,
-      subcategories: [] as string[],
-      brands: [] as string[],
-    }))
-    const { error: eqError } = await admin.from('user_equipment_interests').insert(rows)
-    if (eqError) console.error('Equipment interests insert error:', eqError.message)
+    try {
+      await admin.from('user_equipment_interests').delete().eq('user_id', user.id)
+      const rows = data.equipment_tier2s.map((tier2) => ({
+        user_id: user.id,
+        tier1: getTier1ForTier2(tier2),
+        tier2,
+        subcategories: [] as string[],
+        brands: [] as string[],
+      }))
+      const { error: eqError } = await admin.from('user_equipment_interests').insert(rows)
+      if (eqError) console.error('Equipment interests insert error:', eqError.message)
+    } catch (err) {
+      console.error('Equipment interests save error:', err)
+    }
   }
 
-  // Update profiles table
-  const profileUpdate: Record<string, unknown> = {
-    updated_at: now,
-    company_name: data.company_name.trim(),
-    contact_visibility: data.contact_visibility,
-  }
-  if (data.display_name.trim()) {
-    profileUpdate.full_name = data.display_name.trim()
-    profileUpdate.display_name = data.display_name.trim()
-  }
-  if (data.city.trim()) profileUpdate.location_city = data.city.trim()
-  if (data.state.trim()) profileUpdate.location_state = data.state.trim()
-  if (data.phone.trim()) profileUpdate.phone = data.phone.trim()
+  // Update profiles table (non-blocking — main save already succeeded)
+  try {
+    const profileUpdate: Record<string, string> = {
+      updated_at: now,
+      company_name: data.company_name.trim(),
+      contact_visibility: data.contact_visibility,
+    }
+    if (data.display_name.trim()) {
+      profileUpdate.full_name = data.display_name.trim()
+      profileUpdate.display_name = data.display_name.trim()
+    }
+    if (data.city.trim()) profileUpdate.location_city = data.city.trim()
+    if (data.state.trim()) profileUpdate.location_state = data.state.trim()
+    if (data.phone.trim()) profileUpdate.phone = data.phone.trim()
 
-  await admin.from('profiles').update(profileUpdate).eq('id', user.id)
+    const { error: profileError } = await admin.from('profiles').update(profileUpdate).eq('id', user.id)
+    if (profileError) console.error('Profile update error:', profileError.message)
+  } catch (err) {
+    console.error('Profile update error:', err)
+  }
 
-  // Mark legacy onboarding as complete
-  await admin
-    .from('onboarding_progress')
-    .upsert({
-      user_id: user.id,
-      steps_completed: ['profile', 'location', 'browse', 'action'],
-      completed_at: now,
-    })
+  // Mark legacy onboarding as complete (non-blocking)
+  try {
+    await admin
+      .from('onboarding_progress')
+      .upsert({
+        user_id: user.id,
+        steps_completed: ['profile', 'location', 'browse', 'action'],
+        completed_at: now,
+      })
+  } catch (err) {
+    console.error('Legacy onboarding progress error:', err)
+  }
 
   return { success: true }
+  } catch (err) {
+    console.error('submitOnboarding unexpected error:', err)
+    return { error: 'Failed to save. Please try again.' }
+  }
 }
