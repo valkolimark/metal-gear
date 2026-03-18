@@ -22,6 +22,14 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - AI Response Ranker: scores and ranks vendor responses by spec match, trust, speed, and price
 - Predictive demand alerts: seller dashboard widget forecasting equipment demand by category and season
 
+### Contact Credits
+- Credit-based contact reveal system: spend credits to see seller phone/email
+- Tiered monthly allowances: Free (0), Pro (25), Business (75), Enterprise (unlimited)
+- Same-month re-reveals are free (idempotent)
+- Stripe one-time credit pack purchases: Starter (10/$29), Standard (30/$69), Pro Pack (100/$179)
+- `/credits` page with balance, purchase packs, and transaction history
+- Admin-configurable allowances, costs, and pack pricing via dashboard
+
 ### Transactions & Trust
 - Stripe escrow payments with authorize-then-capture and 5% platform fee
 - Dispute resolution with evidence uploads, admin resolution panel, and AI mediation summaries

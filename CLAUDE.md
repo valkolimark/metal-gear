@@ -52,6 +52,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/cron/churn-prediction` — Nightly churn risk scoring for subscribers
 - `/api/cron/market-gaps` — Weekly SOS demand gap analysis
 - `/api/cron/cleanup` — Periodic notification and data cleanup
+- `/api/cron/reset-credits` — Monthly contact credit reset (schedule: `0 6 1 * *`)
 - `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat (listing-context, 20 req/hr rate limit)
 - `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
 
@@ -119,6 +120,9 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `market_gap_reports` — Weekly SOS demand gap analysis (gaps JSONB, ai_analysis JSONB)
 - `company_profiles` — B2B company entities (name, slug, logo_url, banner_url, industry, company_size, website, city, state)
 - `company_memberships` — User-company junction (user_id, company_id, role enum, is_active, joined_at)
+- `contact_credits` — Monthly credit ledger per user (user_id, credits_remaining, credits_used_this_month, period_start)
+- `contact_reveals` — Contact reveal log with monthly dedup (viewer_id, seller_id, credits_spent, period_month)
+- `credit_purchases` — Stripe one-time credit pack purchases (user_id, credits_purchased, amount_paid, stripe_payment_intent_id)
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
@@ -159,12 +163,23 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Data carryover:** Onboarding saves to `profiles` (name, company, city, state, phone, contact_visibility) and `user_business_profiles` (industries, archetype, etc.); `/companies/new` page reads these to prefill the company creation form
 - **Constants:** `src/lib/constants/onboarding.ts` — `OnboardingFormData`, archetype options, industry list, role-specific option arrays
 
-## Seller Contact Info (Cycle 22)
+## Seller Contact Info (Cycle 22, updated Cycle 24)
 - **DB columns:** `profiles.contact_email` (TEXT), `profiles.contact_visibility` (TEXT, default `pro_plus`, check: `public`/`pro_plus`/`hidden`)
-- **Visibility logic:** `public` = any logged-in user; `pro_plus` = Pro/Business/Enterprise only; `hidden` = no contact section shown
+- **Visibility logic:** `public` = free for all logged-in users; `pro_plus` = costs 1 credit to reveal; `hidden` = no contact section shown
 - **Server-side only:** Contact info computed in listing detail page server component, passed as props — never exposed via client API
 - **Profile settings:** Contact email + visibility preference in `/profile` page via `updateContactSettings` server action
-- **Display:** Below seller card in `ListingPurchasePanel`; eligible users see phone/email; ineligible see masked values + upgrade prompt
+- **Display:** Below seller card in `ListingPurchasePanel`; credit-based reveal UI replaces simple tier gate
+
+## Contact Credits (Cycle 24)
+- **Monthly allowances:** Free: 0, Pro: 25, Business: 75, Enterprise: unlimited; reset 1st of month
+- **Credit reveal:** 1 credit to reveal `pro_plus` seller contact info; same-month re-reveals free (idempotent); `public` visibility free; `hidden` shows nothing
+- **Stripe credit packs:** Starter (10/$29), Standard (30/$69), Pro Pack (100/$179) — one-time payments via Stripe Checkout
+- **Admin-editable config:** `system_config` keys: `credit_allowances`, `credit_extra_cost`, `credit_packs` — editable in Admin Settings → Contact Credits
+- **Server actions:** `src/app/actions/credits.ts` — `getCreditBalance()`, `revealContactInfo()`, `getRevealedContacts()`, `createCreditCheckoutSession()`, `getCreditHistory()`, `getCreditConfig()`
+- **Admin actions:** `adminGrantCredits()`, `getCreditSystemConfig()`, `updateCreditSystemConfig()` in `src/app/(admin)/admin/actions.ts`
+- **Cron:** `/api/cron/reset-credits` — monthly reset (schedule: `0 6 1 * *`)
+- **Webhook:** Stripe `checkout.session.completed` with `metadata.type === 'credit_purchase'` adds credits to ledger
+- **Pages:** `/credits` (balance, history, purchase), Admin Settings → Contact Credits tab, Admin User Detail → Credits card
 
 ## Radar (formerly Collections, Cycle 22)
 - "Collections" renamed to "Radar" in all UI copy; DB tables/columns/routes unchanged (`/collections` routes still work)

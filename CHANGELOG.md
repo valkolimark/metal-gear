@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.5.0] — 2026-03-18 · Contact Credit System (Cycle 24)
+
+### Added
+- **Contact credit system** — users spend credits to reveal seller contact info; replaces simple Pro+ tier gate from Cycle 22
+- **Tiered monthly allowances** — Free: 0, Pro: 25, Business: 75, Enterprise: unlimited; credits reset on the 1st of each month
+- **Credit reveal interaction** — "Reveal Contact Info — 1 credit" button on listing detail; same-month re-reveals are free (idempotent)
+- **Stripe credit pack purchases** — Starter (10/$29), Standard (30/$69), Pro Pack (100/$179) one-time purchases via Stripe Checkout
+- **`/credits` page** — balance display, monthly allowance table, credit pack purchase, transaction history (reveals + purchases)
+- **Admin credit management** — grant credits from user detail page; configure allowances, per-credit costs, and pack pricing in Admin Settings → Contact Credits
+- **Monthly credit reset cron** — `/api/cron/reset-credits` runs 1st of month at 6am UTC; reseeds all users based on tier
+- **Admin-editable config** — credit allowances, extra credit costs, and pack definitions stored in `system_config` table; changes take effect immediately
+- **New DB tables** — `contact_credits` (ledger), `contact_reveals` (reveal log with monthly dedup), `credit_purchases` (Stripe purchases)
+
+### Changed
+- **Listing detail contact section** — replaced tier-gated display with credit-based reveal UI; shows masked values, credit balance, and reveal/upgrade/buy prompts based on user state
+- **Stripe webhook** — now handles `credit_purchase` checkout sessions alongside subscriptions and boosts
+- **Header navigation** — added "My Credits" link in desktop user dropdown and mobile menu drawer
+
+---
+
 ## [3.4.0] — 2026-03-18 · Role-Aware Onboarding Redesign (Cycle 23)
 
 ### Added
