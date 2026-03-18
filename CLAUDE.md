@@ -156,6 +156,7 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Equipment interests:** Tier 2 group selections saved to `user_equipment_interests` table
 - **Middleware guard:** `src/lib/supabase/middleware.ts` redirects users without `onboarding_completed: true` to `/onboarding`
 - **Post-onboarding redirect:** `window.location.href = '/dashboard'` (full page load so middleware re-evaluates; routes to `/companies/new` if no company yet)
+- **Data carryover:** Onboarding saves to `profiles` (name, company, city, state, phone, contact_visibility) and `user_business_profiles` (industries, archetype, etc.); `/companies/new` page reads these to prefill the company creation form
 - **Constants:** `src/lib/constants/onboarding.ts` — `OnboardingFormData`, archetype options, industry list, role-specific option arrays
 
 ## Seller Contact Info (Cycle 22)

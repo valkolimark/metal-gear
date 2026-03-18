@@ -23,6 +23,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 - **Existing users unaffected** — onboarding guard only redirects users without `onboarding_completed: true`
 
 ### Fixed
+- **Onboarding → company prefill** — company name, city, state, phone, and first industry from onboarding carry over into `/companies/new` form; no re-entry needed
+- **Onboarding → profile carryover** — display name, company name, city, state, phone, and contact visibility written to `profiles` on completion
+- **Company industry list expanded** — industry dropdown on company creation now includes all onboarding industries (Food & Beverage, Pharmaceutical, Plastics & Chemicals, Dairy, Pulp & Paper, Power Generation)
 - **Onboarding completion redirect** — "Finish Setup" now navigates to dashboard via full page load (middleware routes to `/companies/new` if no company yet); previously stayed on Step 5
 - **Selection highlighting** — all toggle chips use `border-2` for clearly visible blue border on selection
 - **Save error handling** — non-critical DB writes (profiles, legacy onboarding progress) wrapped in try-catch so they can't break the main save

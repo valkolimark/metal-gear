@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getUserCompanies } from '@/app/actions/company'
 import { CreateCompanyForm } from './CreateCompanyForm'
 import { Building2 } from 'lucide-react'
@@ -12,6 +13,24 @@ export default async function CreateCompanyPage() {
 
   const existingCompanies = await getUserCompanies(user.id)
   const isFirstCompany = existingCompanies.length === 0
+
+  // Pre-fill from onboarding data for first-time company creation
+  let prefill: { name: string; industry: string; city: string; state: string; phone: string } | undefined
+  if (isFirstCompany) {
+    const admin = createAdminClient()
+    const [{ data: profile }, { data: bizProfile }] = await Promise.all([
+      admin.from('profiles').select('company_name, location_city, location_state, phone').eq('id', user.id).maybeSingle(),
+      admin.from('user_business_profiles').select('industries').eq('user_id', user.id).maybeSingle(),
+    ])
+    const firstIndustry = bizProfile?.industries?.[0] || ''
+    prefill = {
+      name: profile?.company_name || '',
+      industry: firstIndustry,
+      city: profile?.location_city || '',
+      state: profile?.location_state || '',
+      phone: profile?.phone || '',
+    }
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
@@ -32,7 +51,7 @@ export default async function CreateCompanyPage() {
           </p>
         </div>
 
-        <CreateCompanyForm userId={user.id} isFirstCompany={isFirstCompany} />
+        <CreateCompanyForm userId={user.id} isFirstCompany={isFirstCompany} prefill={prefill} />
 
         {!isFirstCompany && (
           <div className="text-center mt-6">

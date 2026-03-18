@@ -9,29 +9,33 @@ import type { CompanyRole } from '@/types/company'
 
 const INDUSTRIES = [
   'Oil & Gas', 'Petrochemical', 'Mining', 'Manufacturing',
-  'CNC Machining', 'Construction', 'Agriculture', 'Marine', 'Other',
+  'CNC Machining', 'Food & Beverage', 'Pharmaceutical',
+  'Plastics & Chemicals', 'Dairy', 'Pulp & Paper',
+  'Power Generation', 'Construction', 'Agriculture', 'Marine', 'Other',
 ]
 const SIZES = ['1-10', '11-50', '51-200', '201-500', '500+']
 
 export function CreateCompanyForm({
   userId,
   isFirstCompany,
+  prefill,
 }: {
   userId: string
   isFirstCompany: boolean
+  prefill?: { name: string; industry: string; city: string; state: string; phone: string }
 }) {
   const router = useRouter()
   const { setActiveCompany, setUserCompanies, userCompanies } = useAuthStore()
   const [isPending, startTransition] = useTransition()
 
   const [form, setForm] = useState({
-    name: '',
-    industry: '',
+    name: prefill?.name || '',
+    industry: prefill?.industry || '',
     company_size: '',
     website: '',
-    phone: '',
-    city: '',
-    state: '',
+    phone: prefill?.phone || '',
+    city: prefill?.city || '',
+    state: prefill?.state || '',
     tagline: '',
   })
 
