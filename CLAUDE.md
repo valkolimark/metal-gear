@@ -155,6 +155,7 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **DB columns (Cycle 23):** `user_business_profiles.archetype`, `sub_role`, `trading_activities`, `service_types`, `service_area`, `sourcing_methods`, `monthly_volume`, `sos_opted_in`
 - **Equipment interests:** Tier 2 group selections saved to `user_equipment_interests` table
 - **Middleware guard:** `src/lib/supabase/middleware.ts` redirects users without `onboarding_completed: true` to `/onboarding`
+- **Post-onboarding redirect:** `window.location.href = '/dashboard'` (full page load so middleware re-evaluates; routes to `/companies/new` if no company yet)
 - **Constants:** `src/lib/constants/onboarding.ts` — `OnboardingFormData`, archetype options, industry list, role-specific option arrays
 
 ## Seller Contact Info (Cycle 22)

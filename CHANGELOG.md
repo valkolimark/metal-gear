@@ -22,6 +22,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 - **Single-submit pattern** — all form data held in client state until final "Finish Setup"; no partial DB saves during onboarding
 - **Existing users unaffected** — onboarding guard only redirects users without `onboarding_completed: true`
 
+### Fixed
+- **Onboarding completion redirect** — "Finish Setup" now navigates to dashboard via full page load (middleware routes to `/companies/new` if no company yet); previously stayed on Step 5
+- **Selection highlighting** — all toggle chips use `border-2` for clearly visible blue border on selection
+- **Save error handling** — non-critical DB writes (profiles, legacy onboarding progress) wrapped in try-catch so they can't break the main save
+
 ---
 
 ## [3.3.0] — 2026-03-18 · Mobile Listing Actions, Radar, Feed Nav & Seller Contact (Cycle 22)

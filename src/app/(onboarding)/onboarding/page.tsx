@@ -108,14 +108,14 @@ export default function OnboardingPage() {
       const result = await submitOnboarding(formData)
       if (result.error) {
         toast.error(result.error)
+        setSubmitting(false)
         return
       }
       toast.success('Welcome to Metal Gear!')
-      router.push('/companies/new')
-      router.refresh()
+      // Redirect to dashboard — middleware will route to /companies/new if needed
+      window.location.href = '/dashboard'
     } catch {
       toast.error('Something went wrong. Please try again.')
-    } finally {
       setSubmitting(false)
     }
   }
