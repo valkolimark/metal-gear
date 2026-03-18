@@ -63,7 +63,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ### Business Tools
 - Seller storefronts with customizable banner, tagline, and featured listings
 - Inventory management with quantity, SKU, warehouse location, and bulk actions
-- Saved listing collections with public/private visibility and shareable URLs
+- Radar (formerly Collections) — save and organize equipment into radar lists with public/private visibility and shareable URLs
 - Referral program with unique codes, 30-day tracking, and $10 reward
 
 ### Platform
@@ -72,7 +72,8 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Internationalization (EN/ES) with cookie-based locale detection
 - Help center with 16 articles across 7 categories, keyword search, and FAQ
 - Social sharing with dynamic OG images via `@vercel/og`
-- **Mobile navigation** — Facebook-style fixed header, 5-tab bottom nav with raised SOS button, slide-in drawer with profile card, quick actions, and subscription upgrade CTA
+- **Seller contact info** — phone and contact email with tier-gated visibility (Pro+ only, Everyone, or Hidden); server-side rendered to prevent harvesting
+- **Mobile navigation** — Facebook-style fixed header, 5-tab bottom nav with raised SOS button, slide-in drawer with profile card, quick actions, and subscription upgrade CTA; Home tab navigates to browse/discovery feed
 - **Brand palette switcher** — Admin-controlled Ocean / Industrial theme; persisted in system_config; applies instantly platform-wide with no deploy
 - **Multi-company profiles** — `profiles` = human identity, `company_profiles` = B2B entity, `company_memberships` = junction; company switcher in header; all listings/subscriptions/storefronts scoped to active company
 - Mobile PWA with pull-to-refresh, swipe gestures, and bottom nav

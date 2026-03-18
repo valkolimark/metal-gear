@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.3.0] — 2026-03-18 · Mobile Listing Actions, Radar, Feed Nav & Seller Contact (Cycle 22)
+
+### Added
+- **Mobile listing actions complete** — Make Offer (orange, primary), Contact Seller (outlined), and Save to Radar (heart icon) all functional in `MobilePurchaseBar`; Sheet expansion shows full purchase panel
+- **Seller contact info system** — new `contact_email` and `contact_visibility` columns on `profiles` table; sellers set visibility preference (Pro+ only, Everyone, Hidden) in profile settings
+- **Tier-gated contact display** — eligible viewers (Pro/Business/Enterprise) see seller phone and email on listing detail page; ineligible viewers see masked values with upgrade prompt; hidden = no contact section
+- **Contact info anti-harvest** — contact data rendered server-side only, never exposed via client-side API; embedded in HTML only when server confirms eligibility
+- **Dashboard in menus** — Dashboard added to desktop header user dropdown and accessible from mobile hamburger menu Account section
+
+### Changed
+- **Collections → Radar** — all UI-facing text renamed: "Collections" → "My Radar", "Collection" → "Radar List", "Add to Collection" → "Add to Radar", etc. Routes (`/collections`) and DB tables unchanged
+- **Home → Feed** — Home tab in mobile bottom nav and desktop logo now navigate to `/search` (browse/discovery page) instead of `/dashboard`; Dashboard replaced Browse Equipment in desktop nav bar
+- **Save Listing → Save to Radar** — listing detail page CTA and toast messages updated
+
+---
+
 ## [3.2.1] — 2026-03-13 · Admin Light Theme, Sidebar Redesign & Tier Fix (Cycle 21 Polish)
 
 ### Fixed

@@ -147,6 +147,21 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - `src/app/(main)/listings/[id]/components/favorite-action.ts` — Listing favorite toggle
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
 
+## Seller Contact Info (Cycle 22)
+- **DB columns:** `profiles.contact_email` (TEXT), `profiles.contact_visibility` (TEXT, default `pro_plus`, check: `public`/`pro_plus`/`hidden`)
+- **Visibility logic:** `public` = any logged-in user; `pro_plus` = Pro/Business/Enterprise only; `hidden` = no contact section shown
+- **Server-side only:** Contact info computed in listing detail page server component, passed as props — never exposed via client API
+- **Profile settings:** Contact email + visibility preference in `/profile` page via `updateContactSettings` server action
+- **Display:** Below seller card in `ListingPurchasePanel`; eligible users see phone/email; ineligible see masked values + upgrade prompt
+
+## Radar (formerly Collections, Cycle 22)
+- "Collections" renamed to "Radar" in all UI copy; DB tables/columns/routes unchanged (`/collections` routes still work)
+- "Collection" → "Radar List", "Add to Collection" → "Add to Radar", "My Collections" → "My Radar"
+
+## Navigation (Cycle 22)
+- Home tab (mobile + desktop) navigates to `/search` (browse/discovery page), not `/dashboard`
+- Dashboard accessible via desktop header user dropdown and mobile hamburger menu
+
 ## Listing Detail Page Architecture
 The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server Component** that fetches data server-side and passes to 7 client sub-components:
 - `ListingGallery` — image/video gallery with desktop thumbnails + mobile swipe
