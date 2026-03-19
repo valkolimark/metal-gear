@@ -55,6 +55,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/cron/reset-credits` — Monthly contact credit reset (schedule: `0 6 1 * *`)
 - `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat with professor mode (listing-context, 10/day free, 100/day Pro+)
 - `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
+- `/api/feed/upload-media` — Feed post media upload (POST: multipart upload with auth/size/rate limit; GET: video status polling)
 
 ## Pricing Tiers
 - **Free:** 3 listings, 5 photos, 100mi search radius
@@ -123,6 +124,10 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `contact_credits` — Monthly credit ledger per user (user_id, credits_remaining, credits_used_this_month, period_start)
 - `contact_reveals` — Contact reveal log with monthly dedup (viewer_id, seller_id, credits_spent, period_month)
 - `credit_purchases` — Stripe one-time credit pack purchases (user_id, credits_purchased, amount_paid, stripe_payment_intent_id)
+- `feed_posts` — Social feed posts (author_id, company_id, content, hashtags[], tagged_user_ids[], reactions_count, comments_count, is_deleted, edited_at)
+- `feed_post_media` — Post media attachments (post_id, media_url, media_type image/video, stream_video_id, thumbnail_url, sort_order)
+- `feed_post_reactions` — Like reactions (post_id, user_id, UNIQUE constraint)
+- `feed_hashtags` — Hashtag aggregation for trending (tag PK, post_count, last_used_at)
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
@@ -146,10 +151,23 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Persistent nudge:** notification dropdown shows "Enable notifications" banner when permission is `default`
 - **Layout integration:** `NotificationEducationTrigger` component in `(main)/layout.tsx` handles post-onboarding trigger
 
+## Social Feed (Cycle 27a-1)
+- **Tables:** `feed_posts`, `feed_post_media`, `feed_post_reactions`, `feed_hashtags` — all with RLS
+- **Server actions:** `src/app/actions/feed-posts.ts` — `getFeedPosts()` (cached 30s), `createFeedPost()`, `editFeedPost()` (15-min window), `deleteFeedPost()` (soft-delete), `toggleFeedPostReaction()` (optimistic), `reportFeedPost()`
+- **Media upload:** `/api/feed/upload-media` — POST (multipart, auth + size + rate limit), GET (video status poll); uses `uploadFeedPostMedia()` / `deleteFeedPostMedia()` from `src/lib/media.ts`
+- **R2 key pattern:** `feed/{postId}/{uuid}.ext` with `CacheControl: 'public, max-age=31536000, immutable'`
+- **For You feed:** `get_for_you_feed` Postgres RPC — CTE matching equipment interests (tier2) and industries (GIN overlap); falls back to "all" when no interests
+- **Atomic counts:** `increment_post_reactions`, `decrement_post_reactions`, `upsert_feed_hashtags`, `decrement_feed_hashtags` — Postgres functions prevent race conditions
+- **Indexes:** `idx_feed_posts_active_created` (partial), `idx_feed_posts_hashtags` (GIN), `idx_feed_posts_active_author` (composite), `idx_user_business_profiles_industries_gin` (GIN)
+- **Components:** `FeedComposer`, `FeedPost`, `FeedPostMedia` (1-4 image grid + lightbox), `FeedFeedToggle`, `FeedPostSkeleton`, `FeedPageClient` (interleaves posts with discovery blocks)
+- **Feed page:** Server Component shell fetches initial posts + discovery data, passes to `FeedPageClient`; toggle "All Posts" / "For You" with localStorage persistence
+- **Admin:** Feed Posts moderation tab in `/admin/moderation` — `getFeedPostReports()`, `adminSoftDeleteFeedPost()`
+- **Post constraints:** 1000 char max, up to 4 images OR 1 video, max 10 mentions, edit within 15 min
+
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
 - **Stream client:** `src/lib/cloudflare-stream.ts` — video upload, status, delete via Cloudflare API
-- **Unified media:** `src/lib/media.ts` — `uploadListingImage()`, `uploadListingVideo()`, `uploadAvatar()`, `uploadSOSMedia()`, `uploadDisputeEvidence()`, `uploadConditionReport()`, `uploadMessageAttachmentFile()`, `uploadStorefrontBannerFile()`, `uploadVerificationDocument()`, `uploadCompanyLogo()`, `uploadCompanyBanner()`, `deleteMedia()`
+- **Unified media:** `src/lib/media.ts` — `uploadListingImage()`, `uploadListingVideo()`, `uploadAvatar()`, `uploadSOSMedia()`, `uploadDisputeEvidence()`, `uploadConditionReport()`, `uploadMessageAttachmentFile()`, `uploadStorefrontBannerFile()`, `uploadVerificationDocument()`, `uploadCompanyLogo()`, `uploadCompanyBanner()`, `uploadFeedPostMedia()`, `deleteFeedPostMedia()`, `deleteMedia()`
 - **Key naming:** `listings/{id}/images/{uuid}.ext`, `avatars/{userId}/{uuid}.ext`, `sos/{sosId}/{uuid}.ext`, etc.
 - **Video columns on listing_videos:** `stream_video_id`, `thumbnail_url`, `embed_url`, `hls_url`, `duration_seconds`, `status` (processing/ready/error)
 - **Migration script:** `scripts/migrate-media.ts` — run with `--limit=N` for test batches

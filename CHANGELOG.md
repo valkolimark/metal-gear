@@ -6,6 +6,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.8.1] — 2026-03-18 · Social Feed Layer (Cycle 27a-1)
+
+### Added
+- **Social feed posts** — users can write posts with text (1000 char limit), hashtags, @mentions, and attach up to 4 images or 1 video; posts appear in a reverse-chronological feed on `/feed` above discovery blocks
+- **Feed composer** — inline composer with XHR upload progress, hashtag preview, image/video selection, and company branding display
+- **Feed post cards** — full-featured post cards with author/company info, relative timestamps, "Edited" label, content rendering with highlighted hashtags and mentions
+- **Image grid layouts** — adaptive 1/2/3/4 image layouts with inline lightbox (keyboard nav, prev/next arrows)
+- **Like reactions** — optimistic toggle with atomic Postgres count functions; server-synced count on response
+- **Post editing** — in-place edit within 15-minute window of creation; server-side timestamp check authoritative
+- **Post deletion** — soft-delete with confirmation dialog; fire-and-forget media cleanup from R2/Stream
+- **Post reporting** — report dialog with reason selection (Spam, Misinformation, Inappropriate, Harassment, Other); inserts into existing reports table
+- **Feed toggle** — "All Posts" / "For You" pill toggle with localStorage persistence; For You uses CTE-based Postgres function matching equipment interests and industries
+- **Feed pagination** — cursor-based "Load More" with post/discovery block interleaving
+- **Feed post moderation** — "Feed Posts" tab in admin moderation queue with view, delete, dismiss actions and pagination
+- **Media upload API** — `/api/feed/upload-media` with auth gate, size validation (10MB images, 200MB videos), in-memory rate limiting (20/10min), video processing status polling
+- **Database tables** — `feed_posts`, `feed_post_media`, `feed_post_reactions`, `feed_hashtags` with RLS policies
+- **Performance indexes** — partial index on active posts, GIN on hashtags/industries, composite indexes for For You CTE
+- **Atomic Postgres functions** — `get_for_you_feed`, `upsert_feed_hashtags`, `decrement_feed_hashtags`, `increment_post_reactions`, `decrement_post_reactions`
+- **Server-side caching** — `unstable_cache` with 30s TTL and `updateTag('feed-posts')` invalidation on writes
+- **Time utility** — `formatRelativeTime()` in `src/lib/utils/time.ts`
+
+---
+
 ## [3.8.0] — 2026-03-18 · Personalized Feed, Company Pages & Desktop SOS (Cycle 27)
 
 ### Added
