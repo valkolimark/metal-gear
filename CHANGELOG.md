@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.8.0] — 2026-03-18 · Personalized Feed, Company Pages & Desktop SOS (Cycle 27)
+
+### Added
+- **Personalized Discovery Feed** — `/feed` route with curated content blocks: "For You" listings based on equipment interests, active SOSs in matching categories, recently reduced price drops, saved search matches, and demand signals (Pro+ only)
+- **Public Company Pages** — `/companies/[slug]` public-facing B2B company profile with hero banner, logo, stats (listings, rating, members, member since), active listings grid, and aggregate reputation with star distribution and recent reviews; SEO-indexed with Open Graph metadata
+- **Desktop SOS Popover** — `SosNavPopover` component replaces direct SOS link in desktop nav with a two-row popover dropdown ("Send SOS" + "SOS Dashboard"), no overlay/modal; closes on outside click and Escape key; mobile bottom sheet unchanged
+- **Feed data seeding** — `scripts/seed-feed-data.ts` seeds equipment interests, business profiles, listing views, and saved searches for existing test users
+
+### Changed
+- **Home tab destination** — desktop nav and mobile bottom nav Home tab now navigates to `/feed` instead of `/search`; Search tab still goes to `/search`
+- **Desktop nav restructure** — added explicit Search tab, moved SOS to popover at end of nav bar
+- **Middleware** — `/companies/[slug]` paths exempt from auth redirect (public access); `/feed` added to protected routes
+
+---
+
 ## [3.7.0] — 2026-03-18 · Notifications, Sound Design & OS Theme Sync (Cycle 26)
 
 ### Added

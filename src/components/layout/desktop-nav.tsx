@@ -2,21 +2,22 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, List, MessageSquare, Heart, User, FolderOpen, Siren, LayoutDashboard } from 'lucide-react'
+import { Home, Search, List, MessageSquare, Heart, User, FolderOpen, LayoutDashboard } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
+import { SosNavPopover } from '@/components/sos-nav-popover'
 
 export function DesktopNav() {
   const pathname = usePathname()
   const t = useTranslations('nav')
 
   const navItems = [
-    { href: '/search', label: t('home'), icon: Home },
+    { href: '/feed', label: t('home'), icon: Home },
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { href: '/search', label: t('search'), icon: Search },
     { href: '/listings', label: t('myListings'), icon: List },
     { href: '/favorites', label: t('favorites'), icon: Heart },
     { href: '/collections', label: 'Radar', icon: FolderOpen },
-    { href: '/sos', label: t('sos'), icon: Siren, highlight: true },
     { href: '/messages', label: t('messages'), icon: MessageSquare },
     { href: '/profile', label: t('profile'), icon: User },
   ]
@@ -36,9 +37,7 @@ export function DesktopNav() {
                 'flex items-center gap-2 border-b-2 px-4 py-3 font-body text-sm transition-colors',
                 isActive
                   ? 'border-primary text-primary'
-                  : 'highlight' in item && item.highlight
-                    ? 'border-transparent text-red-500 hover:border-red-500/50 hover:text-red-400'
-                    : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
+                  : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
               )}
             >
               <item.icon className="size-4" aria-hidden="true" />
@@ -46,6 +45,7 @@ export function DesktopNav() {
             </Link>
           )
         })}
+        <SosNavPopover />
       </div>
     </nav>
   )

@@ -28,7 +28,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 
 ## Route Groups
 - `(auth)` — login, signup, forgot-password, reset-password, callback
-- `(main)` — dashboard, search, listings, messages, profile, favorites, sellers (protected; `/listings/[id]` and `/sellers/[id]` are publicly accessible)
+- `(main)` — feed, dashboard, search, listings, messages, profile, favorites, sellers, companies (protected; `/listings/[id]`, `/sellers/[id]`, and `/companies/[slug]` are publicly accessible)
 - `(admin)` — super admin dashboard with RBAC (superadmin, moderator, analyst)
 - `(marketing)` — pricing, about, terms, privacy (public)
 
@@ -196,9 +196,24 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - "Collections" renamed to "Radar" in all UI copy; DB tables/columns/routes unchanged (`/collections` routes still work)
 - "Collection" → "Radar List", "Add to Collection" → "Add to Radar", "My Collections" → "My Radar"
 
-## Navigation (Cycle 22)
-- Home tab (mobile + desktop) navigates to `/search` (browse/discovery page), not `/dashboard`
-- Dashboard accessible via desktop header user dropdown and mobile hamburger menu
+## Navigation (Cycle 22, updated Cycle 27)
+- Home tab (mobile + desktop) navigates to `/feed` (personalized discovery feed), not `/search`
+- Search tab navigates to `/search` (browse/discovery page)
+- Dashboard accessible via desktop nav tab and mobile hamburger menu
+- **Desktop SOS:** `SosNavPopover` renders a two-row popover dropdown below the nav button ("Send SOS" → `/sos/create`, "SOS Dashboard" → `/sos`); no overlay/modal; desktop only (`src/components/sos-nav-popover.tsx`)
+- **Mobile SOS:** bottom sheet pattern unchanged (opens Sheet with same two options)
+
+## Personalized Feed (Cycle 27)
+- **Route:** `/feed` — protected, server-rendered; Home tab destination for logged-in users
+- **Content blocks:** For You (listings matching `user_equipment_interests.tier2` → `listings.category`), Active SOSs, Recently Reduced (price drops ≥5% in 14 days), Saved Search Matches (last 7 days), Demand Signals (Pro+ only)
+- **Server actions:** `src/app/actions/feed.ts` — `getFeedForYouListings()`, `getFeedActiveSOS()`, `getFeedPriceDrops()`, `getFeedSavedSearchMatches()`, `getFeedDemandSignals()`
+- **Empty state:** Users without equipment interests see `FeedEmptyState` with link to `/profile`
+
+## Public Company Pages (Cycle 27)
+- **Route:** `/companies/[slug]` — public (no auth required), SEO-indexed with OG metadata
+- **Components:** `CompanyHero` (banner, logo, stats), `CompanyListings` (active listings grid), `CompanyReputation` (star distribution + recent reviews)
+- **Server actions:** `src/app/actions/companies-public.ts` — `getPublicCompanyBySlug()`, `getCompanyActiveListings()`, `getCompanyReputationStats()`, `getCompanyListingCount()`
+- **Middleware:** `/companies/[slug]` exempt from auth redirect (same pattern as `/listings/[id]` and `/sellers/[id]`)
 
 ## Listing Detail Page Architecture
 The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server Component** that fetches data server-side and passes to 7 client sub-components:

@@ -64,8 +64,13 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Public company profile pages — allow anonymous access
+  if (pathname.match(/^\/companies\/[^/]+$/) && pathname !== '/companies/new') {
+    return supabaseResponse
+  }
+
   // Protected routes — redirect to login if no session
-  const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin', '/sos', '/onboarding']
+  const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin', '/sos', '/onboarding', '/feed']
   const isProtectedRoute = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   )

@@ -17,7 +17,7 @@ interface MobileBottomNavProps {
 }
 
 const NAV_ITEMS = [
-  { href: '/search', label: 'Home', icon: Home },
+  { href: '/feed', label: 'Home', icon: Home },
   { href: '/search', label: 'Search', icon: Search },
   { href: '/sos/new', label: 'SOS', icon: null }, // center SOS
   { href: '/messages', label: 'Messages', icon: MessageSquare },
@@ -34,7 +34,7 @@ export function MobileBottomNav({ unreadMessages: initialUnread }: MobileBottomN
   const unreadMessages = storeUnread > 0 ? storeUnread : initialUnread
 
   const isActive = (href: string, label: string) => {
-    if (label === 'Home') return pathname === '/search' || pathname === '/'
+    if (label === 'Home') return pathname === '/feed' || pathname === '/'
     return pathname.startsWith(href)
   }
 
