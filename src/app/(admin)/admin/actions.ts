@@ -1273,3 +1273,105 @@ export async function updateCreditSystemConfig(
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
   }
 }
+
+// ─── Feed Post Moderation ───────────────────────────────────
+
+export interface FeedPostReport {
+  reportId: string
+  postId: string
+  postPreview: string
+  postAuthor: string
+  postCompany: string | null
+  reportedBy: string
+  reason: string
+  reportedAt: string
+}
+
+export async function getFeedPostReports(params: {
+  page: number
+  limit: number
+}): Promise<{ reports: FeedPostReport[]; total: number }> {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { count } = await admin
+    .from('reports')
+    .select('*', { count: 'exact', head: true })
+    .eq('target_type', 'feed_post')
+    .eq('status', 'pending')
+
+  const offset = (params.page - 1) * params.limit
+
+  const { data: reports } = await admin
+    .from('reports')
+    .select('*')
+    .eq('target_type', 'feed_post')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: false })
+    .range(offset, offset + params.limit - 1)
+
+  if (!reports?.length) return { reports: [], total: count ?? 0 }
+
+  const postIds = [...new Set(reports.map((r) => r.target_id))]
+  const reporterIds = [...new Set(reports.map((r) => r.reporter_id))]
+
+  const [{ data: posts }, { data: reporters }] = await Promise.all([
+    admin
+      .from('feed_posts')
+      .select('id, content, author_id, company_id')
+      .in('id', postIds),
+    admin
+      .from('profiles')
+      .select('id, full_name')
+      .in('id', reporterIds),
+  ])
+
+  const authorIds = [...new Set((posts ?? []).map((p) => p.author_id))]
+  const companyIds = [...new Set((posts ?? []).map((p) => p.company_id).filter(Boolean))] as string[]
+
+  const [{ data: authors }, companiesResult] = await Promise.all([
+    admin.from('profiles').select('id, full_name').in('id', authorIds),
+    companyIds.length > 0
+      ? admin.from('company_profiles').select('id, name').in('id', companyIds)
+      : Promise.resolve({ data: [] }),
+  ])
+
+  const postMap = new Map((posts ?? []).map((p) => [p.id, p]))
+  const reporterMap = new Map((reporters ?? []).map((r) => [r.id, r.full_name ?? 'Unknown']))
+  const authorMap = new Map((authors ?? []).map((a) => [a.id, a.full_name ?? 'Unknown']))
+  const companyMap = new Map((companiesResult.data ?? []).map((c) => [c.id, c.name]))
+
+  return {
+    reports: reports.map((r) => {
+      const post = postMap.get(r.target_id)
+      return {
+        reportId: r.id,
+        postId: r.target_id,
+        postPreview: post ? (post.content ?? '').slice(0, 80) : '[deleted]',
+        postAuthor: post ? authorMap.get(post.author_id) ?? 'Unknown' : 'Unknown',
+        postCompany: post?.company_id ? companyMap.get(post.company_id) ?? null : null,
+        reportedBy: reporterMap.get(r.reporter_id) ?? 'Unknown',
+        reason: r.reason,
+        reportedAt: r.created_at,
+      }
+    }),
+    total: count ?? 0,
+  }
+}
+
+export async function adminSoftDeleteFeedPost(postId: string, adminId: string): Promise<void> {
+  await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { error } = await admin
+    .from('feed_posts')
+    .update({ is_deleted: true })
+    .eq('id', postId)
+
+  if (error) throw new Error(error.message)
+
+  await logAdminAction(adminId, 'feed_post_deleted', 'feed_post', postId)
+
+  const { updateTag } = await import('next/cache')
+  updateTag('feed-posts')
+}

@@ -166,128 +166,6 @@ export type Database = {
           },
         ]
       }
-      contact_credits: {
-        Row: {
-          id: string
-          user_id: string
-          credits_remaining: number
-          credits_used_this_month: number
-          period_start: string
-          updated_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          credits_remaining?: number
-          credits_used_this_month?: number
-          period_start?: string
-          updated_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          credits_remaining?: number
-          credits_used_this_month?: number
-          period_start?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_credits_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      contact_reveals: {
-        Row: {
-          id: string
-          viewer_id: string
-          seller_id: string
-          credits_spent: number
-          revealed_at: string | null
-          listing_id: string | null
-          period_month: string
-        }
-        Insert: {
-          id?: string
-          viewer_id: string
-          seller_id: string
-          credits_spent?: number
-          revealed_at?: string | null
-          listing_id?: string | null
-          period_month?: string
-        }
-        Update: {
-          id?: string
-          viewer_id?: string
-          seller_id?: string
-          credits_spent?: number
-          revealed_at?: string | null
-          listing_id?: string | null
-          period_month?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "contact_reveals_viewer_id_fkey"
-            columns: ["viewer_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_reveals_seller_id_fkey"
-            columns: ["seller_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "contact_reveals_listing_id_fkey"
-            columns: ["listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      credit_purchases: {
-        Row: {
-          id: string
-          user_id: string
-          credits_purchased: number
-          amount_paid: number
-          stripe_payment_intent_id: string | null
-          purchased_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          credits_purchased: number
-          amount_paid: number
-          stripe_payment_intent_id?: string | null
-          purchased_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          credits_purchased?: number
-          amount_paid?: number
-          stripe_payment_intent_id?: string | null
-          purchased_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "credit_purchases_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       collection_items: {
         Row: {
           added_at: string | null
@@ -590,6 +468,100 @@ export type Database = {
           },
         ]
       }
+      contact_credits: {
+        Row: {
+          credits_remaining: number
+          credits_used_this_month: number
+          id: string
+          period_start: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          credits_remaining?: number
+          credits_used_this_month?: number
+          id?: string
+          period_start?: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          credits_remaining?: number
+          credits_used_this_month?: number
+          id?: string
+          period_start?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_credits_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contact_reveals: {
+        Row: {
+          credits_spent: number
+          id: string
+          listing_id: string | null
+          period_month: string
+          revealed_at: string | null
+          seller_id: string
+          viewer_id: string
+        }
+        Insert: {
+          credits_spent?: number
+          id?: string
+          listing_id?: string | null
+          period_month?: string
+          revealed_at?: string | null
+          seller_id: string
+          viewer_id: string
+        }
+        Update: {
+          credits_spent?: number
+          id?: string
+          listing_id?: string | null
+          period_month?: string
+          revealed_at?: string | null
+          seller_id?: string
+          viewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contact_reveals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_comparables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_seller_id_fkey"
+            columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contact_reveals_viewer_id_fkey"
+            columns: ["viewer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       conversations: {
         Row: {
           buyer_id: string
@@ -640,6 +612,41 @@ export type Database = {
           {
             foreignKeyName: "conversations_seller_id_fkey"
             columns: ["seller_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      credit_purchases: {
+        Row: {
+          amount_paid: number
+          credits_purchased: number
+          id: string
+          purchased_at: string | null
+          stripe_payment_intent_id: string | null
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          credits_purchased: number
+          id?: string
+          purchased_at?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          credits_purchased?: number
+          id?: string
+          purchased_at?: string | null
+          stripe_payment_intent_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "credit_purchases_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -758,6 +765,161 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_hashtags: {
+        Row: {
+          last_used_at: string
+          post_count: number
+          tag: string
+        }
+        Insert: {
+          last_used_at?: string
+          post_count?: number
+          tag: string
+        }
+        Update: {
+          last_used_at?: string
+          post_count?: number
+          tag?: string
+        }
+        Relationships: []
+      }
+      feed_post_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: string
+          media_url: string
+          post_id: string
+          sort_order: number
+          stream_video_id: string | null
+          thumbnail_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type: string
+          media_url: string
+          post_id: string
+          sort_order?: number
+          stream_video_id?: string | null
+          thumbnail_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          post_id?: string
+          sort_order?: number
+          stream_video_id?: string | null
+          thumbnail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_post_reactions: {
+        Row: {
+          created_at: string
+          id: string
+          post_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          post_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          post_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_post_reactions_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_post_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      feed_posts: {
+        Row: {
+          author_id: string
+          comments_count: number
+          company_id: string | null
+          content: string | null
+          created_at: string
+          edited_at: string | null
+          hashtags: string[]
+          id: string
+          is_deleted: boolean
+          reactions_count: number
+          tagged_user_ids: string[]
+          updated_at: string
+        }
+        Insert: {
+          author_id: string
+          comments_count?: number
+          company_id?: string | null
+          content?: string | null
+          created_at?: string
+          edited_at?: string | null
+          hashtags?: string[]
+          id?: string
+          is_deleted?: boolean
+          reactions_count?: number
+          tagged_user_ids?: string[]
+          updated_at?: string
+        }
+        Update: {
+          author_id?: string
+          comments_count?: number
+          company_id?: string | null
+          content?: string | null
+          created_at?: string
+          edited_at?: string | null
+          hashtags?: string[]
+          id?: string
+          is_deleted?: boolean
+          reactions_count?: number
+          tagged_user_ids?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_posts_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_posts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -3031,6 +3193,8 @@ export type Database = {
       }
     }
     Functions: {
+      decrement_feed_hashtags: { Args: { tags: string[] }; Returns: undefined }
+      decrement_post_reactions: { Args: { p_post_id: string }; Returns: number }
       expire_old_sos_requests: { Args: never; Returns: undefined }
       find_sos_responders: {
         Args: { p_subcategory?: string; p_tier2: string }
@@ -3039,10 +3203,27 @@ export type Database = {
           user_id: string
         }[]
       }
+      get_for_you_feed: {
+        Args: { p_cursor: string; p_limit: number; p_user_id: string }
+        Returns: {
+          author_id: string
+          comments_count: number
+          company_id: string
+          content: string
+          created_at: string
+          edited_at: string
+          hashtags: string[]
+          id: string
+          reactions_count: number
+          tagged_user_ids: string[]
+        }[]
+      }
       get_user_active_sos_count: {
         Args: { p_user_id: string }
         Returns: number
       }
+      increment_post_reactions: { Args: { p_post_id: string }; Returns: number }
+      upsert_feed_hashtags: { Args: { tags: string[] }; Returns: undefined }
     }
     Enums: {
       admin_role: "superadmin" | "moderator" | "analyst"

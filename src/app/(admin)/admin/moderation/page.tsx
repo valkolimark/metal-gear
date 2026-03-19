@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, AlertTriangle, Flag, Star, Gavel } from 'lucide-react'
+import { Shield, AlertTriangle, Flag, Star, Gavel, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -12,10 +12,13 @@ import {
   adminResolveReport,
   getDisputedReviews,
   getAdminListings,
+  getFeedPostReports,
+  adminSoftDeleteFeedPost,
 } from '../actions'
+import type { FeedPostReport } from '../actions'
 import { getAdminDisputes } from '@/app/actions/disputes'
 
-type Tab = 'reports' | 'fraud' | 'disputes' | 'transaction_disputes'
+type Tab = 'reports' | 'fraud' | 'disputes' | 'transaction_disputes' | 'feed_posts'
 
 type Report = Awaited<ReturnType<typeof getReportsQueue>>[number]
 
@@ -44,6 +47,12 @@ export default function AdminModerationPage() {
   const [txDisputes, setTxDisputes] = useState<any[]>([])
   const [txDisputesLoading, setTxDisputesLoading] = useState(true)
   const [expandedDispute, setExpandedDispute] = useState<string | null>(null)
+
+  // Feed post reports state
+  const [feedPostReports, setFeedPostReports] = useState<FeedPostReport[]>([])
+  const [feedPostReportsLoading, setFeedPostReportsLoading] = useState(true)
+  const [feedPostReportsTotal, setFeedPostReportsTotal] = useState(0)
+  const [feedPostReportsPage, setFeedPostReportsPage] = useState(1)
 
   // Fetch reports
   useEffect(() => {
@@ -125,6 +134,27 @@ export default function AdminModerationPage() {
     return () => { cancelled = true }
   }, [refreshKey])
 
+  // Fetch feed post reports
+  useEffect(() => {
+    let cancelled = false
+    async function fetchFeedPostReports() {
+      setFeedPostReportsLoading(true)
+      try {
+        const result = await getFeedPostReports({ page: feedPostReportsPage, limit: 20 })
+        if (!cancelled) {
+          setFeedPostReports(result.reports)
+          setFeedPostReportsTotal(result.total)
+        }
+      } catch {
+        if (!cancelled) toast.error('Failed to load feed post reports')
+      } finally {
+        if (!cancelled) setFeedPostReportsLoading(false)
+      }
+    }
+    fetchFeedPostReports()
+    return () => { cancelled = true }
+  }, [refreshKey, feedPostReportsPage])
+
   function refresh() {
     setRefreshKey((k) => k + 1)
   }
@@ -193,17 +223,40 @@ export default function AdminModerationPage() {
     }
   }
 
+  async function handleDeleteFeedPost(postId: string) {
+    try {
+      // Use a placeholder admin ID; the server action validates via requireAdmin
+      await adminSoftDeleteFeedPost(postId, '')
+      toast.success('Feed post deleted')
+      refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to delete post')
+    }
+  }
+
+  async function handleDismissFeedPostReport(reportId: string) {
+    try {
+      await adminResolveReport(reportId, 'dismissed')
+      toast.success('Report dismissed')
+      refresh()
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to dismiss report')
+    }
+  }
+
   const pendingCount = reports.length
   const fraudCount = fraudListings.length
   const disputeCount = disputedReviews.length
   const txDisputeCount = txDisputes.filter((d) => ['open', 'under_review', 'escalated'].includes(d.status)).length
-  const totalCount = pendingCount + fraudCount + disputeCount + txDisputeCount
+  const feedPostCount = feedPostReportsTotal
+  const totalCount = pendingCount + fraudCount + disputeCount + txDisputeCount + feedPostCount
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'reports', label: 'Reports' },
     { key: 'fraud', label: 'AI Fraud Queue' },
     { key: 'disputes', label: 'Review Disputes' },
     { key: 'transaction_disputes', label: 'Transaction Disputes' },
+    { key: 'feed_posts', label: 'Feed Posts' },
   ]
 
   return (
@@ -234,6 +287,11 @@ export default function AdminModerationPage() {
             <Gavel className="size-4 text-purple-400" />
             <span className="font-body text-sm text-muted-foreground">Tx disputes:</span>
             <span className="font-display text-lg font-bold text-foreground">{txDisputeCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <MessageSquare className="size-4 text-green-400" />
+            <span className="font-body text-sm text-muted-foreground">Feed posts:</span>
+            <span className="font-display text-lg font-bold text-foreground">{feedPostCount}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Shield className="size-4 text-primary" />
@@ -647,6 +705,120 @@ export default function AdminModerationPage() {
             })
           )}
         </div>
+      )}
+
+      {/* Tab 5 — Feed Posts */}
+      {activeTab === 'feed_posts' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <MessageSquare className="size-4 text-green-400" />
+              Reported Feed Posts ({feedPostCount})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-border">
+                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Post Preview</th>
+                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Author</th>
+                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Company</th>
+                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Reported By</th>
+                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Reason</th>
+                    <th className="px-4 py-3 text-left font-body text-xs font-medium text-muted-foreground">Date</th>
+                    <th className="px-4 py-3 text-right font-body text-xs font-medium text-muted-foreground">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {feedPostReportsLoading ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center">
+                        <p className="font-body text-sm text-muted-foreground">Loading...</p>
+                      </td>
+                    </tr>
+                  ) : feedPostReports.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="px-4 py-8 text-center">
+                        <p className="font-body text-sm text-muted-foreground">No reported feed posts</p>
+                      </td>
+                    </tr>
+                  ) : (
+                    feedPostReports.map((report) => (
+                      <tr key={report.reportId} className="border-b border-border hover:bg-white/[0.02]">
+                        <td className="max-w-[200px] truncate px-4 py-3 font-body text-sm text-foreground">
+                          {report.postPreview || '[no text]'}
+                        </td>
+                        <td className="px-4 py-3 font-body text-sm text-foreground">
+                          {report.postAuthor}
+                        </td>
+                        <td className="px-4 py-3 font-body text-sm text-muted-foreground">
+                          {report.postCompany ?? '—'}
+                        </td>
+                        <td className="px-4 py-3 font-body text-sm text-foreground">
+                          {report.reportedBy}
+                        </td>
+                        <td className="px-4 py-3 font-body text-sm text-foreground">
+                          {report.reason}
+                        </td>
+                        <td className="px-4 py-3 font-body text-xs text-muted-foreground">
+                          {new Date(report.reportedAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="font-body text-xs"
+                              onClick={() => handleDismissFeedPostReport(report.reportId)}
+                            >
+                              Dismiss
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="font-body text-xs text-red-400 hover:text-red-300"
+                              onClick={() => handleDeleteFeedPost(report.postId)}
+                            >
+                              Delete Post
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            {feedPostReportsTotal > 20 && (
+              <div className="flex items-center justify-between border-t border-border px-4 py-3">
+                <span className="font-body text-xs text-muted-foreground">
+                  Page {feedPostReportsPage} of {Math.ceil(feedPostReportsTotal / 20)}
+                </span>
+                <div className="flex gap-1">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={feedPostReportsPage <= 1}
+                    onClick={() => setFeedPostReportsPage((p) => p - 1)}
+                  >
+                    <ChevronLeft className="size-4" />
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={feedPostReportsPage >= Math.ceil(feedPostReportsTotal / 20)}
+                    onClick={() => setFeedPostReportsPage((p) => p + 1)}
+                  >
+                    <ChevronRight className="size-4" />
+                  </Button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
       )}
     </div>
   )

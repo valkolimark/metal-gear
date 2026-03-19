@@ -132,6 +132,70 @@ export async function uploadCompanyBanner(
   return uploadToR2(file, key, contentType)
 }
 
+export async function uploadFeedPostMedia(
+  file: Buffer,
+  postId: string,
+  contentType: string,
+  type: 'image' | 'video'
+): Promise<{ url: string; streamVideoId?: string; thumbnailUrl?: string }> {
+  if (type === 'image') {
+    const ext = extFromContentType(contentType)
+    const key = `feed/${postId}/${randomUUID()}.${ext}`
+    // TODO: future nightly cron — delete feed/{uuid}/ R2 keys with no matching feed_post_media row
+    const url = await uploadToR2WithCache(file, key, contentType)
+    return { url }
+  }
+  // video
+  const result = await uploadToStream(file, `feed-${postId}-${randomUUID()}`)
+  return {
+    url: result.embedUrl,
+    streamVideoId: result.videoId,
+    thumbnailUrl: result.thumbnailUrl,
+  }
+}
+
+async function uploadToR2WithCache(
+  file: Buffer,
+  key: string,
+  contentType: string
+): Promise<string> {
+  const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3')
+  const s3 = new S3Client({
+    region: 'auto',
+    endpoint: `https://${process.env.CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com`,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    },
+  })
+  await s3.send(
+    new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET_NAME!,
+      Key: key,
+      Body: file,
+      ContentType: contentType,
+      CacheControl: 'public, max-age=31536000, immutable',
+    })
+  )
+  return getR2Url(key)
+}
+
+export async function deleteFeedPostMedia(
+  url: string,
+  streamVideoId?: string
+): Promise<void> {
+  try {
+    if (streamVideoId) {
+      await deleteStreamVideo(streamVideoId)
+    } else if (url.includes(R2_PUBLIC_URL)) {
+      const key = url.replace(`${R2_PUBLIC_URL}/`, '')
+      await deleteFromR2(key)
+    }
+  } catch (err) {
+    console.error('deleteFeedPostMedia error (non-blocking):', err)
+  }
+}
+
 export async function deleteMedia(url: string): Promise<void> {
   // Cloudflare Stream URLs
   if (
