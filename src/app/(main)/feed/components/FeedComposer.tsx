@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { createFeedPost } from '@/app/actions/feed-posts'
 import type { FeedPostWithDetails } from '@/app/actions/feed-posts'
+import { MentionAutocomplete } from './MentionAutocomplete'
 
 interface FeedComposerProps {
   currentUserId: string
@@ -44,6 +45,9 @@ export function FeedComposer({
   const [content, setContent] = useState('')
   const [media, setMedia] = useState<UploadedMedia[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [mentionedEntities, setMentionedEntities] = useState<
+    Array<{ id: string; type: 'user' | 'company'; displayName: string }>
+  >([])
   const fileInputRef = useRef<HTMLInputElement>(null)
   const videoInputRef = useRef<HTMLInputElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
@@ -203,7 +207,7 @@ export function FeedComposer({
         companyId: activeCompanyId,
         content: trimmed,
         hashtags,
-        taggedUserIds: [],
+        taggedUserIds: mentionedEntities.map((m) => m.id),
         media: readyMedia.map((m, i) => ({
           mediaUrl: m.url,
           mediaType: m.mediaType,
@@ -216,6 +220,7 @@ export function FeedComposer({
       onPostCreated(post)
       setContent('')
       setMedia([])
+      setMentionedEntities([])
       tempPostIdRef.current = crypto.randomUUID()
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
@@ -231,6 +236,10 @@ export function FeedComposer({
     const val = e.target.value
     if (val.length <= MAX_CHARS) {
       setContent(val)
+      // Remove mentions that are no longer in the text
+      setMentionedEntities((prev) =>
+        prev.filter((m) => val.includes(`@${m.displayName}`))
+      )
     }
     // Auto-resize
     const ta = e.target
@@ -262,14 +271,29 @@ export function FeedComposer({
             </p>
           )}
 
-          <textarea
-            ref={textareaRef}
-            value={content}
-            onChange={handleTextareaChange}
-            placeholder="Share an update with the community..."
-            className="w-full resize-none bg-transparent font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-            rows={2}
-          />
+          <div className="relative">
+            <textarea
+              ref={textareaRef}
+              value={content}
+              onChange={handleTextareaChange}
+              placeholder="Share an update with the community..."
+              className="w-full resize-none bg-transparent font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
+              rows={2}
+            />
+            <MentionAutocomplete
+              textareaRef={textareaRef}
+              value={content}
+              onSelect={({ newValue, mention }) => {
+                setContent(newValue)
+                setMentionedEntities((prev) => {
+                  if (prev.some((m) => m.id === mention.id)) return prev
+                  return [...prev, mention]
+                })
+                // Re-focus textarea
+                textareaRef.current?.focus()
+              }}
+            />
+          </div>
 
           {/* Hashtag preview */}
           {hashtags.length > 0 && (

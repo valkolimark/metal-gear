@@ -14,6 +14,8 @@ import {
   X,
   Loader2,
   Siren,
+  MessageCircle,
+  AtSign,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -43,6 +45,8 @@ const NOTIFICATION_ICONS: Record<string, React.ElementType> = {
   sos_response_accepted: Siren,
   sos_expired: Siren,
   sos_fulfilled: Siren,
+  post_comment: MessageCircle,
+  post_mention: AtSign,
 }
 
 const NOTIFICATION_COLORS: Record<string, string> = {
@@ -60,6 +64,8 @@ const NOTIFICATION_COLORS: Record<string, string> = {
   sos_response_accepted: 'text-green-400',
   sos_expired: 'text-muted-foreground',
   sos_fulfilled: 'text-green-400',
+  post_comment: 'text-blue-400',
+  post_mention: 'text-primary',
 }
 
 function timeAgo(dateStr: string): string {

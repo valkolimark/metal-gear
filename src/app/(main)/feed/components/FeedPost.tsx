@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, Fragment } from 'react'
+import { useState, useEffect, Fragment } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { Heart, MessageCircle, Share2, MoreHorizontal, Pencil, Trash2, Flag } from 'lucide-react'
@@ -28,18 +28,21 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { FeedPostMedia } from './FeedPostMedia'
+import { CommentSection } from './CommentSection'
 import { formatRelativeTime } from '@/lib/utils/time'
 import {
   toggleFeedPostReaction,
   editFeedPost,
   deleteFeedPost,
   reportFeedPost,
+  resolveMentionedUsers,
 } from '@/app/actions/feed-posts'
 import type { FeedPostWithDetails } from '@/app/actions/feed-posts'
 
 interface FeedPostProps {
   post: FeedPostWithDetails
   currentUserId: string
+  activeCompany?: { id: string; name: string; slug: string; logo_url: string | null } | null
   onDeleted: (id: string) => void
   onEdited: (post: FeedPostWithDetails) => void
 }
@@ -52,7 +55,7 @@ const REPORT_REASONS = [
   'Other',
 ]
 
-export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostProps) {
+export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdited }: FeedPostProps) {
   const router = useRouter()
   const isOwner = post.author.id === currentUserId
   const canEdit = isOwner && new Date(post.created_at).getTime() > Date.now() - 15 * 60 * 1000
@@ -61,6 +64,10 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
   const [reacted, setReacted] = useState(post.viewer_has_reacted)
   const [reactionsCount, setReactionsCount] = useState(post.reactions_count)
   const [isReacting, setIsReacting] = useState(false)
+
+  // Comments state
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false)
+  const [commentsCount, setCommentsCount] = useState(post.comments_count)
 
   // Edit state
   const [isEditing, setIsEditing] = useState(false)
@@ -75,6 +82,16 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
   const [showReportDialog, setShowReportDialog] = useState(false)
   const [reportReason, setReportReason] = useState('')
   const [isReporting, setIsReporting] = useState(false)
+
+  // Mention resolution
+  const [resolvedMentions, setResolvedMentions] = useState<
+    Array<{ id: string; display_name: string; slug?: string; type: 'user' | 'company' }>
+  >([])
+
+  useEffect(() => {
+    if (post.tagged_user_ids.length === 0) return
+    resolveMentionedUsers(post.tagged_user_ids).then(setResolvedMentions)
+  }, [post.id, post.tagged_user_ids])
 
   const handleLike = async () => {
     if (isReacting) return
@@ -160,7 +177,7 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
     toast.success('Link copied')
   }
 
-  // Render content with highlighted hashtags and mentions
+  // Render content with highlighted hashtags and resolved mentions
   const renderContent = (text: string) => {
     const tokens = text.split(/(\s+)/)
     return tokens.map((token, i) => {
@@ -177,8 +194,26 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
         )
       }
       if (token.startsWith('@') && token.length > 1) {
-        // TODO 27a-2: resolve tagged_user_ids to display names; replace @word spans with
-        // linked spans navigating to /companies/[slug] or /sellers/[id]
+        const word = token.slice(1)
+        // Try to find a resolved mention matching this @word
+        const mention = resolvedMentions.find(
+          (m) => m.display_name.toLowerCase() === word.toLowerCase() ||
+                 m.display_name.toLowerCase().startsWith(word.toLowerCase())
+        )
+        if (mention) {
+          const href = mention.type === 'company'
+            ? `/companies/${mention.slug}`
+            : `/sellers/${mention.id}`
+          return (
+            <span
+              key={i}
+              className="cursor-pointer font-medium text-primary hover:underline"
+              onClick={() => router.push(href)}
+            >
+              {token}
+            </span>
+          )
+        }
         return (
           <span key={i} className="font-medium text-primary">
             {token}
@@ -188,6 +223,10 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
       return <Fragment key={i}>{token}</Fragment>
     })
   }
+
+  const commentButtonLabel = commentsCount === 0
+    ? 'Comment'
+    : `Comment${commentsCount > 0 ? ` (${commentsCount})` : ''}`
 
   return (
     <div id={`post-${post.id}`} className="rounded-xl border border-border bg-card">
@@ -324,10 +363,13 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
             {reactionsCount}
           </span>
         )}
-        {post.comments_count > 0 && (
-          <span className="font-body text-xs text-muted-foreground">
-            {post.comments_count} comment{post.comments_count !== 1 ? 's' : ''}
-          </span>
+        {commentsCount > 0 && (
+          <button
+            className="font-body text-xs text-muted-foreground hover:underline"
+            onClick={() => setIsCommentsOpen(!isCommentsOpen)}
+          >
+            {commentsCount} comment{commentsCount !== 1 ? 's' : ''}
+          </button>
         )}
       </div>
 
@@ -346,11 +388,11 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
         <Button
           variant="ghost"
           size="sm"
-          className="flex-1 gap-1.5 font-body text-xs text-muted-foreground"
-          onClick={() => toast.info('Comments coming soon')}
+          className={`flex-1 gap-1.5 font-body text-xs ${isCommentsOpen ? 'text-primary' : 'text-muted-foreground'}`}
+          onClick={() => setIsCommentsOpen(!isCommentsOpen)}
         >
           <MessageCircle className="size-4" />
-          Comment
+          {commentButtonLabel}
         </Button>
         <Button
           variant="ghost"
@@ -362,6 +404,21 @@ export function FeedPost({ post, currentUserId, onDeleted, onEdited }: FeedPostP
           Share
         </Button>
       </div>
+
+      {/* Comment section */}
+      <CommentSection
+        postId={post.id}
+        initialCommentsCount={post.comments_count}
+        currentUserId={currentUserId}
+        currentUser={{
+          id: currentUserId,
+          display_name: post.author.id === currentUserId ? post.author.display_name : 'You',
+          avatar_url: post.author.id === currentUserId ? post.author.avatar_url : null,
+        }}
+        activeCompany={activeCompany ?? null}
+        isOpen={isCommentsOpen}
+        onCountChange={setCommentsCount}
+      />
 
       {/* Delete dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

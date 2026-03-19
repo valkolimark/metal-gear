@@ -12,7 +12,7 @@ import {
   getGeneralFeedSOS,
   getGeneralFeedRecentListings,
 } from '@/app/actions/feed'
-import { getFeedPosts } from '@/app/actions/feed-posts'
+import { getFeedPosts, getTrendingHashtags } from '@/app/actions/feed-posts'
 import { getActiveTier } from '@/app/actions/tier'
 import { FeedForYou } from './components/feed-for-you'
 import { FeedSosSection } from './components/feed-sos-section'
@@ -46,6 +46,7 @@ export default async function FeedPage() {
     tier,
     profileResult,
     companyResult,
+    trendingHashtags,
   ] = await Promise.all([
     getFeedPosts(user.id, { filter: 'all', limit: 10 }),
     getFeedForYouListings(user.id),
@@ -66,6 +67,7 @@ export default async function FeedPage() {
           .eq('id', activeCompanyId)
           .single()
       : Promise.resolve({ data: null }),
+    getTrendingHashtags(),
   ])
 
   const isPro = ['pro', 'business', 'enterprise', 'premium', 'boost'].includes(tier)
@@ -123,7 +125,7 @@ export default async function FeedPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="mx-auto max-w-5xl px-4 py-6">
       <FeedPageClient
         initialPosts={initialPostsResult.posts}
         initialNextCursor={initialPostsResult.nextCursor}
@@ -133,7 +135,9 @@ export default async function FeedPage() {
         activeCompanyId={companyResult.data?.id ?? null}
         activeCompanyName={companyResult.data?.name ?? null}
         activeCompanyLogo={companyResult.data?.logo_url ?? null}
+        activeCompanySlug={companyResult.data?.slug ?? null}
         discoveryBlocks={discoveryBlocks}
+        trendingHashtags={trendingHashtags}
       />
     </div>
   )

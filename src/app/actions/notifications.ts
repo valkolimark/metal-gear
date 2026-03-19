@@ -25,6 +25,8 @@ export type NotificationType =
   | 'sos_response_accepted'
   | 'sos_expired'
   | 'sos_fulfilled'
+  | 'post_comment'
+  | 'post_mention'
 
 export async function getNotifications(limit = 20, offset = 0) {
   const supabase = await createClient()

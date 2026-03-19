@@ -164,6 +164,20 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Admin:** Feed Posts moderation tab in `/admin/moderation` — `getFeedPostReports()`, `adminSoftDeleteFeedPost()`
 - **Post constraints:** 1000 char max, up to 4 images OR 1 video, max 10 mentions, edit within 15 min
 
+## Social Feed: Comments, Hashtags, Mentions (Cycle 27a-2)
+- **Comments table:** `feed_post_comments` with RLS, partial index `idx_feed_post_comments_active`, author index
+- **Comment actions:** `getPostComments()` (cached 15s, per-post tag), `addComment()`, `deleteComment()` (soft-delete)
+- **Atomic counts:** `increment_post_comments`, `decrement_post_comments` — Postgres functions
+- **Mention search:** `/api/feed/mentions-search` — `pg_trgm` GIN-indexed `ILIKE` on `profiles.display_name` + `company_profiles.name`; 60 req/min rate limit
+- **MentionAutocomplete:** dropdown in `FeedComposer` triggered by `@`; debounced 200ms; keyboard nav; inserts `@DisplayName` + tracks entity IDs
+- **Mention resolution:** `resolveMentionedUsers()` (cached 5min) resolves `tagged_user_ids` to display names; `@mentions` in post content link to `/companies/[slug]` or `/sellers/[id]`
+- **CommentSection:** lazy-loads on first expand; per-post count sync; delete/report per comment; `CommentInput` with auto-expand, Enter-to-submit
+- **Hashtag pages:** `/feed/hashtag/[tag]` — SSR with metadata, `totalCount` from `feed_hashtags.post_count` (O(1)), cursor pagination
+- **TrendingHashtags:** desktop sidebar (280px, sticky); `getTrendingHashtags()` cached 1hr; auto-invalidated on post create/delete
+- **Feed layout:** two-column grid at `lg:` breakpoint — feed content + sidebar; max-w-5xl container
+- **Notifications:** `post_comment`, `post_mention` types; fire-and-forget via `Promise.allSettled`; self-notification guards
+- **Components:** `CommentSection`, `CommentInput`, `MentionAutocomplete`, `TrendingHashtags`, `HashtagFeedClient`
+
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
 - **Stream client:** `src/lib/cloudflare-stream.ts` — video upload, status, delete via Cloudflare API

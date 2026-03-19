@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.8.2] — 2026-03-18 · Comments, Hashtags, Mentions & Notifications (Cycle 27a-2)
+
+### Added
+- **Inline comments** — lazy-loaded comment section on each feed post; expand/collapse toggle with live count sync; oldest-first conversation order; 500 char limit
+- **Comment actions** — delete own comments (soft-delete with confirmation), report others' comments; atomic `increment_post_comments`/`decrement_post_comments` Postgres functions
+- **@Mention autocomplete** — real-time dropdown in feed composer triggered by `@`; debounced search (200ms) against `pg_trgm` GIN-indexed profiles + company names; keyboard navigation (arrows, Enter/Tab, Escape); prefix-match priority sorting
+- **Mention resolution** — `@mentions` in feed post content resolve to display names with clickable navigation to `/companies/[slug]` or `/sellers/[id]`
+- **Hashtag pages** — `/feed/hashtag/[tag]` with SSR metadata, post count from `feed_hashtags.post_count` (O(1), no COUNT query), cursor-based pagination, empty state
+- **Trending hashtags sidebar** — top 10 hashtags (7-day window) in sticky desktop sidebar at `lg:` breakpoint; `unstable_cache` with 1-hour TTL; auto-invalidated on post create/delete
+- **Two-column feed layout** — feed content + 280px trending sidebar on desktop; single column on mobile
+- **Mention search API** — `/api/feed/mentions-search` with auth gate, 60 req/min rate limit, parallel user+company trigram search
+- **Notification types** — `post_comment` (someone commented on your post) and `post_mention` (you were @mentioned); fire-and-forget delivery via `Promise.allSettled`; self-comment/self-mention guards
+- **Database migration** — `feed_post_comments` table with RLS, partial index on active comments, author index; `pg_trgm` extension + trigram GIN indexes on `profiles.display_name` and `company_profiles.name`
+- **Server-side caching** — `getPostComments` (15s TTL, per-post tag), `getTrendingHashtags` (1hr TTL), `resolveMentionedUsers` (5min TTL); surgical cache invalidation per post
+
+---
+
 ## [3.8.1] — 2026-03-18 · Social Feed Layer (Cycle 27a-1)
 
 ### Added
