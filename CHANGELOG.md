@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.7.0] — 2026-03-18 · Notifications, Sound Design & OS Theme Sync (Cycle 26)
+
+### Added
+- **Notification sounds** — two distinct audio tones generated programmatically: standard metallic ping for messages/responses, industrial two-tone pulse for high-priority SOS alerts and high-value offers (>$10K)
+- **Repeating alert cadence** — high-priority notifications repeat the alert sound up to 3 times at 2-minute intervals if unacknowledged; acknowledging via bell dropdown or navigating to SOS stops the cadence
+- **Sound preference toggles** — "Notification sounds" and "High-priority alert sounds" on/off switches in Profile → Notification Sounds card; persisted in localStorage
+- **Notification education modal** — branded Dialog explaining SOS alert value before browser permission prompt; triggered post-onboarding (`?onboarded=true`) and on first bell click when permission is `default`
+- **Persistent notification nudge** — "Enable notifications to get real-time SOS alerts" banner in notification dropdown for users who haven't granted permission
+- **Three-state ThemeToggle** — Auto (system) → Light → Dark cycle with Monitor/Sun/Moon icons; shows current resolved theme in title
+
+### Changed
+- **Default theme** — changed from `dark` to `system` (OS auto-detection); existing users with a saved preference are unaffected
+- **ThemeProvider** — added `storageKey="metal-gear-theme"` for explicit localStorage key
+- **Onboarding redirect** — now navigates to `/dashboard?onboarded=true` to trigger notification education modal
+
+---
+
 ## [3.6.0] — 2026-03-18 · AI Professor Mode (Cycle 25)
 
 ### Added

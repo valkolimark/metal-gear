@@ -2,6 +2,7 @@ import { Header } from '@/components/layout/header'
 import { DesktopNav } from '@/components/layout/desktop-nav'
 import { MobileDrawer } from '@/components/layout/mobile-drawer'
 import { HelpButton } from '@/components/layout/help-button'
+import { NotificationEducationTrigger } from '@/components/notification-education-trigger'
 import { MobileNavClient } from '@/components/mobile-nav/MobileNavClient'
 import { CompanyContextProvider } from '@/components/company/CompanyContextProvider'
 import { createClient } from '@/lib/supabase/server'
@@ -115,6 +116,7 @@ export default async function MainLayout({
       </main>
 
       <HelpButton />
+      <NotificationEducationTrigger />
     </div>
   )
 }

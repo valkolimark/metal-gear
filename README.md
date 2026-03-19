@@ -78,6 +78,9 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ### Platform
 - Role-aware onboarding wizard with 3 archetypes (Operator, Trader, Service Provider), branching role-specific questions, multi-industry selection, equipment interest seeding, SOS opt-in, contact visibility; onboarding data carries over into profile and company creation
 - Web Push notifications with category filters and per-category preferences
+- **Notification sounds** — standard metallic ping for messages, two-tone industrial alert for high-priority SOS/offers; sounds repeat up to 3× if unacknowledged; configurable in Profile → Notification Sounds
+- **Notification education modal** — branded opt-in flow explaining SOS alert value before browser permission prompt; persistent nudge in bell dropdown
+- **Three-state theme toggle** — Auto (OS) / Light / Dark with system preference auto-detection; manual override persists across sessions
 - Internationalization (EN/ES) with cookie-based locale detection
 - Help center with 16 articles across 7 categories, keyword search, and FAQ
 - Social sharing with dynamic OG images via `@vercel/og`

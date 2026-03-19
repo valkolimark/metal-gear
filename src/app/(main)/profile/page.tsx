@@ -26,6 +26,7 @@ import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/actions/storefront'
 import { getVerificationStatus, submitVerificationRequest } from '@/app/actions/verification'
 import { getReferralData } from '@/app/actions/referrals'
+import { getSoundPrefs, saveSoundPrefs } from '@/hooks/use-notification-sound'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 import type { Tables } from '@/types/database'
@@ -93,6 +94,7 @@ export default function ProfilePage() {
     subscription: true,
     marketing: true,
   })
+  const [soundPrefs, setSoundPrefs] = useState(() => getSoundPrefs())
   const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
   const [verifyBizName, setVerifyBizName] = useState('')
   const [verifyTaxId, setVerifyTaxId] = useState('')
@@ -739,6 +741,54 @@ export default function ProfilePage() {
                   'Save Preferences'
                 )}
               </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Sound Preferences */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-display text-lg">
+              <Bell className="size-5" />
+              Notification Sounds
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-body text-sm font-medium text-foreground">
+                  Notification sounds
+                </p>
+                <p className="font-body text-xs text-muted-foreground">
+                  Play a sound when you receive a new notification
+                </p>
+              </div>
+              <Switch
+                checked={soundPrefs.soundEnabled}
+                onCheckedChange={(checked) => {
+                  const updated = { ...soundPrefs, soundEnabled: checked }
+                  setSoundPrefs(updated)
+                  saveSoundPrefs(updated)
+                }}
+              />
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="font-body text-sm font-medium text-foreground">
+                  High-priority alert sounds
+                </p>
+                <p className="font-body text-xs text-muted-foreground">
+                  Distinct sound for urgent SOS alerts and high-value offers; repeats up to 3 times if unacknowledged
+                </p>
+              </div>
+              <Switch
+                checked={soundPrefs.highPrioritySoundEnabled}
+                onCheckedChange={(checked) => {
+                  const updated = { ...soundPrefs, highPrioritySoundEnabled: checked }
+                  setSoundPrefs(updated)
+                  saveSoundPrefs(updated)
+                }}
+              />
             </div>
           </CardContent>
         </Card>

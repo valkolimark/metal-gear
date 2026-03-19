@@ -13,7 +13,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Hosting:** Vercel
 
 ## Design System
-- **Theme:** Light/dark mode via `next-themes` (dark default, `enableSystem`); Facebook palette: dark `#18191A`/`#242526`/`#3A3B3C` bg layers, light `#F0F2F5`/`#FFFFFF` bg; `#1877F2` primary blue; SOS stays orange `#FF6B2B`; `ThemeToggle` in header + admin header
+- **Theme:** Light/dark mode via `next-themes` (system default, `enableSystem`, `storageKey="metal-gear-theme"`); ThemeToggle is three-state: Auto (system) → Light → Dark; Facebook palette: dark `#18191A`/`#242526`/`#3A3B3C` bg layers, light `#F0F2F5`/`#FFFFFF` bg; `#1877F2` primary blue; SOS stays orange `#FF6B2B`; `ThemeToggle` in header + admin header + mobile menu drawer
 - **Brand palettes:** Industrial (default) and Ocean (navy/teal/cyan); `data-palette` attribute on `<html>`; switchable from Admin Settings → Brand Palette; persisted in `system_config` + cookie
 - **Admin CSS isolation:** `src/app/(admin)/admin.css` with scoped `[data-section="admin"]` tokens; sidebar always dark
 - **Mobile nav:** `MobileHeader` (52px) + `MobileBottomNav` (5 tabs, raised SOS) + `MobileMenuDrawer` (slide from right) via `MobileNavClient` wrapper; `md:hidden`
@@ -135,6 +135,16 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Key components:** `ConversationalSearch`, `ProblemDiagnoser`, `AIDescriptionGenerator`, `AITitleOptimizer`, `ListingQualityScore`, `AIImageCapture`, `ReputationSummary`, `DisputeAISummary`, `VideoPlayer`, `AskMetalGear`, `HelpButton` (AI chat)
 - **AI utilities:** `src/lib/ai/churn-scorer.ts` — heuristic churn signal weights and scoring
 - **AI Professor Mode (Cycle 25):** Ask Metal Gear (`/api/listings/[id]/ask`) detects compatibility/suitability questions via regex triggers and enters professor mode — asks 2–4 targeted follow-up questions based on equipment category before rendering a direct verdict; recommends alternatives with `[SEARCH_SUGGESTION:{"query":"...","label":"..."}]` markers rendered as clickable search buttons in `AskMetalGear.tsx`; rate limit: 10/day free, 100/day Pro+ (daily IP-based); system prompt injects listing title, specs, condition, category at request time
+
+## Notification Sounds & Education (Cycle 26)
+- **Sound assets:** `/public/sounds/notification.wav` (standard ping), `/public/sounds/alert.wav` (high-priority two-tone); generated via `scripts/generate-sounds.mjs`
+- **Sound hook:** `src/hooks/use-notification-sound.ts` — `useNotificationSound()` exposes `playStandard()`, `playHighPriority(id?)`, `acknowledgeAlert(id)`, `acknowledgeAllAlerts()`; preloads audio on mount; repeating cadence: high-priority alerts replay up to 3× at 2-min intervals if unacknowledged
+- **Sound preferences:** localStorage key `mg-sound-prefs` — `{ soundEnabled: boolean, highPrioritySoundEnabled: boolean }`; toggled in Profile → Notification Sounds card
+- **High-priority triggers:** `sos_request_match`, any SOS with `urgency=critical`, offers >$10K
+- **Education modal:** `src/components/notification-education-modal.tsx` — `NotificationEducationModal` (shadcn Dialog) + `useNotificationEducation()` hook; shows before browser permission prompt
+- **Education triggers:** post-onboarding (`?onboarded=true` URL param), first bell click when `Notification.permission === 'default'`; localStorage key `mg-notification-education-seen` prevents repeat
+- **Persistent nudge:** notification dropdown shows "Enable notifications" banner when permission is `default`
+- **Layout integration:** `NotificationEducationTrigger` component in `(main)/layout.tsx` handles post-onboarding trigger
 
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2

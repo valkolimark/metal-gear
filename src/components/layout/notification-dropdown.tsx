@@ -20,6 +20,10 @@ import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
 import { useUIStore } from '@/stores/ui-store'
 import { useNotifications } from '@/hooks/use-notifications'
+import {
+  NotificationEducationModal,
+  useNotificationEducation,
+} from '@/components/notification-education-modal'
 import type { Tables } from '@/types/database'
 
 type Notification = Tables<'notifications'>
@@ -108,6 +112,20 @@ export function NotificationDropdown() {
   const [open, setOpen] = useState(false)
   const { unreadNotifications } = useUIStore()
   const { notifications, loading, markRead, markAllRead } = useNotifications()
+  const {
+    showModal,
+    setShowModal,
+    triggerIfNeeded,
+    notificationPermission,
+  } = useNotificationEducation()
+
+  const handleBellClick = () => {
+    if (!open) {
+      // On first open, trigger education modal if needed
+      triggerIfNeeded()
+    }
+    setOpen(!open)
+  }
 
   return (
     <div className="relative">
@@ -115,7 +133,7 @@ export function NotificationDropdown() {
         variant="ghost"
         size="icon"
         className="relative"
-        onClick={() => setOpen(!open)}
+        onClick={handleBellClick}
       >
         <Bell className="size-5" />
         {unreadNotifications > 0 && (
@@ -155,6 +173,25 @@ export function NotificationDropdown() {
             </div>
 
             <Separator />
+
+            {/* Notification opt-in nudge */}
+            {notificationPermission === 'default' && (
+              <button
+                onClick={() => {
+                  setShowModal(true)
+                  setOpen(false)
+                }}
+                className="flex w-full items-center gap-2 border-b border-border bg-primary/5 px-4 py-2.5 text-left transition-colors hover:bg-primary/10"
+              >
+                <Bell className="size-4 shrink-0 text-primary" />
+                <span className="flex-1 font-body text-xs text-foreground">
+                  Enable notifications to get real-time SOS alerts
+                </span>
+                <span className="shrink-0 rounded-md bg-primary px-2 py-0.5 font-body text-[10px] font-medium text-primary-foreground">
+                  Enable
+                </span>
+              </button>
+            )}
 
             {/* View All link */}
             <div className="px-4 pb-2">
@@ -247,6 +284,12 @@ export function NotificationDropdown() {
           </div>
         </>
       )}
+
+      {/* Education modal */}
+      <NotificationEducationModal
+        open={showModal}
+        onOpenChange={setShowModal}
+      />
     </div>
   )
 }

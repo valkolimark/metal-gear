@@ -88,7 +88,7 @@ export default async function RootLayout({
         >
           Skip to main content
         </a>
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem storageKey="metal-gear-theme">
           <PaletteProvider palette={palette} />
           <NextIntlClientProvider messages={messages}>
             <QueryProvider>

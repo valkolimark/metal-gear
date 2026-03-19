@@ -113,7 +113,8 @@ export default function OnboardingPage() {
       }
       toast.success('Welcome to Metal Gear!')
       // Redirect to dashboard — middleware will route to /companies/new if needed
-      window.location.href = '/dashboard'
+      // onboarded param triggers notification education modal on first load
+      window.location.href = '/dashboard?onboarded=true'
     } catch {
       toast.error('Something went wrong. Please try again.')
       setSubmitting(false)
