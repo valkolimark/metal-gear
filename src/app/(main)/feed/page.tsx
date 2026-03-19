@@ -6,6 +6,9 @@ import {
   getFeedPriceDrops,
   getFeedSavedSearchMatches,
   getFeedDemandSignals,
+  getGeneralFeedListings,
+  getGeneralFeedSOS,
+  getGeneralFeedRecentListings,
 } from '@/app/actions/feed'
 import { getActiveTier } from '@/app/actions/tier'
 import { FeedForYou } from './components/feed-for-you'
@@ -13,7 +16,7 @@ import { FeedSosSection } from './components/feed-sos-section'
 import { FeedPriceDrops } from './components/feed-price-drops'
 import { FeedSavedSearchSection } from './components/feed-saved-search-section'
 import { FeedDemandSignals } from './components/feed-demand-signals'
-import { FeedEmptyState } from './components/feed-empty-state'
+import { FeedGeneral } from './components/feed-general'
 
 export default async function FeedPage() {
   const supabase = await createClient()
@@ -33,10 +36,30 @@ export default async function FeedPage() {
     ])
 
   const isPro = ['pro', 'business', 'enterprise', 'premium', 'boost'].includes(tier)
-  const hasAnyContent = forYou.hasInterests || activeSOS.length > 0
 
-  if (!hasAnyContent) {
-    return <FeedEmptyState />
+  // Check if we have any personalized content
+  const hasPersonalized =
+    (forYou.hasInterests && forYou.listings.length > 0) ||
+    activeSOS.length > 0 ||
+    priceDrops.length > 0 ||
+    savedSearchMatches.listings.length > 0
+
+  // If no personalized content, show the general feed
+  if (!hasPersonalized) {
+    const [generalListings, generalSOS, recentListings] = await Promise.all([
+      getGeneralFeedListings(),
+      getGeneralFeedSOS(),
+      getGeneralFeedRecentListings(),
+    ])
+
+    return (
+      <FeedGeneral
+        listings={generalListings}
+        sosList={generalSOS}
+        recentListings={recentListings}
+        hasInterests={forYou.hasInterests}
+      />
+    )
   }
 
   return (

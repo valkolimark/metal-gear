@@ -155,6 +155,58 @@ export async function getFeedSavedSearchMatches(userId: string) {
   return { listings: listings ?? [], savedSearches }
 }
 
+export async function getGeneralFeedListings() {
+  const supabase = createAdminClient()
+
+  const { data: listings } = await supabase
+    .from('listings')
+    .select(
+      `id, title, price_cents, contact_for_price, condition, category,
+       location_city, location_state, created_at, listing_quality_score,
+       is_featured, views_count, favorites_count, negotiable,
+       listing_images(url, position),
+       company_profiles(name, logo_url)`
+    )
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(24)
+
+  return listings ?? []
+}
+
+export async function getGeneralFeedSOS() {
+  const supabase = createAdminClient()
+
+  const { data } = await supabase
+    .from('sos_requests')
+    .select('id, title, equipment_category, urgency, created_at, requester_id')
+    .eq('status', 'active')
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  return data ?? []
+}
+
+export async function getGeneralFeedRecentListings() {
+  const supabase = createAdminClient()
+
+  const cutoff = new Date()
+  cutoff.setDate(cutoff.getDate() - 7)
+
+  const { data: listings } = await supabase
+    .from('listings')
+    .select(
+      `id, title, price_cents, contact_for_price, category, condition,
+       created_at, listing_images(url, position)`
+    )
+    .eq('status', 'active')
+    .gte('created_at', cutoff.toISOString())
+    .order('created_at', { ascending: false })
+    .limit(6)
+
+  return listings ?? []
+}
+
 export async function getFeedDemandSignals(userId: string) {
   const supabase = createAdminClient()
 
