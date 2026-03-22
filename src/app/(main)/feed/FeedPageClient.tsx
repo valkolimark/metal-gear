@@ -7,7 +7,6 @@ import { FeedComposer } from './components/FeedComposer'
 import { FeedPost } from './components/FeedPost'
 import { FeedFeedToggle } from './components/FeedFeedToggle'
 import { FeedPostSkeleton } from './components/FeedPostSkeleton'
-import { TrendingHashtags } from './components/TrendingHashtags'
 import { getFeedPosts } from '@/app/actions/feed-posts'
 import type { FeedPostWithDetails } from '@/app/actions/feed-posts'
 
@@ -22,7 +21,6 @@ interface FeedPageClientProps {
   activeCompanyLogo: string | null
   activeCompanySlug: string | null
   discoveryBlocks: React.ReactNode[]
-  trendingHashtags: Array<{ tag: string; post_count: number }>
 }
 
 export function FeedPageClient({
@@ -36,7 +34,6 @@ export function FeedPageClient({
   activeCompanyLogo,
   activeCompanySlug,
   discoveryBlocks,
-  trendingHashtags,
 }: FeedPageClientProps) {
   const [posts, setPosts] = useState<FeedPostWithDetails[]>(initialPosts)
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor)
@@ -186,64 +183,56 @@ export function FeedPageClient({
   }
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-6">
-      <div className="min-w-0 space-y-4">
-        <FeedComposer
-          currentUserId={currentUserId}
-          currentUserName={currentUserName}
-          currentUserAvatar={currentUserAvatar}
-          activeCompanyId={activeCompanyId}
-          activeCompanyName={activeCompanyName}
-          activeCompanyLogo={activeCompanyLogo}
-          onPostCreated={handlePostCreated}
-        />
+    <div className="min-w-0 space-y-4">
+      <FeedComposer
+        currentUserId={currentUserId}
+        currentUserName={currentUserName}
+        currentUserAvatar={currentUserAvatar}
+        activeCompanyId={activeCompanyId}
+        activeCompanyName={activeCompanyName}
+        activeCompanyLogo={activeCompanyLogo}
+        onPostCreated={handlePostCreated}
+      />
 
-        <FeedFeedToggle value={filter} onChange={handleFilterChange} />
+      <FeedFeedToggle value={filter} onChange={handleFilterChange} />
 
-        {isChangingFilter ? (
-          <div className="space-y-4">
-            <FeedPostSkeleton />
-            <FeedPostSkeleton />
-            <FeedPostSkeleton />
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="rounded-xl border border-border bg-card p-8 text-center">
-            <p className="font-body text-sm text-muted-foreground">
-              No posts yet. Be the first to share something!
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {renderFeed()}
-          </div>
-        )}
-
-        {nextCursor && !isChangingFilter && (
-          <div className="flex justify-center py-4">
-            <Button
-              variant="outline"
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-              className="font-body"
-            >
-              {isLoadingMore ? (
-                <>
-                  <Loader2 className="mr-2 size-4 animate-spin" />
-                  Loading...
-                </>
-              ) : (
-                'Load More'
-              )}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      <aside className="hidden lg:block">
-        <div className="sticky top-20 space-y-4">
-          <TrendingHashtags hashtags={trendingHashtags} />
+      {isChangingFilter ? (
+        <div className="space-y-4">
+          <FeedPostSkeleton />
+          <FeedPostSkeleton />
+          <FeedPostSkeleton />
         </div>
-      </aside>
+      ) : posts.length === 0 ? (
+        <div className="rounded-xl border border-border bg-card p-8 text-center">
+          <p className="font-body text-sm text-muted-foreground">
+            No posts yet. Be the first to share something!
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {renderFeed()}
+        </div>
+      )}
+
+      {nextCursor && !isChangingFilter && (
+        <div className="flex justify-center py-4">
+          <Button
+            variant="outline"
+            onClick={handleLoadMore}
+            disabled={isLoadingMore}
+            className="font-body"
+          >
+            {isLoadingMore ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" />
+                Loading...
+              </>
+            ) : (
+              'Load More'
+            )}
+          </Button>
+        </div>
+      )}
     </div>
   )
 }

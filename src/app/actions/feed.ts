@@ -221,3 +221,37 @@ export async function getFeedDemandSignals(userId: string) {
 
   return data
 }
+
+export async function getFeedSOSAlerts(userId: string) {
+  const supabase = createAdminClient()
+
+  const { data: interests } = await supabase
+    .from('user_equipment_interests')
+    .select('tier2')
+    .eq('user_id', userId)
+
+  if (!interests?.length) return []
+  const tier2Groups = interests.map((i) => i.tier2)
+
+  const { data } = await supabase
+    .from('sos_requests')
+    .select(
+      `id, title, equipment_category, urgency, created_at, company_id,
+       company_profiles(name)`
+    )
+    .eq('status', 'active')
+    .in('equipment_category', tier2Groups)
+    .order('urgency', { ascending: false })
+    .order('created_at', { ascending: false })
+    .limit(5)
+
+  return (data ?? []).map((item) => ({
+    id: item.id,
+    title: item.title,
+    equipment_category: item.equipment_category,
+    urgency: item.urgency,
+    created_at: item.created_at,
+    company_id: item.company_id,
+    company_name: (item.company_profiles as { name: string } | null)?.name ?? null,
+  }))
+}

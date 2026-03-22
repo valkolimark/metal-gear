@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.8.3] — 2026-03-21 · Desktop Feed Layout — Facebook 3-Column (Cycle 27b-1)
+
+### Added
+- **Three-column desktop feed layout** — Facebook-style layout with persistent left sidebar (280px), center feed (max 680px), and right sidebar (340px); `xl:` shows all three, `lg:` shows center + right, `md` and below shows center only
+- **Left sidebar** — sticky full-height navigation with profile card, primary nav links (Feed, Browse, Dashboard, Messages, SOS, Radar, Credits), active route highlighting, company switcher for multi-company users, and footer links
+- **Active SOS row** — horizontal scrollable row above feed composer showing equipment-matched SOS requests with urgency badges, time-ago display, and a persistent "Send SOS" card; graceful empty/no-interests states
+- **Right SOS widget** — up to 5 urgency-colored SOS alerts matching user equipment interests with company names, time-ago, and urgency indicators
+- **Right discovery widget** — "Recently Listed For You" showing up to 5 equipment-interest-matched listings with thumbnails, prices, and locations
+- **`getFeedSOSAlerts()` server action** — fetches open SOS requests matching user equipment interests with company name join, ordered by urgency then recency
+
+### Changed
+- **Feed page restructured** — moved from single-column + trending sidebar to 3-column layout; discovery blocks still interleaved in center feed
+- **TrendingHashtags sidebar removed from feed** — replaced by more relevant SOS alerts and equipment discovery widgets in the right sidebar
+- **FeedPageClient simplified** — removed internal grid layout (sidebars now handled by parent); removed `trendingHashtags` prop
+- **Unread message count** — now fetched in feed page for left sidebar badge display
+
+---
+
 ## [3.8.2] — 2026-03-18 · Comments, Hashtags, Mentions & Notifications (Cycle 27a-2)
 
 ### Added

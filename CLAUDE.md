@@ -173,10 +173,19 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Mention resolution:** `resolveMentionedUsers()` (cached 5min) resolves `tagged_user_ids` to display names; `@mentions` in post content link to `/companies/[slug]` or `/sellers/[id]`
 - **CommentSection:** lazy-loads on first expand; per-post count sync; delete/report per comment; `CommentInput` with auto-expand, Enter-to-submit
 - **Hashtag pages:** `/feed/hashtag/[tag]` — SSR with metadata, `totalCount` from `feed_hashtags.post_count` (O(1)), cursor pagination
-- **TrendingHashtags:** desktop sidebar (280px, sticky); `getTrendingHashtags()` cached 1hr; auto-invalidated on post create/delete
-- **Feed layout:** two-column grid at `lg:` breakpoint — feed content + sidebar; max-w-5xl container
+- **TrendingHashtags:** `getTrendingHashtags()` cached 1hr; auto-invalidated on post create/delete; used on hashtag pages
 - **Notifications:** `post_comment`, `post_mention` types; fire-and-forget via `Promise.allSettled`; self-notification guards
 - **Components:** `CommentSection`, `CommentInput`, `MentionAutocomplete`, `TrendingHashtags`, `HashtagFeedClient`
+
+## Desktop Feed Layout (Cycle 27b-1)
+- **Three-column layout:** Facebook-style on `/feed` — left sidebar (280px), center feed (max 680px), right sidebar (340px)
+- **Breakpoints:** `xl` (≥1280px) all 3 columns; `lg` (≥1024px) center + right; `md` and below center only
+- **FeedLeftSidebar:** sticky full-height nav with profile card, primary nav links (active route highlighting), company switcher, footer links; `'use client'` (uses `usePathname()`)
+- **FeedActiveSOSRow:** horizontal scrollable row above feed composer; "Send SOS" card + matched SOS requests with urgency badges; desktop only (`hidden md:block`)
+- **FeedRightSidebar:** wrapper for `RightSOSWidget` (urgency-colored SOS alerts) + `RightDiscoveryWidget` (equipment-matched listings with thumbnails)
+- **`getFeedSOSAlerts()`:** server action in `src/app/actions/feed.ts`; matches `sos_requests` against `user_equipment_interests.tier2`, joins `company_profiles` for company name
+- **Feed page data:** all sidebar data fetched in server component (`page.tsx`) and passed as props; unread count for messages badge
+- **TrendingHashtags removed from feed:** replaced by SOS alerts + discovery widgets in right sidebar
 
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
