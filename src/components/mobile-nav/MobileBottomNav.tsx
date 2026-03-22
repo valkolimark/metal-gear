@@ -2,38 +2,38 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { usePathname, useRouter } from 'next/navigation'
-import { Home, Search, MessageSquare, User, AlertTriangle, LayoutDashboard } from 'lucide-react'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { usePathname } from 'next/navigation'
+import { Home, Search, Plus, MessageSquare, User } from 'lucide-react'
+import { MobileComposeSheet } from './MobileComposeSheet'
 import { useUIStore } from '@/stores/ui-store'
 
 interface MobileBottomNavProps {
   unreadMessages: number
 }
 
-const NAV_ITEMS = [
+const NAV_ITEMS: Array<{
+  href: string | null
+  label: string | null
+  icon: typeof Home
+  action?: 'compose'
+}> = [
   { href: '/feed', label: 'Home', icon: Home },
-  { href: '/search', label: 'Search', icon: Search },
-  { href: '/sos/new', label: 'SOS', icon: null }, // center SOS
+  { href: '/search', label: 'Browse', icon: Search },
+  { href: null, label: null, icon: Plus, action: 'compose' },
   { href: '/messages', label: 'Messages', icon: MessageSquare },
   { href: '/profile', label: 'Profile', icon: User },
-] as const
+]
 
 export function MobileBottomNav({ unreadMessages: initialUnread }: MobileBottomNavProps) {
   const pathname = usePathname()
-  const router = useRouter()
-  const [sosSheetOpen, setSosSheetOpen] = useState(false)
+  const [composeOpen, setComposeOpen] = useState(false)
   const storeUnread = useUIStore((s) => s.unreadMessages)
 
   // Use store value if it's been updated (> 0 or explicitly set), otherwise use SSR prop
   const unreadMessages = storeUnread > 0 ? storeUnread : initialUnread
 
-  const isActive = (href: string, label: string) => {
+  const isActive = (href: string | null, label: string | null) => {
+    if (!href) return false
     if (label === 'Home') return pathname === '/feed' || pathname === '/'
     return pathname.startsWith(href)
   }
@@ -42,43 +42,32 @@ export function MobileBottomNav({ unreadMessages: initialUnread }: MobileBottomN
     <>
       <nav
         className="mobile-bottom-nav fixed bottom-0 left-0 right-0 z-50 border-t border-border/40 bg-background md:hidden"
-        style={{ overflow: 'visible' }}
       >
-        <div className="flex h-14 items-end justify-around" style={{ overflow: 'visible' }}>
-          {NAV_ITEMS.map((item) => {
-            // SOS center button — opens sheet instead of navigating
-            if (item.label === 'SOS') {
+        <div className="flex h-14 items-center justify-around" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+          {NAV_ITEMS.map((item, idx) => {
+            // Compose center button
+            if (item.action === 'compose') {
               return (
                 <button
-                  key="sos"
-                  onClick={() => setSosSheetOpen(true)}
-                  className="flex flex-1 flex-col items-center"
-                  style={{ overflow: 'visible' }}
+                  key="compose"
+                  onClick={() => setComposeOpen(true)}
+                  className="flex flex-1 items-center justify-center"
+                  aria-label="Create"
                 >
-                  <div
-                    className="sos-pulse flex size-12 items-center justify-center rounded-full bg-[#FF6B2B] text-white"
-                    style={{
-                      marginTop: '-16px',
-                      animation: 'sos-pulse 2.5s ease-in-out infinite',
-                    }}
-                    data-sos-trigger
-                  >
-                    <span className="text-xs font-bold">SOS</span>
+                  <div className="flex size-10 items-center justify-center rounded-full bg-primary">
+                    <Plus className="size-5 text-primary-foreground" />
                   </div>
-                  <span className="mt-0.5 text-[10px] font-medium text-[#FF6B2B]">
-                    SOS
-                  </span>
                 </button>
               )
             }
 
-            const Icon = item.icon!
+            const Icon = item.icon
             const active = isActive(item.href, item.label)
 
             return (
               <Link
-                key={item.href}
-                href={item.href}
+                key={item.href ?? idx}
+                href={item.href!}
                 className="relative flex flex-1 flex-col items-center justify-center pb-1 pt-1.5"
               >
                 <div className="relative">
@@ -102,50 +91,7 @@ export function MobileBottomNav({ unreadMessages: initialUnread }: MobileBottomN
         </div>
       </nav>
 
-      {/* SOS Launcher Sheet */}
-      <Sheet open={sosSheetOpen} onOpenChange={setSosSheetOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl pb-8">
-          <SheetHeader className="pb-2">
-            <SheetTitle className="font-display text-lg text-[#FF6B2B]">SOS</SheetTitle>
-          </SheetHeader>
-          <div className="space-y-3">
-            <button
-              onClick={() => {
-                setSosSheetOpen(false)
-                router.push('/sos/create')
-              }}
-              className="flex w-full items-center gap-4 rounded-xl border border-[#FF6B2B]/30 bg-[#FF6B2B]/10 p-4 text-left transition-colors active:bg-[#FF6B2B]/20"
-            >
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FF6B2B]/20">
-                <AlertTriangle className="size-6 text-[#FF6B2B]" />
-              </div>
-              <div>
-                <p className="font-display text-sm font-semibold text-foreground">Send SOS</p>
-                <p className="font-body text-xs text-muted-foreground">
-                  Broadcast an urgent equipment need
-                </p>
-              </div>
-            </button>
-            <button
-              onClick={() => {
-                setSosSheetOpen(false)
-                router.push('/sos')
-              }}
-              className="flex w-full items-center gap-4 rounded-xl border border-border bg-card p-4 text-left transition-colors active:bg-accent"
-            >
-              <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-muted">
-                <LayoutDashboard className="size-6 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="font-display text-sm font-semibold text-foreground">SOS Dashboard</p>
-                <p className="font-body text-xs text-muted-foreground">
-                  View open requests & your active SOSes
-                </p>
-              </div>
-            </button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <MobileComposeSheet open={composeOpen} onClose={() => setComposeOpen(false)} />
     </>
   )
 }

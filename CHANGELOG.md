@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.8.4] — 2026-03-21 · Mobile Nav Flatten + Compose Sheet + SOS Feed Banner (Cycle 27b-2)
+
+### Added
+- **Compose sheet** — new `MobileComposeSheet` bottom sheet with three actions: New Post, List Equipment, and Send SOS (orange, urgent badge)
+- **SOS feed banner** — dismissible orange CTA banner above feed content on mobile; persists dismiss state in localStorage
+- **Compose deep link** — `/feed?compose=true` query param auto-focuses the feed composer textarea on navigation
+
+### Changed
+- **Mobile bottom nav flattened** — replaced raised SOS center tab with flat [+] compose button (`bg-primary` circle); all 5 tabs now same height (56px), no raised/elevated button
+- **Tab labels updated** — "Search" renamed to "Browse" for consistency with desktop nav
+- **SOS Dashboard moved** — SOS Dashboard now accessible via hamburger menu drawer (renamed from "SOS Broadcast" to "SOS Dashboard")
+- **FeedComposer** — added `data-feed-composer` attribute for programmatic focus from compose sheet
+
+---
+
 ## [3.8.3] — 2026-03-21 · Desktop Feed Layout — Facebook 3-Column (Cycle 27b-1)
 
 ### Added

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams, useRouter } from 'next/navigation'
 import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FeedComposer } from './components/FeedComposer'
@@ -60,6 +61,21 @@ export function FeedPageClient({
       setIsChangingFilter(false)
     }
   }, [currentUserId])
+
+  const searchParams = useSearchParams()
+  const composeRouter = useRouter()
+
+  // Handle ?compose=true — focus the composer textarea
+  useEffect(() => {
+    if (searchParams.get('compose') === 'true') {
+      const composer = document.querySelector<HTMLTextAreaElement>('[data-feed-composer]')
+      if (composer) {
+        composer.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        setTimeout(() => composer.focus(), 300)
+      }
+      composeRouter.replace('/feed')
+    }
+  }, [searchParams, composeRouter])
 
   // On mount, if stored filter differs from 'all', refetch
   useEffect(() => {

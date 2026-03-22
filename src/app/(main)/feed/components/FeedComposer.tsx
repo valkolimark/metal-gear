@@ -274,6 +274,7 @@ export function FeedComposer({
           <div className="relative">
             <textarea
               ref={textareaRef}
+              data-feed-composer
               value={content}
               onChange={handleTextareaChange}
               placeholder="Share an update with the community..."

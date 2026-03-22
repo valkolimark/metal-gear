@@ -26,6 +26,7 @@ import { FeedPageClient } from './FeedPageClient'
 import { FeedLeftSidebar } from './components/FeedLeftSidebar'
 import { FeedActiveSOSRow } from './components/FeedActiveSOSRow'
 import { FeedRightSidebar } from './components/FeedRightSidebar'
+import { FeedSOSBanner } from '@/components/feed/FeedSOSBanner'
 
 export default async function FeedPage() {
   const supabase = await createClient()
@@ -182,6 +183,9 @@ export default async function FeedPage() {
       <div className="flex flex-1 justify-center gap-6 px-4 py-4 xl:pl-0">
         {/* Center column */}
         <main className="w-full max-w-[680px] min-w-0">
+          {/* SOS banner — mobile only, dismissible */}
+          <FeedSOSBanner />
+
           {/* Active SOS row above composer — desktop only */}
           <div className="hidden md:block">
             <FeedActiveSOSRow activeSOS={activeSOS} hasInterests={forYou.hasInterests} />

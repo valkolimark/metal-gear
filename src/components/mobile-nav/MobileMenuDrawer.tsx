@@ -234,7 +234,7 @@ export function MobileMenuDrawer({
           <NavGroupHeader>Marketplace</NavGroupHeader>
           <NavRow href="/search" icon={Search} label="Browse Equipment" />
           <NavRow href="/listings/new" icon={Plus} label="Post a Listing" />
-          <NavRow href="/sos" icon={AlertTriangle} label="SOS Broadcast" />
+          <NavRow href="/sos" icon={AlertTriangle} label="SOS Dashboard" />
           <NavRow
             href="/insights"
             icon={TrendingUp}
