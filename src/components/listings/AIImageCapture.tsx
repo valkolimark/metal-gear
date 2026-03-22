@@ -1,12 +1,14 @@
 'use client'
 
 import { useState, useRef, useCallback, useEffect } from 'react'
-import { Camera, Upload, X, ChevronDown, AlertTriangle, Sparkles, RotateCcw, ArrowRight, Loader2 } from 'lucide-react'
+import { Camera, Upload, X, ChevronDown, AlertTriangle, Sparkles, RotateCcw, ArrowRight, Loader2, AlertCircle, CheckCircle2, Info } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
+import { validateImageQuality, type ImageQualityResult } from '@/lib/ai/image-quality'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
 
 interface AIImageCaptureProps {
@@ -46,10 +48,37 @@ function compressImage(file: File, maxWidth = 1200, quality = 0.85): Promise<str
   })
 }
 
+function ConfidenceDot({ confidence }: { confidence: number }) {
+  if (confidence >= 0.8) {
+    return (
+      <span className="inline-flex items-center gap-1" title="High confidence">
+        <span className="size-2 rounded-full bg-green-500" />
+        <span className="text-[10px] text-green-600 dark:text-green-400">High</span>
+      </span>
+    )
+  }
+  if (confidence >= 0.5) {
+    return (
+      <span className="inline-flex items-center gap-1" title="Medium confidence — verify">
+        <span className="size-2 rounded-full bg-amber-500" />
+        <span className="text-[10px] text-amber-600 dark:text-amber-400">Verify</span>
+      </span>
+    )
+  }
+  return (
+    <span className="inline-flex items-center gap-1" title="Low confidence — verify manually">
+      <span className="size-2 rounded-full bg-red-500" />
+      <span className="text-[10px] text-red-600 dark:text-red-400">Low</span>
+    </span>
+  )
+}
+
 export default function AIImageCapture({ onComplete, onSkip }: AIImageCaptureProps) {
   const [currentStep, setCurrentStep] = useState<Step>('mode')
   const [wideShot, setWideShot] = useState<{ file: File; preview: string; base64: string } | null>(null)
   const [nameplateShot, setNameplateShot] = useState<{ file: File; preview: string; base64: string } | null>(null)
+  const [wideQuality, setWideQuality] = useState<ImageQualityResult | null>(null)
+  const [nameplateQuality, setNameplateQuality] = useState<ImageQualityResult | null>(null)
   const [progress, setProgress] = useState(0)
   const [result, setResult] = useState<AIAnalysisResult | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -69,8 +98,19 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
   const handleImageSelect = useCallback(async (
     file: File,
-    setter: typeof setWideShot
+    setter: typeof setWideShot,
+    mode: 'wide_shot' | 'nameplate',
+    qualitySetter: typeof setWideQuality
   ) => {
+    // Run quality validation
+    const quality = await validateImageQuality(file, mode)
+    qualitySetter(quality)
+
+    if (!quality.passed) {
+      // Don't process further if quality check fails
+      return
+    }
+
     const preview = URL.createObjectURL(file)
     try {
       const base64 = await compressImage(file)
@@ -89,13 +129,25 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
   const handleFileChange = useCallback((
     e: React.ChangeEvent<HTMLInputElement>,
-    setter: typeof setWideShot
+    setter: typeof setWideShot,
+    mode: 'wide_shot' | 'nameplate',
+    qualitySetter: typeof setWideQuality
   ) => {
     const file = e.target.files?.[0]
-    if (file) handleImageSelect(file, setter)
+    if (file) handleImageSelect(file, setter, mode, qualitySetter)
     // Reset input so the same file can be re-selected
     e.target.value = ''
   }, [handleImageSelect])
+
+  const clearWideShot = useCallback(() => {
+    setWideShot(null)
+    setWideQuality(null)
+  }, [])
+
+  const clearNameplateShot = useCallback(() => {
+    setNameplateShot(null)
+    setNameplateQuality(null)
+  }, [])
 
   async function analyzeImages() {
     if (!wideShot && !nameplateShot) return
@@ -165,6 +217,19 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
     return field in editedFields ? editedFields[field] : original
   }
 
+  function getFieldConfidence(field: string): number | undefined {
+    if (!result?.confidenceScores) return undefined
+    const map: Record<string, keyof NonNullable<typeof result.confidenceScores>> = {
+      title: 'title',
+      manufacturer: 'manufacturer',
+      model: 'model',
+      serialNumber: 'serial_number',
+      year: 'year',
+    }
+    const key = map[field]
+    return key ? result.confidenceScores[key] : undefined
+  }
+
   function handleApply() {
     if (!result) return
     // Merge edited fields into result
@@ -207,6 +272,9 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
               <Camera className="mr-2 size-5" />
               {isMobile ? 'Take photos with camera' : 'Upload equipment photos'}
             </Button>
+            <p className="font-body text-xs text-muted-foreground">
+              Best results — upload both a wide shot and a nameplate photo
+            </p>
             <Button
               variant="ghost"
               onClick={onSkip}
@@ -222,6 +290,10 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
   // ─── Capture / Upload ─────────────────────────────────────────────
   if (currentStep === 'capture') {
+    const hasBlockingIssue =
+      (wideQuality && !wideQuality.passed) ||
+      (nameplateQuality && !nameplateQuality.passed)
+
     return (
       <Card className="border-border bg-card">
         <CardContent className="space-y-6 p-6">
@@ -230,7 +302,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
               Capture Equipment Photos
             </h2>
             <p className="mt-1 font-body text-sm text-muted-foreground">
-              Take or upload a photo of the equipment, and optionally the nameplate
+              Upload a wide shot and optionally a nameplate for best results
             </p>
           </div>
 
@@ -258,7 +330,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     className="size-full object-cover"
                   />
                   <button
-                    onClick={() => setWideShot(null)}
+                    onClick={clearWideShot}
                     className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-white transition-opacity hover:bg-black/80"
                   >
                     <X className="size-4" />
@@ -296,7 +368,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     ref={wideShotRef}
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleFileChange(e, setWideShot)}
+                    onChange={(e) => handleFileChange(e, setWideShot, 'wide_shot', setWideQuality)}
                     className="hidden"
                   />
                   <input
@@ -304,9 +376,43 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={(e) => handleFileChange(e, setWideShot)}
+                    onChange={(e) => handleFileChange(e, setWideShot, 'wide_shot', setWideQuality)}
                     className="hidden"
                   />
+                </div>
+              )}
+              {/* Wide shot quality feedback */}
+              {wideQuality && !wideQuality.passed && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+                  <div className="flex gap-2">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-500" />
+                    <div>
+                      <p className="font-body text-sm font-medium text-red-600 dark:text-red-400">Photo issue detected</p>
+                      {wideQuality.issues.map(issue => (
+                        <p key={issue} className="font-body text-xs text-muted-foreground">{issue}</p>
+                      ))}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { clearWideShot(); wideShotRef.current?.click() }}
+                        className="mt-2 font-body text-xs"
+                      >
+                        Retake Photo
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {wideQuality && wideQuality.passed && wideQuality.warnings.length > 0 && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <div className="flex gap-2">
+                    <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                    <div>
+                      {wideQuality.warnings.map(w => (
+                        <p key={w} className="font-body text-xs text-muted-foreground">{w}</p>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -324,7 +430,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     className="size-full object-cover"
                   />
                   <button
-                    onClick={() => setNameplateShot(null)}
+                    onClick={clearNameplateShot}
                     className="absolute right-2 top-2 flex size-7 items-center justify-center rounded-full bg-black/60 text-white transition-opacity hover:bg-black/80"
                   >
                     <X className="size-4" />
@@ -362,7 +468,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     ref={nameplateShotRef}
                     type="file"
                     accept="image/*"
-                    onChange={(e) => handleFileChange(e, setNameplateShot)}
+                    onChange={(e) => handleFileChange(e, setNameplateShot, 'nameplate', setNameplateQuality)}
                     className="hidden"
                   />
                   <input
@@ -370,9 +476,43 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     type="file"
                     accept="image/*"
                     capture="environment"
-                    onChange={(e) => handleFileChange(e, setNameplateShot)}
+                    onChange={(e) => handleFileChange(e, setNameplateShot, 'nameplate', setNameplateQuality)}
                     className="hidden"
                   />
+                </div>
+              )}
+              {/* Nameplate quality feedback */}
+              {nameplateQuality && !nameplateQuality.passed && (
+                <div className="rounded-lg border border-red-500/30 bg-red-500/10 p-3">
+                  <div className="flex gap-2">
+                    <AlertCircle className="mt-0.5 size-4 shrink-0 text-red-500" />
+                    <div>
+                      <p className="font-body text-sm font-medium text-red-600 dark:text-red-400">Photo issue detected</p>
+                      {nameplateQuality.issues.map(issue => (
+                        <p key={issue} className="font-body text-xs text-muted-foreground">{issue}</p>
+                      ))}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => { clearNameplateShot(); nameplateShotRef.current?.click() }}
+                        className="mt-2 font-body text-xs"
+                      >
+                        Retake Photo
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {nameplateQuality && nameplateQuality.passed && nameplateQuality.warnings.length > 0 && (
+                <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
+                  <div className="flex gap-2">
+                    <Info className="mt-0.5 size-4 shrink-0 text-amber-500" />
+                    <div>
+                      {nameplateQuality.warnings.map(w => (
+                        <p key={w} className="font-body text-xs text-muted-foreground">{w}</p>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -388,10 +528,10 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
             </Button>
             <Button
               onClick={analyzeImages}
-              disabled={!wideShot}
+              disabled={!wideShot || !!hasBlockingIssue}
               className="font-body"
             >
-              Analyze Equipment
+              {wideShot && nameplateShot ? 'Analyze Both' : 'Analyze Equipment'}
               <ArrowRight className="ml-2 size-4" />
             </Button>
           </div>
@@ -402,13 +542,14 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
   // ─── Processing State ─────────────────────────────────────────────
   if (currentStep === 'processing') {
+    const imageCount = (wideShot ? 1 : 0) + (nameplateShot ? 1 : 0)
     return (
       <Card className="border-border bg-card">
         <CardContent className="flex flex-col items-center gap-6 p-8 text-center">
           <Loader2 className="size-10 animate-spin text-primary" />
           <div>
             <h2 className="font-display text-lg font-bold text-foreground">
-              Analyzing your equipment...
+              Analyzing {imageCount > 1 ? '2 images' : 'your equipment'}...
             </h2>
             <p className="mt-1 font-body text-sm text-muted-foreground">
               This takes about 10–15 seconds
@@ -441,6 +582,9 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
           ? 'bg-amber-500/20 text-amber-400 border-amber-500/30'
           : 'bg-red-500/20 text-red-400 border-red-500/30'
 
+    const overall = result.overallConfidence
+    const isLowConfidence = result.lowConfidenceFields && result.lowConfidenceFields.length > 0
+
     const fields = [
       { key: 'title', label: 'Title', value: result.listing.title },
       { key: 'manufacturer', label: 'Manufacturer', value: result.listing.manufacturer },
@@ -454,6 +598,35 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
     return (
       <Card className="border-border bg-card">
         <CardContent className="space-y-5 p-6">
+          {/* Overall confidence banner */}
+          {overall !== undefined && (
+            <div className={cn(
+              "flex items-center gap-2 rounded-lg border p-3",
+              overall >= 0.8
+                ? "border-green-500/30 bg-green-500/10"
+                : overall >= 0.55
+                  ? "border-amber-500/30 bg-amber-500/10"
+                  : "border-red-500/30 bg-red-500/10"
+            )}>
+              {overall >= 0.8 ? (
+                <CheckCircle2 className="size-4 shrink-0 text-green-500" />
+              ) : (
+                <AlertTriangle className="size-4 shrink-0 text-amber-500" />
+              )}
+              <span className="font-body text-sm">
+                {overall >= 0.8
+                  ? 'High confidence analysis'
+                  : overall >= 0.55
+                    ? 'Medium confidence — verify highlighted fields'
+                    : 'Low confidence — manual review recommended'}
+              </span>
+              <span className="ml-auto font-body text-xs text-muted-foreground">
+                {result.analysisMode === 'multi_image' ? 'Analyzed 2 images' : 'Analyzed 1 image'}
+                {result.wasReprompted && ' (refined)'}
+              </span>
+            </div>
+          )}
+
           {/* Fraud warning */}
           {result.fraud.flagged && (
             <div className="flex items-start gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3">
@@ -509,11 +682,13 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
           <div className="h-px bg-border" />
 
-          {/* Editable fields */}
+          {/* Editable fields with confidence indicators */}
           <div className="space-y-3">
             {fields.map(({ key, label, value }) => {
               if (!value && !(key in editedFields)) return null
               const displayValue = (getEditedValue(key, value) ?? '').toString()
+              const conf = getFieldConfidence(key)
+              const isLow = conf !== undefined && conf < 0.5
               return (
                 <div key={key} className="flex items-center gap-3">
                   <Label className="w-28 shrink-0 font-body text-sm text-muted-foreground">
@@ -523,20 +698,34 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
                     <Input
                       value={displayValue}
                       onChange={(e) => setEditedFields(prev => ({ ...prev, [key]: e.target.value }))}
-                      className="font-body text-sm"
+                      className={cn(
+                        "font-body text-sm",
+                        isLow && !(key in editedFields) && "border-amber-500/50 ring-1 ring-amber-500/20"
+                      )}
+                      placeholder={isLow ? 'Please verify' : undefined}
                     />
-                    {!(key in editedFields) && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2">
+                    <span className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center gap-1.5">
+                      {conf !== undefined && !(key in editedFields) && (
+                        <ConfidenceDot confidence={conf} />
+                      )}
+                      {!(key in editedFields) && (
                         <Badge className="bg-primary/20 px-1.5 py-0 font-body text-[10px] text-primary">
                           AI
                         </Badge>
-                      </span>
-                    )}
+                      )}
+                    </span>
                   </div>
                 </div>
               )
             })}
           </div>
+
+          {/* Low confidence hint */}
+          {isLowConfidence && (
+            <p className="font-body text-xs text-amber-600 dark:text-amber-400">
+              Fields with yellow borders had low AI confidence. Please verify or correct them.
+            </p>
+          )}
 
           {/* Specs */}
           {specs.length > 0 && (

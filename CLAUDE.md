@@ -187,6 +187,15 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Feed page data:** all sidebar data fetched in server component (`page.tsx`) and passed as props; unread count for messages badge
 - **TrendingHashtags removed from feed:** replaced by SOS alerts + discovery widgets in right sidebar
 
+## AI Image Analyzer (Cycle 27c)
+- **Multi-image analysis:** wide shot + nameplate sent in single Claude call with positional context; falls back to single-image if only one provided
+- **Structured output:** system prompt enforces JSON schema with per-field confidence scores (0.0–1.0); `FieldConfidenceScores` type in `src/types/ai-analysis.ts`
+- **Auto re-prompt:** when `overallConfidence < 0.55`, second Claude call targets `lowConfidenceFields`; merges higher-confidence results; max 1 retry
+- **Image quality validation:** `src/lib/ai/image-quality.ts` — `validateImageQuality(file, mode)` checks resolution, brightness, blur (Laplacian variance), file size; runs client-side via Canvas API
+- **Equipment prompts:** `src/lib/ai/equipment-prompts.ts` — `EQUIPMENT_ANALYSIS_SYSTEM_PROMPT`, `MULTI_IMAGE_ANALYSIS_PROMPT`, `SINGLE_IMAGE_ANALYSIS_PROMPT`, `buildClarificationPrompt()`
+- **Confidence UI:** green/yellow/red dots per field; low-confidence fields get yellow border; overall confidence banner (green/amber/red); analysis mode label ("Analyzed 1/2 images")
+- **Backward compatible:** all new fields on `AIAnalysisResult` are optional; single-image requests work unchanged
+
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
 - **Stream client:** `src/lib/cloudflare-stream.ts` — video upload, status, delete via Cloudflare API

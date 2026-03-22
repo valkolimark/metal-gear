@@ -6,6 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.8.5] — 2026-03-21 · AI Image Analyzer Upgrade (Cycle 27c)
+
+### Added
+- **Multi-image analysis** — wide shot + nameplate sent in a single Claude API call for cross-referenced equipment identification; Image 1 context informs nameplate OCR in Image 2
+- **Confidence scoring** — per-field confidence scores (0.0–1.0) on all analysis results; `overallConfidence` metric averages critical fields (equipment_type, manufacturer, model, taxonomy, title)
+- **Auto re-prompt** — when `overallConfidence < 0.55`, automatically makes a second Claude call targeting low-confidence fields; merges higher-confidence results into original
+- **Client-side image quality validation** — `validateImageQuality()` in `src/lib/ai/image-quality.ts` checks resolution, brightness, blur (Laplacian variance), and file size before upload
+- **Quality error UI** — blocking red banners for too-dark/too-small/corrupt images with "Retake Photo" button; non-blocking yellow warnings for potential blur
+- **Confidence indicators** — green/yellow/red dots next to each field in results step; low-confidence fields get yellow border and "Please verify" placeholder
+- **Overall confidence banner** — color-coded banner at top of results: green (high), amber (medium, verify highlighted), red (low, manual review)
+- **Analysis mode label** — results show "Analyzed 1 image" or "Analyzed 2 images" with "(refined)" suffix when re-prompted
+- **Equipment prompts module** — `src/lib/ai/equipment-prompts.ts` with structured system prompt, single/multi-image analysis prompts, and clarification prompt builder
+
+### Changed
+- **Analyze button** — dynamic label: "Analyze Both" when both images present, "Analyze Equipment" for single image
+- **Processing step** — shows "Analyzing 2 images..." in multi-image mode
+- **API route** — rewritten to use structured JSON output with confidence scores via system prompt; single unified Claude call replaces separate wide-shot + nameplate calls
+- **Types** — `AIAnalysisResult` extended with `confidenceScores`, `overallConfidence`, `lowConfidenceFields`, `analysisMode`, `wasReprompted`; all new fields optional for backward compatibility
+
+---
+
 ## [3.8.4] — 2026-03-21 · Mobile Nav Flatten + Compose Sheet + SOS Feed Banner (Cycle 27b-2)
 
 ### Added

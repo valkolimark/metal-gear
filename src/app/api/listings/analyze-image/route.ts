@@ -3,17 +3,26 @@ import { anthropic } from "@/lib/anthropic";
 import { createClient } from "@/lib/supabase/server";
 import { EQUIPMENT_TAXONOMY } from "@/lib/constants/equipment-taxonomy";
 import * as Sentry from "@sentry/nextjs";
+import {
+  EQUIPMENT_ANALYSIS_SYSTEM_PROMPT,
+  MULTI_IMAGE_ANALYSIS_PROMPT,
+  SINGLE_IMAGE_ANALYSIS_PROMPT,
+  buildClarificationPrompt,
+} from "@/lib/ai/equipment-prompts";
 import type {
   AnalyzeImageRequest,
   AIAnalysisResult,
-  TaxonomyResult,
-  ListingResult,
-  FraudResult,
+  FieldConfidenceScores,
 } from "@/types/ai-analysis";
+import type { MessageParam, ImageBlockParam, TextBlockParam } from "@anthropic-ai/sdk/resources/messages";
 
 export const maxDuration = 60;
 
 const VISION_MODEL = "claude-sonnet-4-20250514";
+const LOW_CONFIDENCE_THRESHOLD = 0.5;
+const REPROMPT_THRESHOLD = 0.55;
+
+type ImageMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
 
 // Build a compact taxonomy string for Claude context
 function buildTaxonomyContext(): string {
@@ -53,184 +62,198 @@ function extractJSON(text: string): Record<string, unknown> {
   }
 }
 
-async function analyzeWideShot(
-  base64Image: string,
-  mimeType: string,
-  taxonomyContext: string
-): Promise<{
-  taxonomy: TaxonomyResult;
-  listing: Partial<ListingResult>;
-  fraud: FraudResult;
-  raw: string;
-}> {
-  const response = await anthropic.messages.create({
-    model: VISION_MODEL,
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mimeType as
-                | "image/jpeg"
-                | "image/png"
-                | "image/webp"
-                | "image/gif",
-              data: base64Image,
-            },
-          },
-          {
-            type: "text",
-            text: `You are an expert industrial equipment appraiser. Identify this equipment and return a JSON object.
+// Extract confidence scores from the structured response
+function extractConfidenceScores(parsed: Record<string, unknown>): FieldConfidenceScores {
+  const getConf = (field: unknown): number => {
+    if (field && typeof field === "object" && "confidence" in (field as Record<string, unknown>)) {
+      return Number((field as Record<string, unknown>).confidence) || 0;
+    }
+    return 0.5; // default mid confidence for legacy responses
+  };
 
-TASK:
-1. Identify the equipment type, manufacturer, model if visible
-2. Map it to the BEST matching subcategory from the taxonomy below (use the bracket IDs)
-3. Estimate condition from visual appearance
-4. Write a marketplace listing title and 2-sentence description
-5. Check if this looks like a real photo (not AI-generated, not stock, not a screenshot)
-
-TAXONOMY (use the [bracket_id] values in your response):
-${taxonomyContext}
-
-RESPOND WITH ONLY THIS JSON (no other text):
-{
-  "taxonomy": {
-    "tier1": "bracket_id_of_tier1",
-    "tier2": "bracket_id_of_tier2",
-    "subcategory": "bracket_id_of_subcategory",
-    "confidence": "high",
-    "alternatives": []
-  },
-  "listing": {
-    "title": "Brand Model - Short Description",
-    "manufacturer": "Brand name or null",
-    "model": "Model number or null",
-    "year": null,
-    "condition": "good",
-    "suggestedDescription": "Two sentence description for marketplace listing."
-  },
-  "fraud": {
-    "flagged": false,
-    "reason": null
-  }
+  return {
+    equipment_type: getConf(parsed.equipment_type),
+    manufacturer: getConf(parsed.manufacturer),
+    model: getConf(parsed.model),
+    serial_number: getConf(parsed.serial_number),
+    year: getConf(parsed.year),
+    condition: getConf(parsed.condition_estimate),
+    taxonomy: typeof parsed.taxonomy === "object" && parsed.taxonomy
+      ? Number((parsed.taxonomy as Record<string, unknown>).confidence) || 0.5
+      : 0.5,
+    title: getConf(parsed.suggested_title),
+    fraud: typeof parsed.fraud_flags === "object" && parsed.fraud_flags
+      ? Number((parsed.fraud_flags as Record<string, unknown>).confidence) || 0.5
+      : 0.5,
+  };
 }
 
-IMPORTANT RULES:
-- confidence should be "high" if you can clearly identify the equipment type, "medium" if somewhat uncertain, "low" only if truly unrecognizable
-- Most clear photos of real equipment should be "high" confidence
-- Always provide your best guess even if uncertain — fill in all fields
-- For condition: "excellent"=like new, "good"=normal wear, "fair"=significant wear, "poor"=damaged
-- Set fraud.flagged=true ONLY for obvious AI-generated images, stock photos, or screenshots of other websites`,
-          },
-        ],
-      },
-    ],
-  });
+// Get value from confidence field
+function getVal<T>(field: unknown, fallback: T): T {
+  if (field && typeof field === "object" && "value" in (field as Record<string, unknown>)) {
+    const v = (field as Record<string, unknown>).value;
+    return (v as T) ?? fallback;
+  }
+  return (field as T) ?? fallback;
+}
 
-  const raw =
-    response.content[0].type === "text" ? response.content[0].text : "";
-  const parsed = extractJSON(raw);
+function getLowConfidenceFields(scores: FieldConfidenceScores): string[] {
+  const fields: string[] = [];
+  const criticalFields: Array<keyof FieldConfidenceScores> = [
+    "equipment_type", "manufacturer", "model", "serial_number", "year", "taxonomy",
+  ];
+  for (const field of criticalFields) {
+    if (scores[field] < LOW_CONFIDENCE_THRESHOLD) {
+      fields.push(field);
+    }
+  }
+  return fields;
+}
+
+function computeOverallConfidence(scores: FieldConfidenceScores): number {
+  const criticalFields: Array<keyof FieldConfidenceScores> = [
+    "equipment_type", "manufacturer", "model", "taxonomy", "title",
+  ];
+  const sum = criticalFields.reduce((acc, f) => acc + scores[f], 0);
+  return Math.round((sum / criticalFields.length) * 100) / 100;
+}
+
+// Convert structured Claude response to AIAnalysisResult
+function parseStructuredResponse(
+  parsed: Record<string, unknown>,
+  rawText: string,
+  analysisMode: "single_image" | "multi_image"
+): AIAnalysisResult {
+  const scores = extractConfidenceScores(parsed);
+  const overallConfidence = computeOverallConfidence(scores);
+  const lowConfidenceFields = getLowConfidenceFields(scores);
 
   const taxonomy = parsed.taxonomy as Record<string, unknown> | undefined;
-  const listing = parsed.listing as Record<string, unknown> | undefined;
-  const fraud = parsed.fraud as Record<string, unknown> | undefined;
+  const fraudFlags = parsed.fraud_flags as Record<string, unknown> | undefined;
+  const keySpecs = getVal<Record<string, string>>(parsed.key_specs, {});
+
+  // Map numeric taxonomy confidence to string
+  const taxConfNum = taxonomy ? Number(taxonomy.confidence) || 0.5 : 0.5;
+  const taxConfStr: "high" | "medium" | "low" =
+    taxConfNum >= 0.8 ? "high" : taxConfNum >= 0.5 ? "medium" : "low";
+
+  const conditionMap: Record<string, "excellent" | "good" | "fair" | "poor"> = {
+    excellent: "excellent", good: "good", fair: "fair", poor: "poor",
+    A: "excellent", B: "good", C: "fair", D: "poor", F: "poor",
+  };
+  const rawCondition = getVal<string | null>(parsed.condition_estimate, null);
+  const condition = rawCondition ? conditionMap[rawCondition] || undefined : undefined;
 
   return {
     taxonomy: {
-      tier1: (taxonomy?.tier1 as string) || undefined,
-      tier2: (taxonomy?.tier2 as string) || undefined,
-      subcategory: (taxonomy?.subcategory as string) || undefined,
-      confidence: ((taxonomy?.confidence as string) || "medium") as
-        | "high"
-        | "medium"
-        | "low",
-      alternatives: (taxonomy?.alternatives as TaxonomyResult["alternatives"]) || [],
+      tier1: taxonomy?.tier1 as string | undefined,
+      tier2: taxonomy?.tier2 as string | undefined,
+      subcategory: taxonomy?.subcategory as string | undefined,
+      confidence: taxConfStr,
+      numericConfidence: taxConfNum,
+      alternatives: [],
     },
     listing: {
-      title: (listing?.title as string) || undefined,
-      manufacturer: (listing?.manufacturer as string) || undefined,
-      model: (listing?.model as string) || undefined,
-      year: listing?.year ? Number(listing.year) : undefined,
-      condition: (listing?.condition as ListingResult["condition"]) || undefined,
-      suggestedDescription: (listing?.suggestedDescription as string) || undefined,
+      title: getVal<string | undefined>(parsed.suggested_title, undefined),
+      manufacturer: getVal<string | null>(parsed.manufacturer, null) || undefined,
+      model: getVal<string | null>(parsed.model, null) || undefined,
+      serialNumber: getVal<string | null>(parsed.serial_number, null) || undefined,
+      year: getVal<number | null>(parsed.year, null) || undefined,
+      condition,
+      specs: keySpecs,
+      suggestedDescription: (parsed.suggested_description as string) || undefined,
     },
     fraud: {
-      flagged: (fraud?.flagged as boolean) || false,
-      reason: (fraud?.reason as string) || undefined,
+      flagged: fraudFlags?.is_suspicious === true,
+      reason: Array.isArray(fraudFlags?.reasons) && (fraudFlags.reasons as string[]).length > 0
+        ? (fraudFlags.reasons as string[]).join("; ")
+        : undefined,
+      confidence: Number(fraudFlags?.confidence) || 0.5,
     },
-    raw,
+    rawAnalysis: rawText,
+    confidenceScores: scores,
+    overallConfidence,
+    lowConfidenceFields,
+    analysisMode,
+    wasReprompted: false,
   };
 }
 
-async function analyzeNameplate(
-  base64Image: string,
-  mimeType: string
-): Promise<{ listing: Partial<ListingResult>; raw: string }> {
-  const response = await anthropic.messages.create({
-    model: VISION_MODEL,
-    max_tokens: 2048,
-    messages: [
-      {
-        role: "user",
-        content: [
-          {
-            type: "image",
-            source: {
-              type: "base64",
-              media_type: mimeType as
-                | "image/jpeg"
-                | "image/png"
-                | "image/webp"
-                | "image/gif",
-              data: base64Image,
-            },
-          },
-          {
-            type: "text",
-            text: `You are an industrial equipment nameplate OCR specialist. Read every field from this data plate / nameplate image.
+// Merge re-prompted result fields with higher confidence into original
+function mergeAnalysisResults(
+  original: AIAnalysisResult,
+  refined: Record<string, unknown>
+): AIAnalysisResult {
+  const result = { ...original };
+  const scores = { ...original.confidenceScores! };
 
-RESPOND WITH ONLY THIS JSON (no other text):
-{
-  "manufacturer": "name from plate",
-  "model": "model number from plate",
-  "serialNumber": "serial number from plate",
-  "year": 2020,
-  "specs": {
-    "key": "value"
+  const fieldMappings: Array<{
+    parsedKey: string
+    scoreKey: keyof FieldConfidenceScores
+    apply: (val: unknown, conf: number) => void
+  }> = [
+    {
+      parsedKey: "equipment_type",
+      scoreKey: "equipment_type",
+      apply: () => { /* equipment_type is used for taxonomy, no direct listing field */ },
+    },
+    {
+      parsedKey: "manufacturer",
+      scoreKey: "manufacturer",
+      apply: (val) => { result.listing = { ...result.listing, manufacturer: getVal<string | null>(val, null) || undefined }; },
+    },
+    {
+      parsedKey: "model",
+      scoreKey: "model",
+      apply: (val) => { result.listing = { ...result.listing, model: getVal<string | null>(val, null) || undefined }; },
+    },
+    {
+      parsedKey: "serial_number",
+      scoreKey: "serial_number",
+      apply: (val) => { result.listing = { ...result.listing, serialNumber: getVal<string | null>(val, null) || undefined }; },
+    },
+    {
+      parsedKey: "year",
+      scoreKey: "year",
+      apply: (val) => { result.listing = { ...result.listing, year: getVal<number | null>(val, null) || undefined }; },
+    },
+  ];
+
+  for (const mapping of fieldMappings) {
+    const refinedField = refined[mapping.parsedKey];
+    if (!refinedField) continue;
+    const refinedConf = typeof refinedField === "object" && refinedField && "confidence" in (refinedField as Record<string, unknown>)
+      ? Number((refinedField as Record<string, unknown>).confidence) || 0
+      : 0;
+    if (refinedConf > scores[mapping.scoreKey]) {
+      scores[mapping.scoreKey] = refinedConf;
+      mapping.apply(refinedField, refinedConf);
+    }
   }
-}
 
-RULES:
-- Extract manufacturer, model, serialNumber, and year as top-level fields
-- Put ALL other readable data into the "specs" object as key-value pairs
-- Common spec keys: horsepower, rpm, voltage, amperage, phase, frameSize, capacity, weight, certifications, country
-- Include any other visible specs not in that list
-- If a field is not readable, omit it entirely — do not guess
-- year should be a number, not a string`,
-          },
-        ],
-      },
-    ],
-  });
+  // Merge taxonomy if present and higher confidence
+  if (refined.taxonomy && typeof refined.taxonomy === "object") {
+    const refinedTaxConf = Number((refined.taxonomy as Record<string, unknown>).confidence) || 0;
+    if (refinedTaxConf > scores.taxonomy) {
+      scores.taxonomy = refinedTaxConf;
+      const rt = refined.taxonomy as Record<string, unknown>;
+      result.taxonomy = {
+        ...result.taxonomy,
+        tier1: (rt.tier1 as string) || result.taxonomy.tier1,
+        tier2: (rt.tier2 as string) || result.taxonomy.tier2,
+        subcategory: (rt.subcategory as string) || result.taxonomy.subcategory,
+        numericConfidence: refinedTaxConf,
+        confidence: refinedTaxConf >= 0.8 ? "high" : refinedTaxConf >= 0.5 ? "medium" : "low",
+      };
+    }
+  }
 
-  const raw =
-    response.content[0].type === "text" ? response.content[0].text : "";
-  const parsed = extractJSON(raw);
+  result.confidenceScores = scores;
+  result.overallConfidence = computeOverallConfidence(scores);
+  result.lowConfidenceFields = getLowConfidenceFields(scores);
+  result.wasReprompted = true;
 
-  return {
-    listing: {
-      manufacturer: (parsed.manufacturer as string) || undefined,
-      model: (parsed.model as string) || undefined,
-      serialNumber: (parsed.serialNumber as string) || undefined,
-      year: parsed.year ? Number(parsed.year) : undefined,
-      specs: (parsed.specs as Record<string, string>) || {},
-    },
-    raw,
-  };
+  return result;
 }
 
 export async function POST(request: NextRequest) {
@@ -257,9 +280,17 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const { wideShot, nameplateShot, mimeType = "image/jpeg" } = body;
+  const {
+    wideShot,
+    nameplateShot,
+    nameplateImageBase64,
+    mimeType = "image/jpeg",
+    nameplateMimeType,
+  } = body;
 
-  if (!wideShot && !nameplateShot) {
+  const resolvedNameplate = nameplateShot || nameplateImageBase64;
+
+  if (!wideShot && !resolvedNameplate) {
     return NextResponse.json(
       { error: "At least one image (wideShot or nameplateShot) is required" },
       { status: 400 }
@@ -267,78 +298,110 @@ export async function POST(request: NextRequest) {
   }
 
   const taxonomyContext = buildTaxonomyContext();
-  const errors: string[] = [];
-
-  let wideShotResult: Awaited<ReturnType<typeof analyzeWideShot>> | null = null;
-  let nameplateResult: Awaited<ReturnType<typeof analyzeNameplate>> | null =
-    null;
-
-  // Run analyses — DO NOT silently swallow errors
-  try {
-    if (wideShot) {
-      wideShotResult = await analyzeWideShot(wideShot, mimeType, taxonomyContext);
-    }
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    errors.push(`Wide shot analysis failed: ${msg}`);
-    Sentry.captureException(err, {
-      extra: { mimeType, shot: "wideShot", errorMessage: msg },
-    });
-  }
+  const isMultiImage = !!(wideShot && resolvedNameplate);
+  const analysisMode = isMultiImage ? "multi_image" as const : "single_image" as const;
 
   try {
-    if (nameplateShot) {
-      nameplateResult = await analyzeNameplate(nameplateShot, mimeType);
+    // Build message content based on single vs multi-image
+    const imageContent: Array<TextBlockParam | ImageBlockParam> = [];
+
+    if (isMultiImage) {
+      imageContent.push({
+        type: "text" as const,
+        text: "Image 1 is a wide shot of the equipment. Image 2 is a close-up of the nameplate or data plate.",
+      });
+      imageContent.push({
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: mimeType as ImageMediaType,
+          data: wideShot!,
+        },
+      });
+      imageContent.push({
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: (nameplateMimeType || mimeType) as ImageMediaType,
+          data: resolvedNameplate!,
+        },
+      });
+      imageContent.push({
+        type: "text" as const,
+        text: `${MULTI_IMAGE_ANALYSIS_PROMPT}\n\nTAXONOMY (use the [bracket_id] values):\n${taxonomyContext}`,
+      });
+    } else {
+      // Single image
+      const imageData = wideShot || resolvedNameplate!;
+      imageContent.push({
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: mimeType as ImageMediaType,
+          data: imageData,
+        },
+      });
+      imageContent.push({
+        type: "text" as const,
+        text: `${SINGLE_IMAGE_ANALYSIS_PROMPT}\n\nTAXONOMY (use the [bracket_id] values):\n${taxonomyContext}`,
+      });
     }
+
+    const messages: MessageParam[] = [{ role: "user", content: imageContent }];
+
+    // First analysis call
+    const response = await anthropic.messages.create({
+      model: VISION_MODEL,
+      max_tokens: 2048,
+      system: EQUIPMENT_ANALYSIS_SYSTEM_PROMPT,
+      messages,
+    });
+
+    const rawText = response.content[0].type === "text" ? response.content[0].text : "";
+    const parsed = extractJSON(rawText);
+    let result = parseStructuredResponse(parsed, rawText, analysisMode);
+
+    // Auto re-prompt if overall confidence is below threshold
+    if (
+      result.overallConfidence !== undefined &&
+      result.overallConfidence < REPROMPT_THRESHOLD &&
+      result.lowConfidenceFields &&
+      result.lowConfidenceFields.length > 0
+    ) {
+      try {
+        const clarificationPrompt = buildClarificationPrompt(result.lowConfidenceFields);
+        const refinedResponse = await anthropic.messages.create({
+          model: VISION_MODEL,
+          max_tokens: 1024,
+          system: EQUIPMENT_ANALYSIS_SYSTEM_PROMPT,
+          messages: [
+            ...messages,
+            { role: "assistant", content: rawText },
+            { role: "user", content: clarificationPrompt },
+          ],
+        });
+
+        const refinedText = refinedResponse.content[0].type === "text" ? refinedResponse.content[0].text : "";
+        const refinedParsed = extractJSON(refinedText);
+        result = mergeAnalysisResults(result, refinedParsed);
+        result.rawAnalysis += `\n\n--- Re-prompt Analysis ---\n${refinedText}`;
+      } catch (repromptErr) {
+        // Re-prompt failed — return original result, just log it
+        Sentry.captureException(repromptErr, {
+          extra: { phase: "reprompt", lowConfidenceFields: result.lowConfidenceFields },
+        });
+      }
+    }
+
+    return NextResponse.json(result);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    errors.push(`Nameplate analysis failed: ${msg}`);
     Sentry.captureException(err, {
-      extra: { mimeType, shot: "nameplateShot", errorMessage: msg },
+      extra: { mimeType, analysisMode, errorMessage: msg },
     });
-  }
-
-  // If BOTH failed, return 500 with error details
-  if (!wideShotResult && !nameplateResult) {
     return NextResponse.json(
-      {
-        error: "Image analysis failed",
-        details: errors,
-      },
+      { error: "Image analysis failed", details: [msg] },
       { status: 500 }
     );
   }
-
-  // Merge results — nameplate data takes priority for overlapping fields
-  const result: AIAnalysisResult = {
-    taxonomy: wideShotResult?.taxonomy || {
-      confidence: "low" as const,
-    },
-    listing: {
-      title: wideShotResult?.listing.title,
-      manufacturer:
-        nameplateResult?.listing.manufacturer ||
-        wideShotResult?.listing.manufacturer,
-      model: nameplateResult?.listing.model || wideShotResult?.listing.model,
-      serialNumber: nameplateResult?.listing.serialNumber,
-      year: nameplateResult?.listing.year || wideShotResult?.listing.year,
-      condition: wideShotResult?.listing.condition,
-      specs: {
-        ...(nameplateResult?.listing.specs || {}),
-      },
-      suggestedDescription: wideShotResult?.listing.suggestedDescription,
-    },
-    fraud: wideShotResult?.fraud || { flagged: false },
-    rawAnalysis: [
-      wideShotResult?.raw &&
-        `--- Wide Shot Analysis ---\n${wideShotResult.raw}`,
-      nameplateResult?.raw &&
-        `--- Nameplate Analysis ---\n${nameplateResult.raw}`,
-      errors.length > 0 && `--- Errors ---\n${errors.join("\n")}`,
-    ]
-      .filter(Boolean)
-      .join("\n\n"),
-  };
-
-  return NextResponse.json(result);
 }
