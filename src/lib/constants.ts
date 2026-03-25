@@ -137,6 +137,24 @@ export const BOOST_PRODUCTS: Record<BoostType, {
   },
 } as const
 
+// ─── Seat Limits ────────────────────────────────────────────────────
+
+export const SEAT_LIMITS: Record<string, number> = {
+  free: 1,
+  pro: 3,
+  business: 8,
+  enterprise: Infinity,
+  premium: 3,     // legacy alias
+  boost: 8,       // legacy alias
+}
+
+// ─── Annual Pricing ─────────────────────────────────────────────────
+
+export const ANNUAL_PRICES = {
+  pro: 172000,        // $1,720/year in cents (~$143/mo, 20% off)
+  business: 335200,   // $3,352/year in cents (~$279/mo, 20% off)
+} as const
+
 // ─── Contact Credits ────────────────────────────────────────────────
 
 export const CONTACT_CREDIT_ALLOWANCES: Record<string, number> = {

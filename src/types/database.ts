@@ -253,6 +253,70 @@ export type Database = {
           },
         ]
       }
+      company_invites: {
+        Row: {
+          id: string
+          company_id: string
+          invited_by: string
+          email: string
+          role: string
+          token: string
+          status: string
+          expires_at: string
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          company_id: string
+          invited_by: string
+          email: string
+          role?: string
+          token?: string
+          status?: string
+          expires_at?: string
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          company_id?: string
+          invited_by?: string
+          email?: string
+          role?: string
+          token?: string
+          status?: string
+          expires_at?: string
+          accepted_at?: string | null
+          accepted_by?: string | null
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "company_invites_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_invites_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "company_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_memberships: {
         Row: {
           company_id: string
@@ -2625,6 +2689,7 @@ export type Database = {
       }
       subscriptions: {
         Row: {
+          billing_period: string
           cancel_at_period_end: boolean | null
           canceled_at: string | null
           company_id: string | null
@@ -2640,6 +2705,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          billing_period?: string
           cancel_at_period_end?: boolean | null
           canceled_at?: string | null
           company_id?: string | null
@@ -2655,6 +2721,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          billing_period?: string
           cancel_at_period_end?: boolean | null
           canceled_at?: string | null
           company_id?: string | null

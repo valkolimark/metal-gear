@@ -121,6 +121,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `market_gap_reports` — Weekly SOS demand gap analysis (gaps JSONB, ai_analysis JSONB)
 - `company_profiles` — B2B company entities (name, slug, logo_url, banner_url, industry, company_size, website, city, state)
 - `company_memberships` — User-company junction (user_id, company_id, role enum, is_active, joined_at)
+- `company_invites` — Token-based team invites (company_id, invited_by, email, role, token UNIQUE, status pending/accepted/expired/revoked, expires_at 7 days)
 - `contact_credits` — Monthly credit ledger per user (user_id, credits_remaining, credits_used_this_month, period_start)
 - `contact_reveals` — Contact reveal log with monthly dedup (viewer_id, seller_id, credits_spent, period_month)
 - `credit_purchases` — Stripe one-time credit pack purchases (user_id, credits_purchased, amount_paid, stripe_payment_intent_id)
@@ -195,6 +196,24 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Equipment prompts:** `src/lib/ai/equipment-prompts.ts` — `EQUIPMENT_ANALYSIS_SYSTEM_PROMPT`, `MULTI_IMAGE_ANALYSIS_PROMPT`, `SINGLE_IMAGE_ANALYSIS_PROMPT`, `buildClarificationPrompt()`
 - **Confidence UI:** green/yellow/red dots per field; low-confidence fields get yellow border; overall confidence banner (green/amber/red); analysis mode label ("Analyzed 1/2 images")
 - **Backward compatible:** all new fields on `AIAnalysisResult` are optional; single-image requests work unchanged
+
+## Team Invites & Seat Limits (Cycle 28)
+- **`company_invites` table:** token-based invite records with 7-day expiration, RLS (company members can view), indexes on company_id/token/email
+- **Seat limits:** `SEAT_LIMITS` in `src/lib/constants.ts` — Free: 1, Pro: 3, Business: 8, Enterprise: Infinity; legacy aliases: premium→3, boost→8
+- **Invite flow:** owner/admin sends invite → email sent via Resend → invitee clicks `/invite/[token]` → redirected to signup if unauthenticated → `acceptInvite()` adds membership + sets active company
+- **Server actions:** `src/app/actions/invites.ts` — `getCompanyMemberCount()`, `getCompanySeatLimit()`, `getPendingInvites()`, `sendCompanyInvite()`, `revokeInvite()`, `acceptInvite()`, `removeCompanyMember()`
+- **Invite acceptance route:** `src/app/(main)/invite/[token]/page.tsx` — server component fetches invite data, redirects to `/signup` if unauthenticated, renders `InviteAcceptClient`
+- **Middleware exemption:** `/invite/` exempt from both auth redirect and company guard in `src/lib/supabase/middleware.ts`
+- **Members page:** `/settings/company/members` — seat usage progress bar, `InviteForm` component, `PendingInvites` component with revoke
+- **Seat enforcement:** checked at invite creation AND invite acceptance to prevent race conditions
+
+## Annual Billing (Cycle 28)
+- **Billing toggle:** pricing page has monthly/annual `Switch` with "Save 20%" badge
+- **Annual prices:** Pro $1,720/year (~$143/mo), Business $3,350/year (~$279/mo); Enterprise annual shows "Contact Sales"
+- **`billing_period` column:** `subscriptions.billing_period` — `'monthly'` (default) or `'annual'`; stored from checkout metadata or Stripe price interval
+- **Env vars:** `STRIPE_PRO_ANNUAL_PRICE_ID`, `STRIPE_BUSINESS_ANNUAL_PRICE_ID` (+ `NEXT_PUBLIC_` variants for pricing page)
+- **Checkout:** `billingPeriod` metadata passed to Stripe, determines correct price ID
+- **Webhook:** `handleCheckoutCompleted` and `handleSubscriptionUpdated` both persist `billing_period`
 
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2

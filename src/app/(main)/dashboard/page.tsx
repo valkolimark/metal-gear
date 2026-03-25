@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   Package,
@@ -119,6 +120,10 @@ export default function DashboardPage() {
   const tier = profile?.subscription_tier ?? 'free'
   const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS]
 
+  const searchParams = useSearchParams()
+  const justJoined = searchParams.get('joined') === 'true'
+  const [showJoinBanner, setShowJoinBanner] = useState(false)
+
   const [data, setData] = useState<DashData | null>(null)
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [recommended, setRecommended] = useState<RecommendedListing[]>([])
@@ -149,6 +154,11 @@ export default function DashboardPage() {
     loadDashboard()
   }, [loadDashboard])
 
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- show banner based on URL param
+    if (justJoined) setShowJoinBanner(true)
+  }, [justJoined])
+
   const { pulling, refreshing, pullDistance, threshold } = usePullToRefresh(loadDashboard)
 
   if (loading || !data) {
@@ -171,6 +181,21 @@ export default function DashboardPage() {
         pullDistance={pullDistance}
         threshold={threshold}
       />
+
+      {/* Team join welcome banner */}
+      {showJoinBanner && (
+        <div className="bg-[#1877F2]/10 border border-[#1877F2]/20 rounded-xl p-4 flex items-center justify-between">
+          <p className="text-sm font-medium text-[#1877F2]">
+            You&apos;ve joined the team! You&apos;re now acting as the company on Metal Gear.
+          </p>
+          <button
+            onClick={() => setShowJoinBanner(false)}
+            className="text-muted-foreground hover:text-foreground ml-4 shrink-0"
+          >
+            <XIcon size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Company context banner */}
       {activeCompany && (

@@ -69,6 +69,11 @@ export async function updateSession(request: NextRequest) {
     return supabaseResponse
   }
 
+  // Invite acceptance pages — allow anonymous access (redirect to signup happens in page)
+  if (pathname.startsWith('/invite/')) {
+    return supabaseResponse
+  }
+
   // Protected routes — redirect to login if no session
   const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin', '/sos', '/onboarding', '/feed']
   const isProtectedRoute = protectedPrefixes.some((prefix) =>
@@ -137,6 +142,7 @@ export async function updateSession(request: NextRequest) {
     '/callback',
     '/forgot-password',
     '/reset-password',
+    '/invite/',
   ]
   const isCompanyExempt = companyGuardExempt.some(p => pathname.startsWith(p))
 

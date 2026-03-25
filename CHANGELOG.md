@@ -6,6 +6,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [3.9.0] — 2026-03-24 · Team Invites, Seat Limits & Annual Billing (Cycle 28)
+
+### Added
+- **Team invites** — company owners/admins can invite colleagues via email with token-based links; invitees accept via `/invite/[token]`, create an account (or log in), and are added to the company
+- **Seat limits per tier** — Free: 1 seat, Pro: 3 seats, Business: 8 seats, Enterprise: unlimited; enforced at invite creation and invite acceptance
+- **Seat usage indicator** — progress bar on team members page showing "X of N seats used" with upgrade CTA at limit
+- **Invite management** — pending invites list with revoke option; duplicate invite and existing member detection
+- **Annual billing toggle** — 20% discount for annual commitment on pricing page; monthly/annual switch with "Save 20%" badge
+- **Annual pricing** — Pro Annual at $143/mo ($1,720/year), Business Annual at $279/mo ($3,350/year); Enterprise shows "Contact Sales" for annual
+- **`billing_period` column** — `subscriptions` table now tracks `monthly` or `annual` billing period
+- **`company_invites` table** — token-based invite records with 7-day expiration, RLS, and indexes
+- **Invite email template** — branded HTML email via Resend with "Accept Invite" CTA
+- **Dashboard welcome banner** — dismissible blue banner on `?joined=true` confirming team membership
+- **Enterprise tier on pricing page** — fourth pricing card with unlimited features and "Contact Sales" CTA
+
+### Changed
+- **Pricing page redesigned** — 4-column layout (Free, Pro, Business, Enterprise) with team seat counts, annual/monthly toggle, and updated comparison table
+- **Stripe webhook** — now stores `billing_period` from checkout metadata or price interval on subscription create/update
+- **Checkout flow** — passes `billingPeriod` metadata to Stripe for annual vs monthly tracking
+- **`getTierFromPriceId`** — handles annual Business price ID mapping
+- **Team members page** — removed "Coming soon" placeholder; added invite form, pending invites, and seat bar
+- **Middleware** — `/invite/` routes exempt from auth redirect and company guard
+
+---
+
 ## [3.8.5] — 2026-03-21 · AI Image Analyzer Upgrade (Cycle 27c)
 
 ### Added

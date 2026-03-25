@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import { removeMember } from '@/app/actions/company'
 import { toast } from 'sonner'
-import { User, UserPlus } from 'lucide-react'
+import { User } from 'lucide-react'
 import type { CompanyWithMembers, CompanyRole } from '@/types/company'
 
 const ROLE_STYLES: Record<CompanyRole, string> = {
@@ -88,17 +88,6 @@ export function MembersList({
         ))}
       </div>
 
-      <div className="flex items-center justify-between px-1">
-        <button
-          disabled
-          className="flex items-center gap-2 text-sm text-muted-foreground cursor-not-allowed opacity-50"
-          title="Coming soon"
-        >
-          <UserPlus size={14} />
-          Invite team members
-          <span className="text-[10px] bg-muted px-1.5 py-0.5 rounded-full">Coming soon</span>
-        </button>
-      </div>
     </div>
   )
 }

@@ -217,6 +217,29 @@ export function savedSearchAlertEmail(
   }
 }
 
+export function inviteEmail(companyName: string, role: string, inviteToken: string) {
+  const inviteUrl = `${APP_URL}/invite/${inviteToken}`
+  return {
+    subject: `You've been invited to join ${companyName} on Metal Gear`,
+    html: baseTemplate(`
+      <h2 style="color:#fff;font-size:20px;margin:0 0 16px;">Join ${companyName}</h2>
+      <p style="color:#ccc;font-size:14px;line-height:1.6;margin:0 0 16px;">
+        You've been added as a <strong style="color:#fff;">${role}</strong> on
+        Metal Gear's industrial equipment marketplace. Accept below to join your team.
+      </p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="${inviteUrl}"
+           style="display:inline-block;background:${BRAND_COLOR};color:#fff;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:16px;">
+          Accept Invite
+        </a>
+      </div>
+      <p style="color:#888;font-size:13px;margin:24px 0 0 0;">
+        This invite expires in 7 days. If you didn't expect this email, you can ignore it.
+      </p>
+    `),
+  }
+}
+
 export function subscriptionConfirmEmail(name: string, plan: string, userId?: string) {
   return {
     subject: `Your ${plan} subscription is active`,

@@ -41,6 +41,12 @@ export async function createCheckoutSession(priceId: string) {
       .eq('id', user.id)
   }
 
+  // Determine billing period from price ID
+  const proAnnualPriceId = process.env.STRIPE_PRO_ANNUAL_PRICE_ID
+  const businessAnnualPriceId = process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID
+  const isAnnual = priceId === proAnnualPriceId || priceId === businessAnnualPriceId
+  const billingPeriod = isAnnual ? 'annual' : 'monthly'
+
   // Create checkout session
   const session = await stripe.checkout.sessions.create({
     customer: customerId,
@@ -48,9 +54,9 @@ export async function createCheckoutSession(priceId: string) {
     line_items: [{ price: priceId, quantity: 1 }],
     success_url: `${APP_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${APP_URL}/pricing`,
-    metadata: { user_id: user.id },
+    metadata: { user_id: user.id, billingPeriod },
     subscription_data: {
-      metadata: { user_id: user.id },
+      metadata: { user_id: user.id, billingPeriod },
     },
   })
 

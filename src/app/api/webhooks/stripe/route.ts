@@ -138,6 +138,10 @@ async function handleCheckoutCompleted(
     .update({ stripe_customer_id: session.customer as string })
     .eq('id', userId)
 
+  // Determine billing period from metadata or price interval
+  const billingPeriod = session.metadata?.billingPeriod ??
+    (item?.price.recurring?.interval === 'year' ? 'annual' : 'monthly')
+
   // Create subscription record
   await admin.from('subscriptions').upsert(
     {
@@ -146,6 +150,7 @@ async function handleCheckoutCompleted(
       stripe_price_id: priceId,
       tier,
       status: subscription.status,
+      billing_period: billingPeriod,
       current_period_start: item ? new Date(item.current_period_start * 1000).toISOString() : null,
       current_period_end: item ? new Date(item.current_period_end * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
@@ -183,6 +188,9 @@ async function handleSubscriptionUpdated(
   const priceId = item?.price.id
   const tier = getTierFromPriceId(priceId)
 
+  // Determine billing period from price interval
+  const billingPeriod = item?.price.recurring?.interval === 'year' ? 'annual' : 'monthly'
+
   // Update subscription record
   const { data: subRecord } = await admin
     .from('subscriptions')
@@ -190,6 +198,7 @@ async function handleSubscriptionUpdated(
       stripe_price_id: priceId,
       tier,
       status: subscription.status,
+      billing_period: billingPeriod,
       current_period_start: item ? new Date(item.current_period_start * 1000).toISOString() : null,
       current_period_end: item ? new Date(item.current_period_end * 1000).toISOString() : null,
       cancel_at_period_end: subscription.cancel_at_period_end,
@@ -492,9 +501,9 @@ async function handleBoostCheckoutCompleted(
 
 function getTierFromPriceId(priceId: string): 'premium' | 'boost' {
   // Map Stripe price IDs to tiers
-  // These will be set after creating products in Task 2
   const boostPriceId = process.env.STRIPE_BOOST_PRICE_ID
+  const businessAnnualPriceId = process.env.STRIPE_BUSINESS_ANNUAL_PRICE_ID
 
-  if (priceId === boostPriceId) return 'boost'
-  return 'premium' // default to premium for any paid tier
+  if (priceId === boostPriceId || priceId === businessAnnualPriceId) return 'boost'
+  return 'premium' // default to premium for any paid tier (incl. pro annual)
 }

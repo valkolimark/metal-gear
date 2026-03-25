@@ -1,85 +1,131 @@
 'use client'
 
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Check, Zap, Crown, ArrowRight } from 'lucide-react'
+import { Check, Zap, Crown, ArrowRight, Building2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Switch } from '@/components/ui/switch'
 import { useAuthStore } from '@/stores/auth-store'
-import { TIER_LIMITS } from '@/lib/constants'
+import { TIER_LIMITS, SEAT_LIMITS } from '@/lib/constants'
 
 const PLANS = [
   {
     tier: 'free' as const,
     name: 'Free',
-    price: 0,
+    monthlyPrice: 0,
+    annualPrice: 0,
+    annualTotal: 0,
     description: 'Get started listing your equipment',
     icon: null,
+    seats: SEAT_LIMITS.free,
     features: [
       `${TIER_LIMITS.free.listings} active listings`,
       `${TIER_LIMITS.free.photos} photos per listing`,
       `${TIER_LIMITS.free.conversations} conversations`,
       `${TIER_LIMITS.free.searchRadius} mile search radius`,
+      `${SEAT_LIMITS.free} team seat`,
       'Basic seller profile',
       'Email support',
     ],
     cta: 'Get Started',
-    priceId: null,
+    monthlyPriceId: null,
+    annualPriceId: null,
     popular: false,
   },
   {
-    tier: 'premium' as const,
-    name: 'Premium',
-    price: 29.99,
+    tier: 'pro' as const,
+    name: 'Pro',
+    monthlyPrice: 179,
+    annualPrice: 143,
+    annualTotal: 1720,
     description: 'For active sellers and dealers',
     icon: Zap,
+    seats: SEAT_LIMITS.pro,
     features: [
-      `${TIER_LIMITS.premium.listings} active listings`,
-      `${TIER_LIMITS.premium.photos} photos per listing`,
-      `${TIER_LIMITS.premium.videos} videos per listing`,
+      `${TIER_LIMITS.pro.listings} active listings`,
+      `${TIER_LIMITS.pro.photos} photos per listing`,
+      `${TIER_LIMITS.pro.videos} videos per listing`,
       'Unlimited conversations',
-      `${TIER_LIMITS.premium.searchRadius} mile search radius`,
+      `${TIER_LIMITS.pro.searchRadius} mile search radius`,
+      `${SEAT_LIMITS.pro} team seats`,
+      'All AI features',
       'Priority in search results',
       'Verified seller badge',
       'Priority support',
     ],
-    cta: 'Upgrade to Premium',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PREMIUM_PRICE_ID,
+    cta: 'Upgrade to Pro',
+    monthlyPriceId: 'price_1T5qSuK0aD0I9hZISnkpcF3E',
+    annualPriceId: process.env.NEXT_PUBLIC_STRIPE_PRO_ANNUAL_PRICE_ID ?? null,
     popular: true,
   },
   {
-    tier: 'boost' as const,
-    name: 'Boost',
-    price: 79.99,
+    tier: 'business' as const,
+    name: 'Business',
+    monthlyPrice: 349,
+    annualPrice: 279,
+    annualTotal: 3350,
     description: 'For high-volume dealers and enterprises',
     icon: Crown,
+    seats: SEAT_LIMITS.business,
     features: [
-      `${TIER_LIMITS.boost.listings} active listings`,
-      `${TIER_LIMITS.boost.photos} photos per listing`,
-      `${TIER_LIMITS.boost.videos} videos per listing`,
+      `${TIER_LIMITS.business.listings} active listings`,
+      `${TIER_LIMITS.business.photos} photos per listing`,
+      `${TIER_LIMITS.business.videos} videos per listing`,
       'Unlimited conversations',
       'Unlimited search radius',
+      `${SEAT_LIMITS.business} team seats`,
+      'All AI features',
       'Featured listings',
       'Verified dealer badge',
       'Dedicated account manager',
     ],
-    cta: 'Upgrade to Boost',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_BOOST_PRICE_ID,
+    cta: 'Upgrade to Business',
+    monthlyPriceId: 'price_1T5qTBK0aD0I9hZIYYNtRrBt',
+    annualPriceId: process.env.NEXT_PUBLIC_STRIPE_BUSINESS_ANNUAL_PRICE_ID ?? null,
+    popular: false,
+  },
+  {
+    tier: 'enterprise' as const,
+    name: 'Enterprise',
+    monthlyPrice: 599,
+    annualPrice: 0,
+    annualTotal: 0,
+    description: 'For large organizations with custom needs',
+    icon: Building2,
+    seats: Infinity,
+    features: [
+      'Unlimited listings',
+      `${TIER_LIMITS.enterprise.photos} photos per listing`,
+      `${TIER_LIMITS.enterprise.videos} videos per listing`,
+      'Unlimited conversations',
+      'Unlimited search radius',
+      'Unlimited team seats',
+      'All AI features + priority',
+      'Custom integrations',
+      'SSO & advanced security',
+      'Dedicated success manager',
+    ],
+    cta: 'Contact Sales',
+    monthlyPriceId: null,
+    annualPriceId: null,
     popular: false,
   },
 ]
 
 const COMPARISON = [
-  { feature: 'Active Listings', free: '3', premium: '15', boost: '50' },
-  { feature: 'Photos per Listing', free: '5', premium: '15', boost: '25' },
-  { feature: 'Videos per Listing', free: '—', premium: '3', boost: '5' },
-  { feature: 'Conversations', free: '10', premium: 'Unlimited', boost: 'Unlimited' },
-  { feature: 'Search Radius', free: '100 mi', premium: '500 mi', boost: 'Unlimited' },
-  { feature: 'Priority Search', free: '—', premium: '✓', boost: '✓' },
-  { feature: 'Verified Badge', free: '—', premium: '✓', boost: '✓' },
-  { feature: 'Featured Listings', free: '—', premium: '—', boost: '✓' },
-  { feature: 'Support', free: 'Email', premium: 'Priority', boost: 'Dedicated' },
+  { feature: 'Active Listings', free: '3', pro: '25', business: '100', enterprise: 'Unlimited' },
+  { feature: 'Photos per Listing', free: '5', pro: '20', business: '30', enterprise: '50' },
+  { feature: 'Videos per Listing', free: '\u2014', pro: '3', business: '5', enterprise: '10' },
+  { feature: 'Conversations', free: '10', pro: 'Unlimited', business: 'Unlimited', enterprise: 'Unlimited' },
+  { feature: 'Search Radius', free: '100 mi', pro: '500 mi', business: 'Unlimited', enterprise: 'Unlimited' },
+  { feature: 'Team Seats', free: '1', pro: '3', business: '8', enterprise: 'Unlimited' },
+  { feature: 'AI Features', free: '\u2014', pro: '\u2713', business: '\u2713', enterprise: '\u2713 + Priority' },
+  { feature: 'Verified Badge', free: '\u2014', pro: '\u2713', business: '\u2713', enterprise: '\u2713' },
+  { feature: 'Featured Listings', free: '\u2014', pro: '\u2014', business: '\u2713', enterprise: '\u2713' },
+  { feature: 'Support', free: 'Email', pro: 'Priority', business: 'Dedicated', enterprise: 'Dedicated' },
 ]
 
 const FAQS = [
@@ -93,11 +139,15 @@ const FAQS = [
   },
   {
     q: 'Is there a contract or commitment?',
-    a: 'No. All plans are month-to-month with no long-term commitment. Cancel anytime from your profile settings.',
+    a: 'Monthly plans have no commitment \u2014 cancel anytime. Annual plans are billed upfront for 12 months at a 20% discount.',
   },
   {
     q: 'What payment methods do you accept?',
     a: 'We accept all major credit and debit cards through Stripe, including Visa, Mastercard, American Express, and Discover.',
+  },
+  {
+    q: 'How do team seats work?',
+    a: 'Each plan includes a set number of team seats. Company owners can invite team members via email. Members share the company\'s listings, subscription, and branding.',
   },
   {
     q: 'Do you offer refunds?',
@@ -109,10 +159,16 @@ export default function PricingPage() {
   const router = useRouter()
   const { isAuthenticated, profile } = useAuthStore()
   const currentTier = profile?.subscription_tier ?? 'free'
+  const [annual, setAnnual] = useState(false)
 
   function handleSelectPlan(plan: (typeof PLANS)[number]) {
     if (plan.tier === 'free') {
       router.push(isAuthenticated ? '/dashboard' : '/signup')
+      return
+    }
+
+    if (plan.tier === 'enterprise') {
+      window.open('mailto:sales@metalgear.com?subject=Enterprise%20Plan%20Inquiry', '_self')
       return
     }
 
@@ -123,16 +179,17 @@ export default function PricingPage() {
 
     if (plan.tier === currentTier) return
 
-    // Redirect to checkout with the Stripe price ID
-    const priceId =
-      plan.tier === 'premium'
-        ? 'price_1T5qSuK0aD0I9hZISnkpcF3E'
-        : 'price_1T5qTBK0aD0I9hZIYYNtRrBt'
-    router.push(`/checkout?price=${priceId}`)
+    const priceId = annual ? plan.annualPriceId : plan.monthlyPriceId
+    if (!priceId) {
+      // Annual price not configured yet — fall back to monthly
+      router.push(`/checkout?price=${plan.monthlyPriceId}`)
+      return
+    }
+    router.push(`/checkout?price=${priceId}&billing=${annual ? 'annual' : 'monthly'}`)
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-16 px-4 py-16 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl space-y-16 px-4 py-16 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="text-center">
         <h1 className="font-display text-4xl font-bold text-foreground sm:text-5xl">
@@ -144,11 +201,32 @@ export default function PricingPage() {
         </p>
       </div>
 
+      {/* Billing Toggle */}
+      <div className="flex items-center justify-center gap-3">
+        <span className={`text-sm font-medium ${!annual ? 'text-foreground' : 'text-muted-foreground'}`}>
+          Monthly
+        </span>
+        <Switch checked={annual} onCheckedChange={setAnnual} />
+        <span className={`text-sm font-medium ${annual ? 'text-foreground' : 'text-muted-foreground'}`}>
+          Annual
+        </span>
+        {annual && (
+          <span className="text-xs font-semibold text-green-500 bg-green-500/10 px-2 py-0.5 rounded-full">
+            Save 20%
+          </span>
+        )}
+      </div>
+
       {/* Pricing Cards */}
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-4">
         {PLANS.map((plan) => {
-          const isCurrent = isAuthenticated && plan.tier === currentTier
+          const isCurrent = isAuthenticated && (plan.tier === currentTier ||
+            (plan.tier === 'pro' && currentTier === 'premium') ||
+            (plan.tier === 'business' && currentTier === 'boost'))
           const Icon = plan.icon
+          const displayPrice = plan.tier === 'enterprise'
+            ? (annual ? null : plan.monthlyPrice)
+            : (annual && plan.monthlyPrice > 0 ? plan.annualPrice : plan.monthlyPrice)
 
           return (
             <Card
@@ -179,13 +257,26 @@ export default function PricingPage() {
 
               <CardContent className="space-y-6">
                 <div>
-                  <span className="font-display text-4xl font-bold text-foreground">
-                    ${plan.price}
-                  </span>
-                  {plan.price > 0 && (
-                    <span className="font-body text-muted-foreground">
-                      /month
+                  {plan.tier === 'enterprise' && annual ? (
+                    <span className="font-display text-2xl font-bold text-foreground">
+                      Custom
                     </span>
+                  ) : (
+                    <>
+                      <span className="font-display text-4xl font-bold text-foreground">
+                        ${displayPrice}
+                      </span>
+                      {(displayPrice ?? 0) > 0 && (
+                        <span className="font-body text-muted-foreground">
+                          /mo
+                        </span>
+                      )}
+                    </>
+                  )}
+                  {annual && plan.annualTotal > 0 && (
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Billed ${plan.annualTotal.toLocaleString()}/year
+                    </p>
                   )}
                 </div>
 
@@ -240,10 +331,13 @@ export default function PricingPage() {
                   Free
                 </th>
                 <th className="pb-4 px-4 text-center font-medium text-primary">
-                  Premium
+                  Pro
+                </th>
+                <th className="pb-4 px-4 text-center font-medium text-muted-foreground">
+                  Business
                 </th>
                 <th className="pb-4 pl-4 text-center font-medium text-muted-foreground">
-                  Boost
+                  Enterprise
                 </th>
               </tr>
             </thead>
@@ -255,10 +349,13 @@ export default function PricingPage() {
                     {row.free}
                   </td>
                   <td className="py-3 px-4 text-center text-foreground">
-                    {row.premium}
+                    {row.pro}
+                  </td>
+                  <td className="py-3 px-4 text-center text-foreground">
+                    {row.business}
                   </td>
                   <td className="py-3 pl-4 text-center text-foreground">
-                    {row.boost}
+                    {row.enterprise}
                   </td>
                 </tr>
               ))}
