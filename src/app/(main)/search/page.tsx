@@ -165,6 +165,7 @@ function SearchContent() {
   const [listings, setListings] = useState<Listing[]>([])
   const [totalCount, setTotalCount] = useState(0)
   const [page, setPage] = useState(0)
+  const [now] = useState(() => Date.now())
 
   // Search suggestions state
   const [showSuggestions, setShowSuggestions] = useState(false)
@@ -1026,6 +1027,11 @@ function SearchContent() {
                         {listing.title}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1.5">
+                        {listing.refreshed_at && (now - new Date(listing.refreshed_at).getTime()) < 14 * 24 * 60 * 60 * 1000 && (
+                          <Badge className="bg-green-500/10 border border-green-500/20 font-body text-[11px] text-green-600 dark:text-green-400">
+                            Recently Updated
+                          </Badge>
+                        )}
                         {listing.pinned_position && (
                           <Badge className="bg-blue-500/20 font-body text-[11px] text-blue-400">
                             Pinned
@@ -1136,6 +1142,9 @@ function SearchContent() {
                         <p className="mt-1 flex flex-wrap items-center gap-1 font-body text-sm text-muted-foreground">
                           {listing.is_featured && (
                             <Badge className="mr-1 bg-primary/20 font-body text-[10px] text-primary">Featured</Badge>
+                          )}
+                          {listing.refreshed_at && (now - new Date(listing.refreshed_at).getTime()) < 14 * 24 * 60 * 60 * 1000 && (
+                            <Badge className="mr-1 bg-green-500/10 border border-green-500/20 font-body text-[10px] text-green-600 dark:text-green-400">Updated</Badge>
                           )}
                           {listing.category} &middot;{' '}
                           {listing.condition.replace('_', ' ')}

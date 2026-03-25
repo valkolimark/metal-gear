@@ -53,6 +53,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/cron/market-gaps` — Weekly SOS demand gap analysis
 - `/api/cron/cleanup` — Periodic notification and data cleanup
 - `/api/cron/reset-credits` — Monthly contact credit reset (schedule: `0 6 1 * *`)
+- `/api/cron/listing-freshness` — Daily AI refresh suggestions for stale listings >45 days (schedule: `0 10 * * *`)
 - `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat with professor mode (listing-context, 10/day free, 100/day Pro+)
 - `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
 - `/api/feed/upload-media` — Feed post media upload (POST: multipart upload with auth/size/rate limit; GET: video status polling)
@@ -129,6 +130,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `feed_post_media` — Post media attachments (post_id, media_url, media_type image/video, stream_video_id, thumbnail_url, sort_order)
 - `feed_post_reactions` — Like reactions (post_id, user_id, UNIQUE constraint)
 - `feed_hashtags` — Hashtag aggregation for trending (tag PK, post_count, last_used_at)
+- `listing_freshness_suggestions` — AI refresh suggestions for stale listings (listing_id, seller_id, ai_title_suggestion, ai_price_suggestion, ai_price_reasoning, ai_description_tip, email_sent_at, acted_on, acted_on_at); UNIQUE active-suggestion constraint per listing
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
@@ -214,6 +216,25 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Env vars:** `STRIPE_PRO_ANNUAL_PRICE_ID`, `STRIPE_BUSINESS_ANNUAL_PRICE_ID` (+ `NEXT_PUBLIC_` variants for pricing page)
 - **Checkout:** `billingPeriod` metadata passed to Stripe, determines correct price ID
 - **Webhook:** `handleCheckoutCompleted` and `handleSubscriptionUpdated` both persist `billing_period`
+
+## Seller Intelligence Dashboard (Cycle 29)
+- **Widget:** `SellerIntelligence` in `src/app/(main)/dashboard/components/seller-intelligence.tsx` — tier-aware performance overview
+- **Tier gating (UI-level):** Free tier sees quality grade (A–F), raw view count, listing count, generic tip. Pro+ (`['pro', 'business', 'enterprise', 'premium', 'boost']`) unlocks benchmark bars, offer acceptance rate, top listing, specific tips, demand signals
+- **`isPro` resolution:** `['pro', 'business', 'enterprise', 'premium', 'boost'].includes(tier)` — must include legacy aliases `premium` and `boost`
+- **`LockedMetric` component:** `src/app/(main)/dashboard/components/locked-metric.tsx` — reusable locked-state card with blurred placeholder, upgrade CTA; used for any Pro+-gated metric card
+- **`PerformanceBar` component:** `src/app/(main)/dashboard/components/performance-bar.tsx` — green (above avg) / yellow (below avg) benchmark bar
+- **Server action:** `src/app/actions/seller-intelligence.ts` — `getSellerPerformance(userId, companyId)` computes all metrics regardless of tier; gating is in the UI
+- **Render guard:** only rendered when `performanceData.listingCount > 0 || isPro` (pure buyer on free sees nothing)
+
+## Listing Freshness AI (Cycle 29)
+- **Cron:** `/api/cron/listing-freshness` (daily 10:00 UTC) — finds active listings >45 days old with no offers in last 30 days; max 10 AI calls per run
+- **AI model:** Claude Sonnet 4 — generates title suggestion, optional price suggestion with reasoning, description tip
+- **Table:** `listing_freshness_suggestions` — one active (unacted) suggestion per listing via unique partial index
+- **Column:** `listings.refreshed_at` — set when seller acts on suggestion via `markFreshnessSuggestionActedOn()`
+- **Integration:** listing edit page calls `markFreshnessSuggestionActedOn(listingId)` after successful save
+- **"Recently Updated" badge:** shown on search cards and listing detail when `refreshed_at` is within 14 days; no tier gate
+- **Email:** freshness email sent to all tiers (no gate); uses `sendEmail()` from `src/lib/email.ts`
+- **No tier gate on freshness:** emails and badge are free for all sellers; stale inventory hurts the whole platform
 
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2

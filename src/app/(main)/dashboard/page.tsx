@@ -45,6 +45,9 @@ import { OnboardingChecklist } from '@/components/onboarding/onboarding-checklis
 import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
 import { DemandForecast } from '@/components/dashboard/DemandForecast'
 import { CompanyAvatar } from '@/components/company/CompanyAvatar'
+import { SellerIntelligence } from './components/seller-intelligence'
+import { getSellerPerformance } from '@/app/actions/seller-intelligence'
+import type { SellerPerformanceData } from '@/app/actions/seller-intelligence'
 import { updateLastLogin } from '@/app/actions/onboarding'
 import type { Tables } from '@/types/database'
 
@@ -118,6 +121,7 @@ interface AnalyticsData {
 export default function DashboardPage() {
   const { user, profile, activeCompany } = useAuthStore()
   const tier = profile?.subscription_tier ?? 'free'
+  const isPro = ['pro', 'business', 'enterprise', 'premium', 'boost'].includes(tier)
   const limits = TIER_LIMITS[tier as keyof typeof TIER_LIMITS]
 
   const searchParams = useSearchParams()
@@ -127,6 +131,7 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashData | null>(null)
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [recommended, setRecommended] = useState<RecommendedListing[]>([])
+  const [performanceData, setPerformanceData] = useState<SellerPerformanceData | null>(null)
   const [loading, setLoading] = useState(true)
   const [now] = useState(() => Date.now())
 
@@ -147,7 +152,14 @@ export default function DashboardPage() {
     getRecommendedListings().then((r) => {
       if ('listings' in r) setRecommended(r.listings as RecommendedListing[])
     })
-  }, [user])
+
+    // Fetch seller intelligence data
+    if (user.id) {
+      getSellerPerformance(user.id, activeCompany?.id ?? null).then((r) => {
+        setPerformanceData(r)
+      }).catch(console.error)
+    }
+  }, [user, activeCompany?.id])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
@@ -309,6 +321,13 @@ export default function DashboardPage() {
 
       {/* Describe Your Problem — AI Diagnostic */}
       <ProblemDiagnoser />
+
+      {/* === SELLER INTELLIGENCE === */}
+      {performanceData && (performanceData.listingCount > 0 || isPro) && (
+        <section>
+          <SellerIntelligence data={performanceData} isPro={isPro} />
+        </section>
+      )}
 
       {/* === SELLER WIDGETS === */}
       {seller && (

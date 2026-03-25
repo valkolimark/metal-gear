@@ -18,6 +18,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { createClient } from '@/lib/supabase/client'
+import { markFreshnessSuggestionActedOn } from '@/app/actions/freshness'
 import { useAuthStore } from '@/stores/auth-store'
 import {
   EQUIPMENT_CATEGORIES,
@@ -207,6 +208,8 @@ export default function EditListingPage() {
         .eq('id', id)
 
       if (error) throw error
+      // Mark any freshness suggestion as acted on + set refreshed_at
+      markFreshnessSuggestionActedOn(id).catch(console.error)
       toast.success('Listing updated')
       router.push(`/listings/${id}`)
     } catch (err) {

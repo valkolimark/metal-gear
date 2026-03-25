@@ -6,6 +6,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.0.0] — 2026-03-24 · Seller Intelligence Dashboard & Listing Freshness AI (Cycle 29)
+
+### Added
+- **Seller Intelligence Dashboard** — "Your Performance This Month" widget on dashboard with quality grade (A–F), 30-day view count, active listing count, and generic quality improvement tips (all free tier)
+- **Tier-gated comparative intelligence** — Pro+ users see views vs platform benchmark bar, offer acceptance rate, top performing listing, specific quality improvement tips, and demand forecast signals
+- **`LockedMetric` component** — reusable locked-state card with blurred placeholder, lock icon, contextual upgrade reason, and "Upgrade to Pro →" CTA for free-tier users
+- **`PerformanceBar` component** — benchmark comparison bar (green if above average, yellow if below) for Pro+ seller metrics
+- **Listing Freshness AI cron** (`/api/cron/listing-freshness`, daily 10:00 UTC) — identifies active listings older than 45 days with no recent offers, generates Claude-powered refresh suggestions (title rewrite, price check, description tip), emails seller regardless of tier
+- **`listing_freshness_suggestions` table** — stores AI suggestions per listing with unique active-suggestion constraint preventing duplicates; RLS for seller access
+- **`listings.refreshed_at` column** — timestamped when seller acts on a freshness suggestion; indexed for active listings
+- **"Recently Updated" badge** — shown on listing cards (search grid/list) and listing detail page when `refreshed_at` is within 14 days; visible to all users
+- **Freshness email template** — branded dark-theme HTML email with suggested title, optional price suggestion, description tip, and "Update My Listing" CTA
+- **`markFreshnessSuggestionActedOn` server action** — marks suggestion as acted on and sets `refreshed_at` on listing; called automatically from listing edit page on save
+
+### Changed
+- **Dashboard page** — added `SellerIntelligence` widget between problem diagnoser and seller widgets; only renders when user has listings or is on a paid tier
+- **Listing edit page** — calls `markFreshnessSuggestionActedOn` after successful listing update
+- **`vercel.json`** — added listing-freshness cron schedule
+- **Supabase types** — regenerated to include `listing_freshness_suggestions` table and `refreshed_at` column
+
+---
+
 ## [3.9.0] — 2026-03-24 · Team Invites, Seat Limits & Annual Billing (Cycle 28)
 
 ### Added

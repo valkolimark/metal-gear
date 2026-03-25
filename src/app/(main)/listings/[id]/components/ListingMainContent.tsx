@@ -48,6 +48,9 @@ export function ListingMainContent({ listing, seller }: Props) {
   })
 
   const shareUrl = `${APP_URL}/listings/${listing.id}`
+  const [now] = useState(() => Date.now())
+  const isRecentlyUpdated = listing.refreshed_at
+    && (now - new Date(listing.refreshed_at).getTime()) < 14 * 24 * 60 * 60 * 1000
 
   function handleCopyLink() {
     navigator.clipboard.writeText(shareUrl)
@@ -131,6 +134,11 @@ export function ListingMainContent({ listing, seller }: Props) {
           >
             {listing.status}
           </Badge>
+          {isRecentlyUpdated && (
+            <Badge className="bg-green-500/10 border border-green-500/20 font-body text-green-600 dark:text-green-400">
+              Recently Updated
+            </Badge>
+          )}
         </div>
 
         {/* Meta info */}

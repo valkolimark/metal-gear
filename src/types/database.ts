@@ -255,45 +255,52 @@ export type Database = {
       }
       company_invites: {
         Row: {
-          id: string
-          company_id: string
-          invited_by: string
-          email: string
-          role: string
-          token: string
-          status: string
-          expires_at: string
           accepted_at: string | null
           accepted_by: string | null
+          company_id: string
           created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invited_by: string
+          role: string
+          status: string
+          token: string
         }
         Insert: {
-          id?: string
-          company_id: string
-          invited_by: string
-          email: string
-          role?: string
-          token?: string
-          status?: string
-          expires_at?: string
           accepted_at?: string | null
           accepted_by?: string | null
+          company_id: string
           created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invited_by: string
+          role?: string
+          status?: string
+          token?: string
         }
         Update: {
-          id?: string
-          company_id?: string
-          invited_by?: string
-          email?: string
-          role?: string
-          token?: string
-          status?: string
-          expires_at?: string
           accepted_at?: string | null
           accepted_by?: string | null
+          company_id?: string
           created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          status?: string
+          token?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "company_invites_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "company_invites_company_id_fkey"
             columns: ["company_id"]
@@ -304,13 +311,6 @@ export type Database = {
           {
             foreignKeyName: "company_invites_invited_by_fkey"
             columns: ["invited_by"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "company_invites_accepted_by_fkey"
-            columns: ["accepted_by"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -851,6 +851,58 @@ export type Database = {
         }
         Relationships: []
       }
+      feed_post_comments: {
+        Row: {
+          author_id: string
+          company_id: string | null
+          content: string
+          created_at: string
+          id: string
+          is_deleted: boolean
+          post_id: string
+        }
+        Insert: {
+          author_id: string
+          company_id?: string | null
+          content: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          post_id: string
+        }
+        Update: {
+          author_id?: string
+          company_id?: string | null
+          content?: string
+          created_at?: string
+          id?: string
+          is_deleted?: boolean
+          post_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feed_post_comments_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_post_comments_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_post_comments_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feed_post_media: {
         Row: {
           created_at: string
@@ -1065,6 +1117,70 @@ export type Database = {
           {
             foreignKeyName: "homepage_featured_slots_created_by_fkey"
             columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_freshness_suggestions: {
+        Row: {
+          acted_on: boolean
+          acted_on_at: string | null
+          ai_description_tip: string | null
+          ai_price_reasoning: string | null
+          ai_price_suggestion: number | null
+          ai_title_suggestion: string | null
+          created_at: string
+          email_sent_at: string | null
+          id: string
+          listing_id: string
+          seller_id: string
+        }
+        Insert: {
+          acted_on?: boolean
+          acted_on_at?: string | null
+          ai_description_tip?: string | null
+          ai_price_reasoning?: string | null
+          ai_price_suggestion?: number | null
+          ai_title_suggestion?: string | null
+          created_at?: string
+          email_sent_at?: string | null
+          id?: string
+          listing_id: string
+          seller_id: string
+        }
+        Update: {
+          acted_on?: boolean
+          acted_on_at?: string | null
+          ai_description_tip?: string | null
+          ai_price_reasoning?: string | null
+          ai_price_suggestion?: number | null
+          ai_title_suggestion?: string | null
+          created_at?: string
+          email_sent_at?: string | null
+          id?: string
+          listing_id?: string
+          seller_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_freshness_suggestions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_freshness_suggestions_listing_id_fkey"
+            columns: ["listing_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_comparables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_freshness_suggestions_seller_id_fkey"
+            columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
             referencedColumns: ["id"]
@@ -1294,6 +1410,7 @@ export type Database = {
           pinned_position: number | null
           price_cents: number | null
           quantity: number | null
+          refreshed_at: string | null
           seller_id: string
           sku: string | null
           specifications: Json | null
@@ -1340,6 +1457,7 @@ export type Database = {
           pinned_position?: number | null
           price_cents?: number | null
           quantity?: number | null
+          refreshed_at?: string | null
           seller_id: string
           sku?: string | null
           specifications?: Json | null
@@ -1386,6 +1504,7 @@ export type Database = {
           pinned_position?: number | null
           price_cents?: number | null
           quantity?: number | null
+          refreshed_at?: string | null
           seller_id?: string
           sku?: string | null
           specifications?: Json | null
@@ -3261,6 +3380,7 @@ export type Database = {
     }
     Functions: {
       decrement_feed_hashtags: { Args: { tags: string[] }; Returns: undefined }
+      decrement_post_comments: { Args: { p_post_id: string }; Returns: number }
       decrement_post_reactions: { Args: { p_post_id: string }; Returns: number }
       expire_old_sos_requests: { Args: never; Returns: undefined }
       find_sos_responders: {
@@ -3289,7 +3409,10 @@ export type Database = {
         Args: { p_user_id: string }
         Returns: number
       }
+      increment_post_comments: { Args: { p_post_id: string }; Returns: number }
       increment_post_reactions: { Args: { p_post_id: string }; Returns: number }
+      show_limit: { Args: never; Returns: number }
+      show_trgm: { Args: { "": string }; Returns: string[] }
       upsert_feed_hashtags: { Args: { tags: string[] }; Returns: undefined }
     }
     Enums: {
