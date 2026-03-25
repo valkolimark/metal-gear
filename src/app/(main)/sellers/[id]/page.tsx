@@ -40,18 +40,20 @@ export async function generateMetadata({
 
   const name = profile.display_name || profile.full_name || 'Seller'
   const company = profile.company_name ? ` — ${profile.company_name}` : ''
+  const description = profile.bio?.slice(0, 160) ||
+    `View ${name}'s storefront on Metal Gear — industrial equipment marketplace.`
 
   return {
     title: `${name}${company} | Metal Gear`,
-    description:
-      profile.bio?.slice(0, 160) ||
-      `View ${name}'s storefront on Metal Gear — industrial equipment marketplace.`,
+    description,
+    alternates: {
+      canonical: `${APP_URL}/sellers/${id}`,
+    },
     openGraph: {
       title: `${name}${company}`,
-      description:
-        profile.bio?.slice(0, 160) ||
-        `View ${name}'s industrial equipment listings.`,
+      description,
       url: `${APP_URL}/sellers/${id}`,
+      siteName: 'Metal Gear',
     },
   }
 }

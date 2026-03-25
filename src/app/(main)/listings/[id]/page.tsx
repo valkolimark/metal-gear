@@ -6,6 +6,7 @@ import { getSellerReviews } from '@/app/actions/reputation'
 import { recordListingView } from '@/app/actions/analytics'
 import { getActiveTier } from '@/app/actions/tier'
 import { getCreditBalance, getRevealedContacts } from '@/app/actions/credits'
+import { JsonLd } from '@/components/json-ld'
 import { ListingGallery } from './components/ListingGallery'
 import { ListingPurchasePanel } from './components/ListingPurchasePanel'
 import { ListingSpecs } from './components/ListingSpecs'
@@ -163,11 +164,12 @@ export default async function ListingDetailPage({
   // Record view (fire and forget, server-side)
   recordListingView(id).catch(() => {})
 
-  const jsonLd = {
+  const productSchema = {
     '@context': 'https://schema.org',
     '@type': 'Product',
     name: listing.title,
     description: listing.description || undefined,
+    sku: listing.id,
     category: listing.category,
     offers: {
       '@type': 'Offer',
@@ -183,16 +185,18 @@ export default async function ListingDetailPage({
         listing.condition === 'new'
           ? 'https://schema.org/NewCondition'
           : 'https://schema.org/UsedCondition',
+      url: `https://metal-gear-five.vercel.app/listings/${listing.id}`,
+      seller: {
+        '@type': 'Organization',
+        name: company?.name ?? seller.company_name ?? seller.full_name ?? 'Metal Gear Seller',
+      },
     },
     ...(images && images.length > 0 ? { image: images.map((img) => img.url) } : {}),
   }
 
   return (
     <div className="mx-auto w-full max-w-[1400px] px-4 py-6 pb-24 lg:pb-6">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={productSchema} />
 
       {/* Breadcrumb */}
       <nav className="mb-4 font-body text-sm text-muted-foreground">

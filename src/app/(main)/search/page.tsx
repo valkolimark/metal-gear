@@ -970,21 +970,23 @@ function SearchContent() {
             <Loader2 className="size-8 animate-spin text-primary" />
           </div>
         ) : listings.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <p className="font-display text-lg font-semibold text-foreground">
-              No results found
+          <div className="flex flex-col items-center gap-4 py-20 text-center">
+            <div className="text-5xl">🔍</div>
+            <p className="font-display text-xl font-semibold text-foreground">
+              No listings found
             </p>
             <p className="max-w-md font-body text-sm text-muted-foreground">
-              Try adjusting your search or filters to find what you&rsquo;re
-              looking for.
+              Try broadening your search, removing filters, or describing what you need in plain English.
             </p>
-            <Button
-              variant="outline"
-              onClick={clearFilters}
-              className="font-body"
-            >
-              Clear filters
-            </Button>
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Button
+                variant="outline"
+                onClick={clearFilters}
+                className="font-body"
+              >
+                Clear Filters
+              </Button>
+            </div>
           </div>
         ) : viewMode === 'map' ? (
           <div className="h-[500px] overflow-hidden rounded-lg border border-border lg:h-[600px]">
@@ -997,7 +999,7 @@ function SearchContent() {
           </div>
         ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {listings.map((listing) => (
+            {listings.map((listing, idx) => (
               <div key={listing.id} className="relative">
                 <Link href={`/listings/${listing.id}`}>
                   <Card className="h-full overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
@@ -1010,6 +1012,7 @@ function SearchContent() {
                           fill
                           className="object-cover"
                           sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 33vw"
+                          priority={idx < 4}
                         />
                       ) : (
                         <div className="flex size-full items-center justify-center">

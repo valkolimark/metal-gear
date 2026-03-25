@@ -108,12 +108,17 @@ export default function SosDashboard() {
           ))}
         </div>
       ) : requests.length === 0 ? (
-        <div className="rounded-lg border border-dashed border-border py-12 text-center">
-          <Siren className="mx-auto mb-3 size-10 text-muted-foreground/30" />
-          <p className="font-display text-lg text-muted-foreground">No active SOS requests</p>
-          <p className="mt-1 text-sm text-muted-foreground/70">
-            When someone in your categories needs help, it&apos;ll appear here.
+        <div className="flex flex-col items-center rounded-lg border border-dashed border-border py-16 text-center">
+          <div className="text-5xl mb-4">📡</div>
+          <p className="font-display text-xl font-semibold text-foreground">No active SOS alerts</p>
+          <p className="mt-2 max-w-sm text-sm text-muted-foreground">
+            When buyers broadcast urgent equipment needs in your categories, they&apos;ll appear here.
           </p>
+          <Link href="/profile" className="mt-4">
+            <Button variant="outline" size="sm" className="font-body">
+              Update Your Categories
+            </Button>
+          </Link>
         </div>
       ) : (
         <div className="space-y-3">

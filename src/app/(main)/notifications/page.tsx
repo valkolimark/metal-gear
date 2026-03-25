@@ -230,12 +230,15 @@ export default function NotificationsPage() {
       {/* Notification List */}
       {filtered.length === 0 ? (
         <Card className="border-border bg-card">
-          <CardContent className="py-12 text-center">
-            <Bell className="mx-auto mb-3 size-12 text-muted-foreground/30" />
-            <p className="font-body text-muted-foreground">
+          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
+            <Bell className="size-12 text-muted-foreground/30" />
+            <p className="font-display text-lg font-semibold text-foreground">
               {filter === 'all'
                 ? 'No notifications yet'
                 : `No ${filter} notifications`}
+            </p>
+            <p className="font-body text-sm text-muted-foreground max-w-sm">
+              You&rsquo;ll be notified about new messages, SOS matches, price drops, and offer updates.
             </p>
           </CardContent>
         </Card>

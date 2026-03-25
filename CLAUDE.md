@@ -316,6 +316,19 @@ The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server 
 - `MobilePurchaseBar` — fixed bottom bar with Sheet drawer
 - `AnonInteractionGate` — signup prompt for anonymous users
 
+## SEO & Structured Data (Cycle 30)
+- **`JsonLd` component:** `src/components/json-ld.tsx` — wraps `<script type="application/ld+json">`, accepts any data object
+- **Product schema:** on listing detail pages (`page.tsx`) — name, price, condition, availability, seller org
+- **LocalBusiness schema:** on company pages — address, aggregate rating when reviews exist
+- **Organization schema:** on homepage — Metal Gear branding, Houston TX
+- **OG image route:** `/api/og?type={default|listing|company|category}` — pass data as query params (no DB calls in edge runtime); legacy `?listing=ID` still works
+- **OG params:** listing: `title`, `price`, `condition`, `location`, `image`; company: `name`, `location`, `listings`, `logo`; category: `category`, `count`
+- **Canonical URLs:** set via `alternates.canonical` in `generateMetadata` on all public pages
+- **Feed page:** `robots: { index: false, follow: false }` — personalized content not useful to index
+- **robots.ts:** allows `/feed/hashtag/`; disallows `/feed`, `/dashboard`, `/admin`, `/settings`, `/messages`, `/notifications`, `/profile`, `/credits`, `/invite`, `/api/`, `/onboarding`, `/companies/new`
+- **Sitemap:** static pages + equipment categories + companies (500) + quality listings (≥50 score, 500) + recent listings (500) + sellers (200) + hashtag pages (100)
+- **`EmptyState` component:** `src/components/shared/empty-state.tsx` — icon, title, message, primary + secondary action buttons
+
 ## PWA
 - Manifest at `/public/manifest.json`
 - Icons: `/public/icons/icon-192.svg`, `/public/icons/icon-512.svg`

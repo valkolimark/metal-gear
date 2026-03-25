@@ -1,13 +1,31 @@
 import Link from 'next/link'
+import type { Metadata } from 'next'
 import { ArrowRight, Shield, Zap, Globe, Users, Star, MapPin } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { MarketingHeader } from '@/components/layout/marketing-header'
 import { Footer } from '@/components/layout/footer'
+import { JsonLd } from '@/components/json-ld'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EQUIPMENT_CATEGORIES } from '@/lib/constants'
 import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
+
+export const metadata: Metadata = {
+  title: 'Metal Gear — Industrial Equipment Marketplace | Houston, TX',
+  description: 'Buy and sell heavy industrial equipment: centrifuges, pumps, compressors, and more. Serving oil & gas, petrochemical, mining, and manufacturing industries across Texas and beyond.',
+  openGraph: {
+    title: 'Metal Gear — Industrial Equipment Marketplace',
+    description: 'Buy and sell heavy industrial equipment across oil & gas, petrochemical, mining, and manufacturing.',
+    images: [{ url: 'https://metal-gear-five.vercel.app/api/og?type=home', width: 1200, height: 630 }],
+    type: 'website',
+    locale: 'en_US',
+    siteName: 'Metal Gear',
+  },
+  alternates: {
+    canonical: 'https://metal-gear-five.vercel.app',
+  },
+}
 
 function categorySlug(name: string): string {
   return name.toLowerCase().replace(/[&]/g, 'and').replace(/\s+/g, '-')
@@ -107,8 +125,26 @@ export default async function HomePage() {
 
   const displayCategories = EQUIPMENT_CATEGORIES.filter((c) => c !== 'Other').slice(0, 12)
 
+  const organizationSchema = {
+    '@context': 'https://schema.org',
+    '@type': 'Organization',
+    name: 'Metal Gear',
+    description: 'B2B industrial equipment marketplace serving oil & gas, petrochemical, mining, and manufacturing industries.',
+    url: 'https://metal-gear-five.vercel.app',
+    logo: 'https://metal-gear-five.vercel.app/icons/icon-512.svg',
+    foundingLocation: {
+      '@type': 'Place',
+      name: 'Houston, TX',
+    },
+    areaServed: {
+      '@type': 'State',
+      name: 'Texas',
+    },
+  }
+
   return (
     <div className="flex min-h-screen flex-col">
+      <JsonLd data={organizationSchema} />
       <MarketingHeader />
       <main className="flex-1">
         {/* Hero */}

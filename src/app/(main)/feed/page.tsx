@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
@@ -27,6 +28,10 @@ import { FeedLeftSidebar } from './components/FeedLeftSidebar'
 import { FeedActiveSOSRow } from './components/FeedActiveSOSRow'
 import { FeedRightSidebar } from './components/FeedRightSidebar'
 import { FeedSOSBanner } from '@/components/feed/FeedSOSBanner'
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+}
 
 export default async function FeedPage() {
   const supabase = await createClient()

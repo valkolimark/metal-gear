@@ -476,9 +476,15 @@ function MessagesContent() {
           ) : conversations.length === 0 ? (
             <div className="flex flex-col items-center gap-3 p-8 text-center">
               <MessageSquare className="size-10 text-muted-foreground" />
-              <p className="font-body text-sm text-muted-foreground">
-                No conversations yet
+              <p className="font-display text-base font-semibold text-foreground">
+                No messages yet
               </p>
+              <p className="font-body text-sm text-muted-foreground max-w-xs">
+                When you contact a seller or receive an inquiry, conversations will appear here.
+              </p>
+              <Button asChild variant="outline" size="sm" className="mt-2 font-body">
+                <Link href="/search">Browse Equipment</Link>
+              </Button>
             </div>
           ) : (
             <div className="overflow-y-auto">

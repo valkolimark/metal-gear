@@ -5,10 +5,30 @@ export default function robots(): MetadataRoute.Robots {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
-        disallow: ['/api/', '/callback', '/reset-password', '/admin', '/checkout'],
+        allow: [
+          '/',
+          '/feed/hashtag/',
+        ],
+        disallow: [
+          '/feed',
+          '/dashboard',
+          '/admin',
+          '/settings',
+          '/messages',
+          '/notifications',
+          '/profile',
+          '/credits',
+          '/invite',
+          '/api/',
+          '/onboarding',
+          '/companies/new',
+          '/callback',
+          '/reset-password',
+          '/checkout',
+        ],
       },
     ],
     sitemap: 'https://metal-gear-five.vercel.app/sitemap.xml',
+    host: 'https://metal-gear-five.vercel.app',
   }
 }

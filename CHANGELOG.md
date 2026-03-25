@@ -6,6 +6,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.0.1] — 2026-03-24 · Launch Prep — SEO, Empty States, OG Images, Sitemap (Cycle 30)
+
+### Added
+- **`JsonLd` component** (`src/components/json-ld.tsx`) — reusable JSON-LD structured data injector for SEO
+- **Product schema** on listing detail pages — includes name, description, price, condition, availability, seller organization
+- **LocalBusiness schema** on company pages — includes address, aggregate rating (when reviews exist)
+- **Organization schema** on homepage — Metal Gear branding, founding location, area served
+- **OG image templates** — four typed templates via `/api/og?type=`: `default`/`home`, `listing` (image + price + condition), `company` (logo + location + listing count), `category` (category name + count)
+- **Canonical URLs** on listing, company, and seller pages via `alternates.canonical` in `generateMetadata`
+- **Feed page `noindex`** — personalized feed excluded from search engine indexing
+- **Sitemap expansion** — now includes company pages (500), seller storefronts (200), quality-filtered listings (quality ≥50 priority, plus recent), top 100 hashtag pages from `feed_hashtags`
+- **robots.txt overhaul** — explicit allow for `/feed/hashtag/`; disallow for all protected routes (feed, dashboard, admin, settings, messages, notifications, profile, credits, invite, onboarding, companies/new)
+- **Image priority** on first 4 listing card images in search grid view for better LCP
+
+### Changed
+- **`EmptyState` component** — enhanced with icon, dual-action buttons (primary + secondary), theme-aware styling using `text-foreground`/`text-muted-foreground`
+- **Search empty state** — improved with emoji icon, broader guidance text, clear filters CTA
+- **Messages empty state** — added heading, contextual description, "Browse Equipment" CTA
+- **SOS dashboard empty state** — added emoji icon, "Update Your Categories" CTA link
+- **Notifications empty state** — added heading, descriptive text about notification types
+- **Homepage metadata** — explicit `generateMetadata` with Houston/TX keywords, typed OG image, canonical URL
+- **Listing metadata** — title now includes price; OG image uses typed query params instead of DB lookup
+- **Company metadata** — OG image uses typed company template with logo, location, listing count
+- **Seller metadata** — added canonical URL and `siteName` in OpenGraph
+
+---
+
 ## [4.0.0] — 2026-03-24 · Seller Intelligence Dashboard & Listing Freshness AI (Cycle 29)
 
 ### Added
