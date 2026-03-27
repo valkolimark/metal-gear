@@ -10,10 +10,12 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { validateImageQuality, type ImageQualityResult } from '@/lib/ai/image-quality'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
+import { uploadListingImageAction } from '@/app/(main)/listings/new/actions'
 
 interface AIImageCaptureProps {
-  onComplete: (data: AIAnalysisResult) => void
+  onComplete: (data: AIAnalysisResult, preloadedImages?: string[]) => void
   onSkip: () => void
+  listingId?: string
 }
 
 type Step = 'mode' | 'capture' | 'processing' | 'results'
@@ -73,7 +75,7 @@ function ConfidenceDot({ confidence }: { confidence: number }) {
   )
 }
 
-export default function AIImageCapture({ onComplete, onSkip }: AIImageCaptureProps) {
+export default function AIImageCapture({ onComplete, onSkip, listingId }: AIImageCaptureProps) {
   const [currentStep, setCurrentStep] = useState<Step>('mode')
   const [wideShot, setWideShot] = useState<{ file: File; preview: string; base64: string } | null>(null)
   const [nameplateShot, setNameplateShot] = useState<{ file: File; preview: string; base64: string } | null>(null)
@@ -91,6 +93,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
   const nameplateShotRef = useRef<HTMLInputElement>(null)
   const nameplateShotCameraRef = useRef<HTMLInputElement>(null)
   const progressTimerRef = useRef<NodeJS.Timeout | null>(null)
+  const preloadedImagesRef = useRef<string[]>([])
 
   useEffect(() => {
     setIsMobile(window.innerWidth < 768)
@@ -169,7 +172,43 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
     const timeout = setTimeout(() => controller.abort(), 45000)
 
     try {
-      const response = await fetch('/api/listings/analyze-image', {
+      // Build R2 upload promises (run in parallel with AI analysis)
+      const uploadPromises: Promise<string | null>[] = []
+      if (listingId) {
+        if (wideShot) {
+          uploadPromises.push(
+            (async () => {
+              try {
+                const fd = new FormData()
+                fd.append('file', wideShot.file)
+                fd.append('listingId', listingId)
+                const result = await uploadListingImageAction(fd)
+                return result.url ?? null
+              } catch {
+                return null
+              }
+            })()
+          )
+        }
+        if (nameplateShot) {
+          uploadPromises.push(
+            (async () => {
+              try {
+                const fd = new FormData()
+                fd.append('file', nameplateShot.file)
+                fd.append('listingId', listingId)
+                const result = await uploadListingImageAction(fd)
+                return result.url ?? null
+              } catch {
+                return null
+              }
+            })()
+          )
+        }
+      }
+
+      // Run AI analysis and R2 uploads in parallel
+      const aiPromise = fetch('/api/listings/analyze-image', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -180,7 +219,15 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
         signal: controller.signal,
       })
 
+      const [response, ...uploadResults] = await Promise.all([
+        aiPromise,
+        ...uploadPromises,
+      ])
+
       clearTimeout(timeout)
+
+      // Collect successful R2 URLs (filter nulls)
+      const preloadedImages = (uploadResults as (string | null)[]).filter(Boolean) as string[]
 
       if (!response.ok) {
         const data = await response.json().catch(() => ({ error: 'Unknown error' }))
@@ -190,6 +237,8 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
 
       const data: AIAnalysisResult = await response.json()
       setResult(data)
+      // Store preloaded images for passing through on apply
+      preloadedImagesRef.current = preloadedImages
       setProgress(100)
 
       // Haptic feedback on mobile
@@ -244,7 +293,7 @@ export default function AIImageCapture({ onComplete, onSkip }: AIImageCapturePro
         year: getEditedValue('year', result.listing.year) as number | undefined,
       },
     }
-    onComplete(applied)
+    onComplete(applied, preloadedImagesRef.current)
   }
 
   // ─── Mode Selection ───────────────────────────────────────────────

@@ -6,7 +6,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
-## [4.1.0] — 2026-03-27 · SOS Camera-First Rework (Cycle 31-2)
+## [4.1.0] — 2026-03-27 · Mobile Input Zoom Fix + AI Image Auto-Gallery + SOS Camera-First (Cycle 31)
 
 ### Added
 - **Camera-first SOS flow** — 4-step wizard: Capture → AI Processing → Confirm → Sent; default experience on `/sos/create`
@@ -18,6 +18,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ### Changed
 - **SOS create page** — camera-first flow is now the default; "Skip — describe it in text instead" link falls back to existing Quick SOS text + detailed form (both preserved, untouched)
+- **iOS Safari zoom fix** — global `font-size: max(16px, 1em)` on all input/select/textarea elements prevents viewport zoom on focus
+- **AI image auto-gallery** — images uploaded during AI analysis are now uploaded to R2 in parallel and carried forward to the Photos step as preloaded images
+- **Listing form** — stable `listingId` UUID generated at form mount via `crypto.randomUUID()`, used consistently for all R2 uploads
+- **Photos step** — preloaded AI images shown with "Carried over from AI analysis" label, individual delete buttons, max photo cap includes preloaded images
 
 ---
 

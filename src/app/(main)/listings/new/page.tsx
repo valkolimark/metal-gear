@@ -83,8 +83,10 @@ export default function CreateListingPage() {
   const maxPhotos = tierLimits.photos
   const maxVideos = tierLimits.videos
 
+  const [listingId] = useState<string>(() => crypto.randomUUID())
   const [step, setStep] = useState(0)
   const [saving, setSaving] = useState(false)
+  const [preloadedImages, setPreloadedImages] = useState<string[]>([])
   const [images, setImages] = useState<UploadedImage[]>([])
   const [videos, setVideos] = useState<{ id: string; file?: File; preview: string; storage_path: string; url: string; uploading: boolean }[]>([])
   const [dragIdx, setDragIdx] = useState<number | null>(null)
@@ -162,10 +164,12 @@ export default function CreateListingPage() {
   }
 
   // Photo upload
+  const totalImageCount = preloadedImages.length + images.length
   const handleFileSelect = useCallback(
     async (files: FileList | null) => {
       if (!files || !user) return
-      const remaining = maxPhotos - images.length
+      const currentTotal = preloadedImages.length + images.length
+      const remaining = maxPhotos - currentTotal
       const toUpload = Array.from(files).slice(0, remaining)
 
       if (toUpload.length === 0) {
@@ -189,7 +193,7 @@ export default function CreateListingPage() {
 
         const fd = new FormData()
         fd.append('file', file)
-        fd.append('listingId', 'draft')
+        fd.append('listingId', listingId)
 
         const result = await uploadListingImageAction(fd)
 
@@ -208,7 +212,7 @@ export default function CreateListingPage() {
         )
       }
     },
-    [user, images.length, maxPhotos]
+    [user, images.length, maxPhotos, preloadedImages.length, listingId]
   )
 
   function removeImage(id: string) {
@@ -243,7 +247,7 @@ export default function CreateListingPage() {
 
         const fd = new FormData()
         fd.append('file', file)
-        fd.append('listingId', 'draft')
+        fd.append('listingId', listingId)
 
         const result = await uploadListingVideoAction(fd)
 
@@ -292,7 +296,10 @@ export default function CreateListingPage() {
   }
 
   // AI Assist handlers
-  function handleAIComplete(data: AIAnalysisResult) {
+  function handleAIComplete(data: AIAnalysisResult, aiPreloadedImages?: string[]) {
+    if (aiPreloadedImages && aiPreloadedImages.length > 0) {
+      setPreloadedImages(aiPreloadedImages)
+    }
     setAiAssistUsed(true)
     setAiAssistAccepted(true)
     const filled = new Set<string>()
@@ -456,14 +463,16 @@ export default function CreateListingPage() {
 
       if (listingError) throw listingError
 
-      // Save images linked to the listing
-      if (images.length > 0) {
-        const imageRows = images
-          .filter((i) => i.url && !i.uploading)
-          .map((img, idx) => ({
+      // Save images linked to the listing (preloaded from AI + additional uploads)
+      const allImageUrls = [
+        ...preloadedImages,
+        ...images.filter((i) => i.url && !i.uploading).map(i => i.url),
+      ]
+      if (allImageUrls.length > 0) {
+        const imageRows = allImageUrls.map((url, idx) => ({
             listing_id: listing.id,
-            url: img.url,
-            storage_path: img.storage_path,
+            url,
+            storage_path: url,
             position: idx,
           }))
 
@@ -593,7 +602,7 @@ export default function CreateListingPage() {
 
       {/* Step 0: AI Assist */}
       {step === 0 && (
-        <AIImageCapture onComplete={handleAIComplete} onSkip={handleAISkip} />
+        <AIImageCapture onComplete={handleAIComplete} onSkip={handleAISkip} listingId={listingId} />
       )}
 
       {/* Step 1: Details */}
@@ -782,11 +791,45 @@ export default function CreateListingPage() {
         <Card className="border-border bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
-              Photos ({images.length}/{maxPhotos})
+              Photos ({totalImageCount}/{maxPhotos})
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Preloaded images from AI analysis */}
+            {preloadedImages.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 flex items-center gap-1 font-body text-xs text-muted-foreground">
+                  <Check className="size-3" /> Carried over from AI analysis
+                </p>
+                <div className="grid grid-cols-3 gap-2">
+                  {preloadedImages.map((url, index) => (
+                    <div key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
+                      <img src={url} alt={`AI captured image ${index + 1}`} className="size-full object-cover" />
+                      <button
+                        type="button"
+                        onClick={() => setPreloadedImages(prev => prev.filter(u => u !== url))}
+                        className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white text-xs opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
+                        aria-label="Remove image"
+                      >
+                        <X className="size-3" />
+                      </button>
+                      {index === 0 && images.length === 0 && (
+                        <Badge className="absolute bottom-1 left-1 bg-primary text-xs text-white">
+                          Cover
+                        </Badge>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* Upload options */}
+            {totalImageCount >= maxPhotos ? (
+              <div className="rounded-lg border border-border bg-surface px-4 py-3 text-center">
+                <p className="font-body text-sm text-muted-foreground">Maximum {maxPhotos} photos reached.</p>
+              </div>
+            ) : (
             <div className="grid gap-3 sm:grid-cols-2">
               {/* Camera capture (mobile) */}
               <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary/50 sm:hidden">
@@ -832,6 +875,7 @@ export default function CreateListingPage() {
                 />
               </label>
             </div>
+            )}
 
             {/* Video upload (Premium/Boost only) */}
             {maxVideos > 0 && (

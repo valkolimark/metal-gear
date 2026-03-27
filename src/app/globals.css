@@ -182,6 +182,12 @@
     @apply bg-background text-foreground;
     font-family: var(--font-body), sans-serif;
   }
+  /* iOS Safari: prevent viewport zoom on input focus */
+  input,
+  select,
+  textarea {
+    font-size: max(16px, 1em);
+  }
 }
 
 /* Gallery swipe animations */

@@ -198,6 +198,11 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Equipment prompts:** `src/lib/ai/equipment-prompts.ts` — `EQUIPMENT_ANALYSIS_SYSTEM_PROMPT`, `MULTI_IMAGE_ANALYSIS_PROMPT`, `SINGLE_IMAGE_ANALYSIS_PROMPT`, `buildClarificationPrompt()`
 - **Confidence UI:** green/yellow/red dots per field; low-confidence fields get yellow border; overall confidence banner (green/amber/red); analysis mode label ("Analyzed 1/2 images")
 - **Backward compatible:** all new fields on `AIAnalysisResult` are optional; single-image requests work unchanged
+- **AI-to-gallery carry-forward (Cycle 31-1):** AI analysis step uploads both images to R2 in parallel with Claude call; URLs carried forward to Photos step as `preloadedImages`; `listingId` generated at form init via `crypto.randomUUID()`; `AIImageCapture` accepts `listingId` prop and `onComplete` returns `preloadedImages` array
+
+## iOS Safari Zoom Fix (Cycle 31-1)
+- **Global rule:** `font-size: max(16px, 1em)` on `input, select, textarea` in `src/app/globals.css` prevents iOS Safari viewport zoom on input focus
+- **`overflow-x: hidden`** on `html, body` confirmed in globals.css
 
 ## Team Invites & Seat Limits (Cycle 28)
 - **`company_invites` table:** token-based invite records with 7-day expiration, RLS (company members can view), indexes on company_id/token/email
