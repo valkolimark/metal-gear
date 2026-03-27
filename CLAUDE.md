@@ -236,6 +236,15 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Email:** freshness email sent to all tiers (no gate); uses `sendEmail()` from `src/lib/email.ts`
 - **No tier gate on freshness:** emails and badge are free for all sellers; stale inventory hurts the whole platform
 
+## SOS Camera-First Flow (Cycle 31-2)
+- **Components:** `src/app/(main)/sos/create/components/` — `SOSCameraFirstFlow` (orchestrator), `SOSCaptureStep`, `SOSProcessingStep`, `SOSConfirmStep`, `SOSSentStep`
+- **Flow:** 4-step: Capture (photo/upload) → Processing (R2 upload + AI analysis) → Confirm (pre-filled, editable) → Sent (vendor count + dashboard link)
+- **AI integration:** Uses `/api/listings/analyze-image` for equipment identification; pre-fills description, category, manufacturer, model; 15s timeout fallback
+- **Skip link:** "Skip — describe it in text instead" renders existing Quick SOS text flow (QuickSOS component + detailed form)
+- **Photo limits:** Up to 10 photos per SOS, validated client-side (type + 10MB size)
+- **Urgency toggle:** Normal / Critical with SOS orange `#FF6B2B` styling
+- **Existing flows preserved:** Quick SOS text input and detailed form remain fully functional as text flow fallback
+
 ## Media Infrastructure
 - **R2 client:** `src/lib/r2.ts` — S3-compatible uploads/deletes to Cloudflare R2
 - **Stream client:** `src/lib/cloudflare-stream.ts` — video upload, status, delete via Cloudflare API

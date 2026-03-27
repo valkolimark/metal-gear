@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.1.0] — 2026-03-27 · SOS Camera-First Rework (Cycle 31-2)
+
+### Added
+- **Camera-first SOS flow** — 4-step wizard: Capture → AI Processing → Confirm → Sent; default experience on `/sos/create`
+- **SOSCaptureStep** — large tappable camera zone with mobile `capture="environment"`, gallery upload, up to 10 photos, thumbnail grid with delete
+- **SOSProcessingStep** — parallel R2 upload + AI equipment identification via `/api/listings/analyze-image`; rotating status animation; 15s timeout fallback
+- **SOSConfirmStep** — AI pre-filled description (editable), urgency toggle (Normal/Critical with `#FF6B2B` orange), thumbnail strip with add/delete, collapsible "More details" section (brand, category, subcategory, quantity, budget)
+- **SOSSentStep** — confirmation screen with vendor count (or fallback message), dashboard link, reset flow
+- **SOSCameraFirstFlow** — orchestrator managing shared state across all 4 steps
+
+### Changed
+- **SOS create page** — camera-first flow is now the default; "Skip — describe it in text instead" link falls back to existing Quick SOS text + detailed form (both preserved, untouched)
+
+---
+
 ## [4.0.1] — 2026-03-24 · Launch Prep — SEO, Empty States, OG Images, Sitemap (Cycle 30)
 
 ### Added

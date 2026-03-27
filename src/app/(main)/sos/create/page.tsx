@@ -18,6 +18,7 @@ import {
 } from '@/lib/constants/equipment-taxonomy'
 import type { Tier2Group } from '@/lib/constants/equipment-taxonomy'
 import { QuickSOS } from '@/components/sos/QuickSOS'
+import { SOSCameraFirstFlow } from './components/SOSCameraFirstFlow'
 
 const EXPIRY_OPTIONS = [
   { value: '24', label: '24 hours' },
@@ -35,6 +36,7 @@ const DISTANCE_OPTIONS = [
 
 export default function CreateSosPage() {
   const router = useRouter()
+  const [flowMode, setFlowMode] = useState<'camera' | 'text'>('camera')
   const [sending, setSending] = useState(false)
   const [photos, setPhotos] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
@@ -56,6 +58,17 @@ export default function CreateSosPage() {
     max_distance_miles: 500,
     expiry_hours: '72',
   })
+
+  // Camera-first flow is the default
+  if (flowMode === 'camera') {
+    return (
+      <div className="mx-auto w-full max-w-lg px-4 py-6">
+        <SOSCameraFirstFlow onSkipToText={() => setFlowMode('text')} />
+      </div>
+    )
+  }
+
+  // ---- Below is the original text/detailed flow (unchanged) ----
 
   // Find the selected tier2 group for subcategory display
   const selectedGroup: Tier2Group | undefined = (() => {
