@@ -123,6 +123,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `company_profiles` — B2B company entities (name, slug, logo_url, banner_url, industry, company_size, website, city, state)
 - `company_memberships` — User-company junction (user_id, company_id, role enum, is_active, joined_at)
 - `company_invites` — Token-based team invites (company_id, invited_by, email, role, token UNIQUE, status pending/accepted/expired/revoked, expires_at 7 days)
+- `company_favorites` — User-favorited companies for trusted vendor system (user_id, company_id, UNIQUE constraint, RLS: users manage own favorites)
 - `contact_credits` — Monthly credit ledger per user (user_id, credits_remaining, credits_used_this_month, period_start)
 - `contact_reveals` — Contact reveal log with monthly dedup (viewer_id, seller_id, credits_spent, period_month)
 - `credit_purchases` — Stripe one-time credit pack purchases (user_id, credits_purchased, amount_paid, stripe_payment_intent_id)
@@ -240,6 +241,14 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **"Recently Updated" badge:** shown on search cards and listing detail when `refreshed_at` is within 14 days; no tier gate
 - **Email:** freshness email sent to all tiers (no gate); uses `sendEmail()` from `src/lib/email.ts`
 - **No tier gate on freshness:** emails and badge are free for all sellers; stale inventory hurts the whole platform
+
+## Plant Manager Dashboard (Cycle 32)
+- **Trusted Vendors:** `company_favorites` table (user_id, company_id, UNIQUE, RLS); heart button on `/companies/[slug]` with optimistic add/remove
+- **Server actions:** `src/app/actions/trusted-vendors.ts` — `getTrustedVendors()`, `addTrustedVendor()`, `removeTrustedVendor()`, `isCompanyFavorited()`
+- **Team Activity:** `src/app/actions/team-activity.ts` — `getTeamActivity(companyId)` returns members with last-active status + recent listing views; `getSnipeListings(userId)` returns listings from last 72hr matching `user_equipment_interests.tier2`; `hasEquipmentInterests(userId)`
+- **Dashboard widgets:** `TeamActivityWidget` (activity dots + thumbnails), `TrustedVendorsWidget` (favorited companies), `NewListingsSnipeFeed` (72hr interest-matched listings with NEW badge <6hr)
+- **Render guards:** SnipeFeed hidden when no equipment interests; TeamActivity only shown when activeCompany exists with members
+- **`listing_views.viewer_id`** — existing column used for team activity tracking (indexed)
 
 ## SOS Camera-First Flow (Cycle 31-2)
 - **Components:** `src/app/(main)/sos/create/components/` — `SOSCameraFirstFlow` (orchestrator), `SOSCaptureStep`, `SOSProcessingStep`, `SOSConfirmStep`, `SOSSentStep`

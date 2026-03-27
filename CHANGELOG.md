@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.2.0] — 2026-03-27 · Plant Manager Dashboard (Cycle 32)
+
+### Added
+- **Trusted Vendors system** — `company_favorites` table with RLS; users can favorite companies via heart button on company pages
+- **Heart/favorite button** on `/companies/[slug]` — optimistic UI toggle, hidden for own company and anonymous users
+- **TeamActivityWidget** — dashboard widget showing team members' last-active status (green/yellow/gray dot), role badges, and up to 3 recently viewed listing thumbnails per member
+- **TrustedVendorsWidget** — dashboard widget showing favorited companies with remove button (optimistic UI) and empty-state CTA
+- **NewListingsSnipeFeed** — dashboard widget surfacing listings from last 72 hours matching user's equipment interests; "NEW" badge on listings <6 hours old
+- **Server actions:** `src/app/actions/trusted-vendors.ts` (getTrustedVendors, addTrustedVendor, removeTrustedVendor, isCompanyFavorited) and `src/app/actions/team-activity.ts` (getTeamActivity, getSnipeListings, hasEquipmentInterests)
+
+### Changed
+- **Dashboard** — three new plant manager widgets inserted between ProblemDiagnoser and SellerIntelligence; all widget data fetched in parallel; NewListingsSnipeFeed only shown when user has equipment interests
+
+---
+
 ## [4.1.0] — 2026-03-27 · Mobile Input Zoom Fix + AI Image Auto-Gallery + SOS Camera-First (Cycle 31)
 
 ### Added
