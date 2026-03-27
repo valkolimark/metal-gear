@@ -49,6 +49,13 @@ import { SellerIntelligence } from './components/seller-intelligence'
 import { getSellerPerformance } from '@/app/actions/seller-intelligence'
 import type { SellerPerformanceData } from '@/app/actions/seller-intelligence'
 import { updateLastLogin } from '@/app/actions/onboarding'
+import { getTeamActivity, getSnipeListings, hasEquipmentInterests } from '@/app/actions/team-activity'
+import type { TeamMemberActivity, SnipeListing } from '@/app/actions/team-activity'
+import { getTrustedVendors } from '@/app/actions/trusted-vendors'
+import type { TrustedVendor } from '@/app/actions/trusted-vendors'
+import { TeamActivityWidget } from './components/team-activity-widget'
+import { TrustedVendorsWidget } from './components/trusted-vendors-widget'
+import { NewListingsSnipeFeed } from './components/new-listings-snipe-feed'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -132,6 +139,10 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [recommended, setRecommended] = useState<RecommendedListing[]>([])
   const [performanceData, setPerformanceData] = useState<SellerPerformanceData | null>(null)
+  const [teamMembers, setTeamMembers] = useState<TeamMemberActivity[]>([])
+  const [trustedVendors, setTrustedVendors] = useState<TrustedVendor[]>([])
+  const [snipeListings, setSnipeListings] = useState<SnipeListing[]>([])
+  const [hasInterests, setHasInterests] = useState(false)
   const [loading, setLoading] = useState(true)
   const [now] = useState(() => Date.now())
 
@@ -153,7 +164,7 @@ export default function DashboardPage() {
       if ('listings' in r) setRecommended(r.listings as RecommendedListing[])
     })
 
-    // Fetch seller intelligence data
+    // Fetch seller intelligence
     if (user.id) {
       getSellerPerformance(user.id, activeCompany?.id ?? null).then((r) => {
         setPerformanceData(r)
@@ -165,6 +176,23 @@ export default function DashboardPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount
     loadDashboard()
   }, [loadDashboard])
+
+  // Plant manager widgets — separate effect to avoid breaking React Compiler memoization
+  useEffect(() => {
+    if (!user?.id) return
+    Promise.all([
+      activeCompany?.id ? getTeamActivity(activeCompany.id) : Promise.resolve([]),
+      getTrustedVendors(user.id),
+      getSnipeListings(user.id, 8),
+      hasEquipmentInterests(user.id),
+    ]).then(([team, vendors, snipe, interests]) => {
+       
+      setTeamMembers(team)
+      setTrustedVendors(vendors)
+      setSnipeListings(snipe)
+      setHasInterests(interests)
+    }).catch(console.error)
+  }, [user?.id, activeCompany?.id])
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect -- show banner based on URL param
@@ -321,6 +349,23 @@ export default function DashboardPage() {
 
       {/* Describe Your Problem — AI Diagnostic */}
       <ProblemDiagnoser />
+
+      {/* === PLANT MANAGER WIDGETS === */}
+
+      {/* New Listings Snipe Feed — only shown if user has equipment interests */}
+      {hasInterests && (
+        <NewListingsSnipeFeed listings={snipeListings} />
+      )}
+
+      {/* Team Activity + Trusted Vendors side by side */}
+      <div className="grid gap-6 lg:grid-cols-2">
+        {activeCompany && teamMembers.length > 0 && (
+          <TeamActivityWidget members={teamMembers} />
+        )}
+        {user && (
+          <TrustedVendorsWidget vendors={trustedVendors} userId={user.id} />
+        )}
+      </div>
 
       {/* === SELLER INTELLIGENCE === */}
       {performanceData && (performanceData.listingCount > 0 || isPro) && (

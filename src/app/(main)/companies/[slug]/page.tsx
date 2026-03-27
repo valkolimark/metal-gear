@@ -1,10 +1,13 @@
 import { notFound } from 'next/navigation'
+import { cookies } from 'next/headers'
+import { createClient } from '@/lib/supabase/server'
 import {
   getPublicCompanyBySlug,
   getCompanyActiveListings,
   getCompanyReputationStats,
   getCompanyListingCount,
 } from '@/app/actions/companies-public'
+import { isCompanyFavorited } from '@/app/actions/trusted-vendors'
 import { JsonLd } from '@/components/json-ld'
 import { CompanyHero } from './components/company-hero'
 import { CompanyListings } from './components/company-listings'
@@ -49,10 +52,21 @@ export default async function CompanyPublicPage({ params }: Props) {
   const company = await getPublicCompanyBySlug(slug)
   if (!company) notFound()
 
-  const [listings, listingCount, reputationStats] = await Promise.all([
+  // Get current user for favorite state
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  const userId = user?.id ?? null
+
+  // Read active company from cookie
+  const cookieStore = await cookies()
+  const activeCompanyId = cookieStore.get('active_company_id')?.value ?? null
+  const isOwnCompany = activeCompanyId === company.id
+
+  const [listings, listingCount, reputationStats, favorited] = await Promise.all([
     getCompanyActiveListings(company.id),
     getCompanyListingCount(company.id),
     getCompanyReputationStats(company.id),
+    userId ? isCompanyFavorited(userId, company.id) : Promise.resolve(false),
   ])
 
   const memberCount = company.company_memberships?.length ?? 0
@@ -93,6 +107,9 @@ export default async function CompanyPublicPage({ params }: Props) {
         memberSince={memberSince}
         avgRating={reputationStats?.avgRating}
         totalReviews={reputationStats?.totalReviews}
+        userId={userId}
+        isFavorited={favorited}
+        isOwnCompany={isOwnCompany}
       />
       <div className="mx-auto max-w-7xl px-4 py-8 space-y-12">
         {reputationStats && <CompanyReputation stats={reputationStats} />}

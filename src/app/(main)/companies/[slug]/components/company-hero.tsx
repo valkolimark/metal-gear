@@ -1,10 +1,15 @@
 'use client'
 
+import { useState } from 'react'
 import Image from 'next/image'
-import { Star, Package, Users, Calendar } from 'lucide-react'
+import { Star, Package, Users, Calendar, Heart } from 'lucide-react'
+import { addTrustedVendor, removeTrustedVendor } from '@/app/actions/trusted-vendors'
+import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 interface CompanyHeroProps {
   company: {
+    id: string
     name: string
     logo_url: string | null
     banner_url: string | null
@@ -18,6 +23,9 @@ interface CompanyHeroProps {
   memberSince: number
   avgRating?: number
   totalReviews?: number
+  userId?: string | null
+  isFavorited?: boolean
+  isOwnCompany?: boolean
 }
 
 export function CompanyHero({
@@ -27,7 +35,27 @@ export function CompanyHero({
   memberSince,
   avgRating,
   totalReviews,
+  userId,
+  isFavorited: initialFavorited,
+  isOwnCompany,
 }: CompanyHeroProps) {
+  const [favorited, setFavorited] = useState(initialFavorited ?? false)
+
+  async function handleToggleFavorite() {
+    if (!userId) return
+    const prev = favorited
+    setFavorited(!prev)
+
+    const result = prev
+      ? await removeTrustedVendor(userId, company.id)
+      : await addTrustedVendor(userId, company.id)
+
+    if (!result.success) {
+      setFavorited(prev)
+      toast.error('Failed to update trusted vendors')
+    }
+  }
+
   return (
     <div className="relative">
       {/* Banner */}
@@ -65,9 +93,28 @@ export function CompanyHero({
           </div>
 
           <div className="min-w-0 flex-1 pb-2">
-            <h1 className="truncate font-display text-2xl font-bold md:text-3xl">
-              {company.name}
-            </h1>
+            <div className="flex items-center gap-3">
+              <h1 className="truncate font-display text-2xl font-bold md:text-3xl">
+                {company.name}
+              </h1>
+              {userId && !isOwnCompany && (
+                <button
+                  onClick={handleToggleFavorite}
+                  aria-label={favorited ? 'Remove from trusted vendors' : 'Add to trusted vendors'}
+                  className="flex shrink-0 items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm transition-colors hover:bg-muted"
+                >
+                  <Heart
+                    className={cn(
+                      'size-4',
+                      favorited ? 'fill-red-500 text-red-500' : 'text-muted-foreground'
+                    )}
+                  />
+                  <span className="hidden sm:inline">
+                    {favorited ? 'Trusted Vendor' : 'Add to Trusted Vendors'}
+                  </span>
+                </button>
+              )}
+            </div>
             <p className="text-sm text-muted-foreground">
               {company.city}
               {company.state ? `, ${company.state}` : ''}
