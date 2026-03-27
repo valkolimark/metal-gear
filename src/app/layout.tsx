@@ -1,4 +1,4 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from 'next-themes'
@@ -11,6 +11,13 @@ import { QueryProvider } from '@/components/providers/query-provider'
 import { PaletteProvider } from '@/components/palette-provider'
 import { getPlatformPalette } from '@/app/actions/palette'
 import './globals.css'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export const metadata: Metadata = {
   manifest: '/manifest.json',

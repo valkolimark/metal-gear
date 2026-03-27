@@ -182,11 +182,12 @@
     @apply bg-background text-foreground;
     font-family: var(--font-body), sans-serif;
   }
-  /* iOS Safari: prevent viewport zoom on input focus */
+  /* iOS Safari: prevent viewport zoom on input focus.
+     !important overrides Tailwind text-sm (0.875rem) on shadcn components. */
   input,
   select,
   textarea {
-    font-size: max(16px, 1em);
+    font-size: 16px !important;
   }
 }
 
