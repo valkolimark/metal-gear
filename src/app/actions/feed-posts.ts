@@ -25,7 +25,7 @@ export interface FeedPostWithDetails {
   comments_count: number
   edited_at: string | null
   created_at: string
-  author: { id: string; display_name: string; avatar_url: string | null }
+  author: { id: string; display_name: string; avatar_url: string | null; last_active_at: string | null }
   company: { id: string; name: string; slug: string; logo_url: string | null } | null
   media: Array<{
     id: string
@@ -110,7 +110,7 @@ async function fetchFeedPosts(
   const [authorsResult, companiesResult, mediaResult, reactionsResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, last_login_at')
       .in('id', authorIds),
     companyIds.length > 0
       ? supabase
@@ -144,7 +144,7 @@ async function fetchFeedPosts(
     reactions_count: number; comments_count: number; edited_at: string | null;
     created_at: string; author_id: string; company_id: string | null
   }) => {
-    const author = authorMap.get(p.author_id) ?? { id: p.author_id, display_name: 'Unknown', avatar_url: null }
+    const author = authorMap.get(p.author_id) ?? { id: p.author_id, display_name: 'Unknown', avatar_url: null, last_login_at: null }
     const company = p.company_id ? companyMap.get(p.company_id) ?? null : null
     return {
       id: p.id,
@@ -155,7 +155,7 @@ async function fetchFeedPosts(
       comments_count: p.comments_count,
       edited_at: p.edited_at,
       created_at: p.created_at,
-      author: { id: author.id, display_name: author.display_name ?? 'Unknown', avatar_url: author.avatar_url },
+      author: { id: author.id, display_name: author.display_name ?? 'Unknown', avatar_url: author.avatar_url, last_active_at: author.last_login_at ?? null },
       company: company ? { id: company.id, name: company.name, slug: company.slug, logo_url: company.logo_url } : null,
       media: (mediaByPost.get(p.id) ?? []) as FeedPostWithDetails['media'],
       viewer_has_reacted: reactedPostIds.has(p.id),
@@ -255,7 +255,7 @@ export async function createFeedPost(params: {
 
   const { data: author } = await supabase
     .from('profiles')
-    .select('id, display_name, avatar_url')
+    .select('id, display_name, avatar_url, last_login_at')
     .eq('id', params.authorId)
     .single()
 
@@ -307,6 +307,7 @@ export async function createFeedPost(params: {
         id: author?.id ?? params.authorId,
         display_name: author?.display_name ?? 'Unknown',
         avatar_url: author?.avatar_url ?? null,
+        last_active_at: author?.last_login_at ?? null,
       },
       company: company ? { id: company.id, name: company.name, slug: company.slug, logo_url: company.logo_url } : null,
       media: (mediaRows ?? []) as FeedPostWithDetails['media'],
@@ -487,7 +488,7 @@ async function fetchPostComments(postId: string): Promise<FeedComment[]> {
   const [authorsResult, companiesResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, last_login_at')
       .in('id', authorIds),
     companyIds.length > 0
       ? supabase
@@ -716,7 +717,7 @@ export async function getHashtagPosts(params: {
   const [authorsResult, companiesResult, mediaResult] = await Promise.all([
     supabase
       .from('profiles')
-      .select('id, display_name, avatar_url')
+      .select('id, display_name, avatar_url, last_login_at')
       .in('id', authorIds),
     companyIds.length > 0
       ? supabase
@@ -740,7 +741,7 @@ export async function getHashtagPosts(params: {
   }
 
   const posts: FeedPostWithDetails[] = sliced.map((p) => {
-    const author = authorMap.get(p.author_id) ?? { id: p.author_id, display_name: 'Unknown', avatar_url: null }
+    const author = authorMap.get(p.author_id) ?? { id: p.author_id, display_name: 'Unknown', avatar_url: null, last_login_at: null }
     const company = p.company_id ? companyMap.get(p.company_id) ?? null : null
     return {
       id: p.id,
@@ -751,7 +752,7 @@ export async function getHashtagPosts(params: {
       comments_count: p.comments_count,
       edited_at: p.edited_at,
       created_at: p.created_at,
-      author: { id: author.id, display_name: author.display_name ?? 'Unknown', avatar_url: author.avatar_url },
+      author: { id: author.id, display_name: author.display_name ?? 'Unknown', avatar_url: author.avatar_url, last_active_at: author.last_login_at ?? null },
       company: company ? { id: company.id, name: company.name, slug: company.slug, logo_url: company.logo_url } : null,
       media: (mediaByPost.get(p.id) ?? []) as FeedPostWithDetails['media'],
       viewer_has_reacted: false,

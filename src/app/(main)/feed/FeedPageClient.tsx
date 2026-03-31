@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { FeedComposer } from './components/FeedComposer'
 import { FeedPost } from './components/FeedPost'
@@ -64,6 +63,33 @@ export function FeedPageClient({
 
   const searchParams = useSearchParams()
   const composeRouter = useRouter()
+
+  // Scroll restoration when returning to feed
+  useEffect(() => {
+    const savedPosition = sessionStorage.getItem('feed-scroll-position')
+    if (savedPosition) {
+      window.scrollTo(0, parseInt(savedPosition))
+      sessionStorage.removeItem('feed-scroll-position')
+    }
+  }, [])
+
+  // Save scroll position before navigating away
+  useEffect(() => {
+    const handleBeforeNav = () => {
+      sessionStorage.setItem('feed-scroll-position', window.scrollY.toString())
+    }
+    // Listen for clicks on links within the feed
+    const feedEl = document.querySelector('[data-feed-container]')
+    if (!feedEl) return
+    const handler = (e: Event) => {
+      const target = (e.target as HTMLElement).closest('a[href]')
+      if (target && !target.getAttribute('href')?.startsWith('#')) {
+        handleBeforeNav()
+      }
+    }
+    feedEl.addEventListener('click', handler)
+    return () => feedEl.removeEventListener('click', handler)
+  }, [])
 
   // Handle ?compose=true — focus the composer textarea
   useEffect(() => {
@@ -199,7 +225,7 @@ export function FeedPageClient({
   }
 
   return (
-    <div className="min-w-0 space-y-4">
+    <div data-feed-container className="min-w-0 space-y-4">
       <FeedComposer
         currentUserId={currentUserId}
         currentUserName={currentUserName}
@@ -231,22 +257,23 @@ export function FeedPageClient({
       )}
 
       {nextCursor && !isChangingFilter && (
-        <div className="flex justify-center py-4">
-          <Button
-            variant="outline"
-            onClick={handleLoadMore}
-            disabled={isLoadingMore}
-            className="font-body"
-          >
-            {isLoadingMore ? (
-              <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
-                Loading...
-              </>
-            ) : (
-              'Load More'
-            )}
-          </Button>
+        <div className="py-4">
+          {isLoadingMore ? (
+            <div className="space-y-4">
+              <FeedPostSkeleton />
+              <FeedPostSkeleton />
+            </div>
+          ) : (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={handleLoadMore}
+                className="font-body"
+              >
+                Load More
+              </Button>
+            </div>
+          )}
         </div>
       )}
     </div>

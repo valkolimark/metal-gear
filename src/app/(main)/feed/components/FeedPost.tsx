@@ -27,9 +27,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { cn } from '@/lib/utils'
 import { FeedPostMedia } from './FeedPostMedia'
 import { CommentSection } from './CommentSection'
-import { formatRelativeTime } from '@/lib/utils/time'
+import { formatRelativeTime, formatActivityStatus } from '@/lib/utils/time'
 import {
   toggleFeedPostReaction,
   editFeedPost,
@@ -59,6 +60,14 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
   const router = useRouter()
   const isOwner = post.author.id === currentUserId
   const canEdit = isOwner && new Date(post.created_at).getTime() > Date.now() - 15 * 60 * 1000
+
+  // Profile link: company page if available, otherwise seller page
+  const profileUrl = post.company?.slug
+    ? `/companies/${post.company.slug}`
+    : `/sellers/${post.author.id}`
+
+  // Activity status
+  const activity = formatActivityStatus(post.author.last_active_at ?? null)
 
   // Like state
   const [reacted, setReacted] = useState(post.viewer_has_reacted)
@@ -177,7 +186,35 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
     toast.success('Link copied')
   }
 
-  // Render content with highlighted hashtags and resolved mentions
+  // Linkify plain text URLs (not hashtags/mentions)
+  const linkifyText = (text: string, keyPrefix: string): React.ReactNode[] => {
+    const urlRegex = /https?:\/\/[^\s]+/g
+    const parts = text.split(urlRegex)
+    const urls = text.match(urlRegex) ?? []
+
+    return parts.reduce<React.ReactNode[]>((acc, part, i) => {
+      if (part) acc.push(<Fragment key={`${keyPrefix}-t${i}`}>{part}</Fragment>)
+      if (urls[i]) {
+        const cleanUrl = urls[i].replace(/[.,!?;:]+$/, '')
+        const trailing = urls[i].slice(cleanUrl.length)
+        acc.push(
+          <a
+            key={`${keyPrefix}-u${i}`}
+            href={cleanUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-primary hover:underline break-all"
+          >
+            {cleanUrl}
+          </a>
+        )
+        if (trailing) acc.push(<Fragment key={`${keyPrefix}-p${i}`}>{trailing}</Fragment>)
+      }
+      return acc
+    }, [])
+  }
+
+  // Render content with highlighted hashtags, resolved mentions, and linkified URLs
   const renderContent = (text: string) => {
     const tokens = text.split(/(\s+)/)
     return tokens.map((token, i) => {
@@ -195,7 +232,6 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
       }
       if (token.startsWith('@') && token.length > 1) {
         const word = token.slice(1)
-        // Try to find a resolved mention matching this @word
         const mention = resolvedMentions.find(
           (m) => m.display_name.toLowerCase() === word.toLowerCase() ||
                  m.display_name.toLowerCase().startsWith(word.toLowerCase())
@@ -220,6 +256,10 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
           </span>
         )
       }
+      // Linkify URLs in plain text tokens
+      if (/https?:\/\//.test(token)) {
+        return <Fragment key={i}>{linkifyText(token, `${i}`)}</Fragment>
+      }
       return <Fragment key={i}>{token}</Fragment>
     })
   }
@@ -229,22 +269,34 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
     : `Comment${commentsCount > 0 ? ` (${commentsCount})` : ''}`
 
   return (
-    <div id={`post-${post.id}`} className="rounded-xl border border-border bg-card">
+    <div id={`post-${post.id}`} className="rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
       {/* Header */}
       <div className="flex items-start justify-between p-4 pb-0">
         <div className="flex items-center gap-3">
-          <Link href={post.company ? `/companies/${post.company.slug}` : isOwner ? '/profile' : `/sellers/${post.author.id}`}>
-            <Avatar className="size-10">
-              {post.company?.logo_url ? (
-                <AvatarImage src={post.company.logo_url} alt={post.company.name} />
-              ) : post.author.avatar_url ? (
-                <AvatarImage src={post.author.avatar_url} alt={post.author.display_name} />
-              ) : null}
-              <AvatarFallback className="font-display text-xs">
-                {(post.company?.name ?? post.author.display_name)?.[0]?.toUpperCase() ?? '?'}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          <div className="relative">
+            <Link href={profileUrl}>
+              <Avatar className="size-10 cursor-pointer hover:opacity-80 transition-opacity">
+                {post.company?.logo_url ? (
+                  <AvatarImage src={post.company.logo_url} alt={post.company.name} />
+                ) : post.author.avatar_url ? (
+                  <AvatarImage src={post.author.avatar_url} alt={post.author.display_name} />
+                ) : null}
+                <AvatarFallback className="font-display text-xs">
+                  {(post.company?.name ?? post.author.display_name)?.[0]?.toUpperCase() ?? '?'}
+                </AvatarFallback>
+              </Avatar>
+            </Link>
+            {activity.isRecent && (
+              <span
+                className={cn(
+                  'absolute bottom-0 right-0 w-3 h-3 rounded-full border-2 border-background',
+                  activity.color === 'green' && 'bg-green-500',
+                  activity.color === 'yellow' && 'bg-yellow-400',
+                )}
+                title={activity.label}
+              />
+            )}
+          </div>
           <div>
             {post.company && (
               <Link
@@ -256,18 +308,21 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
             )}
             <div className="flex items-center gap-1.5">
               <Link
-                href={isOwner ? '/profile' : `/sellers/${post.author.id}`}
+                href={profileUrl}
                 className={`font-body text-xs ${post.company ? 'text-muted-foreground' : 'font-display text-sm font-semibold text-foreground'} hover:underline`}
               >
                 {post.author.display_name}
               </Link>
-              <span className="text-xs text-muted-foreground">
+              <span className="text-xs text-muted-foreground" title={new Date(post.created_at).toLocaleString()}>
                 · {formatRelativeTime(post.created_at)}
               </span>
               {post.edited_at && (
                 <span className="text-xs text-muted-foreground">· Edited</span>
               )}
             </div>
+            {activity.isRecent && (
+              <span className="text-xs text-muted-foreground">{activity.label}</span>
+            )}
           </div>
         </div>
 

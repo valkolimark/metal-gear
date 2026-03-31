@@ -248,7 +248,7 @@ export function FeedComposer({
   }
 
   const hashtags = extractHashtags(content)
-  const canPost = (content.trim().length > 0 || media.some((m) => m.status === 'ready')) && !isUploading && !isSubmitting
+  const canPost = (content.trim().length > 0 || media.some((m) => m.status === 'ready')) && content.length <= MAX_CHARS && !isUploading && !isSubmitting
 
   return (
     <div className="rounded-xl border border-border bg-card p-4">
@@ -277,7 +277,7 @@ export function FeedComposer({
               data-feed-composer
               value={content}
               onChange={handleTextareaChange}
-              placeholder="Share an update with the community..."
+              placeholder="Share an update, equipment tip, or industry insight..."
               className="w-full resize-none bg-transparent font-body text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
               rows={2}
             />
@@ -351,12 +351,14 @@ export function FeedComposer({
                     </div>
                   )}
 
-                  {/* Remove button */}
+                  {/* Remove button — 44px touch target */}
                   <button
-                    className="absolute right-1 top-1 rounded-full bg-black/60 p-1 text-white hover:bg-black/80"
+                    className="absolute right-0 top-0 flex size-11 items-center justify-center"
                     onClick={() => removeMedia(i)}
                   >
-                    <X className="size-3.5" />
+                    <span className="flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80">
+                      <X className="size-3.5" />
+                    </span>
                   </button>
                 </div>
               ))}
@@ -405,9 +407,11 @@ export function FeedComposer({
             </div>
 
             <div className="flex items-center gap-2">
-              <span className={`font-body text-xs ${content.length > MAX_CHARS * 0.9 ? 'text-red-400' : 'text-muted-foreground'}`}>
-                {content.length}/{MAX_CHARS}
-              </span>
+              {content.length > 800 && (
+                <span className={`font-body text-xs ${content.length > 950 ? 'text-destructive' : 'text-muted-foreground'}`}>
+                  {MAX_CHARS - content.length} remaining
+                </span>
+              )}
               <Button
                 size="sm"
                 className="font-body text-xs"
