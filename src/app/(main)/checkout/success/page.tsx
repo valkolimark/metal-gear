@@ -69,7 +69,7 @@ function SuccessContent() {
               </Link>
             </Button>
             <Button asChild variant="outline" className="w-full font-body">
-              <Link href="/listings/new">Create a Listing</Link>
+              <Link href="/listings/create">Create a Listing</Link>
             </Button>
           </div>
         </CardContent>

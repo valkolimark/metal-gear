@@ -181,7 +181,7 @@ export default function InventoryPage() {
             )}
           </p>
         </div>
-        <Link href="/listings/new">
+        <Link href="/listings/create">
           <Button className="font-body">
             <Package className="mr-2 size-4" />
             New Listing

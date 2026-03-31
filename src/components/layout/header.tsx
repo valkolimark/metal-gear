@@ -134,13 +134,13 @@ export function Header() {
 
           {/* Create Listing CTA */}
           <Button asChild size="sm" className="hidden font-body sm:flex">
-            <Link href="/listings/new">
+            <Link href="/listings/create">
               <Plus className="size-4" />
               {t('header.createListing')}
             </Link>
           </Button>
           <Button asChild size="icon" className="sm:hidden">
-            <Link href="/listings/new">
+            <Link href="/listings/create">
               <Plus className="size-5" />
               <span className="sr-only">{t('header.createListing')}</span>
             </Link>

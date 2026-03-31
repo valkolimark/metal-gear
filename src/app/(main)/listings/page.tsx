@@ -143,7 +143,7 @@ export default function ListingsPage() {
           </p>
         </div>
         <Button asChild className="font-body">
-          <Link href="/listings/new">
+          <Link href="/listings/create">
             <Plus className="mr-2 size-4" />
             Create Listing
           </Link>
@@ -165,7 +165,7 @@ export default function ListingsPage() {
               listing.
             </p>
             <Button asChild className="font-body">
-              <Link href="/listings/new">
+              <Link href="/listings/create">
                 <Plus className="mr-2 size-4" />
                 Create Your First Listing
               </Link>

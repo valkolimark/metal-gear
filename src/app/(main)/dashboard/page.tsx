@@ -299,7 +299,7 @@ export default function DashboardPage() {
 
       {/* Quick Actions */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        <Link href="/listings/new">
+        <Link href="/listings/create">
           <Card className="border-border bg-card transition-colors hover:border-primary/50">
             <CardContent className="flex items-center gap-4 p-5">
               <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20">
