@@ -1,0 +1,202 @@
+'use client'
+
+import { Check, X, AlertTriangle, ImageIcon } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import type { ParseImportResult } from '@/app/actions/import'
+
+interface ImportPreviewTableProps {
+  result: ParseImportResult
+  onImport: () => void
+  onCancel: () => void
+  importing: boolean
+}
+
+export function ImportPreviewTable({
+  result,
+  onImport,
+  onCancel,
+  importing,
+}: ImportPreviewTableProps) {
+  const validCount = result.rows.filter((r) => r.errors.length === 0).length
+  const errorRowCount = result.rows.filter((r) => r.errors.length > 0).length
+  const previewRows = result.rows.slice(0, 5)
+
+  return (
+    <div className="space-y-4">
+      {/* Header Stats */}
+      <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center gap-2">
+          <Badge className="bg-green-500/20 font-body text-green-400">
+            <Check className="mr-1 size-3" />
+            {validCount} valid
+          </Badge>
+          {errorRowCount > 0 && (
+            <Badge className="bg-red-500/20 font-body text-red-400">
+              <X className="mr-1 size-3" />
+              {errorRowCount} errors
+            </Badge>
+          )}
+          {result.imageUrlCount > 0 && (
+            <Badge className="bg-blue-500/20 font-body text-blue-400">
+              <ImageIcon className="mr-1 size-3" />
+              {result.imageUrlCount} image URL{result.imageUrlCount !== 1 ? 's' : ''} detected
+            </Badge>
+          )}
+          {result.unmappedHeaders.length > 0 && (
+            <Badge className="bg-yellow-500/20 font-body text-yellow-400">
+              <AlertTriangle className="mr-1 size-3" />
+              {result.unmappedHeaders.length} column{result.unmappedHeaders.length !== 1 ? 's' : ''} ignored
+            </Badge>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={onCancel}
+            disabled={importing}
+            className="font-body"
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={onImport}
+            disabled={validCount === 0 || importing}
+            className="font-body"
+          >
+            Import {validCount} Listing{validCount !== 1 ? 's' : ''}
+          </Button>
+        </div>
+      </div>
+
+      {/* Column Mapping Info */}
+      <div className="flex flex-wrap gap-2">
+        {result.mappedHeaders.map((h) => (
+          <span
+            key={h}
+            className="inline-flex items-center gap-1 rounded-full bg-green-500/10 px-2.5 py-0.5 font-body text-xs text-green-400"
+          >
+            <Check className="size-3" />
+            {h}
+          </span>
+        ))}
+        {result.unmappedHeaders.map((h) => (
+          <span
+            key={h}
+            className="inline-flex items-center gap-1 rounded-full bg-yellow-500/10 px-2.5 py-0.5 font-body text-xs text-yellow-400"
+          >
+            <AlertTriangle className="size-3" />
+            {h} (ignored)
+          </span>
+        ))}
+      </div>
+
+      {/* Preview Table */}
+      <Card className="border-border bg-card">
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full font-body text-sm">
+              <thead>
+                <tr className="border-b border-border">
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    #
+                  </th>
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    Title
+                  </th>
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    Category
+                  </th>
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    Condition
+                  </th>
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    Price
+                  </th>
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    Location
+                  </th>
+                  {result.imageUrlCount > 0 && (
+                    <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                      Image
+                    </th>
+                  )}
+                  <th className="p-3 text-left text-xs font-medium text-muted-foreground">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {previewRows.map((row) => {
+                  const priceVal = row.data.price?.replace(/[$,]/g, '')
+                  const price = priceVal ? parseFloat(priceVal) : null
+
+                  return (
+                    <tr
+                      key={row.rowIndex}
+                      className={`border-b border-border ${
+                        row.errors.length > 0 ? 'bg-red-500/5' : ''
+                      }`}
+                    >
+                      <td className="p-3 text-muted-foreground">
+                        {row.rowIndex}
+                      </td>
+                      <td className="max-w-[200px] truncate p-3 text-foreground">
+                        {row.data.title || '—'}
+                      </td>
+                      <td className="p-3 text-foreground">
+                        {row.data.category || '—'}
+                      </td>
+                      <td className="p-3 text-foreground">
+                        {row.data.condition?.replace('_', ' ') || '—'}
+                      </td>
+                      <td className="p-3 text-foreground">
+                        {price
+                          ? `$${price.toLocaleString()}`
+                          : 'Contact'}
+                      </td>
+                      <td className="p-3 text-foreground">
+                        {[row.data.city, row.data.state]
+                          .filter(Boolean)
+                          .join(', ') || '—'}
+                      </td>
+                      {result.imageUrlCount > 0 && (
+                        <td className="p-3 text-foreground">
+                          {row.data.image_url ? (
+                            <ImageIcon className="size-4 text-blue-400" />
+                          ) : (
+                            '—'
+                          )}
+                        </td>
+                      )}
+                      <td className="p-3">
+                        {row.errors.length === 0 ? (
+                          <Check className="size-4 text-green-400" />
+                        ) : (
+                          <div className="flex items-start gap-1">
+                            <AlertTriangle className="mt-0.5 size-3 shrink-0 text-red-400" />
+                            <span className="text-xs text-red-400">
+                              {row.errors.join('; ')}
+                            </span>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {result.totalRows > 5 && (
+            <div className="border-t border-border p-3 text-center">
+              <p className="font-body text-xs text-muted-foreground">
+                Showing 5 of {result.totalRows} rows
+              </p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
+}

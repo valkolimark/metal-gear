@@ -1267,36 +1267,76 @@ export type Database = {
       }
       listing_imports: {
         Row: {
+          company_id: string | null
           created_at: string
+          created_listing_ids: string[] | null
           error_count: number
+          error_log: Json | null
           errors: Json | null
-          filename: string
+          failed_rows: number
+          file_format: string | null
+          filename: string | null
           id: string
+          image_fetch_attempted: number
+          image_fetch_failed: number
+          image_fetch_succeeded: number
+          processed_rows: number
+          status: string
           success_count: number
+          successful_rows: number
           total_rows: number
           user_id: string
         }
         Insert: {
+          company_id?: string | null
           created_at?: string
+          created_listing_ids?: string[] | null
           error_count?: number
+          error_log?: Json | null
           errors?: Json | null
-          filename: string
+          failed_rows?: number
+          file_format?: string | null
+          filename?: string | null
           id?: string
+          image_fetch_attempted?: number
+          image_fetch_failed?: number
+          image_fetch_succeeded?: number
+          processed_rows?: number
+          status?: string
           success_count?: number
+          successful_rows?: number
           total_rows?: number
           user_id: string
         }
         Update: {
+          company_id?: string | null
           created_at?: string
+          created_listing_ids?: string[] | null
           error_count?: number
+          error_log?: Json | null
           errors?: Json | null
-          filename?: string
+          failed_rows?: number
+          file_format?: string | null
+          filename?: string | null
           id?: string
+          image_fetch_attempted?: number
+          image_fetch_failed?: number
+          image_fetch_succeeded?: number
+          processed_rows?: number
+          status?: string
           success_count?: number
+          successful_rows?: number
           total_rows?: number
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "listing_imports_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "listing_imports_user_id_fkey"
             columns: ["user_id"]

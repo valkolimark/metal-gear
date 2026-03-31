@@ -6,6 +6,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.4.0] — 2026-03-30 · Bulk Inventory Import Upgrade (Cycle 34)
+
+### Added
+- **Excel (XLSX/XLS) import** — parse spreadsheets via ExcelJS; reads first sheet automatically
+- **Google Sheets import** — paste a public sheet URL; server fetches as CSV via Google export endpoint
+- **Image URL fetching** — `image_url` column detected in import; server-side fetch + R2 upload via `media.ts`; fail-open (image failure never blocks listing creation)
+- **Flexible column mapping** — aliases for common column names (e.g., "make" → manufacturer, "qty" → quantity, "photo url" → image_url)
+- **Two-phase progress bar** — Phase 1: listing creation count; Phase 2: image fetch count; polls every 2 seconds via `GET /api/import/progress/[importId]`
+- **Import preview table** — shows first 5 rows with column mapping status (green = mapped, yellow = ignored), image URL count badge
+- **Completion summary** — created/failed/images imported/image failures with expandable error details per row
+- **Tier limit check** — warns user before import if rows exceed remaining listing allowance; processes up to limit
+- **`beforeunload` warning** — prevents accidental navigation during active import
+- **File parser module** — `src/lib/import/parse-file.ts` with `parseCSV()`, `parseXLSX()`, `parseGoogleSheet()`, `getMappedHeaders()`
+- **Image fetcher module** — `src/lib/import/fetch-image.ts` with URL validation, 15s timeout, 10MB size limit, content-type check
+
+### Changed
+- **Import page UI** — fully reworked with three-tab format switcher (CSV / Excel / Google Sheets), drag-and-drop upload zone
+- **Import status labels** — "Premium Feature" → "Pro Feature"; import creates listings as `active` (was `draft`)
+- **Import history** — shows file format badge, image count, supports null filenames (Google Sheets)
+- **`listing_imports` table** — added columns: `company_id`, `file_format`, `processed_rows`, `successful_rows`, `failed_rows`, `image_fetch_attempted/succeeded/failed`, `status` (6 states), `error_log`, `created_listing_ids`
+- **Page subtitle** — "Bulk import equipment listings from a CSV file" → "Bulk import from CSV, Excel, or Google Sheets"
+
+---
+
 ## [4.3.0] — 2026-03-30 · Social Feed Tightening (Cycle 33)
 
 ### Added

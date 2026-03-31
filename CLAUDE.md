@@ -198,6 +198,17 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **UX polish:** post card hover state (`hover:bg-muted/30`), timestamp full-datetime tooltip, character counter at 800+ (red at 950+), 44px touch target on media close buttons, skeleton loading on Load More, scroll position restoration
 - **Feed query update:** `getFeedPosts()` now includes `last_login_at` from profiles join; `FeedPostWithDetails.author` has `last_active_at: string | null`
 
+## Bulk Import Upgrade (Cycle 34)
+- **Formats:** CSV, XLSX/XLS (via ExcelJS), Google Sheets URL (fetched server-side as CSV export)
+- **File parser:** `src/lib/import/parse-file.ts` — `parseCSV()`, `parseXLSX()`, `parseGoogleSheet()`, `getMappedHeaders()`; flexible column aliases (e.g., "make" → manufacturer, "photo url" → image_url)
+- **Image fetcher:** `src/lib/import/fetch-image.ts` — `fetchAndUploadImage(url, listingId)` with 15s timeout, content-type validation, 10MB limit; uploads to R2 via `uploadListingImage()`
+- **Server actions:** `src/app/actions/import.ts` — `parseImportFile()` (FormData → ParseResult), `startImportJob()` (two-phase: create listings → fetch images), `getImportProgress()`, `getImportHistory()`
+- **Progress endpoint:** `GET /api/import/progress/[importId]` — polls `listing_imports` table; auth-gated to import owner
+- **UI components:** `src/app/(main)/listings/import/components/` — `ImportUploadZone` (3-tab format switcher + drag-drop), `ImportPreviewTable` (5-row preview with column mapping badges), `ImportProgressBar` (two-phase with polling), `ImportCompleteSummary` (stats + expandable error details)
+- **DB columns added to `listing_imports`:** `company_id`, `file_format`, `processed_rows`, `successful_rows`, `failed_rows`, `image_fetch_attempted/succeeded/failed`, `status` (pending/parsing/importing/fetching_images/complete/failed), `error_log` JSONB, `created_listing_ids` uuid[]
+- **Fail-open:** image fetch failure never blocks listing creation; failures counted and shown in summary
+- **Tier gate:** Pro+ required; tier limit checked before import start; excess rows skipped with warning
+
 ## AI Image Analyzer (Cycle 27c)
 - **Multi-image analysis:** wide shot + nameplate sent in single Claude call with positional context; falls back to single-image if only one provided
 - **Structured output:** system prompt enforces JSON schema with per-field confidence scores (0.0–1.0); `FieldConfidenceScores` type in `src/types/ai-analysis.ts`
