@@ -118,7 +118,7 @@ function MessagesContent() {
       const enriched: ConversationWithDetails[] = await Promise.all(
         (convs ?? []).map(async (conv) => {
           const otherId =
-            conv.buyer_id === user!.id ? conv.seller_id : conv.buyer_id
+            (conv.buyer_id === user!.id ? conv.seller_id : conv.buyer_id) || ''
 
           const [profileRes, listingRes, lastMsgRes, unreadRes] =
             await Promise.all([

@@ -39,7 +39,10 @@ import {
   setUserSubscriptionTier,
   getAdminUserCreditBalance,
   adminGrantCredits,
+  getCurrentAdminRole,
 } from '../../actions'
+import { reactivateAccount } from '@/app/actions/admin-delete-account'
+import { DeleteAccountPanel } from './components/DeleteAccountPanel'
 
 const ROLE_COLORS: Record<string, string> = {
   superadmin: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
@@ -63,6 +66,8 @@ export default function AdminUserDetailPage() {
   const [creditInfo, setCreditInfo] = useState<{ creditsRemaining: number; creditsUsed: number; tier: string } | null>(null)
   const [grantAmount, setGrantAmount] = useState('')
   const [granting, setGranting] = useState(false)
+  const [currentAdminRole, setCurrentAdminRole] = useState<string | null>(null)
+  const [reactivating, setReactivating] = useState(false)
 
   useEffect(() => {
     getAdminUserDetail(userId).then((d) => {
@@ -72,7 +77,21 @@ export default function AdminUserDetailPage() {
     })
     getChurnRiskDetail(userId).then(setChurnRisk)
     getAdminUserCreditBalance(userId).then(setCreditInfo)
+    getCurrentAdminRole().then(setCurrentAdminRole)
   }, [userId])
+
+  async function handleReactivate() {
+    setReactivating(true)
+    const result = await reactivateAccount(userId)
+    if (result.success) {
+      toast.success('Account reactivated')
+      const d = await getAdminUserDetail(userId)
+      setData(d)
+    } else {
+      toast.error(result.error || 'Failed to reactivate')
+    }
+    setReactivating(false)
+  }
 
   async function handleGrantCredits() {
     const amount = parseInt(grantAmount)
@@ -198,6 +217,32 @@ export default function AdminUserDetailPage() {
           </Badge>
         )}
       </div>
+
+      {/* Soft-deleted banner */}
+      {profile.deleted_at && profile.deletion_type === 'soft' && (
+        <div className="flex items-center justify-between rounded-lg border border-orange-500/40 bg-orange-500/10 p-4">
+          <div>
+            <p className="font-display text-sm font-semibold text-orange-400">
+              This account is archived
+            </p>
+            <p className="font-body text-xs text-muted-foreground">
+              Archived on {new Date(profile.deleted_at).toLocaleDateString()}.
+              {profile.deletion_reason && ` Reason: ${profile.deletion_reason}`}
+            </p>
+          </div>
+          {currentAdminRole === 'superadmin' && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleReactivate}
+              disabled={reactivating}
+              className="font-body"
+            >
+              {reactivating ? 'Reactivating...' : 'Reactivate Account'}
+            </Button>
+          )}
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-2 xl:grid-cols-4">
         {/* Profile Info */}
@@ -577,6 +622,15 @@ export default function AdminUserDetailPage() {
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* Delete Account — superadmin only */}
+      {currentAdminRole === 'superadmin' && !profile.deleted_at && (
+        <DeleteAccountPanel
+          userId={userId}
+          userName={profile.full_name || 'Unnamed User'}
+          onDeleted={() => router.push('/admin/users')}
+        />
       )}
     </div>
   )

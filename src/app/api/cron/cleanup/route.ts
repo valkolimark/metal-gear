@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { deleteMedia } from '@/lib/media'
 
 export const dynamic = 'force-dynamic'
 
@@ -91,6 +92,37 @@ export async function GET(request: Request) {
     }
   } catch (e) {
     results.orphaned_price_history = { deleted: 0, error: e instanceof Error ? e.message : 'Unknown' }
+  }
+
+  // 5. Process R2 cleanup queue (max 50 items per run)
+  try {
+    const { data: queueItems } = await admin
+      .from('r2_cleanup_queue')
+      .select('id, r2_key')
+      .is('processed_at', null)
+      .order('created_at', { ascending: true })
+      .limit(50)
+
+    let r2Cleaned = 0
+    for (const item of queueItems ?? []) {
+      try {
+        const r2Url = `https://media.metalgear.com/${item.r2_key}`
+        await deleteMedia(r2Url)
+        await admin
+          .from('r2_cleanup_queue')
+          .update({ processed_at: new Date().toISOString() })
+          .eq('id', item.id)
+        r2Cleaned++
+      } catch (error) {
+        await admin
+          .from('r2_cleanup_queue')
+          .update({ error: String(error) })
+          .eq('id', item.id)
+      }
+    }
+    results.r2_cleanup = { deleted: r2Cleaned }
+  } catch (e) {
+    results.r2_cleanup = { deleted: 0, error: e instanceof Error ? e.message : 'Unknown' }
   }
 
   const totalDeleted = Object.values(results).reduce((sum, r) => sum + r.deleted, 0)

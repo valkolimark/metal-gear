@@ -170,7 +170,7 @@ async function notifyListingSold(
       .eq('listing_id', listingId)
 
     if (convs) {
-      const uniqueBuyers = [...new Set(convs.map((c) => c.buyer_id))]
+      const uniqueBuyers = [...new Set(convs.map((c) => c.buyer_id).filter(Boolean))] as string[]
       for (const buyerId of uniqueBuyers) {
         await createNotification(
           buyerId,

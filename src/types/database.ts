@@ -664,28 +664,28 @@ export type Database = {
       }
       conversations: {
         Row: {
-          buyer_id: string
+          buyer_id: string | null
           created_at: string
           id: string
           last_message_at: string | null
           listing_id: string
-          seller_id: string
+          seller_id: string | null
         }
         Insert: {
-          buyer_id: string
+          buyer_id?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
           listing_id: string
-          seller_id: string
+          seller_id?: string | null
         }
         Update: {
-          buyer_id?: string
+          buyer_id?: string | null
           created_at?: string
           id?: string
           last_message_at?: string | null
           listing_id?: string
-          seller_id?: string
+          seller_id?: string | null
         }
         Relationships: [
           {
@@ -1678,25 +1678,31 @@ export type Database = {
           content: string
           conversation_id: string
           created_at: string
+          deleted_content_replacement: string | null
           id: string
+          is_deleted: boolean
           read_at: string | null
-          sender_id: string
+          sender_id: string | null
         }
         Insert: {
           content: string
           conversation_id: string
           created_at?: string
+          deleted_content_replacement?: string | null
           id?: string
+          is_deleted?: boolean
           read_at?: string | null
-          sender_id: string
+          sender_id?: string | null
         }
         Update: {
           content?: string
           conversation_id?: string
           created_at?: string
+          deleted_content_replacement?: string | null
           id?: string
+          is_deleted?: boolean
           read_at?: string | null
-          sender_id?: string
+          sender_id?: string | null
         }
         Relationships: [
           {
@@ -2052,6 +2058,10 @@ export type Database = {
           contact_email: string | null
           contact_visibility: string
           created_at: string
+          deleted_at: string | null
+          deleted_by: string | null
+          deletion_reason: string | null
+          deletion_type: string | null
           display_name: string | null
           email_notifications: Json | null
           full_name: string
@@ -2095,6 +2105,10 @@ export type Database = {
           contact_email?: string | null
           contact_visibility?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string | null
           display_name?: string | null
           email_notifications?: Json | null
           full_name?: string
@@ -2138,6 +2152,10 @@ export type Database = {
           contact_email?: string | null
           contact_visibility?: string
           created_at?: string
+          deleted_at?: string | null
+          deleted_by?: string | null
+          deletion_reason?: string | null
+          deletion_type?: string | null
           display_name?: string | null
           email_notifications?: Json | null
           full_name?: string
@@ -2185,6 +2203,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "profiles_deleted_by_fkey"
+            columns: ["deleted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "profiles_priority_set_by_fkey"
             columns: ["priority_set_by"]
             isOneToOne: false
@@ -2227,6 +2252,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      r2_cleanup_queue: {
+        Row: {
+          created_at: string
+          error: string | null
+          id: string
+          processed_at: string | null
+          r2_key: string
+        }
+        Insert: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          processed_at?: string | null
+          r2_key: string
+        }
+        Update: {
+          created_at?: string
+          error?: string | null
+          id?: string
+          processed_at?: string | null
+          r2_key?: string
+        }
+        Relationships: []
       }
       referrals: {
         Row: {
@@ -2356,7 +2405,7 @@ export type Database = {
           rating: number
           review_type: string | null
           reviewer_id: string
-          seller_id: string
+          seller_id: string | null
           transaction_id: string | null
         }
         Insert: {
@@ -2368,7 +2417,7 @@ export type Database = {
           rating: number
           review_type?: string | null
           reviewer_id: string
-          seller_id: string
+          seller_id?: string | null
           transaction_id?: string | null
         }
         Update: {
@@ -2380,7 +2429,7 @@ export type Database = {
           rating?: number
           review_type?: string | null
           reviewer_id?: string
-          seller_id?: string
+          seller_id?: string | null
           transaction_id?: string | null
         }
         Relationships: [

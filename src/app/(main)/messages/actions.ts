@@ -59,23 +59,25 @@ export async function sendMessage(conversationId: string, content: string) {
     conv.buyer_id === user.id ? conv.seller_id : conv.buyer_id
   const listingTitle = (conv.listing as { title: string } | null)?.title || 'a listing'
 
-  sendMessageNotificationEmail(
-    admin,
-    recipientId,
-    user.id,
-    listingTitle,
-    content.trim()
-  ).catch(console.error)
+  if (recipientId) {
+    sendMessageNotificationEmail(
+      admin,
+      recipientId,
+      user.id,
+      listingTitle,
+      content.trim()
+    ).catch(console.error)
 
-  // Create in-app notification (fire and forget)
-  sendMessageInAppNotification(
-    admin,
-    recipientId,
-    user.id,
-    conversationId,
-    listingTitle,
-    content.trim()
-  )
+    // Create in-app notification (fire and forget)
+    sendMessageInAppNotification(
+      admin,
+      recipientId,
+      user.id,
+      conversationId,
+      listingTitle,
+      content.trim()
+    )
+  }
 
   return { message }
 }

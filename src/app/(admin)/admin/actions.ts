@@ -486,6 +486,13 @@ export async function setUserSubscriptionTier(
   }
 }
 
+// ─── Current Admin Role ─────────────────────────────────────────────
+
+export async function getCurrentAdminRole(): Promise<string | null> {
+  const { profile } = await requireAdmin()
+  return profile.admin_role
+}
+
 // ─── Listing Management ─────────────────────────────────────────────
 
 export async function getAdminListings(params: {

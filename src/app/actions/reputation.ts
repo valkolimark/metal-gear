@@ -180,7 +180,7 @@ export async function getTransactionReviews(transactionId: string) {
 
   if (!reviews || reviews.length === 0) return { reviews: [] }
 
-  const userIds = [...new Set([...reviews.map((r) => r.reviewer_id), ...reviews.map((r) => r.seller_id)])]
+  const userIds = [...new Set([...reviews.map((r) => r.reviewer_id), ...reviews.map((r) => r.seller_id)].filter((id): id is string => id !== null))]
   const { data: profiles } = await admin
     .from('profiles')
     .select('id, full_name, display_name, avatar_url')
@@ -191,8 +191,8 @@ export async function getTransactionReviews(transactionId: string) {
   return {
     reviews: reviews.map((r) => ({
       ...r,
-      reviewer: profileMap.get(r.reviewer_id) || null,
-      target: profileMap.get(r.seller_id) || null,
+      reviewer: r.reviewer_id ? profileMap.get(r.reviewer_id) || null : null,
+      target: r.seller_id ? profileMap.get(r.seller_id) || null : null,
     })),
   }
 }
