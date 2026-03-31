@@ -191,6 +191,13 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Feed page data:** all sidebar data fetched in server component (`page.tsx`) and passed as props; unread count for messages badge
 - **TrendingHashtags removed from feed:** replaced by SOS alerts + discovery widgets in right sidebar
 
+## Social Feed Tightening (Cycle 33)
+- **Activity indicators:** `formatActivityStatus()` in `src/lib/utils/time.ts` — green dot (<1hr), yellow dot (<24hr), gray label (1-7d), hidden >7d; uses `profiles.last_login_at`
+- **Profile links:** author avatar, name, and company name on feed posts link to `/companies/[slug]` (if company) or `/sellers/[id]`
+- **URL linkification:** raw URLs in post content rendered as clickable `<a>` tags; trailing punctuation stripped; hashtags/mentions not double-processed
+- **UX polish:** post card hover state (`hover:bg-muted/30`), timestamp full-datetime tooltip, character counter at 800+ (red at 950+), 44px touch target on media close buttons, skeleton loading on Load More, scroll position restoration
+- **Feed query update:** `getFeedPosts()` now includes `last_login_at` from profiles join; `FeedPostWithDetails.author` has `last_active_at: string | null`
+
 ## AI Image Analyzer (Cycle 27c)
 - **Multi-image analysis:** wide shot + nameplate sent in single Claude call with positional context; falls back to single-image if only one provided
 - **Structured output:** system prompt enforces JSON schema with per-field confidence scores (0.0–1.0); `FieldConfidenceScores` type in `src/types/ai-analysis.ts`

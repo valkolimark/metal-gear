@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.3.0] — 2026-03-30 · Social Feed Tightening (Cycle 33)
+
+### Added
+- **Activity status indicators** — green/yellow dot on post author avatars showing recent login activity; `formatActivityStatus()` utility in `src/lib/utils/time.ts`
+- **Activity label** — muted "Active 44m ago" text below post author name when recently active (hidden >7 days)
+- **URL linkification** — raw URLs in post content rendered as clickable links; trailing punctuation stripped; hashtags/mentions not double-processed
+- **Scroll position restoration** — feed remembers scroll position when navigating to profiles/hashtag pages and restores on return
+
+### Changed
+- **Profile links on posts** — author avatar, name, and company name all link to `/companies/[slug]` (if company) or `/sellers/[id]`
+- **Post card hover state** — subtle `hover:bg-muted/30` transition on post cards
+- **Timestamp tooltip** — relative time shows full datetime on hover via `title` attribute
+- **FeedComposer character counter** — only visible at 800+ characters (was always visible); turns red at 950+
+- **FeedComposer placeholder** — updated to "Share an update, equipment tip, or industry insight..."
+- **Image preview close button** — enlarged to 44px touch target for mobile
+- **Load More** — shows skeleton posts instead of spinner while loading
+- **Feed query** — `getFeedPosts()` now includes `last_login_at` from profiles for activity indicators
+
+---
+
 ## [4.2.0] — 2026-03-27 · Plant Manager Dashboard (Cycle 32)
 
 ### Added
