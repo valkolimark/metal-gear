@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { Loader2, Check } from 'lucide-react'
-import { Card, CardContent } from '@/components/ui/card'
+import { useEffect, useRef, useCallback, useState } from 'react'
+import { useImportStore } from '@/stores/import-store'
+import { getImageFetchQuip, getStartToast } from '@/lib/import/humor'
+import { toast } from 'sonner'
 
 export type ImportProgressData = {
   id: string
@@ -20,144 +21,212 @@ export type ImportProgressData = {
 interface ImportProgressBarProps {
   importId: string
   totalRows: number
-  hasImageUrls: boolean
+  totalImages: number
   onComplete: (data: ImportProgressData) => void
 }
+
+type ActiveImportPhase =
+  | 'pending'
+  | 'importing'
+  | 'fetching_images'
+  | 'complete'
+  | 'failed'
 
 export function ImportProgressBar({
   importId,
   totalRows,
-  hasImageUrls,
+  totalImages,
   onComplete,
 }: ImportProgressBarProps) {
-  const [progress, setProgress] = useState<ImportProgressData | null>(null)
+  const { activeImport, startImport, updateProgress } = useImportStore()
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const initializedRef = useRef(false)
+  const [startMs] = useState(() => Date.now())
+
+  // Initialise store on mount (once)
+  useEffect(() => {
+    if (initializedRef.current) return
+    initializedRef.current = true
+
+    startImport(importId, totalRows, totalImages)
+
+    toast(getStartToast(totalRows), {
+      duration: totalRows > 100 ? 8000 : 4000,
+    })
+  }, [importId, totalRows, totalImages, startImport])
+
+  // Polling loop — writes to store
+  const poll = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/import/progress/${importId}`)
+      if (!res.ok) return
+      const data: ImportProgressData = await res.json()
+
+      const attempted = data.image_fetch_attempted ?? 0
+
+      // Compute time estimate
+      let timeEstimate: string | null = null
+      if (
+        data.status === 'fetching_images' &&
+        totalImages > 0 &&
+        attempted > 0
+      ) {
+        const p2 = Math.min(attempted / totalImages, 1)
+        if (p2 >= 0.1 && startMs > 0) {
+          const elapsed = Date.now() - startMs
+          const msPerImage = elapsed / attempted
+          const remaining = totalImages - attempted
+          const remainingMs = remaining * msPerImage
+          const remainingMins = Math.max(0, Math.ceil(remainingMs / 60000))
+          timeEstimate =
+            remainingMins <= 1
+              ? 'Less than a minute remaining'
+              : `~${remainingMins} minute${remainingMins !== 1 ? 's' : ''} remaining`
+        }
+      }
+
+      updateProgress({
+        phase: data.status as ActiveImportPhase,
+        successfulRows: data.successful_rows ?? 0,
+        failedRows: data.failed_rows ?? 0,
+        imagesAttempted: attempted,
+        imagesFetched: data.image_fetch_succeeded ?? 0,
+        imagesFailed: data.image_fetch_failed ?? 0,
+        timeEstimate,
+        errorMessage:
+          data.error_log && data.error_log.length > 0
+            ? data.error_log[0].error
+            : null,
+      })
+
+      if (data.status === 'complete' || data.status === 'failed') {
+        if (pollRef.current) clearInterval(pollRef.current)
+        updateProgress({ completedAt: Date.now() })
+        onComplete(data)
+      }
+    } catch {
+      // Swallow network errors — poll will retry on next tick
+    }
+  }, [importId, totalImages, startMs, updateProgress, onComplete])
 
   useEffect(() => {
-    let cancelled = false
-
-    const poll = async () => {
-      try {
-        const res = await fetch(`/api/import/progress/${importId}`)
-        if (!res.ok) return
-        const data: ImportProgressData = await res.json()
-        if (cancelled) return
-        setProgress(data)
-
-        if (data.status === 'complete' || data.status === 'failed') {
-          onComplete(data)
-          return
-        }
-      } catch {
-        // Retry on next interval
-      }
-
-      if (!cancelled) {
-        setTimeout(poll, 2000)
-      }
-    }
-
+    pollRef.current = setInterval(poll, 2000)
     poll()
-
     return () => {
-      cancelled = true
+      if (pollRef.current) clearInterval(pollRef.current)
     }
-  }, [importId, onComplete])
+  }, [poll])
 
-  const isImporting = !progress || progress.status === 'importing'
-  const isFetchingImages = progress?.status === 'fetching_images'
+  if (!activeImport) return null
 
-  const listingProgress = isImporting
-    ? ((progress?.processed_rows || 0) / totalRows) * 100
-    : 100
+  // ── Progress calculation ─────────────────────────────────────────────────
+  const phase1Pct =
+    totalRows > 0
+      ? Math.min(
+          (activeImport.successfulRows + activeImport.failedRows) / totalRows,
+          1
+        )
+      : 0
 
-  const imageProgress = isFetchingImages && progress?.image_fetch_attempted
-    ? (progress.processed_rows / progress.image_fetch_attempted) * 100
-    : 0
+  const phase2Pct =
+    totalImages > 0 && activeImport.phase === 'fetching_images'
+      ? Math.min(activeImport.imagesAttempted / totalImages, 1)
+      : activeImport.phase === 'complete'
+        ? 1
+        : 0
+
+  const overallPct =
+    totalImages > 0 ? phase1Pct * 0.15 + phase2Pct * 0.85 : phase1Pct
+
+  const displayPct = Math.round(overallPct * 100)
+
+  // ── Phase 2 image quip ───────────────────────────────────────────────────
+  const imageFetchQuip =
+    activeImport.phase === 'fetching_images'
+      ? getImageFetchQuip(totalImages, Math.round(phase2Pct * 100))
+      : null
+
+  // ── Phase label ──────────────────────────────────────────────────────────
+  const phaseLabel = (() => {
+    switch (activeImport.phase) {
+      case 'pending':
+        return 'Starting import...'
+      case 'importing':
+        return `Setting up the yard — ${activeImport.successfulRows} of ${totalRows} listings`
+      case 'fetching_images':
+        return totalImages > 0
+          ? `Hauling photos — ${activeImport.imagesAttempted.toLocaleString()} of ${totalImages.toLocaleString()}`
+          : 'Finishing up...'
+      case 'complete':
+        return 'All done!'
+      case 'failed':
+        return 'Import encountered an error'
+      default:
+        return 'Processing...'
+    }
+  })()
 
   return (
-    <Card className="border-border bg-card">
-      <CardContent className="space-y-6 py-12">
-        {/* Phase 1: Creating Listings */}
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            {isImporting ? (
-              <Loader2 className="size-4 animate-spin text-primary" />
-            ) : (
-              <Check className="size-4 text-green-400" />
-            )}
-            <span className="font-body text-sm font-medium text-foreground">
-              {isImporting ? 'Creating listings...' : 'Listings created'}
-            </span>
-          </div>
+    <div className="space-y-4">
+      {/* "You can leave" banner */}
+      <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 dark:border-blue-900 dark:bg-blue-950/40">
+        <p className="text-sm text-blue-800 dark:text-blue-300">
+          <span className="font-medium">
+            This is running in the background.
+          </span>{' '}
+          You can safely leave this page — we&apos;ll send you a notification
+          when your inventory is ready.
+        </p>
+      </div>
 
-          <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-            <div
-              className="h-full rounded-full bg-primary transition-all duration-300"
-              style={{ width: `${Math.min(listingProgress, 100)}%` }}
-            />
-          </div>
-
-          <p className="font-body text-xs text-muted-foreground">
-            {isImporting
-              ? `${progress?.processed_rows || 0} of ${totalRows}`
-              : `${progress?.successful_rows || 0} of ${totalRows} (${progress?.failed_rows || 0} failed)`}
-          </p>
+      {/* Combined progress bar */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between text-sm">
+          <span className="font-body text-muted-foreground">{phaseLabel}</span>
+          <span className="font-body tabular-nums font-medium">
+            {displayPct}%
+          </span>
         </div>
 
-        {/* Phase 2: Fetching Images */}
-        {hasImageUrls && (
-          <div className="space-y-3">
-            <div className="flex items-center gap-2">
-              {isFetchingImages ? (
-                <Loader2 className="size-4 animate-spin text-primary" />
-              ) : isImporting ? (
-                <div className="size-4 rounded-full border-2 border-muted" />
-              ) : (
-                <Check className="size-4 text-green-400" />
-              )}
-              <span
-                className={`font-body text-sm font-medium ${
-                  isImporting
-                    ? 'text-muted-foreground'
-                    : 'text-foreground'
-                }`}
-              >
-                {isFetchingImages
-                  ? 'Fetching images...'
-                  : isImporting
-                    ? 'Fetching images'
-                    : 'Images fetched'}
-              </span>
-            </div>
+        <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+          <div
+            className="h-full rounded-full bg-primary transition-all duration-500 ease-out"
+            style={{ width: `${displayPct}%` }}
+          />
+        </div>
 
-            {(isFetchingImages || (!isImporting && !isFetchingImages)) && (
-              <>
-                <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
-                  <div
-                    className="h-full rounded-full bg-primary transition-all duration-300"
-                    style={{
-                      width: `${Math.min(
-                        isFetchingImages ? imageProgress : 100,
-                        100
-                      )}%`,
-                    }}
-                  />
-                </div>
-
-                <p className="font-body text-xs text-muted-foreground">
-                  {isFetchingImages
-                    ? `${progress?.processed_rows || 0} of ${progress?.image_fetch_attempted || 0} images`
-                    : `${progress?.image_fetch_succeeded || 0} imported, ${progress?.image_fetch_failed || 0} failed`}
-                </p>
-              </>
-            )}
-          </div>
+        {/* Time estimate */}
+        {activeImport.timeEstimate && (
+          <p className="font-body text-xs text-muted-foreground">
+            {activeImport.timeEstimate}
+          </p>
         )}
 
-        <p className="text-center font-body text-xs text-muted-foreground">
-          Please don&apos;t close this page while the import is running.
-        </p>
-      </CardContent>
-    </Card>
+        {/* Phase 2 image quip */}
+        {imageFetchQuip && (
+          <p className="font-body text-xs italic text-muted-foreground">
+            {imageFetchQuip}
+          </p>
+        )}
+      </div>
+
+      {/* Phase breakdown (subtle secondary detail) */}
+      {activeImport.phase === 'fetching_images' && totalImages > 0 && (
+        <div className="flex gap-6 font-body text-xs text-muted-foreground">
+          <span>
+            &#10003; {activeImport.successfulRows} listings created
+          </span>
+          <span>
+            {activeImport.imagesFetched.toLocaleString()} /{' '}
+            {totalImages.toLocaleString()} images
+          </span>
+          {activeImport.imagesFailed > 0 && (
+            <span className="text-destructive">
+              {activeImport.imagesFailed} images failed
+            </span>
+          )}
+        </div>
+      )}
+    </div>
   )
 }

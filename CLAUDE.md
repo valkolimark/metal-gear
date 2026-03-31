@@ -8,7 +8,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Database/Auth:** Supabase (PostgreSQL, Auth, Realtime)
 - **Media Storage:** Cloudflare R2 (images/docs via `media.metalgear.com`) + Cloudflare Stream (videos)
 - **Styling:** Tailwind CSS v4 (CSS-based config, no tailwind.config.ts) + shadcn/ui (new-york style)
-- **State:** Zustand (3 stores: auth, ui, search) + TanStack Query
+- **State:** Zustand (4 stores: auth, ui, search, import) + TanStack Query
 - **Error Tracking:** Sentry
 - **Hosting:** Vercel
 
@@ -214,6 +214,10 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Bulk delete:** `bulkDeleteListings(ids)` soft-deletes up to 1000 listings; `bulkDeleteByImport(importId)` removes all listings from an import job; My Listings page has multi-select + bulk remove action bar
 - **Fail-open:** image fetch failure never blocks listing creation; failures counted and shown in summary
 - **Tier gate:** Pro+ required; tier limit checked before import start; excess rows skipped with warning
+- **Import humor library** — `src/lib/import/humor.ts` — pure functions for size-aware messaging at preview, start, Phase 2, and completion; 5 tiers: tiny/small/medium/large/massive
+- **`importStore`** — `src/stores/import-store.ts`; sessionStorage-persisted Zustand store; tracks active import state across navigation
+- **`ImportProgressBanner`** — `src/components/import-progress-banner.tsx`; fixed bottom-left; mounts via `ImportProgressBannerClient` in (main)/layout.tsx
+- **Import notifications** — `createNotification()` called in startImportJob() on complete; in-app + push; notification types: `import_complete`, `import_failed`
 
 ## Admin Account Deletion (Cycle 35)
 - **Soft delete (archive):** `softDeleteAccount()` — bans user, archives listings, cancels SOS, suspends company memberships, cancels Stripe, revokes pending invites; reversible via `reactivateAccount()`

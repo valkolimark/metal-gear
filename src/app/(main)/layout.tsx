@@ -3,6 +3,7 @@ import { DesktopNav } from '@/components/layout/desktop-nav'
 import { MobileDrawer } from '@/components/layout/mobile-drawer'
 import { HelpButton } from '@/components/layout/help-button'
 import { NotificationEducationTrigger } from '@/components/notification-education-trigger'
+import { ImportProgressBannerClient } from '@/components/import-progress-banner-client'
 import { MobileNavClient } from '@/components/mobile-nav/MobileNavClient'
 import { CompanyContextProvider } from '@/components/company/CompanyContextProvider'
 import { createClient } from '@/lib/supabase/server'
@@ -117,6 +118,7 @@ export default async function MainLayout({
 
       <HelpButton />
       <NotificationEducationTrigger />
+      <ImportProgressBannerClient />
     </div>
   )
 }

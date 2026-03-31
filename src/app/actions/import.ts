@@ -10,6 +10,8 @@ import { EQUIPMENT_CATEGORIES, INDUSTRIES, LISTING_CONDITIONS, TIER_LIMITS } fro
 import { parseCSV, parseXLSX, parseGoogleSheet, getMappedHeaders } from '@/lib/import/parse-file'
 import { fetchAndUploadImage } from '@/lib/import/fetch-image'
 import { getActiveCompanyId } from '@/app/actions/company-context'
+import { createNotification } from '@/app/actions/notifications'
+import { getCompletionMessage, getFailureMessage } from '@/lib/import/humor'
 import type { ParsedRow, ParseResult } from '@/lib/import/parse-file'
 import type { Json } from '@/types/database'
 
@@ -610,6 +612,29 @@ export async function startImportJob(
       error_count: failCount,
     })
     .eq('id', importId)
+
+  // Fire completion notifications (fire-and-forget)
+  // Read back image stats from DB since they were tracked via atomic counters
+  const { data: finalImport } = await admin
+    .from('listing_imports')
+    .select('image_fetch_succeeded, image_fetch_failed')
+    .eq('id', importId)
+    .single()
+
+  const imagesFailed = finalImport?.image_fetch_failed ?? 0
+  const { title: notifTitle, body: notifBody } = getCompletionMessage(
+    successCount,
+    failCount,
+    imagesFailed
+  )
+
+  createNotification(
+    user.id,
+    'import_complete',
+    notifTitle,
+    notifBody,
+    { importId, successfulRows: successCount, failedRows: failCount, imagesFailed }
+  ).catch(() => {}) // fire-and-forget
 
   return { importId, tierLimitWarning, updatedCount, skippedCount }
 }

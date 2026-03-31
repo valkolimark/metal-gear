@@ -4,6 +4,7 @@ import { Check, X, AlertTriangle, ImageIcon, Images, Copy, RefreshCw, SkipForwar
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { getPreviewQuip } from '@/lib/import/humor'
 import type { ParseImportResult, DuplicateMode, DedupResult } from '@/app/actions/import'
 
 interface ImportPreviewTableProps {
@@ -288,6 +289,24 @@ export function ImportPreviewTable({
           </p>
         )
       })()}
+
+      {/* Size-aware preview quip */}
+      {result.totalRows > 0 && (
+        <div className="rounded-lg border border-border bg-muted/40 px-4 py-3">
+          <p className="font-body text-sm leading-relaxed text-muted-foreground">
+            {getPreviewQuip(
+              result.totalRows,
+              result.rows.reduce((n, r) => n + r.image_urls.length, 0)
+            )}
+          </p>
+          {result.totalRows > 200 && (
+            <p className="mt-1 font-body text-xs text-muted-foreground">
+              You&apos;ll get an in-app notification, push alert, and email when
+              it&apos;s done — no need to stay on this page.
+            </p>
+          )}
+        </div>
+      )}
     </div>
   )
 }

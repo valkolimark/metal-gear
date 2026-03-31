@@ -39,15 +39,7 @@ export default function ImportPage() {
     getImportHistory().then((res) => setHistory(res.imports ?? []))
   }, [])
 
-  // Warn before navigation during import
-  useEffect(() => {
-    if (step !== 'importing') return
-    const handler = (e: BeforeUnloadEvent) => {
-      e.preventDefault()
-    }
-    window.addEventListener('beforeunload', handler)
-    return () => window.removeEventListener('beforeunload', handler)
-  }, [step])
+  // beforeunload removed — user is told they can leave via the progress banner
 
   const handleParsed = useCallback(
     async (result: ParseImportResult, name: string | null, format: FileFormat) => {
@@ -296,7 +288,7 @@ export default function ImportPage() {
         <ImportProgressBar
           importId={importId}
           totalRows={parseResult.rows.filter((r) => r.errors.length === 0).length}
-          hasImageUrls={parseResult.imageUrlCount > 0}
+          totalImages={parseResult.rows.reduce((n, r) => n + r.image_urls.length, 0)}
           onComplete={handleComplete}
         />
       )}

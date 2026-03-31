@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.8.0] — 2026-03-31 · Import Progress UX (Cycle 37)
+
+### Added
+- **Size-aware humor messaging** — `src/lib/import/humor.ts` pure utility library; 5 import size tiers (tiny/small/medium/large/massive) with industrial-themed quips at preview, job start, Phase 2 image fetching, and completion; all pure functions, fully unit-tested
+- **"You can leave" UX** — info banner inside progress bar; start toast on import launch; beforeunload warning removed once job starts; secondary text for large imports explains push/email notification will follow
+- **`importStore` Zustand store** — `src/stores/import-store.ts`; sessionStorage persistence; survives navigation and F5 refresh; tracks phase, row counts, image counts, timestamps, dismissal state
+- **`ImportProgressBanner`** — fixed bottom-left floating pill on every (main) layout page while import runs; shows live % + label; View link + dismiss button; fires completion/failure toasts; clears store automatically on terminal state
+- **`ImportProgressBannerClient`** — thin 'use client' wrapper following MobileNavClient pattern; mounted in (main)/layout.tsx
+- **Unified weighted progress bar** — Phase 1 (listing creation) = 15%, Phase 2 (image fetching) = 85%; time estimate shown once Phase 2 >= 10% complete
+- **Completion notifications** — `createNotification()` fires at end of startImportJob() on complete; in-app bell notification + web push (via existing sendPushNotification)
+- **Phase 2 image quip** — rotating subtext below progress bar during image fetch; 4 stages keyed to completion %; varies by total image count
+
+### Changed
+- **`ImportProgressBar`** — rewritten: unified weighted bar replaces two-phase bars; polling writes to importStore instead of local state; beforeunload warning removed
+- **`ImportPreviewTable`** — preview quip block added below 5-row table; driven by `getPreviewQuip(totalRows, totalImages)` from humor library
+- **`startImportJob()`** — calls `createNotification()` on complete with import stats
+
+---
+
 ## [4.7.0] — 2026-03-31 · Import Dedup & Bulk Delete (Cycle 36)
 
 ### Added
