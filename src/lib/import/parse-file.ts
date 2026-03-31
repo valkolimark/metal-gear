@@ -356,8 +356,14 @@ export function getMappedHeaders(headers: string[]): { mapped: string[]; unmappe
   const mapped: string[] = []
   const unmapped: string[] = []
 
+  // Numbered image columns (image_url_1, photo_url_2, etc.) are detected
+  // dynamically by detectImageColumns() — not via COLUMN_ALIASES.
+  // Normalize with underscore replacement to match detectImageColumns() logic.
+  const numberedImagePattern = /^(image_url|photo_url|image|photo)_\d+$/
+
   for (const h of headers) {
-    if (Object.values(COLUMN_ALIASES).includes(h)) {
+    const underscored = h.trim().toLowerCase().replace(/\s+/g, '_')
+    if (Object.values(COLUMN_ALIASES).includes(h) || numberedImagePattern.test(underscored)) {
       mapped.push(h)
     } else {
       unmapped.push(h)
