@@ -132,6 +132,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `feed_post_reactions` — Like reactions (post_id, user_id, UNIQUE constraint)
 - `feed_hashtags` — Hashtag aggregation for trending (tag PK, post_count, last_used_at)
 - `listing_freshness_suggestions` — AI refresh suggestions for stale listings (listing_id, seller_id, ai_title_suggestion, ai_price_suggestion, ai_price_reasoning, ai_description_tip, email_sent_at, acted_on, acted_on_at); UNIQUE active-suggestion constraint per listing
+- `r2_cleanup_queue` — Async R2 media deletion queue (r2_key, created_at, processed_at, error); processed by `/api/cron/cleanup` (max 50/run)
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
@@ -208,6 +209,17 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **DB columns added to `listing_imports`:** `company_id`, `file_format`, `processed_rows`, `successful_rows`, `failed_rows`, `image_fetch_attempted/succeeded/failed`, `status` (pending/parsing/importing/fetching_images/complete/failed), `error_log` JSONB, `created_listing_ids` uuid[]
 - **Fail-open:** image fetch failure never blocks listing creation; failures counted and shown in summary
 - **Tier gate:** Pro+ required; tier limit checked before import start; excess rows skipped with warning
+
+## Admin Account Deletion (Cycle 35)
+- **Soft delete (archive):** `softDeleteAccount()` — bans user, archives listings, cancels SOS, suspends company memberships, cancels Stripe, revokes pending invites; reversible via `reactivateAccount()`
+- **Hard delete (permanent):** `hardDeleteAccount()` — requires `confirmationText === 'DELETE'`; deletes profile + auth user + all owned data; anonymizes seller reviews (seller_id → null); replaces sent message content; queues R2 media keys for async cleanup
+- **Server actions:** `src/app/actions/admin-delete-account.ts` — `softDeleteAccount()`, `reactivateAccount()`, `hardDeleteAccount()`, `getDeleteAccountWarnings()`
+- **UI:** `DeleteAccountPanel` in `src/app/(admin)/admin/users/[id]/components/` — superadmin-only; archive or permanent delete with mode selection, reason field, hard delete confirmation gate
+- **Reactivation banner:** shown on soft-deleted user detail page with archive date, reason, and reactivate button
+- **R2 cleanup:** `r2_cleanup_queue` table; listing image R2 keys queued during hard delete; processed by `/api/cron/cleanup` (max 50 per run)
+- **FK changes:** `reviews.seller_id`, `conversations.buyer_id/seller_id`, `messages.sender_id` changed from ON DELETE CASCADE to ON DELETE SET NULL to preserve data
+- **Guards:** superadmin-only, self-deletion prevented, superadmin-to-superadmin blocked, sole company owner warned
+- **DB columns:** `profiles.deleted_at`, `deletion_type`, `deleted_by`, `deletion_reason`; `messages.is_deleted`, `deleted_content_replacement`
 
 ## AI Image Analyzer (Cycle 27c)
 - **Multi-image analysis:** wide shot + nameplate sent in single Claude call with positional context; falls back to single-image if only one provided
@@ -288,10 +300,11 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 
 ## Critical Pattern
 All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. **Never pass functions from Server Components to Client Components** — use server actions in separate `'use server'` files instead. Server actions live in:
-- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, etc.)
+- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, admin-delete-account, etc.)
 - `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
 - `src/app/(main)/listings/[id]/components/favorite-action.ts` — Listing favorite toggle
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
+- `src/app/actions/admin-delete-account.ts` — Superadmin account deletion (soft/hard) + reactivation
 
 ## Onboarding (Cycle 23)
 - **Flow:** 5-step role-aware wizard at `/onboarding` (route group `(onboarding)`)

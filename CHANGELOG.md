@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.5.0] — 2026-03-30 · Super Admin Account Deletion (Cycle 35)
+
+### Added
+- **Soft delete (archive)** — superadmins can archive accounts: bans user, archives listings, cancels SOS requests, suspends company memberships, cancels Stripe subscription; fully reversible via "Reactivate Account"
+- **Hard delete (permanent wipe)** — requires typing "DELETE" to confirm; deletes profile, listings, SOS, feed posts, credits, notifications, saved searches, company memberships; anonymizes seller reviews (seller_id → null); replaces sent message content with "[Message from deleted account]"; deletes Supabase Auth user
+- **R2 cleanup queue** — `r2_cleanup_queue` table queues R2 media keys for async deletion; processed by existing daily `/api/cron/cleanup` (max 50 per run)
+- **DeleteAccountPanel** — client component in admin user detail page; mode selection (archive/permanent), reason field, hard delete confirmation gate; only rendered for superadmins
+- **Reactivation banner** — soft-deleted user detail shows orange banner with archive date, reason, and "Reactivate Account" button
+- **Pre-delete warnings** — sole company owner detection, superadmin-to-superadmin block, self-deletion prevention
+
+### Changed
+- **FK constraints** — `reviews.seller_id`, `conversations.buyer_id/seller_id`, `messages.sender_id` changed from ON DELETE CASCADE to ON DELETE SET NULL (preserves conversations and anonymized reviews after hard delete)
+- **Messages table** — added `is_deleted` and `deleted_content_replacement` columns for soft-delete support
+- **Profiles table** — added `deleted_at`, `deletion_type`, `deleted_by`, `deletion_reason` columns
+- **Cron cleanup** — R2 cleanup queue processing added to `/api/cron/cleanup` route
+
+---
+
 ## [4.4.0] — 2026-03-30 · Bulk Inventory Import Upgrade (Cycle 34)
 
 ### Added
