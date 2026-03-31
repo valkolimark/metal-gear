@@ -3,6 +3,7 @@ import ExcelJS from 'exceljs'
 export type ParsedRow = {
   rowIndex: number
   data: Record<string, string>
+  image_urls: string[]
   errors: string[]
 }
 
@@ -11,6 +12,7 @@ export type ParseResult = {
   headers: string[]
   totalRows: number
   errors: string[]
+  detectedImageColumnCount: number
 }
 
 const COLUMN_ALIASES: Record<string, string> = {
@@ -58,12 +60,14 @@ const COLUMN_ALIASES: Record<string, string> = {
   // industry
   industry: 'industry',
   sector: 'industry',
-  // image
+  // image (single column — may contain pipe-separated URLs)
   image_url: 'image_url',
   'image url': 'image_url',
   'photo url': 'image_url',
   image: 'image_url',
   photo: 'image_url',
+  images: 'image_url',
+  photos: 'image_url',
   picture: 'image_url',
   // quantity
   quantity: 'quantity',
@@ -109,23 +113,96 @@ function isEmptyRow(data: Record<string, string>): boolean {
   return Object.values(data).every((v) => !v || !v.trim())
 }
 
+/**
+ * Inspects the header row and returns the column indices that contain image URLs.
+ *
+ * Handles three patterns (all optional, all combinable):
+ *   - Single column: 'image_url', 'photo_url', 'image', 'photo', 'images', 'photos'
+ *     → contents may be a single URL or pipe-separated multiple URLs
+ *   - Numbered columns: 'image_url_1', 'image_url_2' ... 'image_url_N'
+ *     also: 'photo_url_1', 'photo_1', 'image_1'
+ *     → sorted by numeric suffix to guarantee order regardless of column position in file
+ */
+export function detectImageColumns(headers: string[]): {
+  singleColumnIndex: number | null
+  numberedColumnIndices: number[]
+} {
+  const normalized = headers.map(h =>
+    h.trim().toLowerCase().replace(/\s+/g, '_')
+  )
+
+  const singleAliases = new Set([
+    'image_url', 'photo_url', 'image', 'photo', 'images', 'photos',
+    'image_url_url', 'photo_url_url',
+  ])
+  const singleColumnIndex = normalized.findIndex(h => singleAliases.has(h))
+
+  const numberedPattern = /^(image_url|photo_url|image|photo)_(\d+)$/
+  const numbered: { index: number; n: number }[] = []
+  normalized.forEach((h, i) => {
+    const match = h.match(numberedPattern)
+    if (match) numbered.push({ index: i, n: parseInt(match[2], 10) })
+  })
+  numbered.sort((a, b) => a.n - b.n)
+
+  return {
+    singleColumnIndex: singleColumnIndex === -1 ? null : singleColumnIndex,
+    numberedColumnIndices: numbered.map(e => e.index),
+  }
+}
+
+/**
+ * Extracts all image URLs from a single row given the detected column layout.
+ *
+ * Order:
+ *   1. Pipe-split values from the single column (if present), in pipe order
+ *   2. Values from numbered columns, in ascending numeric suffix order
+ *
+ * Deduplicates while preserving order. Filters empty strings.
+ * The first URL in the returned array will become the primary image (position = 0).
+ */
+export function extractImageUrls(
+  rawValues: string[],
+  imageColumnInfo: ReturnType<typeof detectImageColumns>
+): string[] {
+  const urls: string[] = []
+
+  if (imageColumnInfo.singleColumnIndex !== null) {
+    const raw = rawValues[imageColumnInfo.singleColumnIndex] ?? ''
+    urls.push(...raw.split('|').map(u => u.trim()).filter(Boolean))
+  }
+
+  for (const idx of imageColumnInfo.numberedColumnIndices) {
+    const url = (rawValues[idx] ?? '').trim()
+    if (url) urls.push(url)
+  }
+
+  const seen = new Set<string>()
+  return urls.filter(url => {
+    if (seen.has(url)) return false
+    seen.add(url)
+    return true
+  })
+}
+
 export function parseCSV(csvText: string): ParseResult {
   const lines = csvText.trim().split(/\r?\n/)
   const errors: string[] = []
 
   if (lines.length < 2) {
-    return { rows: [], headers: [], totalRows: 0, errors: ['File must have a header row and at least one data row'] }
+    return { rows: [], headers: [], totalRows: 0, errors: ['File must have a header row and at least one data row'], detectedImageColumnCount: 0 }
   }
 
   const rawHeaders = parseCSVLine(lines[0])
   const headers = rawHeaders.map(normalizeHeader)
+  const imageColumnInfo = detectImageColumns(rawHeaders)
 
   if (!headers.includes('title')) {
     errors.push('No "title" column found. Tried: title, name, equipment name, item')
   }
 
   if (errors.length > 0) {
-    return { rows: [], headers, totalRows: 0, errors }
+    return { rows: [], headers, totalRows: 0, errors, detectedImageColumnCount: 0 }
   }
 
   const rows: ParsedRow[] = []
@@ -141,7 +218,6 @@ export function parseCSV(csvText: string): ParseResult {
       const key = headers[j]
       const val = (values[j] ?? '').trim()
       if (key && val) {
-        // If same normalized key appears multiple times, first wins
         if (!data[key]) {
           data[key] = val
         }
@@ -153,10 +229,17 @@ export function parseCSV(csvText: string): ParseResult {
     const rowErrors: string[] = []
     if (!data.title) rowErrors.push('Missing required field "title"')
 
-    rows.push({ rowIndex: i, data, errors: rowErrors })
+    const imageUrls = extractImageUrls(values, imageColumnInfo)
+
+    rows.push({ rowIndex: i, data, image_urls: imageUrls, errors: rowErrors })
   }
 
-  return { rows, headers: [...new Set(headers)], totalRows: rows.length, errors }
+  const detectedImageColumnCount = Math.max(
+    imageColumnInfo.singleColumnIndex !== null ? 1 : 0,
+    imageColumnInfo.numberedColumnIndices.length
+  )
+
+  return { rows, headers: [...new Set(headers)], totalRows: rows.length, errors, detectedImageColumnCount }
 }
 
 export async function parseXLSX(buffer: Buffer | ArrayBuffer): Promise<ParseResult> {
@@ -165,7 +248,7 @@ export async function parseXLSX(buffer: Buffer | ArrayBuffer): Promise<ParseResu
 
   const worksheet = workbook.worksheets[0]
   if (!worksheet || worksheet.rowCount < 2) {
-    return { rows: [], headers: [], totalRows: 0, errors: ['Spreadsheet is empty or has no data rows'] }
+    return { rows: [], headers: [], totalRows: 0, errors: ['Spreadsheet is empty or has no data rows'], detectedImageColumnCount: 0 }
   }
 
   const errors: string[] = []
@@ -178,13 +261,14 @@ export async function parseXLSX(buffer: Buffer | ArrayBuffer): Promise<ParseResu
   })
 
   const headers = rawHeaders.map(normalizeHeader)
+  const imageColumnInfo = detectImageColumns(rawHeaders)
 
   if (!headers.includes('title')) {
     errors.push('No "title" column found. Tried: title, name, equipment name, item')
   }
 
   if (errors.length > 0) {
-    return { rows: [], headers, totalRows: 0, errors }
+    return { rows: [], headers, totalRows: 0, errors, detectedImageColumnCount: 0 }
   }
 
   const rows: ParsedRow[] = []
@@ -192,14 +276,16 @@ export async function parseXLSX(buffer: Buffer | ArrayBuffer): Promise<ParseResu
   for (let i = 2; i <= worksheet.rowCount; i++) {
     const row = worksheet.getRow(i)
     const data: Record<string, string> = {}
+    const rawValues: string[] = new Array(rawHeaders.length).fill('')
 
     row.eachCell({ includeEmpty: true }, (cell, colNumber) => {
       const key = headers[colNumber - 1]
-      if (key) {
-        const val = String(cell.value ?? '').trim()
-        if (val && !data[key]) {
-          data[key] = val
-        }
+      const val = String(cell.value ?? '').trim()
+      if (colNumber - 1 < rawValues.length) {
+        rawValues[colNumber - 1] = val
+      }
+      if (key && val && !data[key]) {
+        data[key] = val
       }
     })
 
@@ -208,16 +294,23 @@ export async function parseXLSX(buffer: Buffer | ArrayBuffer): Promise<ParseResu
     const rowErrors: string[] = []
     if (!data.title) rowErrors.push('Missing required field "title"')
 
-    rows.push({ rowIndex: i, data, errors: rowErrors })
+    const imageUrls = extractImageUrls(rawValues, imageColumnInfo)
+
+    rows.push({ rowIndex: i, data, image_urls: imageUrls, errors: rowErrors })
   }
 
-  return { rows, headers: [...new Set(headers)], totalRows: rows.length, errors }
+  const detectedImageColumnCount = Math.max(
+    imageColumnInfo.singleColumnIndex !== null ? 1 : 0,
+    imageColumnInfo.numberedColumnIndices.length
+  )
+
+  return { rows, headers: [...new Set(headers)], totalRows: rows.length, errors, detectedImageColumnCount }
 }
 
 export async function parseGoogleSheet(url: string): Promise<ParseResult> {
   const idMatch = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/)
   if (!idMatch) {
-    return { rows: [], headers: [], totalRows: 0, errors: ['Invalid Google Sheets URL. Please paste a full Google Sheets URL.'] }
+    return { rows: [], headers: [], totalRows: 0, errors: ['Invalid Google Sheets URL. Please paste a full Google Sheets URL.'], detectedImageColumnCount: 0 }
   }
 
   const spreadsheetId = idMatch[1]
@@ -237,9 +330,10 @@ export async function parseGoogleSheet(url: string): Promise<ParseResult> {
         headers: [],
         totalRows: 0,
         errors: ['This Google Sheet is not publicly accessible. Set sharing to "Anyone with the link can view."'],
+        detectedImageColumnCount: 0,
       }
     }
-    return { rows: [], headers: [], totalRows: 0, errors: [`Failed to fetch Google Sheet: HTTP ${response.status}`] }
+    return { rows: [], headers: [], totalRows: 0, errors: [`Failed to fetch Google Sheet: HTTP ${response.status}`], detectedImageColumnCount: 0 }
   }
 
   const csvText = await response.text()
@@ -251,6 +345,7 @@ export async function parseGoogleSheet(url: string): Promise<ParseResult> {
       headers: [],
       totalRows: 0,
       errors: ['This Google Sheet is not publicly accessible. Set sharing to "Anyone with the link can view."'],
+      detectedImageColumnCount: 0,
     }
   }
 

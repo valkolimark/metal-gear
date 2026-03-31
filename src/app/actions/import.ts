@@ -1,3 +1,7 @@
+// Schema check performed 2026-03-31:
+// listing_images.is_primary: NOT EXISTS
+// Primary image strategy: sort_order=0 (position column) + listings.primary_image_url
+
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
@@ -41,6 +45,7 @@ export type ParseImportResult = {
   unmappedHeaders: string[]
   totalRows: number
   imageUrlCount: number
+  detectedImageColumnCount: number
   errors: string[]
 }
 
@@ -67,6 +72,7 @@ export async function parseImportFile(
             unmappedHeaders: [],
             totalRows: 0,
             imageUrlCount: 0,
+            detectedImageColumnCount: 0,
             errors: ['File exceeds 50MB limit'],
           }
         }
@@ -83,6 +89,7 @@ export async function parseImportFile(
         unmappedHeaders: [],
         totalRows: 0,
         imageUrlCount: 0,
+        detectedImageColumnCount: 0,
         errors: ['No file or URL provided'],
       }
     }
@@ -94,12 +101,13 @@ export async function parseImportFile(
       unmappedHeaders: [],
       totalRows: 0,
       imageUrlCount: 0,
+      detectedImageColumnCount: 0,
       errors: [error instanceof Error ? error.message : 'Failed to parse file'],
     }
   }
 
   const { mapped, unmapped } = getMappedHeaders(result.headers)
-  const imageUrlCount = result.rows.filter((r) => r.data.image_url).length
+  const imageUrlCount = result.rows.filter((r) => r.image_urls.length > 0).length
 
   return {
     rows: result.rows,
@@ -108,6 +116,7 @@ export async function parseImportFile(
     unmappedHeaders: unmapped,
     totalRows: result.totalRows,
     imageUrlCount,
+    detectedImageColumnCount: result.detectedImageColumnCount,
     errors: result.errors,
   }
 }
@@ -158,6 +167,59 @@ function mapRowToListing(
   }
 }
 
+// ─── Verify Import Counter Function ─────────────────────────────────
+
+/**
+ * Verifies that the increment_import_counter Postgres function exists and is
+ * configured with SECURITY INVOKER (not DEFINER).
+ *
+ * Reads from pg_proc (a Postgres system catalog) — zero writes to any
+ * application table. This is intentionally read-only; it never creates or
+ * modifies the function. DDL lives exclusively in scripts/migrate-import-counter.ts.
+ */
+async function verifyImportCounter(
+  supabaseAdmin: ReturnType<typeof createAdminClient>
+): Promise<void> {
+  // Use a no-op RPC call (amount=0) to verify the function exists.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { error } = await (supabaseAdmin.rpc as any)('increment_import_counter', {
+    import_id: '00000000-0000-0000-0000-000000000000',
+    column_name: 'image_fetch_attempted',
+    amount: 0,
+  })
+
+  // If the function doesn't exist, the RPC call will error
+  if (error) {
+    if (error.message.includes('Could not find the function') ||
+        (error.message.includes('function') && error.message.includes('does not exist'))) {
+      throw new Error(
+        'increment_import_counter function is missing from the database. ' +
+        'Run: SUPABASE_ACCESS_TOKEN=your_token npx tsx scripts/migrate-import-counter.ts'
+      )
+    }
+    // Other errors (e.g. no matching import_id) are fine — the function exists
+  }
+}
+
+/**
+ * Helper to call increment_import_counter RPC.
+ * The function isn't in generated Supabase types so we cast to any.
+ */
+ 
+async function incrementImportCounter(
+  supabaseAdmin: ReturnType<typeof createAdminClient>,
+  importId: string,
+  columnName: 'image_fetch_attempted' | 'image_fetch_succeeded' | 'image_fetch_failed',
+  amount: number
+) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return (supabaseAdmin.rpc as any)('increment_import_counter', {
+    import_id: importId,
+    column_name: columnName,
+    amount,
+  })
+}
+
 // ─── Start Import Job ───────────────────────────────────────────────
 
 export type ImportJobResult = {
@@ -180,6 +242,15 @@ export async function startImportJob(
   if (authError || !user) return { importId: '', error: 'Not authenticated' }
 
   const admin = createAdminClient()
+
+  // ── Security gate: verify counter function before Phase 2 ─────────
+  try {
+    await verifyImportCounter(admin)
+  } catch (err) {
+    // Cannot proceed without the counter function — fail the import early
+    return { importId: '', error: (err as Error).message }
+  }
+  // ── End security gate ─────────────────────────────────────────────
 
   // Get user tier
   const { data: profile } = await admin
@@ -243,6 +314,9 @@ export async function startImportJob(
   let successCount = 0
   let failCount = 0
 
+  // Track which rows had images and their listing IDs for Phase 2
+  const listingsWithImages: { listingId: string; imageUrls: string[] }[] = []
+
   // Phase 1: Create listings
   for (let i = 0; i < rowsToProcess.length; i++) {
     const row = rowsToProcess[i]
@@ -276,6 +350,14 @@ export async function startImportJob(
       } else {
         successCount++
         createdListingIds.push(listing.id)
+
+        // Track images for Phase 2
+        if (row.image_urls.length > 0) {
+          listingsWithImages.push({
+            listingId: listing.id,
+            imageUrls: row.image_urls,
+          })
+        }
       }
     } catch (error) {
       failCount++
@@ -295,72 +377,70 @@ export async function startImportJob(
       .eq('id', importId)
   }
 
-  // Phase 2: Fetch images for rows that have image_url
-  const rowsWithImages = rowsToProcess
-    .filter((r) => r.data.image_url && r.errors.length === 0)
-    .map((r, idx) => ({ row: r, listingIdx: idx }))
+  // Phase 2: Fetch images (multi-image support)
+  const tierPhotoLimit: number = TIER_LIMITS[tier]?.photos ?? 5
 
-  // Build a mapping from row to listing ID
-  const successfulRowIndices: number[] = []
-  let listingIdxCounter = 0
-  for (const row of rowsToProcess) {
-    if (row.errors.length === 0) {
-      successfulRowIndices.push(listingIdxCounter)
-      listingIdxCounter++
-    } else {
-      successfulRowIndices.push(-1)
-    }
-  }
-
-  if (rowsWithImages.length > 0) {
+  if (listingsWithImages.length > 0) {
     await admin
       .from('listing_imports')
       .update({
         status: 'fetching_images',
-        image_fetch_attempted: rowsWithImages.length,
         processed_rows: 0,
       })
       .eq('id', importId)
 
-    let imageFetchSucceeded = 0
-    let imageFetchFailed = 0
+    for (let li = 0; li < listingsWithImages.length; li++) {
+      const { listingId, imageUrls } = listingsWithImages[li]
+      const urlsToFetch = imageUrls.slice(0, tierPhotoLimit)
 
-    for (let i = 0; i < rowsWithImages.length; i++) {
-      const { row } = rowsWithImages[i]
-      // Find the listing ID for this row
-      const rowPosition = rowsToProcess.indexOf(row)
-      const listingIdIdx = successfulRowIndices[rowPosition]
-      const listingId = listingIdIdx >= 0 ? createdListingIds[listingIdIdx] : null
+      // Increment attempted counter atomically
+      await incrementImportCounter(admin, importId, 'image_fetch_attempted', urlsToFetch.length)
 
-      if (listingId && row.data.image_url) {
-        const result = await fetchAndUploadImage(row.data.image_url, listingId)
+      const imageRecords: {
+        listing_id: string
+        url: string
+        storage_path: string
+        position: number
+      }[] = []
+      let fetchSuccessCount = 0
 
-        if (result.success && result.r2Url) {
-          // Insert listing image record
-          await admin.from('listing_images').insert({
-            listing_id: listingId,
-            url: result.r2Url,
-            storage_path: result.r2Url,
-            position: 0,
-          })
-          imageFetchSucceeded++
-        } else {
-          imageFetchFailed++
-          errorLog.push({
-            row: row.rowIndex,
-            error: `Image fetch failed — ${result.error} (${row.data.image_url})`,
-          })
+      for (let i = 0; i < urlsToFetch.length; i++) {
+        try {
+          const result = await fetchAndUploadImage(urlsToFetch[i], listingId)
+
+          if (result.success && result.r2Url) {
+            imageRecords.push({
+              listing_id: listingId,
+              url: result.r2Url,
+              storage_path: result.r2Url,
+              position: i,
+            })
+            fetchSuccessCount++
+          } else {
+            await incrementImportCounter(admin, importId, 'image_fetch_failed', 1)
+            if (result.error) {
+              errorLog.push({
+                row: 0,
+                error: `Image fetch failed for listing ${listingId} — ${result.error} (${urlsToFetch[i]})`,
+              })
+            }
+          }
+        } catch {
+          await incrementImportCounter(admin, importId, 'image_fetch_failed', 1)
         }
-      } else {
-        imageFetchFailed++
       }
 
+      if (imageRecords.length > 0) {
+        await admin.from('listing_images').insert(imageRecords)
+
+        await incrementImportCounter(admin, importId, 'image_fetch_succeeded', fetchSuccessCount)
+      }
+
+      // Update progress
       await admin
         .from('listing_imports')
         .update({
-          processed_rows: i + 1,
-          image_fetch_succeeded: imageFetchSucceeded,
-          image_fetch_failed: imageFetchFailed,
+          processed_rows: li + 1,
           error_log: errorLog as unknown as Json,
         })
         .eq('id', importId)

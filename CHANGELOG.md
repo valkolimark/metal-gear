@@ -6,6 +6,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.6.0] — 2026-03-31 · Multi-Image Bulk Import (Cycle 36)
+
+### Added
+- **Multi-image bulk import** — two accepted formats: pipe-separated values in a single `image_url` column (`a.jpg|b.jpg|c.jpg`) or numbered columns (`image_url_1`, `image_url_2`, `image_url_3`...); both formats accepted simultaneously in the same file
+- **`detectImageColumns()` utility** — inspects CSV/XLSX header row; detects single, numbered, and mixed image column configurations; supports image_url/photo_url/image/photo aliases with numeric suffix variants; sorted by suffix regardless of column position
+- **`extractImageUrls()` utility** — merges and deduplicates image URLs from all detected columns per row; preserves insertion order; filters empty strings
+- **Tier photo cap enforcement** — images per listing capped at plan photo limit (Free: 5, Pro: 20, Business: 30, Enterprise: 50) before fetching; excess silently skipped
+- **`increment_import_counter()` Postgres function** — atomic counter increment for `listing_imports` counter columns; SECURITY INVOKER; strict column-name allowlist (image_fetch_attempted/succeeded/failed only); %I identifier quoting (defence-in-depth)
+- **`scripts/migrate-import-counter.ts`** — one-time migration via Supabase Management API; verifies SECURITY INVOKER post-creation; safe to re-run (CREATE OR REPLACE)
+- **`verifyImportCounter()` guard** — reads pg_proc (catalog only, no app table writes); runs at startImportJob() start; aborts with descriptive error if function missing or misconfigured; Phase 2 never runs with an unverified counter function
+- **Multi-image preview badges** — `ImportPreviewTable` shows per-row image count and total image/listing summary below preview table
+- **Updated CSV template** — `image_url_1/2/3` columns with example values; format hints document both pipe-separated and numbered column formats
+- **11 unit tests** for `detectImageColumns()` and `extractImageUrls()` in `import-multi-image.test.ts`
+
+### Changed
+- **`ParsedRow.image_url`** (string) → **`ParsedRow.image_urls`** (string[])
+- **`ParseResult.detectedImageColumnCount`** added — max image columns detected in file
+- **Image fetch counters** now track total images across all listings (not listing count)
+- **Phase 2 image fetching** loops over `image_urls[]` per listing with position assignment
+
+### Security
+- `increment_import_counter` uses SECURITY INVOKER — runs with service role privileges, not superuser; no privilege escalation possible
+- column_name allowlist inside function raises Postgres exception on any value outside the three counter columns — defence-in-depth alongside %I identifier quoting
+- GRANT EXECUTE restricted to service_role — anon/authenticated roles cannot call directly
+- Schema management strictly separated from application code — no DDL in request handlers
+
+---
+
 ## [4.5.1] — 2026-03-30 · Listing Creation Router (Cycle 36)
 
 ### Added

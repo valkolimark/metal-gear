@@ -1,6 +1,6 @@
 'use client'
 
-import { Check, X, AlertTriangle, ImageIcon } from 'lucide-react'
+import { Check, X, AlertTriangle, ImageIcon, Images } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,7 @@ export function ImportPreviewTable({
   const validCount = result.rows.filter((r) => r.errors.length === 0).length
   const errorRowCount = result.rows.filter((r) => r.errors.length > 0).length
   const previewRows = result.rows.slice(0, 5)
+  const hasImages = result.rows.some((r) => r.image_urls.length > 0)
 
   return (
     <div className="space-y-4">
@@ -38,10 +39,14 @@ export function ImportPreviewTable({
               {errorRowCount} errors
             </Badge>
           )}
-          {result.imageUrlCount > 0 && (
+          {result.detectedImageColumnCount > 0 && (
             <Badge className="bg-blue-500/20 font-body text-blue-400">
               <ImageIcon className="mr-1 size-3" />
-              {result.imageUrlCount} image URL{result.imageUrlCount !== 1 ? 's' : ''} detected
+              {result.rows.some(r => r.image_urls.length > 1)
+                ? result.detectedImageColumnCount > 1
+                  ? `${result.detectedImageColumnCount} image columns`
+                  : 'Multi-image (pipe-separated)'
+                : '1 image column'}
             </Badge>
           )}
           {result.unmappedHeaders.length > 0 && (
@@ -117,9 +122,9 @@ export function ImportPreviewTable({
                   <th className="p-3 text-left text-xs font-medium text-muted-foreground">
                     Location
                   </th>
-                  {result.imageUrlCount > 0 && (
+                  {hasImages && (
                     <th className="p-3 text-left text-xs font-medium text-muted-foreground">
-                      Image
+                      Images
                     </th>
                   )}
                   <th className="p-3 text-left text-xs font-medium text-muted-foreground">
@@ -161,12 +166,17 @@ export function ImportPreviewTable({
                           .filter(Boolean)
                           .join(', ') || '—'}
                       </td>
-                      {result.imageUrlCount > 0 && (
+                      {hasImages && (
                         <td className="p-3 text-foreground">
-                          {row.data.image_url ? (
-                            <ImageIcon className="size-4 text-blue-400" />
+                          {row.image_urls.length === 0 ? (
+                            <span className="text-xs text-muted-foreground">—</span>
+                          ) : row.image_urls.length === 1 ? (
+                            <Badge variant="secondary" className="text-xs">1 image</Badge>
                           ) : (
-                            '—'
+                            <Badge variant="secondary" className="gap-1 text-xs">
+                              <Images className="size-3" />
+                              {row.image_urls.length} images
+                            </Badge>
                           )}
                         </td>
                       )}
@@ -197,6 +207,19 @@ export function ImportPreviewTable({
           )}
         </CardContent>
       </Card>
+
+      {/* Image summary */}
+      {(() => {
+        const totalImageCount = result.rows.reduce((n, r) => n + r.image_urls.length, 0)
+        const rowsWithImages = result.rows.filter(r => r.image_urls.length > 0).length
+        if (totalImageCount === 0) return null
+        return (
+          <p className="text-xs text-muted-foreground">
+            {totalImageCount} total image{totalImageCount !== 1 ? 's' : ''} detected across{' '}
+            {rowsWithImages} listing{rowsWithImages !== 1 ? 's' : ''}
+          </p>
+        )
+      })()}
     </div>
   )
 }

@@ -201,12 +201,15 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 
 ## Bulk Import Upgrade (Cycle 34)
 - **Formats:** CSV, XLSX/XLS (via ExcelJS), Google Sheets URL (fetched server-side as CSV export)
-- **File parser:** `src/lib/import/parse-file.ts` — `parseCSV()`, `parseXLSX()`, `parseGoogleSheet()`, `getMappedHeaders()`; flexible column aliases (e.g., "make" → manufacturer, "photo url" → image_url)
+- **File parser:** `src/lib/import/parse-file.ts` — `parseCSV()`, `parseXLSX()`, `parseGoogleSheet()`, `getMappedHeaders()`, `detectImageColumns()`, `extractImageUrls()`; flexible column aliases (e.g., "make" → manufacturer, "photo url" → image_url)
 - **Image fetcher:** `src/lib/import/fetch-image.ts` — `fetchAndUploadImage(url, listingId)` with 15s timeout, content-type validation, 10MB limit; uploads to R2 via `uploadListingImage()`
 - **Server actions:** `src/app/actions/import.ts` — `parseImportFile()` (FormData → ParseResult), `startImportJob()` (two-phase: create listings → fetch images), `getImportProgress()`, `getImportHistory()`
 - **Progress endpoint:** `GET /api/import/progress/[importId]` — polls `listing_imports` table; auth-gated to import owner
 - **UI components:** `src/app/(main)/listings/import/components/` — `ImportUploadZone` (3-tab format switcher + drag-drop), `ImportPreviewTable` (5-row preview with column mapping badges), `ImportProgressBar` (two-phase with polling), `ImportCompleteSummary` (stats + expandable error details)
 - **DB columns added to `listing_imports`:** `company_id`, `file_format`, `processed_rows`, `successful_rows`, `failed_rows`, `image_fetch_attempted/succeeded/failed`, `status` (pending/parsing/importing/fetching_images/complete/failed), `error_log` JSONB, `created_listing_ids` uuid[]
+- **Multi-image support:** `image_urls: string[]` on ParsedRow; pipe-separated single column OR numbered columns (image_url_1...N); tier photo limit enforced before fetch
+- **Counter function:** `increment_import_counter(import_id, column_name, amount)`; SECURITY INVOKER; allowlist: image_fetch_attempted/succeeded/failed; created via `scripts/migrate-import-counter.ts` (never at runtime in application code)
+- **`verifyImportCounter()`** — reads pg_proc; runs at startImportJob() start before Phase 2; aborts import if function missing or has SECURITY DEFINER
 - **Fail-open:** image fetch failure never blocks listing creation; failures counted and shown in summary
 - **Tier gate:** Pro+ required; tier limit checked before import start; excess rows skipped with warning
 

@@ -19,9 +19,9 @@ import type { ParseImportResult } from '@/app/actions/import'
 type FileFormat = 'csv' | 'xlsx' | 'google_sheets'
 
 const CSV_TEMPLATE =
-  'title,description,category,condition,price,city,state,industry,manufacturer,model,year,image_url\n' +
-  '"CNC Milling Machine 5-Axis","High-precision 5-axis CNC mill, 2020 model",CNC Machines,good,45000,Houston,TX,Manufacturing,Haas,VF-2SS,2020,https://example.com/cnc.jpg\n' +
-  '"Industrial Air Compressor 100HP","Atlas Copco rotary screw compressor",Compressors,like_new,28500,Houston,TX,Oil & Gas,Atlas Copco,GA90,2019,\n'
+  'title,description,category,condition,price,city,state,industry,manufacturer,model,year,image_url_1,image_url_2,image_url_3\n' +
+  '"CNC Milling Machine 5-Axis","High-precision 5-axis CNC mill, 2020 model",CNC Machines,good,45000,Houston,TX,Manufacturing,Haas,VF-2SS,2020,https://example.com/cnc-front.jpg,https://example.com/cnc-side.jpg,https://example.com/cnc-nameplate.jpg\n' +
+  '"Industrial Air Compressor 100HP","Atlas Copco rotary screw compressor",Compressors,like_new,28500,Houston,TX,Oil & Gas,Atlas Copco,GA90,2019,,\n'
 
 interface ImportUploadZoneProps {
   onParsed: (result: ParseImportResult, fileName: string | null, format: FileFormat) => void
@@ -261,6 +261,23 @@ export function ImportUploadZone({ onParsed }: ImportUploadZoneProps) {
               CSV
             </Button>
           </div>
+        </div>
+
+        {/* Format Hints */}
+        <div className="space-y-1.5">
+          <p className="font-body text-xs font-medium text-muted-foreground">Image columns</p>
+          <ul className="list-inside list-disc space-y-1 font-body text-xs text-muted-foreground">
+            <li>
+              <code className="rounded bg-muted px-1 py-0.5">image_url_1</code>,{' '}
+              <code className="rounded bg-muted px-1 py-0.5">image_url_2</code>,{' '}
+              <code className="rounded bg-muted px-1 py-0.5">image_url_3</code>...
+              — numbered image columns, one URL per column (up to your plan&apos;s photo limit)
+            </li>
+            <li>
+              <code className="rounded bg-muted px-1 py-0.5">image_url</code> — single column also accepted; pipe-separate multiple URLs:{' '}
+              <code className="rounded bg-muted px-1 py-0.5">https://img1.jpg|https://img2.jpg</code>
+            </li>
+          </ul>
         </div>
       </CardContent>
     </Card>
