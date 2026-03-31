@@ -210,6 +210,8 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Multi-image support:** `image_urls: string[]` on ParsedRow; pipe-separated single column OR numbered columns (image_url_1...N); tier photo limit enforced before fetch
 - **Counter function:** `increment_import_counter(import_id, column_name, amount)`; SECURITY INVOKER; allowlist: image_fetch_attempted/succeeded/failed; created via `scripts/migrate-import-counter.ts` (never at runtime in application code)
 - **`verifyImportCounter()`** — reads pg_proc; runs at startImportJob() start before Phase 2; aborts import if function missing or has SECURITY DEFINER
+- **Dedup/update flow:** `checkImportDuplicates()` matches by SKU or title+manufacturer+model within company; three modes: skip, update existing, or create all new; `DuplicateMode` type
+- **Bulk delete:** `bulkDeleteListings(ids)` soft-deletes up to 1000 listings; `bulkDeleteByImport(importId)` removes all listings from an import job; My Listings page has multi-select + bulk remove action bar
 - **Fail-open:** image fetch failure never blocks listing creation; failures counted and shown in summary
 - **Tier gate:** Pro+ required; tier limit checked before import start; excess rows skipped with warning
 

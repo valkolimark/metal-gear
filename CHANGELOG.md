@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.7.0] — 2026-03-31 · Import Dedup & Bulk Delete (Cycle 36)
+
+### Added
+- **Import duplicate detection** — on file parse, automatically checks existing listings by SKU (exact match) or title+manufacturer+model combo; displays duplicate count badge in preview
+- **Duplicate handling modes** — three options when duplicates detected: **Skip** (import only new rows), **Update** (update existing listings' fields + create new), **Create all as new** (original behavior); defaults to Skip
+- **`checkImportDuplicates()`** server action — scans parsed rows against active/draft listings within the same company; returns duplicate count, new count, and matched SKUs
+- **Bulk delete on My Listings page** — checkbox multi-select with "Select all" toggle; bulk "Remove N listings" destructive action bar; soft-deletes (status → removed)
+- **Delete all from import** — trash icon on each import history entry; calls `bulkDeleteByImport()` to remove all listings created by that import job
+- **`bulkDeleteListings()`** server action — accepts up to 1000 listing IDs; verifies ownership; soft-deletes in single query
+- **`bulkDeleteByImport()`** server action — looks up `created_listing_ids` from import record; delegates to `bulkDeleteListings()`
+
+### Changed
+- **`startImportJob()`** accepts optional `duplicateMode` parameter (`create_new` | `skip` | `update`); defaults to `create_new` for backward compatibility
+- **`ImportJobResult`** now includes `updatedCount` and `skippedCount` fields
+- **`ImportPreviewTable`** shows duplicate handling card with mode selector when duplicates detected; shows "checking duplicates..." badge during scan
+- **Import page** runs `checkImportDuplicates()` in background after parse; passes `duplicateMode` to `startImportJob()`; shows toast for skipped/updated counts on completion
+- **My Listings page** has checkbox column on each non-removed listing; select all toggle; bulk action bar appears when selections active
+
+---
+
 ## [4.6.0] — 2026-03-31 · Multi-Image Bulk Import (Cycle 36)
 
 ### Added

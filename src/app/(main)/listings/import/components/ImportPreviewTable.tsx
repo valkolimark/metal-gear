@@ -1,16 +1,20 @@
 'use client'
 
-import { Check, X, AlertTriangle, ImageIcon, Images } from 'lucide-react'
+import { Check, X, AlertTriangle, ImageIcon, Images, Copy, RefreshCw, SkipForward, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import type { ParseImportResult } from '@/app/actions/import'
+import type { ParseImportResult, DuplicateMode, DedupResult } from '@/app/actions/import'
 
 interface ImportPreviewTableProps {
   result: ParseImportResult
   onImport: () => void
   onCancel: () => void
   importing: boolean
+  dedupResult?: DedupResult | null
+  duplicateMode?: DuplicateMode
+  onDuplicateModeChange?: (mode: DuplicateMode) => void
+  checkingDupes?: boolean
 }
 
 export function ImportPreviewTable({
@@ -18,11 +22,16 @@ export function ImportPreviewTable({
   onImport,
   onCancel,
   importing,
+  dedupResult,
+  duplicateMode = 'create_new',
+  onDuplicateModeChange,
+  checkingDupes,
 }: ImportPreviewTableProps) {
   const validCount = result.rows.filter((r) => r.errors.length === 0).length
   const errorRowCount = result.rows.filter((r) => r.errors.length > 0).length
   const previewRows = result.rows.slice(0, 5)
   const hasImages = result.rows.some((r) => r.image_urls.length > 0)
+  const hasDuplicates = dedupResult && dedupResult.duplicateCount > 0
 
   return (
     <div className="space-y-4">
@@ -47,6 +56,18 @@ export function ImportPreviewTable({
                   ? `${result.detectedImageColumnCount} image columns`
                   : 'Multi-image (pipe-separated)'
                 : '1 image column'}
+            </Badge>
+          )}
+          {checkingDupes && (
+            <Badge className="bg-muted font-body text-muted-foreground">
+              <Loader2 className="mr-1 size-3 animate-spin" />
+              Checking duplicates...
+            </Badge>
+          )}
+          {hasDuplicates && (
+            <Badge className="bg-orange-500/20 font-body text-orange-400">
+              <Copy className="mr-1 size-3" />
+              {dedupResult.duplicateCount} duplicate{dedupResult.duplicateCount !== 1 ? 's' : ''} found
             </Badge>
           )}
           {result.unmappedHeaders.length > 0 && (
@@ -74,6 +95,53 @@ export function ImportPreviewTable({
           </Button>
         </div>
       </div>
+
+      {/* Duplicate Handling Options */}
+      {hasDuplicates && onDuplicateModeChange && (
+        <Card className="border-orange-500/30 bg-orange-500/5">
+          <CardContent className="p-4">
+            <p className="mb-3 font-body text-sm font-medium text-foreground">
+              {dedupResult.duplicateCount} listing{dedupResult.duplicateCount !== 1 ? 's' : ''} already exist{dedupResult.duplicateCount === 1 ? 's' : ''} (matched by SKU or title+manufacturer+model).
+              How should duplicates be handled?
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                variant={duplicateMode === 'skip' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onDuplicateModeChange('skip')}
+                className="font-body"
+              >
+                <SkipForward className="mr-1.5 size-3" />
+                Skip duplicates ({dedupResult.newCount} new only)
+              </Button>
+              <Button
+                variant={duplicateMode === 'update' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onDuplicateModeChange('update')}
+                className="font-body"
+              >
+                <RefreshCw className="mr-1.5 size-3" />
+                Update existing + create new
+              </Button>
+              <Button
+                variant={duplicateMode === 'create_new' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => onDuplicateModeChange('create_new')}
+                className="font-body"
+              >
+                <Copy className="mr-1.5 size-3" />
+                Create all as new
+              </Button>
+            </div>
+            {dedupResult.duplicateSkus.length > 0 && (
+              <p className="mt-2 font-body text-xs text-muted-foreground">
+                Matched SKUs: {dedupResult.duplicateSkus.join(', ')}
+                {dedupResult.duplicateCount > dedupResult.duplicateSkus.length && ` and ${dedupResult.duplicateCount - dedupResult.duplicateSkus.length} more`}
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Column Mapping Info */}
       <div className="flex flex-wrap gap-2">

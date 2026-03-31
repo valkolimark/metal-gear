@@ -222,16 +222,112 @@ async function incrementImportCounter(
 
 // ─── Start Import Job ───────────────────────────────────────────────
 
+export type DuplicateMode = 'create_new' | 'skip' | 'update'
+
+export type DedupResult = {
+  duplicateCount: number
+  newCount: number
+  duplicateSkus: string[]
+}
+
 export type ImportJobResult = {
   importId: string
   error?: string
   tierLimitWarning?: string
+  updatedCount?: number
+  skippedCount?: number
+}
+
+// ─── Check for Duplicates ───────────────────────────────────────────
+
+/**
+ * Checks imported rows against existing listings in the same company.
+ * Matches by SKU (exact) or by title+manufacturer+model (fuzzy).
+ * Returns counts and matched SKUs for the UI to display.
+ */
+export async function checkImportDuplicates(
+  rows: ParsedRow[]
+): Promise<DedupResult & { error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { duplicateCount: 0, newCount: rows.length, duplicateSkus: [], error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+  const companyId = await getActiveCompanyId(user.id)
+  if (!companyId) return { duplicateCount: 0, newCount: rows.length, duplicateSkus: [] }
+
+  // Fetch existing listings for this company (active/draft only)
+  const { data: existing } = await admin
+    .from('listings')
+    .select('id, title, sku, specifications')
+    .eq('company_id', companyId)
+    .in('status', ['active', 'draft'])
+
+  if (!existing || existing.length === 0) {
+    return { duplicateCount: 0, newCount: rows.length, duplicateSkus: [] }
+  }
+
+  // Build lookup indexes
+  const skuMap = new Map<string, string>() // sku → listing id
+  const titleKeyMap = new Map<string, string>() // "title|mfr|model" → listing id
+  for (const l of existing) {
+    if (l.sku) skuMap.set(l.sku.toLowerCase().trim(), l.id)
+    const specs = l.specifications as Record<string, unknown> | null
+    const key = buildTitleKey(l.title, specs?.manufacturer as string, specs?.model as string)
+    if (key) titleKeyMap.set(key, l.id)
+  }
+
+  let duplicateCount = 0
+  const duplicateSkus: string[] = []
+
+  for (const row of rows) {
+    if (row.errors.length > 0) continue
+    const match = findDuplicate(row.data, skuMap, titleKeyMap)
+    if (match) {
+      duplicateCount++
+      if (row.data.sku) duplicateSkus.push(row.data.sku)
+    }
+  }
+
+  return {
+    duplicateCount,
+    newCount: rows.filter(r => r.errors.length === 0).length - duplicateCount,
+    duplicateSkus: duplicateSkus.slice(0, 10), // Show up to 10 for preview
+  }
+}
+
+function buildTitleKey(title: string, manufacturer?: string, model?: string): string | null {
+  const t = title?.toLowerCase().trim()
+  if (!t) return null
+  const m = manufacturer?.toLowerCase().trim() || ''
+  const mo = model?.toLowerCase().trim() || ''
+  return `${t}|${m}|${mo}`
+}
+
+function findDuplicate(
+  data: Record<string, string>,
+  skuMap: Map<string, string>,
+  titleKeyMap: Map<string, string>
+): string | null {
+  // SKU match takes priority
+  if (data.sku) {
+    const match = skuMap.get(data.sku.toLowerCase().trim())
+    if (match) return match
+  }
+  // Fallback: title + manufacturer + model
+  const key = buildTitleKey(data.title, data.manufacturer, data.model)
+  if (key) {
+    const match = titleKeyMap.get(key)
+    if (match) return match
+  }
+  return null
 }
 
 export async function startImportJob(
   rows: ParsedRow[],
   fileName: string | null,
-  fileFormat: string
+  fileFormat: string,
+  duplicateMode: DuplicateMode = 'create_new'
 ): Promise<ImportJobResult> {
   const supabase = await createClient()
   const {
@@ -313,11 +409,34 @@ export async function startImportJob(
   const errorLog: { row: number; error: string }[] = []
   let successCount = 0
   let failCount = 0
+  let skippedCount = 0
+  let updatedCount = 0
 
   // Track which rows had images and their listing IDs for Phase 2
   const listingsWithImages: { listingId: string; imageUrls: string[] }[] = []
 
-  // Phase 1: Create listings
+  // Build dedup indexes if needed
+  const skuMap = new Map<string, string>()
+  const titleKeyMap = new Map<string, string>()
+
+  if (duplicateMode !== 'create_new') {
+    const { data: existing } = await admin
+      .from('listings')
+      .select('id, title, sku, specifications')
+      .eq('company_id', companyId)
+      .in('status', ['active', 'draft'])
+
+    if (existing) {
+      for (const l of existing) {
+        if (l.sku) skuMap.set(l.sku.toLowerCase().trim(), l.id)
+        const specs = l.specifications as Record<string, unknown> | null
+        const key = buildTitleKey(l.title, specs?.manufacturer as string, specs?.model as string)
+        if (key) titleKeyMap.set(key, l.id)
+      }
+    }
+  }
+
+  // Phase 1: Create or update listings
   for (let i = 0; i < rowsToProcess.length; i++) {
     const row = rowsToProcess[i]
 
@@ -338,25 +457,60 @@ export async function startImportJob(
 
     try {
       const listingData = mapRowToListing(row.data, companyId, user.id)
-      const { data: listing, error } = await admin
-        .from('listings')
-        .insert(listingData)
-        .select('id')
-        .single()
 
-      if (error || !listing) {
-        failCount++
-        errorLog.push({ row: row.rowIndex, error: error?.message || 'Unknown insert error' })
+      // Check for duplicate if mode is skip or update
+      const existingId = duplicateMode !== 'create_new'
+        ? findDuplicate(row.data, skuMap, titleKeyMap)
+        : null
+
+      if (existingId && duplicateMode === 'skip') {
+        skippedCount++
+        errorLog.push({ row: row.rowIndex, error: `Skipped — duplicate of existing listing (${row.data.sku || row.data.title})` })
+      } else if (existingId && duplicateMode === 'update') {
+        // Update existing listing fields (don't change seller_id, company_id, status)
+        const { seller_id: _s, company_id: _c, status: _st, ai_assist_used: _a, ...updateFields } = listingData
+        const { error } = await admin
+          .from('listings')
+          .update(updateFields)
+          .eq('id', existingId)
+
+        if (error) {
+          failCount++
+          errorLog.push({ row: row.rowIndex, error: `Update failed: ${error.message}` })
+        } else {
+          updatedCount++
+          createdListingIds.push(existingId)
+
+          // Track images for Phase 2 (will replace existing images)
+          if (row.image_urls.length > 0) {
+            listingsWithImages.push({
+              listingId: existingId,
+              imageUrls: row.image_urls,
+            })
+          }
+        }
       } else {
-        successCount++
-        createdListingIds.push(listing.id)
+        // Create new listing
+        const { data: listing, error } = await admin
+          .from('listings')
+          .insert(listingData)
+          .select('id')
+          .single()
 
-        // Track images for Phase 2
-        if (row.image_urls.length > 0) {
-          listingsWithImages.push({
-            listingId: listing.id,
-            imageUrls: row.image_urls,
-          })
+        if (error || !listing) {
+          failCount++
+          errorLog.push({ row: row.rowIndex, error: error?.message || 'Unknown insert error' })
+        } else {
+          successCount++
+          createdListingIds.push(listing.id)
+
+          // Track images for Phase 2
+          if (row.image_urls.length > 0) {
+            listingsWithImages.push({
+              listingId: listing.id,
+              imageUrls: row.image_urls,
+            })
+          }
         }
       }
     } catch (error) {
@@ -369,7 +523,7 @@ export async function startImportJob(
       .from('listing_imports')
       .update({
         processed_rows: i + 1,
-        successful_rows: successCount,
+        successful_rows: successCount + updatedCount,
         failed_rows: failCount,
         error_log: errorLog as unknown as Json,
         created_listing_ids: createdListingIds,
@@ -457,7 +611,69 @@ export async function startImportJob(
     })
     .eq('id', importId)
 
-  return { importId, tierLimitWarning }
+  return { importId, tierLimitWarning, updatedCount, skippedCount }
+}
+
+// ─── Bulk Delete Listings ───────────────────────────────────────────
+
+export async function bulkDeleteListings(
+  listingIds: string[]
+): Promise<{ deletedCount: number; error?: string }> {
+  if (listingIds.length === 0) return { deletedCount: 0, error: 'No listings selected' }
+  if (listingIds.length > 1000) return { deletedCount: 0, error: 'Cannot delete more than 1000 listings at once' }
+
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { deletedCount: 0, error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  // Verify ownership of all listings
+  const { data: owned, error: fetchError } = await admin
+    .from('listings')
+    .select('id')
+    .eq('seller_id', user.id)
+    .in('id', listingIds)
+
+  if (fetchError) return { deletedCount: 0, error: fetchError.message }
+
+  const ownedIds = (owned || []).map(l => l.id)
+  if (ownedIds.length === 0) return { deletedCount: 0, error: 'No authorized listings found' }
+
+  // Soft-delete: set status to 'removed'
+  const { error } = await admin
+    .from('listings')
+    .update({ status: 'removed' })
+    .in('id', ownedIds)
+
+  if (error) return { deletedCount: 0, error: error.message }
+
+  return { deletedCount: ownedIds.length }
+}
+
+export async function bulkDeleteByImport(
+  importId: string
+): Promise<{ deletedCount: number; error?: string }> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { deletedCount: 0, error: 'Not authenticated' }
+
+  const admin = createAdminClient()
+
+  // Get the import record and verify ownership
+  const { data: importRecord } = await admin
+    .from('listing_imports')
+    .select('created_listing_ids')
+    .eq('id', importId)
+    .eq('user_id', user.id)
+    .single()
+
+  if (!importRecord?.created_listing_ids) {
+    return { deletedCount: 0, error: 'Import not found or no listings to delete' }
+  }
+
+  const listingIds = importRecord.created_listing_ids as string[]
+  return bulkDeleteListings(listingIds)
 }
 
 // ─── Get Import Progress ────────────────────────────────────────────

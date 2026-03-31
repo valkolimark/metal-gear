@@ -2,18 +2,18 @@
 
 import { useState, useCallback, useEffect } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, FileSpreadsheet, Clock } from 'lucide-react'
+import { ArrowLeft, FileSpreadsheet, Clock, Trash2, Loader2 as Loader2Icon } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { useAuthStore } from '@/stores/auth-store'
-import { startImportJob, getImportHistory } from '@/app/actions/import'
+import { startImportJob, getImportHistory, checkImportDuplicates, bulkDeleteByImport } from '@/app/actions/import'
 import { ImportUploadZone } from './components/ImportUploadZone'
 import { ImportPreviewTable } from './components/ImportPreviewTable'
 import { ImportProgressBar } from './components/ImportProgressBar'
 import { ImportCompleteSummary } from './components/ImportCompleteSummary'
-import type { ParseImportResult } from '@/app/actions/import'
+import type { ParseImportResult, DuplicateMode, DedupResult } from '@/app/actions/import'
 import type { ImportProgressData } from './components/ImportProgressBar'
 import type { Tables } from '@/types/database'
 
@@ -30,6 +30,10 @@ export default function ImportPage() {
   const [importId, setImportId] = useState<string | null>(null)
   const [completeData, setCompleteData] = useState<ImportProgressData | null>(null)
   const [history, setHistory] = useState<Tables<'listing_imports'>[]>([])
+  const [dedupResult, setDedupResult] = useState<DedupResult | null>(null)
+  const [duplicateMode, setDuplicateMode] = useState<DuplicateMode>('create_new')
+  const [checkingDupes, setCheckingDupes] = useState(false)
+  const [deletingImport, setDeletingImport] = useState<string | null>(null)
 
   useEffect(() => {
     getImportHistory().then((res) => setHistory(res.imports ?? []))
@@ -46,11 +50,29 @@ export default function ImportPage() {
   }, [step])
 
   const handleParsed = useCallback(
-    (result: ParseImportResult, name: string | null, format: FileFormat) => {
+    async (result: ParseImportResult, name: string | null, format: FileFormat) => {
       setParseResult(result)
       setFileName(name)
       setFileFormat(format)
       setStep('preview')
+
+      // Check for duplicates in background
+      const validRows = result.rows.filter(r => r.errors.length === 0)
+      if (validRows.length > 0) {
+        setCheckingDupes(true)
+        try {
+          const dupes = await checkImportDuplicates(result.rows)
+          if (!dupes.error) {
+            setDedupResult(dupes)
+            if (dupes.duplicateCount > 0) {
+              setDuplicateMode('skip') // Default to skip when dupes found
+            }
+          }
+        } catch {
+          // Non-critical — proceed without dedup info
+        }
+        setCheckingDupes(false)
+      }
     },
     []
   )
@@ -67,7 +89,7 @@ export default function ImportPage() {
     setStep('importing')
 
     try {
-      const result = await startImportJob(parseResult.rows, fileName, fileFormat)
+      const result = await startImportJob(parseResult.rows, fileName, fileFormat, duplicateMode)
 
       if (result.error) {
         toast.error(result.error)
@@ -79,12 +101,20 @@ export default function ImportPage() {
         toast.warning(result.tierLimitWarning)
       }
 
+      if (result.skippedCount && result.skippedCount > 0) {
+        toast.info(`${result.skippedCount} duplicate${result.skippedCount !== 1 ? 's' : ''} skipped`)
+      }
+
+      if (result.updatedCount && result.updatedCount > 0) {
+        toast.success(`${result.updatedCount} existing listing${result.updatedCount !== 1 ? 's' : ''} updated`)
+      }
+
       setImportId(result.importId)
     } catch {
       toast.error('Failed to start import')
       setStep('preview')
     }
-  }, [parseResult, fileName, fileFormat])
+  }, [parseResult, fileName, fileFormat, duplicateMode])
 
   const handleComplete = useCallback((data: ImportProgressData) => {
     setCompleteData(data)
@@ -93,12 +123,30 @@ export default function ImportPage() {
     getImportHistory().then((r) => setHistory(r.imports ?? []))
   }, [])
 
+  async function handleDeleteImport(impId: string) {
+    setDeletingImport(impId)
+    try {
+      const result = await bulkDeleteByImport(impId)
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(`${result.deletedCount} listing${result.deletedCount !== 1 ? 's' : ''} removed`)
+        getImportHistory().then((r) => setHistory(r.imports ?? []))
+      }
+    } catch {
+      toast.error('Failed to delete import listings')
+    }
+    setDeletingImport(null)
+  }
+
   function resetImport() {
     setStep('upload')
     setParseResult(null)
     setFileName(null)
     setImportId(null)
     setCompleteData(null)
+    setDedupResult(null)
+    setDuplicateMode('create_new')
   }
 
   if (tier === 'free') {
@@ -203,6 +251,22 @@ export default function ImportPage() {
                             {imp.image_fetch_succeeded} images
                           </Badge>
                         )}
+                        {imp.created_listing_ids && (imp.created_listing_ids as string[]).length > 0 && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="size-8 text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteImport(imp.id)}
+                            disabled={deletingImport === imp.id}
+                            title="Remove all listings from this import"
+                          >
+                            {deletingImport === imp.id ? (
+                              <Loader2Icon className="size-3.5 animate-spin" />
+                            ) : (
+                              <Trash2 className="size-3.5" />
+                            )}
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -220,6 +284,10 @@ export default function ImportPage() {
           onImport={handleImport}
           onCancel={resetImport}
           importing={false}
+          dedupResult={dedupResult}
+          duplicateMode={duplicateMode}
+          onDuplicateModeChange={setDuplicateMode}
+          checkingDupes={checkingDupes}
         />
       )}
 

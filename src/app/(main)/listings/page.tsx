@@ -17,6 +17,8 @@ import {
   QrCode,
   RefreshCw,
   Clock,
+  Square,
+  CheckSquare,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -38,6 +40,7 @@ import {
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { updateListingStatus, duplicateListing, renewListing, toggleAutoRenew } from './actions'
+import { bulkDeleteListings } from '@/app/actions/import'
 import { APP_URL } from '@/lib/constants'
 import type { Listing } from '@/types/listings'
 
@@ -56,6 +59,8 @@ export default function ListingsPage() {
   const [loading, setLoading] = useState(true)
   const [qrDialogOpen, setQrDialogOpen] = useState(false)
   const [qrListingId, setQrListingId] = useState<string | null>(null)
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkDeleting, setBulkDeleting] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -74,6 +79,46 @@ export default function ListingsPage() {
         setLoading(false)
       })
   }, [user])
+
+  const selectableListings = listings.filter(l => l.status !== 'removed')
+  const allSelected = selectableListings.length > 0 && selectableListings.every(l => selectedIds.has(l.id))
+
+  function toggleSelect(id: string) {
+    setSelectedIds(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  function toggleSelectAll() {
+    if (allSelected) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(selectableListings.map(l => l.id)))
+    }
+  }
+
+  async function handleBulkDelete() {
+    if (selectedIds.size === 0) return
+    setBulkDeleting(true)
+    try {
+      const result = await bulkDeleteListings(Array.from(selectedIds))
+      if (result.error) {
+        toast.error(result.error)
+      } else {
+        toast.success(`${result.deletedCount} listing${result.deletedCount !== 1 ? 's' : ''} removed`)
+        setListings(prev => prev.map(l =>
+          selectedIds.has(l.id) ? { ...l, status: 'removed' } : l
+        ))
+        setSelectedIds(new Set())
+      }
+    } catch {
+      toast.error('Failed to delete listings')
+    }
+    setBulkDeleting(false)
+  }
 
   async function handleStatusChange(
     id: string,
@@ -174,9 +219,58 @@ export default function ListingsPage() {
         </Card>
       ) : (
         <div className="space-y-3">
+          {/* Bulk Actions Bar */}
+          {listings.length > 1 && (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={toggleSelectAll}
+                className="flex items-center gap-2 rounded-md px-2 py-1 font-body text-sm text-muted-foreground hover:text-foreground"
+              >
+                {allSelected ? (
+                  <CheckSquare className="size-4 text-primary" />
+                ) : (
+                  <Square className="size-4" />
+                )}
+                {selectedIds.size > 0
+                  ? `${selectedIds.size} selected`
+                  : 'Select all'}
+              </button>
+              {selectedIds.size > 0 && (
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={handleBulkDelete}
+                  disabled={bulkDeleting}
+                  className="font-body"
+                >
+                  {bulkDeleting ? (
+                    <Loader2 className="mr-1.5 size-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="mr-1.5 size-3" />
+                  )}
+                  Remove {selectedIds.size} listing{selectedIds.size !== 1 ? 's' : ''}
+                </Button>
+              )}
+            </div>
+          )}
+
           {listings.map((listing) => (
             <Card key={listing.id} className="border-border bg-card">
               <CardContent className="flex items-center gap-4 p-4">
+                {/* Select Checkbox */}
+                {listing.status !== 'removed' && listings.length > 1 && (
+                  <button
+                    onClick={() => toggleSelect(listing.id)}
+                    className="shrink-0 text-muted-foreground hover:text-foreground"
+                  >
+                    {selectedIds.has(listing.id) ? (
+                      <CheckSquare className="size-5 text-primary" />
+                    ) : (
+                      <Square className="size-5" />
+                    )}
+                  </button>
+                )}
+
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
                     <p className="truncate font-body font-medium text-foreground">
