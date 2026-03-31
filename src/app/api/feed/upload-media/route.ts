@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { uploadFeedPostMedia } from '@/lib/media'
 import { getStreamVideo } from '@/lib/cloudflare-stream'
+import { validateImageBytes, validateVideoBytes } from '@/lib/security/file-validation'
 
 const IMAGE_MAX_SIZE = 10 * 1024 * 1024 // 10MB
 const VIDEO_MAX_SIZE = 200 * 1024 * 1024 // 200MB
@@ -51,6 +52,19 @@ export async function POST(request: NextRequest): Promise<Response> {
       { error: 'File too large' },
       { status: 413 }
     )
+  }
+
+  // Magic byte validation — reject spoofed Content-Type headers
+  if (type === 'image') {
+    const byteCheck = await validateImageBytes(file)
+    if (!byteCheck.valid) {
+      return NextResponse.json({ error: byteCheck.reason }, { status: 400 })
+    }
+  } else {
+    const byteCheck = await validateVideoBytes(file)
+    if (!byteCheck.valid) {
+      return NextResponse.json({ error: byteCheck.reason }, { status: 400 })
+    }
   }
 
   const buffer = Buffer.from(await file.arrayBuffer())

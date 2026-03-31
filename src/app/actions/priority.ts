@@ -3,6 +3,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin } from '@/lib/admin/permissions'
 import { logAdminAction } from '@/app/(admin)/admin/actions'
+import { escapePostgrestValue } from '@/lib/security/sanitize'
 import { type BoostType } from '@/lib/constants'
 
 // ─── Company Priority Tiers ────────────────────────────────────────
@@ -26,7 +27,7 @@ export async function getCompanyTiers(params: {
     )
 
   if (params.search) {
-    query = query.or(`full_name.ilike.%${params.search}%,company_name.ilike.%${params.search}%`)
+    query = query.or(`full_name.ilike.%${escapePostgrestValue(params.search)}%,company_name.ilike.%${escapePostgrestValue(params.search)}%`)
   }
   if (params.tier && params.tier !== 'all') {
     query = query.eq('priority_tier', params.tier as 'standard' | 'preferred' | 'featured' | 'platinum')

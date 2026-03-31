@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
+import { AICopySchema } from '@/lib/security/validate'
 
 export const maxDuration = 30
 
@@ -99,14 +100,16 @@ function cleanJsonResponse(raw: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as AICopyRequest
-    const { action, listing, regenerate } = body
+    const body = await request.json()
 
-    if (!action || !listing) {
-      return NextResponse.json({ error: 'Missing action or listing' }, { status: 400 })
+    const parsed = AICopySchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 })
     }
 
-    const context = buildListingContext(listing)
+    const { action, listing, regenerate } = parsed.data
+
+    const context = buildListingContext(listing as ListingInput)
 
     // For description generation, use streaming
     if (action === 'generate_description') {
@@ -161,10 +164,11 @@ export async function POST(request: NextRequest) {
     const cleaned = cleanJsonResponse(rawText)
 
     try {
-      const parsed = JSON.parse(cleaned)
-      return NextResponse.json(parsed)
+      const result = JSON.parse(cleaned)
+      return NextResponse.json(result)
     } catch {
-      return NextResponse.json({ error: 'Failed to parse AI response', raw: rawText }, { status: 500 })
+      console.error('AI copy parse failure:', rawText.slice(0, 200))
+      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
     }
   } catch (error) {
     console.error('AI copy error:', error)

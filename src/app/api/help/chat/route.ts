@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
+import { HelpChatSchema } from '@/lib/security/validate'
+import { escapePostgrestValue } from '@/lib/security/sanitize'
 
 // Simple in-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -28,14 +30,21 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { message, history, context } = await request.json()
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json({ error: 'Message required' }, { status: 400 })
+    const body = await request.json()
+    const parsed = HelpChatSchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid message' }, { status: 400 })
     }
+    const { message, history, context } = parsed.data
+
+    // Sanitize pathname to prevent template injection in system prompt
+    const safePath = context?.pathname
+      ? escapePostgrestValue(context.pathname)
+      : 'Unknown'
 
     const systemPrompt = `You are the Metal Gear Help Assistant — a knowledgeable guide for the Metal Gear industrial equipment marketplace.
 
-CURRENT PAGE: ${context?.pathname || 'Unknown'}
+CURRENT PAGE: ${safePath}
 
 ABOUT METAL GEAR:
 Metal Gear is a B2B industrial equipment marketplace for oil & gas, petrochemical, mining, manufacturing, and CNC machining industries, based in Houston, TX.

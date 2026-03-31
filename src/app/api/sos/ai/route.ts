@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { SOSAISchema } from '@/lib/security/validate'
+import { escapePostgrestValue } from '@/lib/security/sanitize'
 
 export const maxDuration = 30
 
@@ -89,11 +91,19 @@ No markdown fences.`
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as SOSAIRequest
-    const { action } = body
+    const body = await request.json()
+
+    const parsed = SOSAISchema.safeParse(body)
+    if (!parsed.success) {
+      return NextResponse.json({ error: 'Invalid request data' }, { status: 400 })
+    }
+
+    const { action } = parsed.data
+    // Re-alias for usage below
+    const validatedBody = parsed.data
 
     if (action === 'categorize') {
-      const { description } = body
+      const { description } = validatedBody
       if (!description?.trim()) {
         return NextResponse.json({ error: 'Description is required' }, { status: 400 })
       }
@@ -115,12 +125,13 @@ export async function POST(request: NextRequest) {
         const parsed = JSON.parse(cleaned)
         return NextResponse.json({ categorization: parsed })
       } catch {
-        return NextResponse.json({ error: 'Failed to parse AI response', raw: rawText }, { status: 500 })
+        console.error('SOS AI parse failure:', rawText.slice(0, 200))
+        return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
       }
     }
 
     if (action === 'rank_responses') {
-      const { sosRequestId, responses, sosDetails } = body
+      const { sosRequestId, responses, sosDetails } = validatedBody
 
       // If sosRequestId provided, load from DB
       let actualResponses = responses
@@ -218,12 +229,13 @@ export async function POST(request: NextRequest) {
 
         return NextResponse.json(parsed)
       } catch {
-        return NextResponse.json({ error: 'Failed to parse AI response', raw: rawText }, { status: 500 })
+        console.error('SOS AI parse failure:', rawText.slice(0, 200))
+        return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
       }
     }
 
     if (action === 'predict_demand') {
-      const { subcategory, region, lookbackDays = 365 } = body
+      const { subcategory, region, lookbackDays = 365 } = validatedBody
       if (!subcategory) {
         return NextResponse.json({ error: 'Subcategory is required' }, { status: 400 })
       }
@@ -235,7 +247,7 @@ export async function POST(request: NextRequest) {
       const { data: sosHistory } = await admin
         .from('sos_requests')
         .select('id, created_at, urgency, status, location_state')
-        .or(`equipment_category.eq.${subcategory},equipment_subcategory.eq.${subcategory}`)
+        .or(`equipment_category.eq.${escapePostgrestValue(subcategory)},equipment_subcategory.eq.${escapePostgrestValue(subcategory)}`)
         .gte('created_at', since)
         .order('created_at', { ascending: true })
 
@@ -298,7 +310,8 @@ export async function POST(request: NextRequest) {
         const parsed = JSON.parse(cleaned)
         return NextResponse.json({ prediction: parsed })
       } catch {
-        return NextResponse.json({ error: 'Failed to parse AI response', raw: rawText }, { status: 500 })
+        console.error('SOS AI parse failure:', rawText.slice(0, 200))
+        return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
       }
     }
 

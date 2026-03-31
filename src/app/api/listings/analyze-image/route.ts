@@ -288,6 +288,26 @@ export async function POST(request: NextRequest) {
     nameplateMimeType,
   } = body;
 
+  // Validate base64 size — 15MB cap (~10MB image after base64 encoding)
+  const MAX_BASE64_SIZE = 15_000_000;
+  const validMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+
+  if (wideShot && wideShot.length > MAX_BASE64_SIZE) {
+    return NextResponse.json({ error: "Wide shot image too large (max 10MB)" }, { status: 400 });
+  }
+  if (nameplateShot && nameplateShot.length > MAX_BASE64_SIZE) {
+    return NextResponse.json({ error: "Nameplate image too large (max 10MB)" }, { status: 400 });
+  }
+  if (nameplateImageBase64 && nameplateImageBase64.length > MAX_BASE64_SIZE) {
+    return NextResponse.json({ error: "Nameplate image too large (max 10MB)" }, { status: 400 });
+  }
+  if (!validMimeTypes.includes(mimeType)) {
+    return NextResponse.json({ error: "Invalid image MIME type" }, { status: 400 });
+  }
+  if (nameplateMimeType && !validMimeTypes.includes(nameplateMimeType)) {
+    return NextResponse.json({ error: "Invalid nameplate MIME type" }, { status: 400 });
+  }
+
   const resolvedNameplate = nameplateShot || nameplateImageBase64;
 
   if (!wideShot && !resolvedNameplate) {

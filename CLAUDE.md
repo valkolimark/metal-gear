@@ -397,6 +397,15 @@ The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server 
 - Icons: `/public/icons/icon-192.svg`, `/public/icons/icon-512.svg`
 - Mobile bottom nav with safe area insets
 
+## Security Infrastructure (Cycle 38)
+- **Security headers:** CSP, X-Frame-Options, X-Content-Type-Options, HSTS, Referrer-Policy, Permissions-Policy via `next.config.ts` `headers()`
+- **Input validation:** Zod schemas in `src/lib/security/validate.ts` — `AISearchSchema`, `AICopySchema`, `SOSAISchema`, `AIChatSchema`, `HelpChatSchema`, `AnalyzeImageSchema`, `CreateFeedPostSchema`
+- **Sanitization:** `src/lib/security/sanitize.ts` — `sanitizeText()`, `stripHtml()`, `escapePostgrestValue()` (PostgREST filter injection prevention)
+- **File validation:** `src/lib/security/file-validation.ts` — magic byte validation for images/videos/documents; applied in feed upload route
+- **Rate limiting:** `src/lib/security/rate-limit.ts` — token bucket rate limiter; applied in `middleware.ts` for AI routes and contact reveal; per-route configs in `RATE_LIMIT_CONFIGS`
+- **Error safety:** `src/lib/security/errors.ts` — `safeErrorMessage()` / `toActionError()` prevent DB schema and stack trace leakage
+- **PostgREST filter escaping:** All user-supplied values in `.or()`, `.ilike()` filters use `escapePostgrestValue()` — AI search, SOS AI, help search, admin priority search
+
 ## Conventions
 - User preference: "I want you to do all the work. Just ask me for credentials."
 - Build, commit, push, and deploy after each task

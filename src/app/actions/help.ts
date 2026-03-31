@@ -2,6 +2,7 @@
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email'
+import { escapePostgrestValue } from '@/lib/security/sanitize'
 
 const CATEGORIES = [
   { key: 'getting_started', label: 'Getting Started' },
@@ -46,7 +47,7 @@ export async function searchHelpArticles(query: string) {
     .from('help_articles')
     .select('id, slug, title, category')
     .eq('published', true)
-    .or(`title.ilike.%${query}%,body_markdown.ilike.%${query}%`)
+    .or(`title.ilike.%${escapePostgrestValue(query)}%,body_markdown.ilike.%${escapePostgrestValue(query)}%`)
     .order('sort_order')
 
   return { articles: articles || [] }

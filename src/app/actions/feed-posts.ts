@@ -5,6 +5,8 @@ import { unstable_cache } from 'next/cache'
 import { updateTag } from 'next/cache'
 import { deleteFeedPostMedia } from '@/lib/media'
 import { createNotification } from '@/app/actions/notifications'
+import { sanitizeText } from '@/lib/security/sanitize'
+import { safeErrorMessage } from '@/lib/security/errors'
 
 // ─── Types ──────────────────────────────────────────────────
 
@@ -187,7 +189,7 @@ export async function createFeedPost(params: {
     sortOrder: number
   }>
 }): Promise<{ post: FeedPostWithDetails }> {
-  const trimmedContent = params.content.trim()
+  const trimmedContent = sanitizeText(params.content).slice(0, 1000)
   if (!trimmedContent && params.media.length === 0) {
     throw new Error('Post cannot be empty')
   }
@@ -195,7 +197,10 @@ export async function createFeedPost(params: {
     throw new Error('Maximum 10 mentions per post')
   }
 
-  const normalizedHashtags = params.hashtags.map((t) => t.toLowerCase())
+  const normalizedHashtags = params.hashtags
+    .slice(0, 10)
+    .map((t) => sanitizeText(t).toLowerCase().slice(0, 50))
+    .filter(Boolean)
   const supabase = createAdminClient()
 
   // Insert post
@@ -211,7 +216,10 @@ export async function createFeedPost(params: {
     .select('id, content, hashtags, tagged_user_ids, reactions_count, comments_count, edited_at, created_at, author_id, company_id')
     .single()
 
-  if (postError) throw new Error(postError.message)
+  if (postError) {
+    console.error('[Feed] Post insert error:', postError.message)
+    throw new Error('Failed to create post')
+  }
 
   // Batch insert media
   if (params.media.length > 0) {
@@ -346,12 +354,15 @@ export async function editFeedPost(params: {
     throw new Error('Edit window expired')
   }
 
-  const normalizedHashtags = params.hashtags.map((t) => t.toLowerCase())
+  const normalizedHashtags = params.hashtags
+    .slice(0, 10)
+    .map((t) => sanitizeText(t).toLowerCase().slice(0, 50))
+    .filter(Boolean)
 
   const { error } = await supabase
     .from('feed_posts')
     .update({
-      content: params.content.trim(),
+      content: sanitizeText(params.content).slice(0, 1000),
       hashtags: normalizedHashtags,
       tagged_user_ids: params.taggedUserIds,
       edited_at: new Date().toISOString(),
@@ -359,7 +370,10 @@ export async function editFeedPost(params: {
     .eq('id', params.postId)
     .eq('author_id', params.authorId)
 
-  if (error) throw new Error(error.message)
+  if (error) {
+    console.error('[Feed] Edit error:', error.message)
+    throw new Error('Failed to update post')
+  }
 
   updateTag('feed-posts')
 }

@@ -6,6 +6,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.9.0] — 2026-03-31 · Security Hardening (Cycle 38)
+
+### Added
+- **Security headers** — CSP, X-Frame-Options (SAMEORIGIN), X-Content-Type-Options (nosniff), HSTS, Referrer-Policy, Permissions-Policy applied to all routes via `next.config.ts`
+- **Input validation** — Zod schemas for all AI API routes (search, copy, SOS, image analysis, ask, help chat) in `src/lib/security/validate.ts`
+- **HTML/text sanitization** — `sanitizeText()`, `stripHtml()`, `sanitizeUrl()`, `escapePostgrestValue()` utilities in `src/lib/security/sanitize.ts`
+- **Magic byte file validation** — `validateImageBytes()`, `validateVideoBytes()`, `validateDocumentBytes()` check actual file signatures, not just Content-Type headers; in `src/lib/security/file-validation.ts`
+- **Token bucket rate limiter** — per-route configs for AI (10 req burst), contact reveal (10 req burst), general endpoints; applied in middleware for all AI API routes; in `src/lib/security/rate-limit.ts`
+- **Safe error serialization** — `safeErrorMessage()` / `toActionError()` prevent DB schema details, stack traces, and Postgres errors from leaking to clients; in `src/lib/security/errors.ts`
+
+### Fixed
+- **SQL injection via PostgREST filter interpolation** — `filters.tier2` and `filters.manufacturer` in AI search, `subcategory` in SOS AI demand prediction, `query` in help article search, `search` in admin priority search all now escaped via `escapePostgrestValue()`
+- **Raw AI response leakage** — AI copy and SOS AI routes no longer return `raw: rawText` in error responses; logged server-side only
+- **Base64 image size unbounded** — Analyze image route now enforces 15MB cap on base64 inputs and validates MIME types against allowlist
+- **Feed post content unsanitized** — `createFeedPost` and `editFeedPost` now sanitize content via `sanitizeText()` and enforce 1000-char limit server-side; hashtags capped at 10 and 50 chars each
+- **Feed post DB error message leakage** — Supabase errors no longer thrown directly as user-facing messages
+
+### Changed
+- **Middleware** — now checks rate limits on AI routes and contact reveal endpoints before Supabase session handling
+- **Feed upload route** — validates file bytes (magic numbers) before uploading to R2
+
+---
+
 ## [4.8.0] — 2026-03-31 · Import Progress UX (Cycle 37)
 
 ### Added

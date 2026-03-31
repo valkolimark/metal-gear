@@ -19,7 +19,7 @@ vi.mock('@/lib/anthropic', () => ({
 function chainable(resolveData = { data: [], count: 0, error: null }) {
   const chain: Record<string, unknown> = {}
   const methods = [
-    'from', 'select', 'eq', 'in', 'gte', 'lte', 'or',
+    'from', 'select', 'eq', 'in', 'gte', 'lte', 'or', 'ilike',
     'textSearch', 'order', 'limit', 'not',
   ]
   for (const m of methods) {

@@ -3,6 +3,8 @@ import { anthropic } from '@/lib/anthropic'
 import { EQUIPMENT_TAXONOMY } from '@/lib/constants/equipment-taxonomy'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { unstable_cache } from 'next/cache'
+import { AISearchSchema } from '@/lib/security/validate'
+import { escapePostgrestValue } from '@/lib/security/sanitize'
 
 export const maxDuration = 30
 
@@ -180,15 +182,17 @@ const getCachedAIResponse = unstable_cache(
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as AISearchRequest
-    const { query, conversationHistory, intent_hint } = body
+    const body = await request.json()
 
-    if (!query?.trim()) {
+    const parsed = AISearchSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Query is required' },
+        { error: 'Invalid search query' },
         { status: 400 }
       )
     }
+
+    const { query, conversationHistory, intent_hint } = parsed.data
 
     // Use cache only for single-turn queries (no conversation history)
     let aiResponse: AISearchResponse
@@ -229,10 +233,10 @@ export async function POST(request: NextRequest) {
 
     // Category filter — use tier2 mapped to the old category system, or keywords
     if (filters.tier2) {
-      // Try to match tier2 to the category column
-      dbQuery = dbQuery.or(
-        `category.ilike.%${filters.tier2.replace(/_/g, ' ')}%`
-      )
+      const safeTier2 = escapePostgrestValue(filters.tier2.replace(/_/g, ' '))
+      if (safeTier2) {
+        dbQuery = dbQuery.ilike('category', `%${safeTier2}%`)
+      }
     }
 
     // Price filters
@@ -248,11 +252,14 @@ export async function POST(request: NextRequest) {
       dbQuery = dbQuery.in('condition', filters.condition)
     }
 
-    // Manufacturer search
+    // Manufacturer search — escape to prevent filter injection
     if (filters.manufacturer) {
-      dbQuery = dbQuery.or(
-        `title.ilike.%${filters.manufacturer}%,description.ilike.%${filters.manufacturer}%`
-      )
+      const safeMfr = escapePostgrestValue(filters.manufacturer)
+      if (safeMfr) {
+        dbQuery = dbQuery.or(
+          `title.ilike.%${safeMfr}%,description.ilike.%${safeMfr}%`
+        )
+      }
     }
 
     // Order by featured first, then newest

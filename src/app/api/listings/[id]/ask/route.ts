@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { AIChatSchema } from '@/lib/security/validate'
 
 // Daily rate limiter per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -95,13 +96,15 @@ export async function POST(
   }
 
   try {
-    const { question, history } = await request.json()
-    if (!question || typeof question !== 'string') {
+    const body = await request.json()
+    const parsed = AIChatSchema.safeParse(body)
+    if (!parsed.success) {
       return NextResponse.json(
-        { error: 'Question required' },
+        { error: 'Invalid question' },
         { status: 400 }
       )
     }
+    const { question, history } = parsed.data
 
     const admin = createAdminClient()
 
