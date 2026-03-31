@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.5.1] — 2026-03-30 · Listing Creation Router (Cycle 36)
+
+### Added
+- **`/listings/create` routing page** — server component checks subscription tier and routes accordingly
+- **Two-card choice UI** — Pro/Business/Enterprise users see single listing vs bulk import cards; Free users are server-redirected to `/listings/new` with no flash
+
+### Changed
+- **All "Post a Listing" / "List Equipment" CTAs** updated to route through `/listings/create` (header, mobile menu, dashboard, my listings, inventory, checkout success)
+- Bulk import page now discoverable from every listing creation entry point
+
+---
+
 ## [4.5.0] — 2026-03-30 · Super Admin Account Deletion (Cycle 35)
 
 ### Added
