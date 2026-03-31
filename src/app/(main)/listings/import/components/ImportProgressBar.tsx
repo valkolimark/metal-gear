@@ -15,6 +15,7 @@ export type ImportProgressData = {
   image_fetch_attempted: number
   image_fetch_succeeded: number
   image_fetch_failed: number
+  hidden_listing_count: number | null
   error_log: { row: number; error: string }[] | null
 }
 

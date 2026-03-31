@@ -11,6 +11,7 @@ import {
   X,
   GripVertical,
   Video,
+  AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -1227,6 +1228,23 @@ export default function CreateListingPage() {
             </p>
           </CardContent>
         </Card>
+      )}
+
+      {/* No media warning — shown on review step */}
+      {step === 4 && images.length === 0 && videos.length === 0 && (
+        <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <div>
+              <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+                No photos or videos added
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Your listing will be published but hidden from search until you add at least one photo or video.
+              </p>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Quality Score — shown on review step */}

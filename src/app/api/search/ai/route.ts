@@ -221,6 +221,7 @@ export async function POST(request: NextRequest) {
       .from('listings')
       .select('*', { count: 'exact' })
       .eq('status', 'active')
+      .eq('has_media', true)
 
     const { filters } = aiResponse
 

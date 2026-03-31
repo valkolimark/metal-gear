@@ -603,6 +603,18 @@ export async function startImportJob(
     }
   }
 
+  // Count how many created listings have no media (hidden from search)
+  let hiddenCount: number | null = null
+  if (createdListingIds.length > 0) {
+    const { count } = await admin
+      .from('listings')
+      .select('id', { count: 'exact', head: true })
+      .in('id', createdListingIds)
+      .eq('has_media', false)
+      .eq('status', 'active')
+    hiddenCount = count ?? 0
+  }
+
   // Mark complete
   await admin
     .from('listing_imports')
@@ -610,6 +622,7 @@ export async function startImportJob(
       status: 'complete',
       success_count: successCount,
       error_count: failCount,
+      hidden_listing_count: hiddenCount,
     })
     .eq('id', importId)
 

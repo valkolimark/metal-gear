@@ -33,6 +33,7 @@ export async function getFeedForYouListings(userId: string) {
        company_profiles(name, logo_url)`
     )
     .eq('status', 'active')
+    .eq('has_media', true)
     .in('category', tier2Groups)
     .order('created_at', { ascending: false })
     .limit(24)
@@ -91,6 +92,7 @@ export async function getFeedPriceDrops(userId: string) {
        price_history(price_cents, changed_at)`
     )
     .eq('status', 'active')
+    .eq('has_media', true)
     .in('category', tier2Groups)
     .limit(50)
 
@@ -148,6 +150,7 @@ export async function getFeedSavedSearchMatches(userId: string) {
        created_at, listing_images(url, position)`
     )
     .eq('status', 'active')
+    .eq('has_media', true)
     .gte('created_at', cutoff.toISOString())
     .order('created_at', { ascending: false })
     .limit(6)
@@ -168,6 +171,7 @@ export async function getGeneralFeedListings() {
        company_profiles(name, logo_url)`
     )
     .eq('status', 'active')
+    .eq('has_media', true)
     .order('created_at', { ascending: false })
     .limit(24)
 
@@ -200,6 +204,7 @@ export async function getGeneralFeedRecentListings() {
        created_at, listing_images(url, position)`
     )
     .eq('status', 'active')
+    .eq('has_media', true)
     .gte('created_at', cutoff.toISOString())
     .order('created_at', { ascending: false })
     .limit(6)

@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
+import { AlertTriangle } from 'lucide-react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getConditionReport } from '@/app/actions/condition-reports'
@@ -204,6 +206,27 @@ export default async function ListingDetailPage({
         <span className="mx-2">/</span>
         <span className="text-foreground">{listing.title}</span>
       </nav>
+
+      {/* Seller warning: listing hidden due to no media */}
+      {listing.status === 'active' && !listing.has_media && isSelf && (
+        <div className="mb-4 flex items-start gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-amber-600 dark:text-amber-400">
+              This listing is hidden from search and browse
+            </p>
+            <p className="mt-0.5 text-xs text-muted-foreground">
+              Add at least one photo or video to make it visible to buyers.
+            </p>
+          </div>
+          <Link
+            href={`/listings/${listing.id}/edit?step=photos`}
+            className="shrink-0 rounded-md bg-amber-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-amber-600"
+          >
+            Add Photos
+          </Link>
+        </div>
+      )}
 
       {/* Three-column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[460px_1fr_320px] gap-x-8 items-start">

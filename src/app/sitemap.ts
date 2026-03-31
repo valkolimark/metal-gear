@@ -48,6 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .from('listings')
     .select('id, updated_at')
     .eq('status', 'active')
+    .eq('has_media', true)
     .not('listing_quality_score', 'is', null)
     .gte('listing_quality_score', 50)
     .order('listing_quality_score', { ascending: false })
@@ -59,6 +60,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     .from('listings')
     .select('id, updated_at')
     .eq('status', 'active')
+    .eq('has_media', true)
     .order('updated_at', { ascending: false })
     .limit(1000)
 

@@ -83,6 +83,7 @@ export default async function SellerStorefrontPage({
       .select('id, title, category, price_cents, contact_for_price, condition, views_count, favorites_count, created_at, listing_images(url, position)')
       .eq('seller_id', id)
       .eq('status', 'active')
+      .eq('has_media', true)
       .order('created_at', { ascending: false }),
     getSellerReviews(id),
   ])

@@ -36,6 +36,7 @@ export async function getCompanyActiveListings(companyId: string) {
     )
     .eq('company_id', companyId)
     .eq('status', 'active')
+    .eq('has_media', true)
     .order('created_at', { ascending: false })
     .limit(12)
 
@@ -85,5 +86,6 @@ export async function getCompanyListingCount(companyId: string) {
     .select('id', { count: 'exact', head: true })
     .eq('company_id', companyId)
     .eq('status', 'active')
+    .eq('has_media', true)
   return count ?? 0
 }

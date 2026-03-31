@@ -151,6 +151,7 @@ export async function getSnipeListings(
       company_profiles (name, slug)
     `)
     .eq('status', 'active')
+    .eq('has_media', true)
     .in('category', tier2Values)
     .gte('created_at', since)
     .order('created_at', { ascending: false })

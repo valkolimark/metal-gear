@@ -47,6 +47,7 @@ export default async function PublicProfilePage({
       )
       .eq('seller_id', id)
       .eq('status', 'active')
+      .eq('has_media', true)
       .order('created_at', { ascending: false })
       .limit(12),
     getSellerReviews(id),

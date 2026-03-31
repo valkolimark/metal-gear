@@ -97,6 +97,7 @@ export default async function HomePage() {
       .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured')
       .in('id', slotListingIds)
       .eq('status', 'active')
+      .eq('has_media', true)
     featured = data
   }
 
@@ -107,6 +108,7 @@ export default async function HomePage() {
       .from('listings')
       .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured')
       .eq('status', 'active')
+      .eq('has_media', true)
       .not('id', 'in', `(${existingIds.length > 0 ? existingIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
       .order('is_featured', { ascending: false })
       .order('views_count', { ascending: false })

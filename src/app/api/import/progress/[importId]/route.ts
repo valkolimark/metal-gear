@@ -21,7 +21,7 @@ export async function GET(
   const { data, error } = await admin
     .from('listing_imports')
     .select(
-      'id, status, total_rows, processed_rows, successful_rows, failed_rows, image_fetch_attempted, image_fetch_succeeded, image_fetch_failed, error_log'
+      'id, status, total_rows, processed_rows, successful_rows, failed_rows, image_fetch_attempted, image_fetch_succeeded, image_fetch_failed, hidden_listing_count, error_log'
     )
     .eq('id', importId)
     .eq('user_id', user.id)

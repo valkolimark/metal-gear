@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { Check, X, ImageIcon, ChevronDown, ChevronUp } from 'lucide-react'
+import { Check, X, ImageIcon, ChevronDown, ChevronUp, AlertTriangle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,6 +57,22 @@ export function ImportCompleteSummary({ data, onReset }: ImportCompleteSummaryPr
             </>
           )}
         </div>
+
+        {/* Hidden listings warning */}
+        {(data.hidden_listing_count ?? 0) > 0 && (
+          <div className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2">
+            <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+            <p className="font-body text-xs text-amber-600 dark:text-amber-400">
+              {data.hidden_listing_count} listing{data.hidden_listing_count !== 1 ? 's' : ''} hidden from search — add photos to make them visible
+            </p>
+            <Link
+              href="/listings?filter=no-media"
+              className="shrink-0 font-body text-xs font-medium text-amber-600 underline-offset-2 hover:underline dark:text-amber-400"
+            >
+              Fix now →
+            </Link>
+          </div>
+        )}
 
         {/* Actions */}
         <div className="flex gap-2">

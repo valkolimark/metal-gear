@@ -138,6 +138,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
 - **Model:** Claude Sonnet 4 for all AI features
 - **AI columns on listings:** `ai_analyzed`, `ai_fraud_flagged`, `ai_fraud_reason`, `ai_assist_used`, `ai_assist_accepted`, `listing_quality_score`, `ai_price_suggested`, `ai_price_accepted`
+- **Media gate column on listings:** `has_media` (boolean, NOT NULL, default false) — trigger-maintained; set to true when any `listing_images` or non-error `listing_videos` exist; all public discovery queries filter `has_media = true`; triggers: `trg_listing_images_has_media`, `trg_listing_videos_has_media`
 - **AI columns on saved_searches:** `ai_query`, `ai_filters`, `is_ai_search`
 - **AI columns on profiles:** `reputation_summary` (JSONB), `reputation_summary_updated_at`
 - **AI columns on disputes:** `ai_summary` (JSONB)

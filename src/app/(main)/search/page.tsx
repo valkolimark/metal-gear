@@ -284,6 +284,7 @@ function SearchContent() {
       .from('listings')
       .select('*', { count: 'exact' })
       .eq('status', 'active')
+      .eq('has_media', true)
 
     if (query) {
       q = q.textSearch('fts', query, { type: 'websearch' })

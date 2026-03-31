@@ -46,6 +46,7 @@ import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
 import { DemandForecast } from '@/components/dashboard/DemandForecast'
 import { CompanyAvatar } from '@/components/company/CompanyAvatar'
 import { SellerIntelligence } from './components/seller-intelligence'
+import { HiddenListingsAlert } from './components/hidden-listings-alert'
 import { getSellerPerformance } from '@/app/actions/seller-intelligence'
 import type { SellerPerformanceData } from '@/app/actions/seller-intelligence'
 import { updateLastLogin } from '@/app/actions/onboarding'
@@ -346,6 +347,9 @@ export default function DashboardPage() {
           </Card>
         </Link>
       </div>
+
+      {/* Hidden listings alert — no-media gate */}
+      {activeCompany && <HiddenListingsAlert companyId={activeCompany.id} />}
 
       {/* Describe Your Problem — AI Diagnostic */}
       <ProblemDiagnoser />

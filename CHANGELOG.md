@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.10.0] — 2026-03-31 · Listing Media Quality Gate (Cycle 39)
+
+### Added
+- **`listings.has_media` column** — trigger-maintained boolean; `true` when any `listing_images` or non-error `listing_videos` exist; backfilled on migration
+- **Postgres triggers** — `sync_listing_has_media()` fires on `listing_images` INSERT/DELETE and `listing_videos` INSERT/DELETE/UPDATE OF status to keep `has_media` in sync
+- **Media quality gate on all public surfaces** — search, AI search, feed discovery (For You, price drops, saved search matches, general feed, recent listings), snipe feed, related listings, recommended/trending, seller/profile/company pages, equipment category pages, homepage featured, sitemap, smart search alert cron all filter `has_media = true`
+- **HiddenListingsAlert** dashboard widget — amber alert showing count of no-media listings with "Fix now" link to filtered My Listings view
+- **"No media — hidden" badge** on My Listings page rows for active listings without media; links to edit page photos step
+- **`?filter=no-media` param** on My Listings page — filters to only show hidden-from-media listings, with banner and "Show all" link
+- **Seller warning banner** on listing detail page — amber banner with "Add Photos" CTA, shown only to listing owner when `has_media = false`
+- **Non-blocking amber callout** on listing creation Review step when no photos or videos uploaded
+- **`hidden_listing_count`** column on `listing_imports` — populated at import completion; shown in import summary with "Fix now" link
+- **`listing-media-gate` server actions** — `getHiddenListingCount()`, `isListingHiddenFromPublic()`
+
+### Changed
+- **Import completion** — `startImportJob()` now counts hidden listings among created IDs and stores count in `listing_imports.hidden_listing_count`
+- **ImportCompleteSummary** — shows amber warning row when imported listings are hidden due to missing media
+
+---
+
 ## [4.9.0] — 2026-03-31 · Security Hardening (Cycle 38)
 
 ### Added

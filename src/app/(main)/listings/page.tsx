@@ -1,8 +1,8 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useEffect, useState, useMemo } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Plus,
   Edit,
@@ -19,6 +19,7 @@ import {
   Clock,
   Square,
   CheckSquare,
+  AlertTriangle,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -54,6 +55,8 @@ const STATUS_COLORS: Record<string, string> = {
 
 export default function ListingsPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const filterNoMedia = searchParams.get('filter') === 'no-media'
   const { user } = useAuthStore()
   const [listings, setListings] = useState<Listing[]>([])
   const [loading, setLoading] = useState(true)
@@ -79,6 +82,11 @@ export default function ListingsPage() {
         setLoading(false)
       })
   }, [user])
+
+  const displayListings = useMemo(() => {
+    if (filterNoMedia) return listings.filter(l => l.status === 'active' && !l.has_media)
+    return listings
+  }, [listings, filterNoMedia])
 
   const selectableListings = listings.filter(l => l.status !== 'removed')
   const allSelected = selectableListings.length > 0 && selectableListings.every(l => selectedIds.has(l.id))
@@ -195,6 +203,18 @@ export default function ListingsPage() {
         </Button>
       </div>
 
+      {filterNoMedia && (
+        <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-amber-500" />
+          <p className="flex-1 text-sm font-medium text-amber-600 dark:text-amber-400">
+            Showing listings hidden from search (no photos or videos)
+          </p>
+          <Link href="/listings" className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground">
+            Show all
+          </Link>
+        </div>
+      )}
+
       {loading ? (
         <div className="flex items-center justify-center py-20">
           <Loader2 className="size-8 animate-spin text-primary" />
@@ -254,7 +274,7 @@ export default function ListingsPage() {
             </div>
           )}
 
-          {listings.map((listing) => (
+          {displayListings.map((listing) => (
             <Card key={listing.id} className="border-border bg-card">
               <CardContent className="flex items-center gap-4 p-4">
                 {/* Select Checkbox */}
@@ -281,6 +301,14 @@ export default function ListingsPage() {
                     >
                       {listing.status}
                     </Badge>
+                    {!listing.has_media && listing.status === 'active' && (
+                      <Link href={`/listings/${listing.id}/edit?step=photos`}>
+                        <span className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-600 dark:text-amber-400">
+                          <AlertTriangle className="h-3 w-3" />
+                          No media — hidden
+                        </span>
+                      </Link>
+                    )}
                   </div>
                   <p className="mt-1 font-body text-sm text-muted-foreground">
                     {listing.category} &middot;{' '}

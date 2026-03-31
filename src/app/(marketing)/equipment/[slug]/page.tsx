@@ -52,6 +52,7 @@ export default async function CategoryPage({ params }: Props) {
     .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, created_at', { count: 'exact' })
     .eq('category', category)
     .eq('status', 'active')
+    .eq('has_media', true)
     .order('created_at', { ascending: false })
     .limit(24)
 

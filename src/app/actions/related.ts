@@ -27,6 +27,7 @@ export async function getRelatedListings(listingId: string, limit = 6) {
     .from('listings')
     .select('id, title, category, industry, price_cents, condition, location_city, location_state, views_count, favorites_count, contact_for_price, seller_id, created_at')
     .eq('status', 'active')
+    .eq('has_media', true)
     .neq('id', listingId)
     .limit(100)
 
@@ -111,6 +112,7 @@ export async function getMoreFromSeller(sellerId: string, excludeListingId: stri
     .select('id, title, category, price_cents, condition, contact_for_price, views_count, created_at')
     .eq('seller_id', sellerId)
     .eq('status', 'active')
+    .eq('has_media', true)
     .neq('id', excludeListingId)
     .order('created_at', { ascending: false })
     .limit(limit)
@@ -200,6 +202,7 @@ export async function getBuyersAlsoViewed(listingId: string, limit = 4) {
     .select('id, title, category, price_cents, condition, contact_for_price, views_count, created_at')
     .in('id', topIds)
     .eq('status', 'active')
+    .eq('has_media', true)
 
   if (!listings || listings.length === 0) return { listings: [] }
 

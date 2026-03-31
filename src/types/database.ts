@@ -1276,6 +1276,7 @@ export type Database = {
           failed_rows: number
           file_format: string | null
           filename: string | null
+          hidden_listing_count: number | null
           id: string
           image_fetch_attempted: number
           image_fetch_failed: number
@@ -1297,6 +1298,7 @@ export type Database = {
           failed_rows?: number
           file_format?: string | null
           filename?: string | null
+          hidden_listing_count?: number | null
           id?: string
           image_fetch_attempted?: number
           image_fetch_failed?: number
@@ -1318,6 +1320,7 @@ export type Database = {
           failed_rows?: number
           file_format?: string | null
           filename?: string | null
+          hidden_listing_count?: number | null
           id?: string
           image_fetch_attempted?: number
           image_fetch_failed?: number
@@ -1473,6 +1476,7 @@ export type Database = {
           favorites_count: number
           featured_until: string | null
           fts: unknown
+          has_media: boolean
           id: string
           industry: string | null
           is_featured: boolean
@@ -1520,6 +1524,7 @@ export type Database = {
           favorites_count?: number
           featured_until?: string | null
           fts?: unknown
+          has_media?: boolean
           id?: string
           industry?: string | null
           is_featured?: boolean
@@ -1567,6 +1572,7 @@ export type Database = {
           favorites_count?: number
           featured_until?: string | null
           fts?: unknown
+          has_media?: boolean
           id?: string
           industry?: string | null
           is_featured?: boolean
