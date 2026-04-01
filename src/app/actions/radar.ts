@@ -230,7 +230,7 @@ export async function getRadarPosts(userId: string, limit = 50, offset = 0) {
       id,
       created_at:added_at,
       feed_post_id,
-      feed_posts:feed_post_id (
+      feed_posts!collection_items_feed_post_id_fkey (
         id, content, created_at, reactions_count, comments_count,
         is_deleted,
         author_id,
