@@ -12,7 +12,7 @@ import {
   X,
   Loader2,
   MapPin,
-  Heart,
+  Radar,
   Bookmark,
   BookmarkCheck,
   Clock,
@@ -59,7 +59,7 @@ import {
   DEFAULT_LOCATION,
 } from '@/lib/constants'
 import { getConditionReportsForListings } from '@/app/actions/condition-reports'
-import { toggleFavoriteAction } from '@/app/(main)/listings/[id]/components/favorite-action'
+import { toggleRadarListing } from '@/app/actions/radar'
 import { DynamicListingMap } from '@/components/map/dynamic-map'
 import { ConversationalSearch } from '@/components/search/ConversationalSearch'
 import { MobileFilterSheet } from './components/MobileFilterSheet'
@@ -225,7 +225,7 @@ function SearchContent() {
 
   // Load recent searches on mount
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- loading local storage data on mount
+     
     setRecentSearches(getRecentSearches())
   }, [])
 
@@ -414,26 +414,23 @@ function SearchContent() {
   }, [query, category, industry, condition, priceMin, priceMax, sortBy, page, radius])
 
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- data fetch on mount/filter change
+     
     fetchListings()
   }, [fetchListings])
 
-  // Load user favorites
+  // Load user radar (saved listings)
   useEffect(() => {
     if (!user) return
-    const supabase = createClient()
-    supabase
-      .from('favorites')
-      .select('listing_id')
-      .eq('user_id', user.id)
-      .then(({ data }) => {
-        setFavoriteIds(new Set((data ?? []).map((f) => f.listing_id)))
+    import('@/app/actions/radar').then(({ getRadarListingIds }) => {
+      getRadarListingIds(user.id).then((ids) => {
+        setFavoriteIds(new Set(ids))
       })
+    })
   }, [user])
 
   async function handleToggleFavorite(listingId: string) {
     if (!user) {
-      toast.error('Sign in to save favorites')
+      toast.error('Sign in to save to Radar')
       return
     }
     // Optimistic update
@@ -443,7 +440,7 @@ function SearchContent() {
       else next.add(listingId)
       return next
     })
-    const result = await toggleFavoriteAction(listingId)
+    const result = await toggleRadarListing(listingId)
     if (result.error) {
       toast.error(result.error)
       // Revert
@@ -1087,7 +1084,7 @@ function SearchContent() {
                     </CardContent>
                   </Card>
                 </Link>
-                {/* Favorite button */}
+                {/* Radar save button */}
                 <button
                   onClick={(e) => {
                     e.preventDefault()
@@ -1095,12 +1092,12 @@ function SearchContent() {
                   }}
                   className={`absolute right-10 top-[calc(62.5%+12px)] z-10 flex size-7 items-center justify-center rounded-full border transition-colors ${
                     favoriteIds.has(listing.id)
-                      ? 'border-red-400 bg-red-500 text-white'
-                      : 'border-border bg-card/80 text-muted-foreground hover:border-red-400 hover:text-red-400'
+                      ? 'border-primary bg-primary text-white'
+                      : 'border-border bg-card/80 text-muted-foreground hover:border-primary hover:text-primary'
                   }`}
-                  title={favoriteIds.has(listing.id) ? 'Remove from favorites' : 'Add to favorites'}
+                  title={favoriteIds.has(listing.id) ? 'Remove from Radar' : 'Save to Radar'}
                 >
-                  <Heart className={`size-3.5 ${favoriteIds.has(listing.id) ? 'fill-current' : ''}`} />
+                  <Radar className="size-3.5" />
                 </button>
                 <button
                   onClick={() => toggleCompare(listing.id)}

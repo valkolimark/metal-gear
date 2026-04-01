@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { DollarSign, MessageSquare, Heart, Loader2, ChevronUp } from 'lucide-react'
+import { DollarSign, MessageSquare, Radar, Loader2, ChevronUp } from 'lucide-react'
 import { toast } from 'sonner'
 import {
   Sheet,
@@ -14,7 +14,7 @@ import {
 import { ListingPurchasePanel } from './ListingPurchasePanel'
 import { AnonInteractionGate } from '@/components/AnonInteractionGate'
 import { startConversation } from '@/app/(main)/messages/actions'
-import { toggleFavoriteAction } from './favorite-action'
+import { toggleRadarListing } from '@/app/actions/radar'
 import type { Tables } from '@/types/database'
 import type { User } from '@supabase/supabase-js'
 
@@ -90,12 +90,12 @@ export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, c
       setGateOpen(true)
       return
     }
-    const result = await toggleFavoriteAction(listing.id)
+    const result = await toggleRadarListing(listing.id)
     if ('error' in result) {
       toast.error(result.error)
     } else {
-      setFavorited(result.favorited)
-      toast.success(result.favorited ? 'Added to Radar' : 'Removed from Radar')
+      setFavorited(result.saved)
+      toast.success(result.saved ? 'Added to Radar' : 'Removed from Radar')
     }
   }
 
@@ -184,8 +184,8 @@ export function MobilePurchaseBar({ listing, seller, currentUser, isFavorited, c
               className="flex size-10 shrink-0 items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-700 transition-colors hover:bg-accent"
               aria-label={favorited ? 'Remove from Radar' : 'Save to Radar'}
             >
-              <Heart
-                className={`size-5 ${favorited ? 'fill-red-500 text-red-500' : 'text-muted-foreground'}`}
+              <Radar
+                className={`size-5 ${favorited ? 'text-primary' : 'text-muted-foreground'}`}
               />
             </button>
           </div>

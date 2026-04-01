@@ -296,6 +296,17 @@ export async function hardDeleteAccount(
   await supabase.from('feed_post_reactions').delete().eq('user_id', targetUserId)
   await supabase.from('feed_posts').delete().eq('author_id', targetUserId)
 
+  // Delete radar saves (collection_items via collections) and collections
+  const { data: userCollections } = await supabase
+    .from('collections')
+    .select('id')
+    .eq('user_id', targetUserId)
+  if (userCollections?.length) {
+    const collectionIds = userCollections.map((c: { id: string }) => c.id)
+    await supabase.from('collection_items').delete().in('collection_id', collectionIds)
+    await supabase.from('collections').delete().eq('user_id', targetUserId)
+  }
+
   // Delete company favorites
   await supabase.from('company_favorites').delete().eq('user_id', targetUserId)
 

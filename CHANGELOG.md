@@ -6,6 +6,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.11.0] — 2026-03-31 · Unified Radar (Cycle 40)
+
+### Added
+- **Unified Radar save system** — single save mechanism for equipment listings, feed posts, and videos via `RadarSaveButton` component
+- **`/radar` route** with 4 tabs: Equipment | Posts | Videos | Lists — shows all saved items organized by type
+- **`/radar/[id]`** route for individual named radar lists with mixed item types
+- **Radar save on feed posts** — radar icon in post action row for one-tap save
+- **Radar save on video player** — optional overlay button via `radarProps` prop
+- **`src/app/actions/radar.ts`** — server actions: toggleRadarListing, toggleRadarPost, toggleRadarVideo, getRadarListingIds, getRadarPostIds, getRadarCounts, getRadarEquipment, getRadarPosts, getRadarVideos, getRadarLists
+- **`is_default` column on `collections`** — unique per user; auto-created "Saved" default list for every user
+- **`item_type`, `feed_post_id`, `video_ref_id`, `video_source_type`, `video_thumbnail_url`, `video_title`, `video_listing_id`, `video_post_id` columns on `collection_items`** — per-type unique indexes replace old listing-only constraint
+- **Favorites data migration** — all `favorites` rows migrated to `collection_items` with `item_type='listing'` in each user's default radar list
+
+### Changed
+- **Radar icon** updated to Lucide `Radar` everywhere: desktop nav, mobile drawer, listing cards, listing detail, mobile purchase bar
+- **Desktop nav** consolidated: separate Favorites and Radar links merged into single "Radar" link
+- **`/collections` and `/favorites` redirect to `/radar`** — all old routes preserved as redirects
+- **Listing save state** reads from `collection_items` instead of `favorites` table (search page, listing detail, listing purchase panel, mobile purchase bar)
+- **AnonInteractionGate** save copy updated to reference "Radar"
+- **Admin hard-delete** now cleans up `collection_items` and `collections` for deleted users
+- **Middleware** adds `/radar` and `/collections` to protected route prefixes
+
+### Removed
+- **`favorite-action.ts`** — deleted; `toggleFavoriteAction` replaced by `toggleRadarListing`
+- **Heart/favorites UI** across all surfaces replaced with Radar icon
+
+---
+
 ## [4.10.0] — 2026-03-31 · Listing Media Quality Gate (Cycle 39)
 
 ### Added

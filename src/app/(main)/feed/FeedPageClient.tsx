@@ -21,6 +21,7 @@ interface FeedPageClientProps {
   activeCompanyLogo: string | null
   activeCompanySlug: string | null
   discoveryBlocks: React.ReactNode[]
+  radarPostIds?: string[]
 }
 
 export function FeedPageClient({
@@ -34,7 +35,9 @@ export function FeedPageClient({
   activeCompanyLogo,
   activeCompanySlug,
   discoveryBlocks,
+  radarPostIds = [],
 }: FeedPageClientProps) {
+  const radarPostIdSet = new Set(radarPostIds)
   const [posts, setPosts] = useState<FeedPostWithDetails[]>(initialPosts)
   const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor)
   const [filter, setFilter] = useState<'all' | 'for-you'>(() => {
@@ -157,6 +160,7 @@ export function FeedPageClient({
           activeCompany={activeCompanyId ? { id: activeCompanyId, name: activeCompanyName ?? '', slug: activeCompanySlug ?? '', logo_url: activeCompanyLogo } : null}
           onDeleted={handleDeleted}
           onEdited={handleEdited}
+          initialRadarSaved={radarPostIdSet.has(post.id)}
         />
       )
     })
@@ -177,6 +181,7 @@ export function FeedPageClient({
           activeCompany={activeCompanyId ? { id: activeCompanyId, name: activeCompanyName ?? '', slug: activeCompanySlug ?? '', logo_url: activeCompanyLogo } : null}
           onDeleted={handleDeleted}
           onEdited={handleEdited}
+          initialRadarSaved={radarPostIdSet.has(post.id)}
         />
       )
     })
@@ -197,6 +202,7 @@ export function FeedPageClient({
           activeCompany={activeCompanyId ? { id: activeCompanyId, name: activeCompanyName ?? '', slug: activeCompanySlug ?? '', logo_url: activeCompanyLogo } : null}
           onDeleted={handleDeleted}
           onEdited={handleEdited}
+          initialRadarSaved={radarPostIdSet.has(post.id)}
         />
       )
     })
@@ -217,6 +223,7 @@ export function FeedPageClient({
           activeCompany={activeCompanyId ? { id: activeCompanyId, name: activeCompanyName ?? '', slug: activeCompanySlug ?? '', logo_url: activeCompanyLogo } : null}
           onDeleted={handleDeleted}
           onEdited={handleEdited}
+          initialRadarSaved={radarPostIdSet.has(post.id)}
         />
       )
     })

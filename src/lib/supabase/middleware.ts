@@ -75,7 +75,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   // Protected routes — redirect to login if no session
-  const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/checkout', '/admin', '/sos', '/onboarding', '/feed']
+  const protectedPrefixes = ['/dashboard', '/messages', '/profile', '/search', '/listings', '/favorites', '/radar', '/collections', '/checkout', '/admin', '/sos', '/onboarding', '/feed']
   const isProtectedRoute = protectedPrefixes.some((prefix) =>
     pathname.startsWith(prefix)
   )

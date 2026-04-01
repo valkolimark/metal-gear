@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, Search, List, MessageSquare, Heart, User, FolderOpen, LayoutDashboard } from 'lucide-react'
+import { Home, Search, List, MessageSquare, User, Radar, LayoutDashboard } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { cn } from '@/lib/utils'
 import { SosNavPopover } from '@/components/sos-nav-popover'
@@ -16,8 +16,7 @@ export function DesktopNav() {
     { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/search', label: t('search'), icon: Search },
     { href: '/listings', label: t('myListings'), icon: List },
-    { href: '/favorites', label: t('favorites'), icon: Heart },
-    { href: '/collections', label: 'Radar', icon: FolderOpen },
+    { href: '/radar', label: 'Radar', icon: Radar },
     { href: '/messages', label: t('messages'), icon: MessageSquare },
     { href: '/profile', label: t('profile'), icon: User },
   ]

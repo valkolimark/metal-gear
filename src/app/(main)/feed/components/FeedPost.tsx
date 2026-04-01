@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { cn } from '@/lib/utils'
+import { RadarSaveButton } from '@/components/radar-save-button'
 import { FeedPostMedia } from './FeedPostMedia'
 import { CommentSection } from './CommentSection'
 import { formatRelativeTime, formatActivityStatus } from '@/lib/utils/time'
@@ -46,6 +47,7 @@ interface FeedPostProps {
   activeCompany?: { id: string; name: string; slug: string; logo_url: string | null } | null
   onDeleted: (id: string) => void
   onEdited: (post: FeedPostWithDetails) => void
+  initialRadarSaved?: boolean
 }
 
 const REPORT_REASONS = [
@@ -56,7 +58,7 @@ const REPORT_REASONS = [
   'Other',
 ]
 
-export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdited }: FeedPostProps) {
+export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdited, initialRadarSaved = false }: FeedPostProps) {
   const router = useRouter()
   const isOwner = post.author.id === currentUserId
   const canEdit = isOwner && new Date(post.created_at).getTime() > Date.now() - 15 * 60 * 1000
@@ -430,34 +432,43 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
 
       {/* Action bar */}
       <div className="border-t border-border mx-4 mt-2" />
-      <div className="flex items-center px-2 py-1">
-        <Button
-          variant="ghost"
+      <div className="flex items-center justify-between px-2 py-1">
+        <div className="flex items-center">
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`gap-1.5 font-body text-xs ${reacted ? 'text-red-500' : 'text-muted-foreground'}`}
+            onClick={handleLike}
+          >
+            <Heart className={`size-4 ${reacted ? 'fill-current' : ''}`} />
+            Like
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className={`gap-1.5 font-body text-xs ${isCommentsOpen ? 'text-primary' : 'text-muted-foreground'}`}
+            onClick={() => setIsCommentsOpen(!isCommentsOpen)}
+          >
+            <MessageCircle className="size-4" />
+            {commentButtonLabel}
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 font-body text-xs text-muted-foreground"
+            onClick={handleShare}
+          >
+            <Share2 className="size-4" />
+            Share
+          </Button>
+        </div>
+        <RadarSaveButton
+          itemType="feed_post"
+          itemId={post.id}
+          initialSaved={initialRadarSaved}
+          userId={currentUserId}
           size="sm"
-          className={`flex-1 gap-1.5 font-body text-xs ${reacted ? 'text-red-500' : 'text-muted-foreground'}`}
-          onClick={handleLike}
-        >
-          <Heart className={`size-4 ${reacted ? 'fill-current' : ''}`} />
-          Like
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className={`flex-1 gap-1.5 font-body text-xs ${isCommentsOpen ? 'text-primary' : 'text-muted-foreground'}`}
-          onClick={() => setIsCommentsOpen(!isCommentsOpen)}
-        >
-          <MessageCircle className="size-4" />
-          {commentButtonLabel}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="flex-1 gap-1.5 font-body text-xs text-muted-foreground"
-          onClick={handleShare}
-        >
-          <Share2 className="size-4" />
-          Share
-        </Button>
+        />
       </div>
 
       {/* Comment section */}

@@ -16,6 +16,7 @@ import {
 } from '@/app/actions/feed'
 import { getFeedPosts } from '@/app/actions/feed-posts'
 import { getActiveTier } from '@/app/actions/tier'
+import { getRadarPostIds } from '@/app/actions/radar'
 import { getUserCompanies } from '@/app/actions/company'
 import { FeedForYou } from './components/feed-for-you'
 import { FeedSosSection } from './components/feed-sos-section'
@@ -60,6 +61,7 @@ export default async function FeedPage() {
     sosAlerts,
     userCompanies,
     unreadResult,
+    radarPostIds,
   ] = await Promise.all([
     getFeedPosts(user.id, { filter: 'all', limit: 10 }),
     getFeedForYouListings(user.id),
@@ -98,6 +100,7 @@ export default async function FeedPage() {
         .is('read_at', null)
       return count ?? 0
     })(),
+    getRadarPostIds(user.id),
   ])
 
   const isPro = ['pro', 'business', 'enterprise', 'premium', 'boost'].includes(tier)
@@ -207,6 +210,7 @@ export default async function FeedPage() {
             activeCompanyLogo={companyResult.data?.logo_url ?? null}
             activeCompanySlug={companyResult.data?.slug ?? null}
             discoveryBlocks={discoveryBlocks}
+            radarPostIds={radarPostIds}
           />
         </main>
 

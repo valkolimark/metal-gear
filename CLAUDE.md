@@ -312,7 +312,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. **Never pass functions from Server Components to Client Components** — use server actions in separate `'use server'` files instead. Server actions live in:
 - `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, admin-delete-account, etc.)
 - `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
-- `src/app/(main)/listings/[id]/components/favorite-action.ts` — Listing favorite toggle
+- `src/app/actions/radar.ts` — Unified Radar save/unsave (listings, posts, videos)
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
 - `src/app/actions/admin-delete-account.ts` — Superadmin account deletion (soft/hard) + reactivation
 
@@ -346,9 +346,19 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Webhook:** Stripe `checkout.session.completed` with `metadata.type === 'credit_purchase'` adds credits to ledger
 - **Pages:** `/credits` (balance, history, purchase), Admin Settings → Contact Credits tab, Admin User Detail → Credits card
 
-## Radar (formerly Collections, Cycle 22)
-- "Collections" renamed to "Radar" in all UI copy; DB tables/columns/routes unchanged (`/collections` routes still work)
-- "Collection" → "Radar List", "Add to Collection" → "Add to Radar", "My Collections" → "My Radar"
+## Unified Radar (Cycle 40, replaces Favorites + Collections)
+- **Architecture:** Single save system for listings, feed posts, and videos; `collections` table with `is_default` flag; `collection_items` with `item_type` discriminator (`listing` | `feed_post` | `video`)
+- **Default radar list:** Every user has one `is_default = true` collection ("Saved"); created on migration or on first save
+- **Server actions:** `src/app/actions/radar.ts` — `toggleRadarListing()`, `toggleRadarPost()`, `toggleRadarVideo()`, `getRadarListingIds()`, `getRadarPostIds()`, `isListingInRadar()`, `getRadarEquipment()`, `getRadarPosts()`, `getRadarVideos()`, `getRadarCounts()`, `getRadarLists()`
+- **Components:** `RadarSaveButton` (universal, Lucide `Radar` icon, optimistic state); `RadarPageClient` (tabbed page)
+- **Routes:** `/radar` (primary, 4 tabs: Equipment | Posts | Videos | Lists), `/radar/[id]` (named list detail)
+- **Redirects:** `/collections` → `/radar?tab=lists`, `/collections/[id]` → `/radar/[id]`, `/favorites` → `/radar?tab=equipment`
+- **Navigation:** Single "Radar" link in desktop nav + mobile drawer (Lucide `Radar` icon); no more separate Favorites/Collections links
+- **Listing cards:** Radar icon replaces heart icon on search cards, listing detail, mobile purchase bar
+- **Feed posts:** Radar save button in action row (right-aligned)
+- **Video player:** Optional `radarProps` prop renders Radar overlay button
+- **`company_favorites`** (trusted vendors) completely unrelated — uses its own table and heart icon
+- **`favorites` table** retained as read-only archive; not dropped
 
 ## Navigation (Cycle 22, updated Cycle 27)
 - Home tab (mobile + desktop) navigates to `/feed` (personalized discovery feed), not `/search`

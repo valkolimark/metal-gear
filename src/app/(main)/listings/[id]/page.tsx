@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient } from '@/lib/supabase/server'
 import { getConditionReport } from '@/app/actions/condition-reports'
 import { getSellerReviews } from '@/app/actions/reputation'
+import { isListingInRadar } from '@/app/actions/radar'
 import { recordListingView } from '@/app/actions/analytics'
 import { getActiveTier } from '@/app/actions/tier'
 import { getCreditBalance, getRevealedContacts } from '@/app/actions/credits'
@@ -66,7 +67,7 @@ export default async function ListingDetailPage({
     { data: company },
     conditionResult,
     reviewsResult,
-    favoriteResult,
+    radarResult,
   ] = await Promise.all([
     admin
       .from('listing_images')
@@ -87,13 +88,8 @@ export default async function ListingDetailPage({
     getConditionReport(id),
     getSellerReviews(listing.seller_id),
     currentUser
-      ? admin
-          .from('favorites')
-          .select('id')
-          .eq('user_id', currentUser.id)
-          .eq('listing_id', id)
-          .maybeSingle()
-      : Promise.resolve({ data: null }),
+      ? isListingInRadar(currentUser.id, id)
+      : Promise.resolve(false),
   ])
 
   if (!seller) notFound()
@@ -262,7 +258,7 @@ export default async function ListingDetailPage({
               listing={listing}
               seller={seller}
               currentUser={currentUser}
-              isFavorited={!!favoriteResult.data}
+              isFavorited={!!radarResult}
               company={company}
               sellerContact={sellerContact}
               creditBalance={creditBalance}
@@ -276,7 +272,7 @@ export default async function ListingDetailPage({
         listing={listing}
         seller={seller}
         currentUser={currentUser}
-        isFavorited={!!favoriteResult.data}
+        isFavorited={!!radarResult}
         company={company}
         sellerContact={sellerContact}
         creditBalance={creditBalance}

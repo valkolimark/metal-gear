@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import {
-  Heart,
+  Radar,
   MessageSquare,
   DollarSign,
   ShieldCheck,
@@ -34,7 +34,7 @@ import { CompanyAvatar } from '@/components/company/CompanyAvatar'
 import { startConversation } from '@/app/(main)/messages/actions'
 import { makeOffer } from '@/app/actions/offers'
 import { revealContactInfo } from '@/app/actions/credits'
-import { toggleFavoriteAction } from './favorite-action'
+import { toggleRadarListing } from '@/app/actions/radar'
 import type { Tables } from '@/types/database'
 import type { User } from '@supabase/supabase-js'
 
@@ -133,12 +133,12 @@ export function ListingPurchasePanel({
       setGateOpen(true)
       return
     }
-    const result = await toggleFavoriteAction(listing.id)
+    const result = await toggleRadarListing(listing.id)
     if ('error' in result) {
       toast.error(result.error)
     } else {
-      setFavorited(result.favorited)
-      toast.success(result.favorited ? 'Added to Radar' : 'Removed from Radar')
+      setFavorited(result.saved)
+      toast.success(result.saved ? 'Added to Radar' : 'Removed from Radar')
     }
   }
 
@@ -301,8 +301,8 @@ export function ListingPurchasePanel({
                 variant="ghost"
                 className="w-full font-body"
               >
-                <Heart
-                  className={`mr-2 size-4 ${favorited ? 'fill-red-500 text-red-500' : ''}`}
+                <Radar
+                  className={`mr-2 size-4 ${favorited ? 'text-primary' : ''}`}
                 />
                 {favorited ? 'Saved' : 'Save to Radar'}
               </Button>

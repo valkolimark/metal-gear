@@ -171,21 +171,45 @@ export type Database = {
           added_at: string | null
           collection_id: string
           id: string
-          listing_id: string
+          item_type: string
+          listing_id: string | null
+          feed_post_id: string | null
+          video_ref_id: string | null
+          video_source_type: string | null
+          video_thumbnail_url: string | null
+          video_title: string | null
+          video_listing_id: string | null
+          video_post_id: string | null
           notes: string | null
         }
         Insert: {
           added_at?: string | null
           collection_id: string
           id?: string
-          listing_id: string
+          item_type?: string
+          listing_id?: string | null
+          feed_post_id?: string | null
+          video_ref_id?: string | null
+          video_source_type?: string | null
+          video_thumbnail_url?: string | null
+          video_title?: string | null
+          video_listing_id?: string | null
+          video_post_id?: string | null
           notes?: string | null
         }
         Update: {
           added_at?: string | null
           collection_id?: string
           id?: string
-          listing_id?: string
+          item_type?: string
+          listing_id?: string | null
+          feed_post_id?: string | null
+          video_ref_id?: string | null
+          video_source_type?: string | null
+          video_thumbnail_url?: string | null
+          video_title?: string | null
+          video_listing_id?: string | null
+          video_post_id?: string | null
           notes?: string | null
         }
         Relationships: [
@@ -210,6 +234,27 @@ export type Database = {
             referencedRelation: "pricing_comparables"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "collection_items_feed_post_id_fkey"
+            columns: ["feed_post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_video_listing_id_fkey"
+            columns: ["video_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_video_post_id_fkey"
+            columns: ["video_post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
+            referencedColumns: ["id"]
+          },
         ]
       }
       collections: {
@@ -218,6 +263,7 @@ export type Database = {
           created_at: string | null
           description: string | null
           id: string
+          is_default: boolean
           is_public: boolean | null
           name: string
           updated_at: string | null
@@ -228,6 +274,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_default?: boolean
           is_public?: boolean | null
           name: string
           updated_at?: string | null
@@ -238,6 +285,7 @@ export type Database = {
           created_at?: string | null
           description?: string | null
           id?: string
+          is_default?: boolean
           is_public?: boolean | null
           name?: string
           updated_at?: string | null

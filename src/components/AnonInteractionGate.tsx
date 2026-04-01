@@ -28,8 +28,8 @@ const copy = {
     body: 'Sign up free to message sellers directly about this listing.',
   },
   save: {
-    title: 'Save listings with a free account',
-    body: 'Create an account to save this listing and get alerts when prices change.',
+    title: 'Save to your Radar with a free account',
+    body: 'Create an account to save this listing to your Radar and get alerts when prices change.',
   },
   ask: {
     title: 'Sign up to continue the conversation',
