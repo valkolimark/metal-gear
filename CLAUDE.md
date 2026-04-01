@@ -381,11 +381,11 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 
 ## Listing Detail Page Architecture
 The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server Component** that fetches data server-side and passes to 7 client sub-components:
-- `ListingGallery` — image/video gallery with desktop thumbnails + mobile swipe
+- `ListingGallery` — image/video gallery: desktop 44px thumbnails (max 6, "+N more" overflow tile opens image lightbox), video tiles open separate video modal; mobile swipe unchanged
 - `ListingMainContent` — title, badges, description, share/QR
 - `ListingPurchasePanel` — price, CTAs, seller info, buyer protection (sticky sidebar on desktop)
 - `ListingSpecs` — specs table + condition report
-- `AskMetalGear` — AI chat with streaming responses
+- `AskMetalGear` — AI chat with streaming responses; desktop: left column below gallery (Amazon "Ask Rufus" pattern); mobile: below specs in center column
 - `ListingReviews` — seller reviews with star distribution
 - `MobilePurchaseBar` — fixed bottom bar with Sheet drawer
 - `AnonInteractionGate` — signup prompt for anonymous users

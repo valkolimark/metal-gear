@@ -1,12 +1,15 @@
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { ChevronLeft, ChevronRight, Play } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { VideoPlayer } from '@/components/ui/video-player'
 import {
   Dialog,
   DialogContent,
+  DialogTitle,
+  DialogClose,
 } from '@/components/ui/dialog'
 import type { Tables } from '@/types/database'
 
@@ -19,22 +22,36 @@ interface Props {
   title: string
 }
 
+const MAX_VISIBLE_IMAGE_THUMBS = 6
+
 export function ListingGallery({ images, videos, title }: Props) {
   const [active, setActive] = useState(0)
   const [direction, setDirection] = useState<'left' | 'right' | null>(null)
-  const [videoDialogOpen, setVideoDialogOpen] = useState(false)
-  const [activeVideo, setActiveVideo] = useState<ListingVideo | null>(null)
 
+  // Modal state
+  const [imageModalOpen, setImageModalOpen] = useState(false)
+  const [imageModalIndex, setImageModalIndex] = useState(0)
+  const [videoModalOpen, setVideoModalOpen] = useState(false)
+
+  // Mobile touch refs
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
   const touchEndX = useRef(0)
   const touchEndY = useRef(0)
   const MIN_SWIPE = 50
 
+  // Mobile uses combined allMedia; desktop uses images-only for main view
   const allMedia = [
     ...images.map((img) => ({ type: 'image' as const, data: img })),
     ...videos.map((vid) => ({ type: 'video' as const, data: vid })),
   ]
+
+  // Desktop thumbnail logic
+  const overflowCount = Math.max(0, images.length - MAX_VISIBLE_IMAGE_THUMBS)
+  const thumbsToShow = overflowCount > 0 ? images.slice(0, 5) : images.slice(0, MAX_VISIBLE_IMAGE_THUMBS)
+
+  // Filter videos with valid stream IDs
+  const playableVideos = videos.filter((v) => v.stream_video_id || v.embed_url || v.url)
 
   const goNext = useCallback(() => {
     if (allMedia.length <= 1) return
@@ -60,17 +77,24 @@ export function ListingGallery({ images, videos, title }: Props) {
       const deltaX = touchStartX.current - touchEndX.current
       const deltaY = touchStartY.current - touchEndY.current
       if (Math.abs(deltaX) < MIN_SWIPE) return
-      if (Math.abs(deltaX) < Math.abs(deltaY)) return // vertical scroll
+      if (Math.abs(deltaX) < Math.abs(deltaY)) return
       if (deltaX > 0) goNext()
       else goPrev()
     },
     [goNext, goPrev]
   )
 
-  const handleVideoClick = (vid: ListingVideo) => {
-    setActiveVideo(vid)
-    setVideoDialogOpen(true)
-  }
+  // Keyboard navigation for image lightbox
+  useEffect(() => {
+    if (!imageModalOpen) return
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') setImageModalIndex((i) => Math.max(0, i - 1))
+      if (e.key === 'ArrowRight') setImageModalIndex((i) => Math.min(images.length - 1, i + 1))
+      if (e.key === 'Escape') setImageModalOpen(false)
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [imageModalOpen, images.length])
 
   if (allMedia.length === 0) {
     return (
@@ -84,74 +108,154 @@ export function ListingGallery({ images, videos, title }: Props) {
 
   return (
     <div>
-      {/* Desktop layout: vertical thumbnails + main image */}
+      {/* ═══════════════ DESKTOP LAYOUT ═══════════════ */}
       <div className="hidden lg:flex lg:gap-3">
-        {/* Vertical thumbnail strip */}
-        <div className="flex w-[72px] shrink-0 flex-col gap-2 overflow-y-auto" style={{ maxHeight: '460px' }}>
-          {allMedia.map((item, i) => (
+        {/* Vertical thumbnail strip — no scroll, 44px thumbs, max 6 slots */}
+        <div className="flex w-11 shrink-0 flex-col gap-1.5">
+          {/* Image thumbnails */}
+          {thumbsToShow.map((image, idx) => (
             <button
-              key={i}
-              onClick={() => {
-                if (item.type === 'video') {
-                  handleVideoClick(item.data as ListingVideo)
-                } else {
-                  setActive(i)
-                }
-              }}
-              className={`relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-md border-2 transition-colors ${
-                active === i
+              key={image.id}
+              onClick={() => setActive(idx)}
+              className={cn(
+                'relative h-11 w-11 shrink-0 overflow-hidden rounded border-2 transition-all',
+                active === idx
                   ? 'border-primary'
-                  : 'border-transparent hover:border-zinc-600 dark:hover:border-zinc-600'
-              }`}
-            >
-              {item.type === 'image' ? (
-                <Image
-                  src={(item.data as ListingImage).url}
-                  alt=""
-                  fill
-                  className="object-cover"
-                  sizes="72px"
-                />
-              ) : (
-                <div className="flex h-full w-full items-center justify-center bg-zinc-900">
-                  <Play className="size-5 text-white" />
-                </div>
+                  : 'border-transparent hover:border-muted-foreground/50'
               )}
+            >
+              <Image
+                src={image.url}
+                alt={`Image ${idx + 1}`}
+                fill
+                className="object-cover"
+                sizes="44px"
+              />
             </button>
           ))}
+
+          {/* Overflow tile — slot 6 when images > 6 */}
+          {overflowCount > 0 && (
+            <button
+              onClick={() => {
+                setImageModalIndex(5)
+                setImageModalOpen(true)
+              }}
+              className="relative h-11 w-11 shrink-0 overflow-hidden rounded border-2 border-transparent hover:border-muted-foreground/50"
+            >
+              <Image
+                src={images[5].url}
+                alt="More images"
+                fill
+                className="object-cover brightness-50"
+                sizes="44px"
+              />
+              <span className="absolute inset-0 flex items-center justify-center text-white text-xs font-bold font-display">
+                +{overflowCount}
+              </span>
+            </button>
+          )}
+
+          {/* Video thumbnail(s) — below image thumbs */}
+          {playableVideos.length === 1 && (
+            <button
+              onClick={() => setVideoModalOpen(true)}
+              className="relative h-11 w-11 shrink-0 overflow-hidden rounded border-2 border-transparent hover:border-muted-foreground/50 mt-1"
+            >
+              {playableVideos[0].thumbnail_url ? (
+                <Image
+                  src={playableVideos[0].thumbnail_url}
+                  alt="Video"
+                  fill
+                  className="object-cover brightness-75"
+                  sizes="44px"
+                />
+              ) : (
+                <div className="h-full w-full bg-muted" />
+              )}
+              <span className="absolute inset-0 flex items-center justify-center">
+                <svg className="h-4 w-4 text-white drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </button>
+          )}
+
+          {playableVideos.length > 1 && (
+            <button
+              onClick={() => setVideoModalOpen(true)}
+              className="relative h-11 w-11 shrink-0 overflow-hidden rounded border-2 border-transparent hover:border-muted-foreground/50 mt-1"
+            >
+              {playableVideos[0].thumbnail_url ? (
+                <Image
+                  src={playableVideos[0].thumbnail_url}
+                  alt="Videos"
+                  fill
+                  className="object-cover brightness-50"
+                  sizes="44px"
+                />
+              ) : (
+                <div className="h-full w-full bg-muted" />
+              )}
+              <span className="absolute inset-0 flex flex-col items-center justify-center text-white text-[10px] font-bold font-display leading-tight">
+                {playableVideos.length}
+                <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              </span>
+            </button>
+          )}
         </div>
 
-        {/* Main image */}
-        <div className="group relative flex-1 aspect-square overflow-hidden rounded-xl bg-zinc-950 dark:bg-zinc-950 bg-zinc-100 cursor-zoom-in">
+        {/* Main image — clicking opens lightbox */}
+        <div className="group relative flex-1 aspect-square overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950">
           {currentMedia.type === 'image' ? (
-            <Image
-              src={(currentMedia.data as ListingImage).url}
-              alt={title}
-              fill
-              className="object-contain transition-transform duration-300 group-hover:scale-110"
-              sizes="(max-width: 1024px) 100vw, 460px"
-              priority
-            />
-          ) : (
-            <div
-              className="flex h-full w-full cursor-pointer items-center justify-center"
-              onClick={() => handleVideoClick(currentMedia.data as ListingVideo)}
+            <button
+              onClick={() => {
+                setImageModalIndex(active)
+                setImageModalOpen(true)
+              }}
+              className="relative h-full w-full cursor-zoom-in"
             >
-              <Play className="size-16 text-white/80" />
-            </div>
+              <Image
+                src={(currentMedia.data as ListingImage).url}
+                alt={title}
+                fill
+                className="object-contain transition-transform duration-300 group-hover:scale-110"
+                sizes="(max-width: 1024px) 100vw, 460px"
+                priority
+              />
+            </button>
+          ) : (
+            <button
+              onClick={() => setVideoModalOpen(true)}
+              className="flex h-full w-full cursor-pointer items-center justify-center bg-zinc-950"
+            >
+              <svg className="h-16 w-16 text-white/80" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
           )}
 
           {/* Prev/Next arrows */}
-          {allMedia.length > 1 && (
+          {images.length > 1 && (
             <>
               <button
-                onClick={goPrev}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const prevIdx = active === 0 ? images.length - 1 : active - 1
+                  setActive(prevIdx)
+                }}
                 className="absolute left-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
               >
                 <ChevronLeft className="size-5" />
               </button>
               <button
-                onClick={goNext}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  const nextIdx = active === images.length - 1 ? 0 : active + 1
+                  setActive(nextIdx)
+                }}
                 className="absolute right-2 top-1/2 flex size-9 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-white opacity-0 transition-opacity group-hover:opacity-100 hover:bg-black/70"
               >
                 <ChevronRight className="size-5" />
@@ -160,16 +264,17 @@ export function ListingGallery({ images, videos, title }: Props) {
           )}
 
           {/* Counter badge */}
-          <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 font-body text-xs text-white backdrop-blur">
-            {active + 1} / {allMedia.length}
+          <div className="absolute right-3 top-3 rounded-full bg-black/60 px-2.5 py-1 font-body text-xs text-white backdrop-blur pointer-events-none">
+            {active + 1} / {images.length}
+            {playableVideos.length > 0 && ` + ${playableVideos.length} video${playableVideos.length > 1 ? 's' : ''}`}
           </div>
         </div>
       </div>
 
-      {/* Mobile layout: full-width image + dot indicators */}
+      {/* ═══════════════ MOBILE LAYOUT (unchanged) ═══════════════ */}
       <div className="lg:hidden">
         <div
-          className="relative w-full aspect-square overflow-hidden rounded-xl bg-zinc-950 dark:bg-zinc-950 bg-zinc-100"
+          className="relative w-full aspect-square overflow-hidden rounded-xl bg-zinc-100 dark:bg-zinc-950"
           onTouchStart={allMedia.length > 1 ? handleTouchStart : undefined}
           onTouchEnd={allMedia.length > 1 ? handleTouchEnd : undefined}
         >
@@ -191,12 +296,19 @@ export function ListingGallery({ images, videos, title }: Props) {
               onAnimationEnd={() => setDirection(null)}
             />
           ) : (
-            <div
+            <button
+              onClick={() => {
+                const vid = currentMedia.data as ListingVideo
+                if (vid.stream_video_id || vid.embed_url || vid.url) {
+                  setVideoModalOpen(true)
+                }
+              }}
               className="flex h-full w-full cursor-pointer items-center justify-center"
-              onClick={() => handleVideoClick(currentMedia.data as ListingVideo)}
             >
-              <Play className="size-16 text-white/80" />
-            </div>
+              <svg className="h-16 w-16 text-white/80" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </button>
           )}
 
           {/* Counter badge */}
@@ -213,7 +325,7 @@ export function ListingGallery({ images, videos, title }: Props) {
                 key={i}
                 onClick={() => setActive(i)}
                 className={`h-2 rounded-full transition-all duration-200 ${
-                  active === i ? 'bg-primary w-4' : 'bg-zinc-600 dark:bg-zinc-600 bg-zinc-300 w-2'
+                  active === i ? 'bg-primary w-4' : 'bg-zinc-300 dark:bg-zinc-600 w-2'
                 }`}
               />
             ))}
@@ -221,28 +333,116 @@ export function ListingGallery({ images, videos, title }: Props) {
         )}
       </div>
 
-      {/* Video lightbox dialog */}
-      <Dialog open={videoDialogOpen} onOpenChange={setVideoDialogOpen}>
-        <DialogContent className="max-w-3xl p-0 overflow-hidden">
-          {activeVideo && (
-            <div className="aspect-video w-full">
-              {activeVideo.stream_video_id || activeVideo.embed_url ? (
-                <VideoPlayer
-                  videoId={activeVideo.stream_video_id || undefined}
-                  embedUrl={activeVideo.embed_url || undefined}
-                  thumbnailUrl={activeVideo.thumbnail_url || undefined}
-                  title={title}
-                />
-              ) : (
-                <video
-                  src={activeVideo.url}
-                  controls
-                  autoPlay
-                  className="h-full w-full bg-black"
+      {/* ═══════════════ IMAGE LIGHTBOX MODAL ═══════════════ */}
+      <Dialog open={imageModalOpen} onOpenChange={setImageModalOpen}>
+        <DialogContent className="max-w-5xl w-full p-0 bg-black border-0 rounded-xl overflow-hidden [&>button]:hidden">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 py-3 bg-black/80 border-b border-white/10">
+            <span className="text-white/70 text-sm font-body">
+              {imageModalIndex + 1} / {images.length}
+            </span>
+            <DialogTitle className="sr-only">All images</DialogTitle>
+            <DialogClose asChild>
+              <button className="text-white/70 hover:text-white transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </DialogClose>
+          </div>
+
+          {/* Main image */}
+          <div className="relative w-full aspect-[4/3] bg-black">
+            {images[imageModalIndex] && (
+              <Image
+                src={images[imageModalIndex].url}
+                alt={`Image ${imageModalIndex + 1}`}
+                fill
+                className="object-contain"
+                sizes="(max-width: 1280px) 100vw, 1024px"
+                priority
+              />
+            )}
+            {/* Prev/Next arrows */}
+            {images.length > 1 && (
+              <>
+                <button
+                  onClick={() => setImageModalIndex((i) => Math.max(0, i - 1))}
+                  disabled={imageModalIndex === 0}
+                  className="absolute left-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-30 transition-all"
                 >
-                  Your browser does not support video playback.
-                </video>
-              )}
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  onClick={() => setImageModalIndex((i) => Math.min(images.length - 1, i + 1))}
+                  disabled={imageModalIndex === images.length - 1}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-black/60 hover:bg-black/80 text-white disabled:opacity-30 transition-all"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Thumbnail filmstrip */}
+          {images.length > 1 && (
+            <div className="flex gap-2 px-4 py-3 bg-black/80 overflow-x-auto">
+              {images.map((img, idx) => (
+                <button
+                  key={img.id}
+                  onClick={() => setImageModalIndex(idx)}
+                  className={cn(
+                    'relative h-14 w-14 flex-shrink-0 rounded overflow-hidden border-2 transition-all',
+                    imageModalIndex === idx ? 'border-primary' : 'border-transparent opacity-60 hover:opacity-100'
+                  )}
+                >
+                  <Image src={img.url} alt="" fill className="object-cover" sizes="56px" />
+                </button>
+              ))}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* ═══════════════ VIDEO MODAL ═══════════════ */}
+      <Dialog open={videoModalOpen} onOpenChange={setVideoModalOpen}>
+        <DialogContent className="max-w-4xl w-full p-0 bg-black border-0 rounded-xl overflow-hidden [&>button]:hidden">
+          <div className="flex items-center justify-between px-4 py-3 bg-black/80 border-b border-white/10">
+            <span className="text-white/70 text-sm font-body">
+              {playableVideos.length === 1 ? 'Video' : `${playableVideos.length} Videos`}
+            </span>
+            <DialogTitle className="sr-only">Videos</DialogTitle>
+            <DialogClose asChild>
+              <button className="text-white/70 hover:text-white transition-colors">
+                <X className="h-5 w-5" />
+              </button>
+            </DialogClose>
+          </div>
+
+          {playableVideos.length === 1 && playableVideos[0] && (
+            <div className="aspect-video w-full">
+              <VideoPlayer
+                videoId={playableVideos[0].stream_video_id || undefined}
+                embedUrl={playableVideos[0].embed_url || undefined}
+                thumbnailUrl={playableVideos[0].thumbnail_url || undefined}
+                title={title}
+              />
+            </div>
+          )}
+
+          {playableVideos.length > 1 && (
+            <div className="flex flex-col gap-4 p-4 max-h-[70vh] overflow-y-auto">
+              {playableVideos.map((video, idx) => (
+                <div key={video.id}>
+                  <p className="text-white/50 text-xs font-body mb-1">Video {idx + 1}</p>
+                  <div className="aspect-video w-full rounded overflow-hidden">
+                    <VideoPlayer
+                      videoId={video.stream_video_id || undefined}
+                      embedUrl={video.embed_url || undefined}
+                      thumbnailUrl={video.thumbnail_url || undefined}
+                      title={`${title} — Video ${idx + 1}`}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </DialogContent>

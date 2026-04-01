@@ -226,13 +226,16 @@ export default async function ListingDetailPage({
 
       {/* Three-column grid */}
       <div className="grid grid-cols-1 lg:grid-cols-[460px_1fr_320px] gap-x-8 items-start">
-        {/* Col 1: Gallery */}
+        {/* Col 1: Gallery + AskMetalGear (desktop) */}
         <div>
           <ListingGallery
             images={(images ?? []) as ListingImage[]}
             videos={(videos ?? []) as ListingVideo[]}
             title={listing.title}
           />
+          <div className="hidden lg:block mt-4">
+            <AskMetalGear listing={listing} currentUser={currentUser} />
+          </div>
         </div>
 
         {/* Col 2: Main content */}
@@ -242,7 +245,10 @@ export default async function ListingDetailPage({
             specs={listing.specifications as Record<string, string> | null}
             conditionReport={conditionResult.report as Parameters<typeof ListingSpecs>[0]['conditionReport'] ?? null}
           />
-          <AskMetalGear listing={listing} currentUser={currentUser} />
+          {/* Mobile: AskMetalGear below main content */}
+          <div className="lg:hidden">
+            <AskMetalGear listing={listing} currentUser={currentUser} />
+          </div>
           <ListingReviews
             reviews={reviewsResult.reviews ?? []}
             averageRating={reviewsResult.averageRating ?? 0}

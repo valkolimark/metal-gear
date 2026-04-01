@@ -6,6 +6,23 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.12.0] — 2026-03-31 · Listing Gallery Desktop Overhaul (Cycle 41)
+
+### Added
+- **Image lightbox modal** — full-screen dialog with 4:3 aspect, filmstrip thumbnails at bottom, prev/next arrow navigation, keyboard support (ArrowLeft/ArrowRight/Escape)
+- **Video modal** — separate dialog for listing videos; single player for 1 video, vertical list for multiple; uses existing `VideoPlayer` component
+- **"+N more" overflow tile** — slot 6 in thumbnail strip shows dimmed 6th image with count overlay; clicking opens lightbox at image 6
+- **Video thumbnail tiles** — play-icon tile for 1 video, count+play tile for 2+ videos; rendered below image thumbnails in strip
+
+### Changed
+- **Desktop thumbnail size** — 72×72px → 44×44px for a tighter, Amazon-style strip
+- **Thumbnail strip hard cap** — max 6 visible image slots; no vertical scrollbar ever (`overflow-y-auto` and `max-height` removed)
+- **Main image click-to-lightbox** — clicking the main desktop image opens the lightbox at the current active index
+- **Desktop arrows** — navigate only within images (not videos); videos accessed exclusively via video thumbnail tile
+- **AskMetalGear placement** — moved from center content column to left column below gallery on desktop (`lg:`); mobile placement unchanged (below specs, above reviews)
+
+---
+
 ## [4.11.0] — 2026-03-31 · Unified Radar (Cycle 40)
 
 ### Added
