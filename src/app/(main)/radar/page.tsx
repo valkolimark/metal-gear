@@ -21,12 +21,14 @@ export default async function RadarPage({
   const { tab } = await searchParams
   const activeTab = tab || 'equipment'
 
+  // Fetch all tab data unconditionally — client-side tab switches
+  // use router.push which may serve cached RSC payloads
   const [counts, equipment, posts, videos, lists] = await Promise.all([
     getRadarCounts(user.id),
-    activeTab === 'equipment' ? getRadarEquipment(user.id) : Promise.resolve([]),
-    activeTab === 'posts' ? getRadarPosts(user.id) : Promise.resolve([]),
-    activeTab === 'videos' ? getRadarVideos(user.id) : Promise.resolve([]),
-    activeTab === 'lists' ? getRadarLists(user.id) : Promise.resolve([]),
+    getRadarEquipment(user.id),
+    getRadarPosts(user.id),
+    getRadarVideos(user.id),
+    getRadarLists(user.id),
   ])
 
   return (
