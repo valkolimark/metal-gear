@@ -493,6 +493,11 @@ export async function getCurrentAdminRole(): Promise<string | null> {
   return profile.admin_role
 }
 
+export async function getCurrentAdminInfo(): Promise<{ id: string; role: string | null }> {
+  const { profile } = await requireAdmin()
+  return { id: profile.id, role: profile.admin_role }
+}
+
 // ─── Listing Management ─────────────────────────────────────────────
 
 export async function getAdminListings(params: {

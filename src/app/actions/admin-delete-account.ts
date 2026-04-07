@@ -136,11 +136,16 @@ export async function reactivateAccount(
 
 // ─── HARD DELETE (Permanent) ───────────────────────────────────────────────────
 
+type HardDeleteResult =
+  | { success: true; authDeleteFailed: false; warnings?: string[] }
+  | { success: true; authDeleteFailed: true; authError: string; warnings?: string[] }
+  | { success: false; error: string }
+
 export async function hardDeleteAccount(
   targetUserId: string,
   confirmationText: string,
   reason: string
-): Promise<{ success: boolean; error?: string; warnings?: string[] }> {
+): Promise<HardDeleteResult> {
   if (confirmationText !== 'DELETE') {
     return { success: false, error: 'Confirmation text did not match' }
   }
@@ -315,20 +320,54 @@ export async function hardDeleteAccount(
   await supabase.from('profiles').delete().eq('id', targetUserId)
 
   // ── Step 7: Delete the Supabase Auth user ──
-  const { error: authError } = await supabase.auth.admin.deleteUser(targetUserId)
-  if (authError) {
-    console.error('Failed to delete auth user:', authError)
+  // Use a fresh admin client to ensure service role auth for auth.admin.deleteUser()
+  try {
+    const authAdminClient = createAdminClient()
+    const { error: authError } = await authAdminClient.auth.admin.deleteUser(targetUserId)
+    if (authError) {
+      console.error('Failed to delete auth user:', authError)
+      await supabase.from('admin_audit_log').insert({
+        admin_id: adminProfile.id,
+        action: 'hard_delete_auth_user_failed',
+        target_type: 'user',
+        target_id: targetUserId,
+        metadata: { error: authError.message, code: authError.status } as unknown as Json,
+      })
+      return {
+        success: true,
+        authDeleteFailed: true,
+        authError: authError.message,
+        warnings: warnings.length > 0 ? warnings : undefined,
+      }
+    }
+
+    // Log success
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminProfile.id,
+      action: 'hard_delete_auth_user_success',
+      target_type: 'user',
+      target_id: targetUserId,
+      metadata: {} as Json,
+    })
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error during auth deletion'
+    console.error('Auth user deletion threw:', err)
     await supabase.from('admin_audit_log').insert({
       admin_id: adminProfile.id,
       action: 'hard_delete_auth_user_failed',
       target_type: 'user',
       target_id: targetUserId,
-      metadata: { error: authError.message } as unknown as Json,
+      metadata: { error: errorMessage, thrown: true } as unknown as Json,
     })
-    warnings.push('Auth user deletion failed — orphaned auth record logged')
+    return {
+      success: true,
+      authDeleteFailed: true,
+      authError: errorMessage,
+      warnings: warnings.length > 0 ? warnings : undefined,
+    }
   }
 
-  return { success: true, warnings: warnings.length > 0 ? warnings : undefined }
+  return { success: true, authDeleteFailed: false, warnings: warnings.length > 0 ? warnings : undefined }
 }
 
 // ─── Pre-delete check (for UI warnings) ───────────────────────────────────────
@@ -377,6 +416,72 @@ export async function getDeleteAccountWarnings(
   }
 
   return { warnings, isSuperadmin, isSelf }
+}
+
+// ─── DELETE ORPHANED AUTH USER ────────────────────────────────────────────────
+
+export async function deleteOrphanedAuthUser(
+  targetUserId: string,
+  adminUserId: string
+): Promise<{ success: boolean; error?: string }> {
+  const supabase = createAdminClient()
+
+  // Verify caller is superadmin
+  const { data: adminProfile } = await supabase
+    .from('profiles')
+    .select('admin_role')
+    .eq('id', adminUserId)
+    .single()
+
+  if (adminProfile?.admin_role !== 'superadmin') {
+    return { success: false, error: 'Only superadmins can delete orphaned auth records' }
+  }
+
+  // Verify target has NO profile row — this action is only for orphaned auth records
+  const { data: existingProfile } = await supabase
+    .from('profiles')
+    .select('id')
+    .eq('id', targetUserId)
+    .maybeSingle()
+
+  if (existingProfile) {
+    return { success: false, error: 'Profile exists — use the standard delete flow instead' }
+  }
+
+  // Delete the orphaned auth record
+  try {
+    const { error: authError } = await supabase.auth.admin.deleteUser(targetUserId)
+    if (authError) {
+      await supabase.from('admin_audit_log').insert({
+        admin_id: adminUserId,
+        action: 'delete_orphaned_auth_user_failed',
+        target_type: 'user',
+        target_id: targetUserId,
+        metadata: { error: authError.message, code: authError.status } as unknown as Json,
+      })
+      return { success: false, error: authError.message }
+    }
+
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminUserId,
+      action: 'delete_orphaned_auth_user',
+      target_type: 'user',
+      target_id: targetUserId,
+      metadata: {} as Json,
+    })
+
+    return { success: true }
+  } catch (err) {
+    const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+    await supabase.from('admin_audit_log').insert({
+      admin_id: adminUserId,
+      action: 'delete_orphaned_auth_user_failed',
+      target_type: 'user',
+      target_id: targetUserId,
+      metadata: { error: errorMessage, thrown: true } as unknown as Json,
+    })
+    return { success: false, error: errorMessage }
+  }
 }
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────────

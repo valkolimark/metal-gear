@@ -40,6 +40,7 @@ import {
   getAdminUserCreditBalance,
   adminGrantCredits,
   getCurrentAdminRole,
+  getCurrentAdminInfo,
 } from '../../actions'
 import { reactivateAccount } from '@/app/actions/admin-delete-account'
 import { DeleteAccountPanel } from './components/DeleteAccountPanel'
@@ -67,6 +68,7 @@ export default function AdminUserDetailPage() {
   const [grantAmount, setGrantAmount] = useState('')
   const [granting, setGranting] = useState(false)
   const [currentAdminRole, setCurrentAdminRole] = useState<string | null>(null)
+  const [currentAdminId, setCurrentAdminId] = useState<string | null>(null)
   const [reactivating, setReactivating] = useState(false)
 
   useEffect(() => {
@@ -77,7 +79,10 @@ export default function AdminUserDetailPage() {
     })
     getChurnRiskDetail(userId).then(setChurnRisk)
     getAdminUserCreditBalance(userId).then(setCreditInfo)
-    getCurrentAdminRole().then(setCurrentAdminRole)
+    getCurrentAdminInfo().then((info) => {
+      setCurrentAdminRole(info.role)
+      setCurrentAdminId(info.id)
+    })
   }, [userId])
 
   async function handleReactivate() {
@@ -195,9 +200,65 @@ export default function AdminUserDetailPage() {
 
   const { profile, listings, sosRequests, reviews, reports, auditLog } = data
   if (!profile) {
+    // Orphaned auth record — profile deleted but auth may still exist
     return (
-      <div className="py-20 text-center">
-        <p className="font-body text-muted-foreground">User not found</p>
+      <div className="space-y-6">
+        <div className="flex items-center gap-3">
+          <Button variant="ghost" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="size-4" />
+          </Button>
+          <h1 className="font-display text-2xl font-bold text-foreground">
+            Orphaned Account
+          </h1>
+        </div>
+
+        <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 p-4">
+          <p className="font-display text-sm font-semibold text-amber-400">
+            No profile data found for this user ID
+          </p>
+          <p className="font-body text-xs text-muted-foreground mt-1">
+            ID: {userId}. The profile has been deleted but an auth record may still exist.
+          </p>
+        </div>
+
+        {currentAdminRole === 'superadmin' && currentAdminId && (
+          <DeleteAccountPanel
+            userId={userId}
+            userName="Unknown User"
+            hasProfile={false}
+            adminUserId={currentAdminId}
+            onDeleted={() => router.push('/admin/users')}
+          />
+        )}
+
+        {/* Show audit log if available */}
+        {auditLog.length > 0 && (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 font-display text-base">
+                <Shield className="size-4 text-purple-400" />
+                Admin Actions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                {auditLog.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="flex items-center justify-between rounded px-3 py-2"
+                  >
+                    <p className="font-body text-sm text-foreground">
+                      {entry.action}
+                    </p>
+                    <p className="font-body text-xs text-muted-foreground">
+                      {new Date(entry.created_at || '').toLocaleString()}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
     )
   }
@@ -629,6 +690,8 @@ export default function AdminUserDetailPage() {
         <DeleteAccountPanel
           userId={userId}
           userName={profile.full_name || 'Unnamed User'}
+          hasProfile={true}
+          adminUserId={currentAdminId || undefined}
           onDeleted={() => router.push('/admin/users')}
         />
       )}

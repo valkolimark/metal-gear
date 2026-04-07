@@ -9,6 +9,7 @@ import {
   softDeleteAccount,
   hardDeleteAccount,
   getDeleteAccountWarnings,
+  deleteOrphanedAuthUser,
 } from '@/app/actions/admin-delete-account'
 
 type Mode = 'none' | 'soft' | 'hard'
@@ -16,10 +17,14 @@ type Mode = 'none' | 'soft' | 'hard'
 export function DeleteAccountPanel({
   userId,
   userName,
+  hasProfile = true,
+  adminUserId,
   onDeleted,
 }: {
   userId: string
   userName: string
+  hasProfile?: boolean
+  adminUserId?: string
   onDeleted?: () => void
 }) {
   const [mode, setMode] = useState<Mode>('none')
@@ -58,12 +63,60 @@ export function DeleteAccountPanel({
       if (result.warnings?.length) {
         result.warnings.forEach(w => toast.warning(w))
       }
-      toast.success('Account permanently deleted')
-      onDeleted?.()
+      if (result.authDeleteFailed) {
+        toast.warning('Account data deleted. Auth record cleanup failed — use the "Delete Auth Record" button to retry.')
+        window.location.reload()
+      } else {
+        toast.success('Account permanently deleted')
+        onDeleted?.()
+      }
     } else {
       setError(result.error || 'Failed to delete account')
     }
     setLoading(false)
+  }
+
+  async function handleDeleteOrphanedAuth() {
+    if (!adminUserId) return
+    setLoading(true)
+    setError(null)
+    const result = await deleteOrphanedAuthUser(userId, adminUserId)
+    if (result.success) {
+      toast.success('Auth record deleted')
+      onDeleted?.()
+    } else {
+      setError(result.error || 'Failed to delete auth record')
+    }
+    setLoading(false)
+  }
+
+  // ── Orphaned auth record mode ──
+  if (!hasProfile) {
+    return (
+      <div className="border border-amber-500/40 rounded-lg p-4 space-y-3">
+        <div>
+          <h3 className="text-sm font-semibold text-amber-400 font-display mb-1">
+            Orphaned Auth Record
+          </h3>
+          <p className="text-xs text-muted-foreground font-body">
+            This account&apos;s data has been deleted but the authentication record still exists.
+            The user cannot log in, but the auth record should be cleaned up.
+          </p>
+        </div>
+
+        {error && <p className="text-xs text-destructive font-body">{error}</p>}
+
+        <Button
+          variant="destructive"
+          size="sm"
+          disabled={loading || !adminUserId}
+          onClick={handleDeleteOrphanedAuth}
+          className="font-body"
+        >
+          {loading ? 'Deleting...' : 'Delete Auth Record'}
+        </Button>
+      </div>
+    )
   }
 
   // ── Mode selection ──

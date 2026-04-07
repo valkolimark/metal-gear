@@ -223,8 +223,11 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 ## Admin Account Deletion (Cycle 35)
 - **Soft delete (archive):** `softDeleteAccount()` — bans user, archives listings, cancels SOS, suspends company memberships, cancels Stripe, revokes pending invites; reversible via `reactivateAccount()`
 - **Hard delete (permanent):** `hardDeleteAccount()` — requires `confirmationText === 'DELETE'`; deletes profile + auth user + all owned data; anonymizes seller reviews (seller_id → null); replaces sent message content; queues R2 media keys for async cleanup
-- **Server actions:** `src/app/actions/admin-delete-account.ts` — `softDeleteAccount()`, `reactivateAccount()`, `hardDeleteAccount()`, `getDeleteAccountWarnings()`
-- **UI:** `DeleteAccountPanel` in `src/app/(admin)/admin/users/[id]/components/` — superadmin-only; archive or permanent delete with mode selection, reason field, hard delete confirmation gate
+- **Server actions:** `src/app/actions/admin-delete-account.ts` — `softDeleteAccount()`, `reactivateAccount()`, `hardDeleteAccount()`, `getDeleteAccountWarnings()`, `deleteOrphanedAuthUser()`
+- **`hardDeleteAccount()` return type:** `HardDeleteResult` — discriminated union: `{ success: true; authDeleteFailed: false }` | `{ success: true; authDeleteFailed: true; authError: string }` | `{ success: false; error: string }`; auth deletion uses fresh `createAdminClient()` in isolated try/catch
+- **`deleteOrphanedAuthUser()`:** cleans up auth records when profile is already deleted; rejects if profile exists; superadmin-only
+- **UI:** `DeleteAccountPanel` in `src/app/(admin)/admin/users/[id]/components/` — superadmin-only; archive or permanent delete with mode selection, reason field, hard delete confirmation gate; orphaned auth record mode when `hasProfile=false`
+- **Orphaned account layout:** admin user detail page renders minimal layout with "Delete Auth Record" button when profile is null (no 404)
 - **Reactivation banner:** shown on soft-deleted user detail page with archive date, reason, and reactivate button
 - **R2 cleanup:** `r2_cleanup_queue` table; listing image R2 keys queued during hard delete; processed by `/api/cron/cleanup` (max 50 per run)
 - **FK changes:** `reviews.seller_id`, `conversations.buyer_id/seller_id`, `messages.sender_id` changed from ON DELETE CASCADE to ON DELETE SET NULL to preserve data

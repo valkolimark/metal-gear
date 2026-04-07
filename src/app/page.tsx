@@ -10,6 +10,8 @@ import { JsonLd } from '@/components/json-ld'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { EQUIPMENT_CATEGORIES } from '@/lib/constants'
 import { ProblemDiagnoser } from '@/components/search/ProblemDiagnoser'
+import { WelcomeBackStrip } from '@/app/(marketing)/components/WelcomeBackStrip'
+import { createClient } from '@/lib/supabase/server'
 
 export const metadata: Metadata = {
   title: 'Metal Gear — Industrial Equipment Marketplace | Houston, TX',
@@ -76,6 +78,24 @@ const FEATURES = [
 ]
 
 export default async function HomePage() {
+  // Check if user is logged in for welcome strip
+  let firstName: string | null = null
+  try {
+    const supabase = await createClient()
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.id) {
+      const adminClient = createAdminClient()
+      const { data: profile } = await adminClient
+        .from('profiles')
+        .select('display_name')
+        .eq('id', user.id)
+        .maybeSingle()
+      firstName = profile?.display_name?.split(' ')[0] ?? null
+    }
+  } catch {
+    // Session check failed — show anonymous homepage
+  }
+
   const admin = createAdminClient()
 
   // Try homepage featured slots first, fall back to most-viewed
@@ -149,6 +169,7 @@ export default async function HomePage() {
       <JsonLd data={organizationSchema} />
       <MarketingHeader />
       <main className="flex-1">
+        {firstName && <WelcomeBackStrip firstName={firstName} />}
         {/* Hero */}
         <section className="relative overflow-hidden px-4 py-20 sm:py-28">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />

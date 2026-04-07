@@ -6,6 +6,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.13.0] — 2026-04-07 · Hard Delete Fix, Orphaned Auth Recovery & Homepage Auth Awareness (Cycle 42)
+
+### Added
+- **Orphaned auth record cleanup** — `deleteOrphanedAuthUser()` server action for superadmins to delete auth records when profile data is already gone
+- **Orphaned account UI** — admin user detail page renders minimal "orphaned account" layout (no 404) with "Delete Auth Record" button when profile is null
+- **`getCurrentAdminInfo()` action** — returns both admin user ID and role for client components
+- **Homepage welcome strip** — `WelcomeBackStrip` component shows personalized "Welcome back, {firstName}" with dashboard link for logged-in users visiting the marketing homepage; dismissible, no forced redirect
+
+### Changed
+- **`hardDeleteAccount()` return type** — now returns `HardDeleteResult` discriminated union with `authDeleteFailed` boolean and `authError` string for partial success states
+- **Auth deletion isolation** — auth user deletion uses a fresh `createAdminClient()` and is wrapped in its own try/catch, separate from data deletion
+- **Auth deletion audit logging** — `hard_delete_auth_user_failed` now includes actual error message and status code in `metadata.error`/`metadata.code`; `hard_delete_auth_user_success` logged on success
+- **`DeleteAccountPanel`** — handles `authDeleteFailed` return with warning toast and page reload to orphaned mode; accepts `hasProfile` and `adminUserId` props
+
+### Fixed
+- **Hard delete auth failure** — auth user deletion now uses a fresh admin client to prevent stale client issues after profile cascade deletion
+
+---
+
 ## [4.12.0] — 2026-03-31 · Listing Gallery Desktop Overhaul (Cycle 41)
 
 ### Added
