@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.16.0] — 2026-04-07 · My Listings Search/Filter + Bulk Edit Spreadsheet (Cycle 45)
+
+### Added
+- **My Listings search & filter** — search bar (filter by title) and dropdown filters for status, condition, and category; "Clear filters" link when active
+- **"Bulk Edit Listings" button** on My Listings page — navigates to new spreadsheet editor at `/listings/bulk-edit`
+- **Bulk Edit Listings page** — full-width spreadsheet grid; one row per listing; inline-editable columns: thumbnail, title, price, status, condition, category, city, state, quantity, SKU, description
+- **Auto-save per cell** — cells save on blur/Enter; per-cell save state: spinner → green check (fades 2s) → red X with tooltip on error
+- **Sticky columns** — thumbnail and title stay fixed during horizontal scroll
+- **Description popover** — description cells expand into a positioned textarea overlay on click, save on close
+- **`saveListingCell()` server action** — field allowlist, ownership verification, per-field value validation
+- **Navigation guard** — `beforeunload` warning if saves are in flight when navigating away
+- **200-row cap** with amber banner for large inventories
+
+---
+
 ## [4.15.0] — 2026-04-07 · Bulk Edit Listings (Cycle 44)
 
 ### Added

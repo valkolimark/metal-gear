@@ -21,6 +21,9 @@ import {
   Square,
   CheckSquare,
   AlertTriangle,
+  Search,
+  Table2,
+  X,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -44,7 +47,15 @@ import { useAuthStore } from '@/stores/auth-store'
 import { updateListingStatus, duplicateListing, renewListing, toggleAutoRenew } from './actions'
 import { bulkDeleteListings } from '@/app/actions/import'
 import { getActiveTier } from '@/app/actions/tier'
-import { APP_URL } from '@/lib/constants'
+import { Input } from '@/components/ui/input'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { APP_URL, LISTING_CONDITIONS, EQUIPMENT_CATEGORIES } from '@/lib/constants'
 import { BulkEditPanel } from './components/bulk-edit-panel'
 import type { Listing } from '@/types/listings'
 
@@ -69,6 +80,10 @@ export default function ListingsPage() {
   const [bulkDeleting, setBulkDeleting] = useState(false)
   const [bulkEditOpen, setBulkEditOpen] = useState(false)
   const [isPro, setIsPro] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [conditionFilter, setConditionFilter] = useState('all')
+  const [categoryFilter, setCategoryFilter] = useState('all')
 
   useEffect(() => {
     if (!user) return
@@ -93,9 +108,17 @@ export default function ListingsPage() {
   }, [user])
 
   const displayListings = useMemo(() => {
-    if (filterNoMedia) return listings.filter(l => l.status === 'active' && !l.has_media)
-    return listings
-  }, [listings, filterNoMedia])
+    let result = listings
+    if (filterNoMedia) result = result.filter(l => l.status === 'active' && !l.has_media)
+    const q = searchQuery.toLowerCase().trim()
+    if (q) result = result.filter(l => l.title.toLowerCase().includes(q))
+    if (statusFilter !== 'all') result = result.filter(l => l.status === statusFilter)
+    if (conditionFilter !== 'all') result = result.filter(l => l.condition === conditionFilter)
+    if (categoryFilter !== 'all') result = result.filter(l => l.category === categoryFilter)
+    return result
+  }, [listings, filterNoMedia, searchQuery, statusFilter, conditionFilter, categoryFilter])
+
+  const hasActiveFilters = searchQuery || statusFilter !== 'all' || conditionFilter !== 'all' || categoryFilter !== 'all'
 
   const selectableListings = listings.filter(l => l.status !== 'removed')
   const allSelected = selectableListings.length > 0 && selectableListings.every(l => selectedIds.has(l.id))
@@ -221,6 +244,80 @@ export default function ListingsPage() {
           <Link href="/listings" className="shrink-0 text-xs font-medium text-muted-foreground hover:text-foreground">
             Show all
           </Link>
+        </div>
+      )}
+
+      {/* Search & Filter Toolbar */}
+      {!loading && listings.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="relative w-56">
+            <Search className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search your listings..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-9 font-body text-sm"
+            />
+          </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-32 font-body text-sm">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="font-body">All Status</SelectItem>
+              <SelectItem value="active" className="font-body">Active</SelectItem>
+              <SelectItem value="draft" className="font-body">Draft</SelectItem>
+              <SelectItem value="sold" className="font-body">Sold</SelectItem>
+              <SelectItem value="expired" className="font-body">Expired</SelectItem>
+              <SelectItem value="removed" className="font-body">Removed</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={conditionFilter} onValueChange={setConditionFilter}>
+            <SelectTrigger className="w-32 font-body text-sm">
+              <SelectValue placeholder="Condition" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="font-body">All Condition</SelectItem>
+              {LISTING_CONDITIONS.map((c) => (
+                <SelectItem key={c.value} value={c.value} className="font-body">
+                  {c.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+            <SelectTrigger className="w-44 font-body text-sm">
+              <SelectValue placeholder="Category" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all" className="font-body">All Categories</SelectItem>
+              {EQUIPMENT_CATEGORIES.map((c) => (
+                <SelectItem key={c} value={c} className="font-body">
+                  {c}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {hasActiveFilters && (
+            <button
+              onClick={() => {
+                setSearchQuery('')
+                setStatusFilter('all')
+                setConditionFilter('all')
+                setCategoryFilter('all')
+              }}
+              className="flex items-center gap-1 font-body text-xs text-muted-foreground hover:text-foreground"
+            >
+              <X className="size-3" />
+              Clear filters
+            </button>
+          )}
+          <Button variant="outline" size="sm" asChild className="ml-auto font-body">
+            <Link href="/listings/bulk-edit">
+              <Table2 className="mr-1.5 size-3.5" />
+              Bulk Edit Listings
+            </Link>
+          </Button>
         </div>
       )}
 

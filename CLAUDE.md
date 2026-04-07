@@ -28,7 +28,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 
 ## Route Groups
 - `(auth)` — login, signup, forgot-password, reset-password, callback
-- `(main)` — feed, dashboard, search, listings, messages, profile, favorites, sellers, companies (protected; `/listings/[id]`, `/sellers/[id]`, and `/companies/[slug]` are publicly accessible)
+- `(main)` — feed, dashboard, search, listings, listings/bulk-edit, messages, profile, favorites, sellers, companies (protected; `/listings/[id]`, `/sellers/[id]`, and `/companies/[slug]` are publicly accessible)
 - `(admin)` — super admin dashboard with RBAC (superadmin, moderator, analyst)
 - `(marketing)` — pricing, about, terms, privacy (public)
 
@@ -313,7 +313,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 
 ## Critical Pattern
 All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. **Never pass functions from Server Components to Client Components** — use server actions in separate `'use server'` files instead. Server actions live in:
-- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, admin-delete-account, bulk-edit-listings, etc.)
+- `src/app/actions/` — Shared actions (tier, analytics, search, reputation, disputes, dispute-mediation, admin, sos, admin-delete-account, bulk-edit-listings, bulk-edit-cell, etc.)
 - `src/app/(main)/*/actions.ts` — Route-specific actions (listings, messages, profile, checkout)
 - `src/app/actions/radar.ts` — Unified Radar save/unsave (listings, posts, videos)
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
