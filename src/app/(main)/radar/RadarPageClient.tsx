@@ -78,7 +78,11 @@ export function RadarPageClient({
       <div className="flex gap-1 border-b border-border">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.key
-          const count = tab.key === 'lists' ? lists.length : counts[tab.key as keyof typeof counts]
+          const count = tab.key === 'lists'
+            ? lists.length
+            : tab.key === 'posts'
+              ? posts.length
+              : counts[tab.key as keyof typeof counts]
           return (
             <button
               key={tab.key}
@@ -166,7 +170,7 @@ function EquipmentTab({
         return (
           <div key={item.id} className="relative">
             <Link href={`/listings/${listing.id}`}>
-              <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
+              <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                 <CardContent className="flex flex-col p-0">
                   {imageUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -249,7 +253,7 @@ function PostsTab({
         const post = item.feed_posts
         if (!post || post.is_deleted) {
           return (
-            <Card key={item.id} className="border-border bg-card opacity-60">
+            <Card key={item.id} className="border-border bg-card py-0 gap-0 opacity-60">
               <CardContent className="p-4">
                 <p className="font-body text-sm text-muted-foreground">
                   This post is no longer available
@@ -260,9 +264,11 @@ function PostsTab({
         }
 
         const media = post.feed_post_media?.[0]
+        const author = post.author
+        const company = post.company
 
         return (
-          <Card key={item.id} className="border-border bg-card transition-colors hover:border-primary/50">
+          <Card key={item.id} className="border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
             <CardContent className="flex gap-4 p-4">
               {media && (
                 <div className="shrink-0">
@@ -275,6 +281,14 @@ function PostsTab({
                 </div>
               )}
               <div className="min-w-0 flex-1">
+                {author && (
+                  <p className="mb-1 truncate font-body text-xs font-medium text-foreground">
+                    {author.display_name}
+                    {company && (
+                      <span className="ml-1 text-muted-foreground">· {company.name}</span>
+                    )}
+                  </p>
+                )}
                 <p className="line-clamp-3 font-body text-sm text-foreground whitespace-pre-wrap">
                   {post.content}
                 </p>
@@ -330,7 +344,7 @@ function VideosTab({
 
         return (
           <Link key={item.id} href={linkHref}>
-            <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
+            <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
               <CardContent className="p-0">
                 {item.video_thumbnail_url ? (
                   <div className="relative">

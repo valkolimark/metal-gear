@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
-import { ArrowRight, MapPin, Heart } from 'lucide-react'
+import { ArrowRight, MapPin, Heart, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -49,7 +50,7 @@ export default async function CategoryPage({ params }: Props) {
   const admin = createAdminClient()
   const { data: listings, count } = await admin
     .from('listings')
-    .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, created_at', { count: 'exact' })
+    .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, created_at, listing_images(url, position)', { count: 'exact' })
     .eq('category', category)
     .eq('status', 'active')
     .eq('has_media', true)
@@ -87,7 +88,28 @@ export default async function CategoryPage({ params }: Props) {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {listings.map((listing) => (
             <Link key={listing.id} href={`/listings/${listing.id}`}>
-              <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
+              <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
+                <div className="relative aspect-[16/10] bg-muted">
+                  {(() => {
+                    const img = listing.listing_images
+                      ?.sort((a: { position: number }, b: { position: number }) => a.position - b.position)[0]
+                      ?.url
+                    return img ? (
+                      <Image
+                        src={img}
+                        alt={listing.title}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        unoptimized
+                      />
+                    ) : (
+                      <div className="flex size-full items-center justify-center">
+                        <Package className="size-10 text-muted-foreground/40" />
+                      </div>
+                    )
+                  })()}
+                </div>
                 <CardContent className="flex h-full flex-col p-4">
                   <p className="truncate font-body font-medium text-foreground">
                     {listing.title}

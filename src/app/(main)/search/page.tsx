@@ -1000,7 +1000,7 @@ function SearchContent() {
             {listings.map((listing, idx) => (
               <div key={listing.id} className="relative">
                 <Link href={`/listings/${listing.id}`}>
-                  <Card className="h-full overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
+                  <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                     {/* Thumbnail */}
                     <div className="relative aspect-[16/10] bg-muted">
                       {listingImages[listing.id] ? (
@@ -1118,7 +1118,7 @@ function SearchContent() {
             {listings.map((listing) => (
               <div key={listing.id} className="relative">
                 <Link href={`/listings/${listing.id}`}>
-                  <Card className="border-border bg-card transition-colors hover:border-primary/50">
+                  <Card className="border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                     <CardContent className="flex items-center gap-4 p-4">
                       {/* List view thumbnail */}
                       <div className="relative size-16 shrink-0 overflow-hidden rounded-lg bg-muted">

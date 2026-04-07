@@ -46,7 +46,7 @@ export function FeedPriceDrops({ items }: FeedPriceDropsProps) {
               : 0
           return (
             <Link key={listing.id} href={`/listings/${listing.id}`} className="flex-shrink-0">
-              <Card className="w-64 overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
+              <Card className="w-64 overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                 <div className="relative aspect-[16/10] bg-muted">
                   {image ? (
                     <Image

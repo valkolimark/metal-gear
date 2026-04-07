@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.14.0] — 2026-04-07 · Card Image Fix, Homepage Featured & Radar Posts Render (Cycle 43)
+
+### Fixed
+- **Listing card image flush** — removed `py-6 gap-6` padding above card images across all surfaces (search grid/list, feed discovery, snipe feed, saved search, company listings, radar equipment/videos, equipment category pages, homepage featured); image now fills flush to top edge of card with `overflow-hidden` on card container
+- **Homepage featured images** — featured listing cards on marketing homepage now fetch `listing_images` and display equipment photos with the same flush-image card pattern used across the site
+- **Equipment category page images** — `/equipment/[slug]` category pages now fetch and display listing images
+- **Radar Posts tab empty** — refactored `getRadarPosts()` to use a two-step query (collection items → feed posts) to avoid FK join failures; posts now include author profile and company data; soft-deleted posts excluded from render; tab badge count uses actual rendered post count
+
+---
+
 ## [4.13.0] — 2026-04-07 · Hard Delete Fix, Orphaned Auth Recovery & Homepage Auth Awareness (Cycle 42)
 
 ### Added

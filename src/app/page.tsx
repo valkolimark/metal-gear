@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
-import { ArrowRight, Shield, Zap, Globe, Users, Star, MapPin } from 'lucide-react'
+import { ArrowRight, Shield, Zap, Globe, Users, Star, MapPin, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
@@ -114,7 +115,7 @@ export default async function HomePage() {
   if (slotListingIds.length > 0) {
     const { data } = await admin
       .from('listings')
-      .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured')
+      .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured, listing_images(url, position)')
       .in('id', slotListingIds)
       .eq('status', 'active')
       .eq('has_media', true)
@@ -126,7 +127,7 @@ export default async function HomePage() {
     const existingIds = (featured ?? []).map((l) => l.id)
     const { data: fallback } = await admin
       .from('listings')
-      .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured')
+      .select('id, title, category, condition, price_cents, contact_for_price, location_city, location_state, favorites_count, is_featured, listing_images(url, position)')
       .eq('status', 'active')
       .eq('has_media', true)
       .not('id', 'in', `(${existingIds.length > 0 ? existingIds.join(',') : '00000000-0000-0000-0000-000000000000'})`)
@@ -239,43 +240,64 @@ export default async function HomePage() {
                 </Button>
               </div>
               <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {featured.map((listing) => (
-                  <Link key={listing.id} href={`/listings/${listing.id}`}>
-                    <Card className="h-full border-border bg-card transition-colors hover:border-primary/50">
-                      <CardContent className="flex h-full flex-col p-4">
-                        <p className="truncate font-body font-medium text-foreground">
-                          {listing.title}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-1.5">
+                {featured.map((listing) => {
+                  const imageUrl = listing.listing_images
+                    ?.sort((a: { position: number }, b: { position: number }) => a.position - b.position)[0]
+                    ?.url
+                  return (
+                    <Link key={listing.id} href={`/listings/${listing.id}`}>
+                      <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
+                        <div className="relative aspect-[16/10] bg-muted">
+                          {imageUrl ? (
+                            <Image
+                              src={imageUrl}
+                              alt={listing.title}
+                              fill
+                              className="object-cover"
+                              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                              unoptimized
+                            />
+                          ) : (
+                            <div className="flex size-full items-center justify-center">
+                              <Package className="size-10 text-muted-foreground/40" />
+                            </div>
+                          )}
                           {listing.is_featured && (
-                            <Badge className="bg-primary/20 font-body text-[11px] text-primary">
+                            <Badge className="absolute left-2 top-2 bg-primary/90 font-body text-[11px] text-white">
                               Featured
                             </Badge>
                           )}
-                          <Badge variant="outline" className="font-body text-[11px]">
-                            {listing.category}
-                          </Badge>
-                          <Badge variant="outline" className="font-body text-[11px] capitalize">
-                            {listing.condition.replace('_', ' ')}
-                          </Badge>
                         </div>
-                        <div className="mt-auto pt-3">
-                          <p className="font-display text-lg font-bold text-primary">
-                            {listing.contact_for_price
-                              ? 'Contact'
-                              : listing.price_cents
-                                ? `$${(listing.price_cents / 100).toLocaleString()}`
-                                : 'Free'}
+                        <CardContent className="flex h-full flex-col p-4">
+                          <p className="truncate font-body font-medium text-foreground">
+                            {listing.title}
                           </p>
-                          <p className="mt-1 flex items-center gap-1 font-body text-xs text-muted-foreground">
-                            <MapPin className="size-3" />
-                            {listing.location_city}, {listing.location_state}
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                ))}
+                          <div className="mt-2 flex flex-wrap gap-1.5">
+                            <Badge variant="outline" className="font-body text-[11px]">
+                              {listing.category}
+                            </Badge>
+                            <Badge variant="outline" className="font-body text-[11px] capitalize">
+                              {listing.condition.replace('_', ' ')}
+                            </Badge>
+                          </div>
+                          <div className="mt-auto pt-3">
+                            <p className="font-display text-lg font-bold text-primary">
+                              {listing.contact_for_price
+                                ? 'Contact'
+                                : listing.price_cents
+                                  ? `$${(listing.price_cents / 100).toLocaleString()}`
+                                  : 'Free'}
+                            </p>
+                            <p className="mt-1 flex items-center gap-1 font-body text-xs text-muted-foreground">
+                              <MapPin className="size-3" />
+                              {listing.location_city}, {listing.location_state}
+                            </p>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </Link>
+                  )
+                })}
               </div>
               <div className="mt-4 text-center sm:hidden">
                 <Button asChild variant="outline" className="font-body">

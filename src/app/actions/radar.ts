@@ -221,30 +221,59 @@ export async function getRadarEquipment(userId: string, limit = 50, offset = 0) 
 
 /**
  * Get all saved feed posts for the Radar Posts tab.
+ * Uses a two-step query to avoid FK join issues.
  */
 export async function getRadarPosts(userId: string, limit = 50, offset = 0) {
   const admin = createAdminClient()
-  const { data } = await admin
+
+  // Step 1: Get collection items
+  const { data: items } = await admin
     .from('collection_items')
-    .select(`
-      id,
-      created_at:added_at,
-      feed_post_id,
-      feed_posts!collection_items_feed_post_id_fkey (
-        id, content, created_at, reactions_count, comments_count,
-        is_deleted,
-        author_id,
-        feed_post_media (url, media_type, thumbnail_url, sort_order)
-      ),
-      collections!inner (user_id)
-    `)
+    .select('id, added_at, feed_post_id, collections!inner(user_id)')
     .eq('collections.user_id', userId)
     .eq('item_type', 'feed_post')
     .not('feed_post_id', 'is', null)
     .order('added_at', { ascending: false })
     .range(offset, offset + limit - 1)
 
-  return data ?? []
+  if (!items || items.length === 0) return []
+
+  const postIds = items.map((i) => i.feed_post_id).filter(Boolean) as string[]
+
+  // Step 2: Fetch feed posts with author + company + media
+  const { data: posts } = await admin
+    .from('feed_posts')
+    .select(`
+      id, content, created_at, reactions_count, comments_count,
+      is_deleted, hashtags, author_id, company_id,
+      feed_post_media (id, url:media_url, media_type, thumbnail_url, sort_order),
+      profiles!feed_posts_author_id_fkey (id, display_name, avatar_url, last_login_at),
+      company_profiles (id, name, slug, logo_url)
+    `)
+    .in('id', postIds)
+
+  const postMap = new Map((posts ?? []).map((p) => [p.id, p]))
+
+  // Merge and return in saved-order, excluding soft-deleted
+  return items
+    .map((item) => {
+      const post = postMap.get(item.feed_post_id!)
+      if (!post || post.is_deleted) return null
+      return {
+        id: item.id,
+        created_at: item.added_at,
+        feed_post_id: item.feed_post_id,
+        feed_posts: {
+          ...post,
+          feed_post_media: (post.feed_post_media ?? []).sort(
+            (a: { sort_order: number }, b: { sort_order: number }) => a.sort_order - b.sort_order
+          ),
+          author: post.profiles,
+          company: post.company_profiles,
+        },
+      }
+    })
+    .filter(Boolean)
 }
 
 /**

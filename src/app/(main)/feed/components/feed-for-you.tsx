@@ -67,7 +67,7 @@ export function FeedForYou({ listings, hasInterests }: FeedForYouProps) {
               ?.url
             return (
               <Link key={listing.id} href={`/listings/${listing.id}`}>
-                <Card className="h-full overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
+                <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                   <div className="relative aspect-[16/10] bg-muted">
                     {image ? (
                       <Image

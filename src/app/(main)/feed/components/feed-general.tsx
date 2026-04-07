@@ -104,7 +104,7 @@ export function FeedGeneral({ listings, sosList, recentListings, hasInterests }:
                 ?.url
               return (
                 <Link key={listing.id} href={`/listings/${listing.id}`}>
-                  <Card className="h-full overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
+                  <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                     <div className="relative aspect-[16/10] bg-muted">
                       {image ? (
                         <Image
@@ -168,7 +168,7 @@ export function FeedGeneral({ listings, sosList, recentListings, hasInterests }:
           <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide">
             {sosList.map((sos) => (
               <Link key={sos.id} href={`/sos/${sos.id}`} className="flex-shrink-0">
-                <Card className="w-72 border-[#FF6B2B]/30 bg-[#FF6B2B]/5 transition-colors hover:border-[#FF6B2B]/50">
+                <Card className="w-72 border-[#FF6B2B]/30 bg-[#FF6B2B]/5 py-0 gap-0 transition-colors hover:border-[#FF6B2B]/50">
                   <CardContent className="p-4">
                     <div className="mb-2 flex items-center gap-2">
                       <AlertTriangle className="size-4 text-[#FF6B2B]" />
@@ -214,7 +214,7 @@ export function FeedGeneral({ listings, sosList, recentListings, hasInterests }:
                 ?.url
               return (
                 <Link key={listing.id} href={`/listings/${listing.id}`}>
-                  <Card className="h-full overflow-hidden border-border bg-card transition-colors hover:border-primary/50">
+                  <Card className="h-full overflow-hidden border-border bg-card py-0 gap-0 transition-colors hover:border-primary/50">
                     <div className="relative aspect-[16/10] bg-muted">
                       {image ? (
                         <Image
