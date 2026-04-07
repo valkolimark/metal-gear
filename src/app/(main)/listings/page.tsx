@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import {
   Plus,
   Edit,
+  Pencil,
   Eye,
   Trash2,
   Loader2,
@@ -42,7 +43,9 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { updateListingStatus, duplicateListing, renewListing, toggleAutoRenew } from './actions'
 import { bulkDeleteListings } from '@/app/actions/import'
+import { getActiveTier } from '@/app/actions/tier'
 import { APP_URL } from '@/lib/constants'
+import { BulkEditPanel } from './components/bulk-edit-panel'
 import type { Listing } from '@/types/listings'
 
 const STATUS_COLORS: Record<string, string> = {
@@ -64,6 +67,8 @@ export default function ListingsPage() {
   const [qrListingId, setQrListingId] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkDeleting, setBulkDeleting] = useState(false)
+  const [bulkEditOpen, setBulkEditOpen] = useState(false)
+  const [isPro, setIsPro] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -81,6 +86,10 @@ export default function ListingsPage() {
         setListings((data as Listing[]) ?? [])
         setLoading(false)
       })
+    // Check tier for bulk edit
+    getActiveTier(user.id).then((tier) => {
+      setIsPro(['pro', 'business', 'enterprise', 'premium', 'boost'].includes(tier))
+    })
   }, [user])
 
   const displayListings = useMemo(() => {
@@ -256,20 +265,31 @@ export default function ListingsPage() {
                   : 'Select all'}
               </button>
               {selectedIds.size > 0 && (
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={handleBulkDelete}
-                  disabled={bulkDeleting}
-                  className="font-body"
-                >
-                  {bulkDeleting ? (
-                    <Loader2 className="mr-1.5 size-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="mr-1.5 size-3" />
-                  )}
-                  Remove {selectedIds.size} listing{selectedIds.size !== 1 ? 's' : ''}
-                </Button>
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setBulkEditOpen(true)}
+                    className="font-body"
+                  >
+                    <Pencil className="mr-1.5 size-3" />
+                    Edit {selectedIds.size} listing{selectedIds.size !== 1 ? 's' : ''}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={handleBulkDelete}
+                    disabled={bulkDeleting}
+                    className="font-body"
+                  >
+                    {bulkDeleting ? (
+                      <Loader2 className="mr-1.5 size-3 animate-spin" />
+                    ) : (
+                      <Trash2 className="mr-1.5 size-3" />
+                    )}
+                    Remove {selectedIds.size} listing{selectedIds.size !== 1 ? 's' : ''}
+                  </Button>
+                </>
               )}
             </div>
           )}
@@ -468,6 +488,26 @@ export default function ListingsPage() {
           ))}
         </div>
       )}
+
+      {/* Bulk Edit Panel */}
+      <BulkEditPanel
+        open={bulkEditOpen}
+        onClose={() => setBulkEditOpen(false)}
+        selectedIds={Array.from(selectedIds)}
+        selectedListings={listings
+          .filter((l) => selectedIds.has(l.id))
+          .map((l) => ({
+            id: l.id,
+            title: l.title,
+            price_cents: l.price_cents,
+            condition: l.condition,
+          }))}
+        isPro={isPro}
+        onSuccess={() => {
+          setSelectedIds(new Set())
+          router.refresh()
+        }}
+      />
 
       {/* QR Code Dialog */}
       <Dialog open={qrDialogOpen} onOpenChange={setQrDialogOpen}>

@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.15.0] — 2026-04-07 · Bulk Edit Listings (Cycle 44)
+
+### Added
+- **Bulk edit listings** — multi-select listings on My Listings page and edit multiple fields at once via a right-side Sheet panel
+- **Bulk edit fields (Pro+):** price (fixed or % change with live preview), condition grade, category, location (city/state)
+- **Bulk edit fields (all tiers):** status (active / draft / archived)
+- **`bulkEditListings()` server action** — ownership-verified, tier-gated, handles fixed and percent price updates; percent price clamps to $1 minimum and rounds to nearest dollar
+- **Locked state for free tier** — Pro field section shows blurred overlay with upgrade CTA when user is on free tier
+- **Price % preview** — real-time client-side preview showing avg price before/after for selected listings
+
+---
+
 ## [4.14.0] — 2026-04-07 · Card Image Fix, Homepage Featured & Radar Posts Render (Cycle 43)
 
 ### Fixed
