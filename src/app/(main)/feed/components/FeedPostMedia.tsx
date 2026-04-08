@@ -52,7 +52,7 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
       <div className="mt-3">
         {images.length === 1 && (
           <div
-            className="relative aspect-[16/10] max-h-[300px] md:max-h-none cursor-pointer overflow-hidden rounded-lg"
+            className="relative aspect-[16/10] max-h-[300px] md:max-h-none cursor-pointer overflow-hidden md:rounded-lg"
             onClick={() => setLightboxIndex(0)}
           >
             <Image

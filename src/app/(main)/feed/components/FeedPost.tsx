@@ -271,7 +271,7 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
     : `Comment${commentsCount > 0 ? ` (${commentsCount})` : ''}`
 
   return (
-    <div id={`post-${post.id}`} className="rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
+    <div id={`post-${post.id}`} className="overflow-hidden rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
       {/* Header */}
       <div className="flex items-start justify-between p-4 pb-0">
         <div className="flex items-center gap-3">
@@ -405,9 +405,9 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
         )}
       </div>
 
-      {/* Media */}
+      {/* Media — edge-to-edge on mobile, padded on desktop */}
       {post.media.length > 0 && (
-        <div className="px-4">
+        <div className="md:px-4">
           <FeedPostMedia media={post.media} />
         </div>
       )}
