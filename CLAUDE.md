@@ -16,7 +16,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Theme:** Light/dark mode via `next-themes` (system default, `enableSystem`, `storageKey="metal-gear-theme"`); ThemeToggle is three-state: Auto (system) → Light → Dark; Facebook palette: dark `#18191A`/`#242526`/`#3A3B3C` bg layers, light `#F0F2F5`/`#FFFFFF` bg; `#1877F2` primary blue; SOS stays orange `#FF6B2B`; `ThemeToggle` in header + admin header + mobile menu drawer
 - **Brand palettes:** Industrial (default) and Ocean (navy/teal/cyan); `data-palette` attribute on `<html>`; switchable from Admin Settings → Brand Palette; persisted in `system_config` + cookie
 - **Admin CSS isolation:** `src/app/(admin)/admin.css` with scoped `[data-section="admin"]` tokens; sidebar always dark
-- **Mobile nav:** `MobileHeader` (52px) + `MobileBottomNav` (5 tabs, raised SOS) + `MobileMenuDrawer` (slide from right) via `MobileNavClient` wrapper; `md:hidden`
+- **Mobile nav:** `MobileHeader` (52px) + `MobileBottomNav` (5 tabs, raised SOS) + `MobileMenuDrawer` (slide from right) via `MobileNavClient` wrapper; `md:hidden`; feed page uses document-level scroll (not overflow-y-auto container) for iOS fixed-position compatibility; feed post media: `max-h-[300px] md:max-h-none object-cover` on mobile
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body) via `next/font/google`
 - **Components:** 15 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch, sheet)
 

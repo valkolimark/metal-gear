@@ -35,7 +35,7 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
   // Single video
   if (media.length === 1 && media[0].media_type === 'video') {
     return (
-      <div className="mt-3">
+      <div className="mt-3 max-h-[300px] md:max-h-none overflow-hidden">
         <VideoPlayer
           videoId={media[0].stream_video_id ?? undefined}
           embedUrl={media[0].media_url}
@@ -52,7 +52,7 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
       <div className="mt-3">
         {images.length === 1 && (
           <div
-            className="relative aspect-[16/10] cursor-pointer overflow-hidden rounded-lg"
+            className="relative aspect-[16/10] max-h-[300px] md:max-h-none cursor-pointer overflow-hidden rounded-lg"
             onClick={() => setLightboxIndex(0)}
           >
             <Image
@@ -66,7 +66,7 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
         )}
 
         {images.length === 2 && (
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none">
             {images.map((img, i) => (
               <div
                 key={img.id}
@@ -86,7 +86,7 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
         )}
 
         {images.length === 3 && (
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none">
             <div
               className="relative row-span-2 cursor-pointer overflow-hidden rounded-lg"
               style={{ aspectRatio: '1/1' }}
@@ -121,7 +121,7 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
         )}
 
         {images.length >= 4 && (
-          <div className="grid grid-cols-2 gap-1">
+          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none">
             {images.slice(0, 4).map((img, i) => (
               <div
                 key={img.id}

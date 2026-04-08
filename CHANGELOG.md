@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.17.0] — 2026-04-08 · Mobile Feed Polish (Cycle 46)
+
+### Fixed
+- MobileHeader and MobileBottomNav now remain fixed during scroll on iOS Safari and Android
+  Chrome; document-level scroll restored on feed page to ensure position:fixed elements
+  behave correctly
+- Feed post media capped at max-h-[300px] on mobile; portrait images use object-cover so
+  they don't dominate the viewport
+- Comment section vertical thread line removed; comment layout is now flat
+  (avatar → name → text) with no border-l artifact
+- iOS safe area padding added to MobileBottomNav (env(safe-area-inset-bottom)) for
+  notched devices
+- overscroll-behavior: none on html element prevents iOS bounce revealing background
+
+---
+
 ## [4.16.0] — 2026-04-07 · My Listings Search/Filter + Bulk Edit Spreadsheet (Cycle 45)
 
 ### Added

@@ -172,30 +172,28 @@ export function CommentSection({
               </Link>
 
               <div className="min-w-0 flex-1">
-                <div className="inline rounded-lg bg-muted/50 px-2.5 py-1.5">
-                  <div className="flex items-center gap-1.5">
-                    {comment.company && (
-                      <Link
-                        href={`/companies/${comment.company.slug}`}
-                        className="font-display text-xs font-semibold text-foreground hover:underline"
-                      >
-                        {comment.company.name}
-                      </Link>
-                    )}
+                <div className="flex items-center gap-1.5">
+                  {comment.company && (
                     <Link
-                      href={comment.author.id === currentUserId ? '/profile' : `/sellers/${comment.author.id}`}
-                      className={`font-body text-xs ${comment.company ? 'text-muted-foreground' : 'font-display font-semibold text-foreground'} hover:underline`}
+                      href={`/companies/${comment.company.slug}`}
+                      className="font-display text-xs font-semibold text-foreground hover:underline"
                     >
-                      {comment.author.display_name}
+                      {comment.company.name}
                     </Link>
-                  </div>
-                  <p className="whitespace-pre-wrap font-body text-xs text-foreground">
-                    {comment.content}
-                  </p>
+                  )}
+                  <Link
+                    href={comment.author.id === currentUserId ? '/profile' : `/sellers/${comment.author.id}`}
+                    className={`font-body text-xs ${comment.company ? 'text-muted-foreground' : 'font-display font-semibold text-foreground'} hover:underline`}
+                  >
+                    {comment.author.display_name}
+                  </Link>
+                  <span className="font-body text-[10px] text-muted-foreground">
+                    · {formatRelativeTime(comment.created_at)}
+                  </span>
                 </div>
-                <span className="ml-2 font-body text-[10px] text-muted-foreground">
-                  {formatRelativeTime(comment.created_at)}
-                </span>
+                <p className="whitespace-pre-wrap font-body text-xs text-foreground mt-0.5">
+                  {comment.content}
+                </p>
               </div>
 
               <DropdownMenu>
