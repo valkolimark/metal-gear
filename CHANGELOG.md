@@ -19,6 +19,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 - iOS safe area padding added to MobileBottomNav (env(safe-area-inset-bottom)) for
   notched devices
 - overscroll-behavior: none on html element prevents iOS bounce revealing background
+- Feed post card now has overflow-hidden so media clips within rounded corners instead of
+  bleeding to screen edge; images render edge-to-edge on mobile (no inner padding) matching
+  Facebook/Instagram pattern
 
 ---
 
