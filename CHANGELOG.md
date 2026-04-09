@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.19.0] — 2026-04-08 · Four-Archetype Onboarding + Logistics Access Layer (Cycle 48)
+
+### Added
+- **Logistics archetype** — new fourth user type for fleet companies and independent drivers; logistics users cannot create listings but can post, message, respond to SOS, and build network presence
+- **One-time archetype migration banner** — non-dismissible sticky banner for existing users prompting archetype confirmation; selection is permanent after confirmation
+- **Archetype lock system** — `user_business_profiles.archetype_locked` column; set on new user onboarding completion and migration confirmation
+- **Logistics Step 3 fields** — sub-type (fleet/individual), fleet size, equipment capabilities multi-select, coverage area, service states, DOT/MC number
+- **`mg_archetype` cookie** — set at onboarding/migration; read by middleware to block listing routes for logistics users; auto-refreshed in layout if DB diverges
+- **Listing tool gate for logistics** — middleware blocks `/listings/new`, `/listings/create`, `/listings/import`, `/listings/bulk-edit`, `/inventory` for logistics users
+- **SOS transport routing** — `sos_requests.transport_needed` boolean; toggle on SOS create form; logistics users receive transport SOS alerts
+- **`src/app/actions/archetype.ts`** — `confirmArchetype()`, `adminUpdateArchetype()`, `getArchetypeStatus()` server actions
+
+### Changed
+- **`ARCHETYPE_OPTIONS` constant** — expanded from 3 to 4 archetypes with logistics
+- **Service Provider archetype clarified** — removed "Logistics" from examples (now its own archetype)
+- **`submitOnboarding()`** — now sets `archetype_locked = TRUE` and `mg_archetype` cookie on completion
+- **Onboarding Step 1** — 2x2 grid layout for 4 archetype cards; logistics card shows "No listing tools" badge
+
+---
+
 ## [4.18.0] — 2026-04-08 · EIN Verification Queue (Cycle 47)
 
 ### Added

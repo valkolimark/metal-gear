@@ -46,7 +46,7 @@ export interface EnhancedOnboardingData {
 
 // ─── Cycle 23: Role-Aware Onboarding ────────────────────────────────
 
-export type Archetype = 'operator' | 'trader' | 'service_provider'
+export type Archetype = 'operator' | 'trader' | 'service_provider' | 'logistics'
 
 export interface OnboardingFormData {
   // Step 1: Archetype
@@ -67,6 +67,12 @@ export interface OnboardingFormData {
   // Service Provider
   service_types: string[]
   service_area: string
+  // Logistics
+  logistics_type: 'fleet' | 'individual' | ''
+  fleet_size: string
+  equipment_capabilities: string[]
+  dot_mc_number: string
+  logistics_coverage: string
 
   // Step 4: SOS & Transparency
   sos_opted_in: boolean
@@ -91,6 +97,11 @@ export const INITIAL_ONBOARDING_DATA: OnboardingFormData = {
   monthly_volume: '',
   service_types: [],
   service_area: '',
+  logistics_type: '',
+  fleet_size: '',
+  equipment_capabilities: [],
+  dot_mc_number: '',
+  logistics_coverage: '',
   sos_opted_in: true,
   contact_visibility: 'pro_plus',
   display_name: '',
@@ -164,4 +175,33 @@ export const SERVICE_AREA_OPTIONS = [
   { id: 'regional', label: 'Regional / Statewide' },
   { id: 'national', label: 'National' },
   { id: 'international', label: 'International' },
+] as const
+
+// ─── Logistics archetype constants ──────────────────────────────────
+
+export const LOGISTICS_CAPABILITIES = [
+  { id: 'flatbed', label: 'Flatbed' },
+  { id: 'lowboy_rgn', label: 'Lowboy / RGN' },
+  { id: 'step_deck', label: 'Step Deck' },
+  { id: 'crane_truck', label: 'Crane Truck' },
+  { id: 'boom_truck', label: 'Boom Truck' },
+  { id: 'forklift_moffett', label: 'Forklift / Moffett' },
+  { id: 'rigging_truck', label: 'Rigging Truck' },
+  { id: 'oversize_ow', label: 'Oversized / OW Permitted' },
+  { id: 'hazmat', label: 'Hazmat Certified' },
+  { id: 'other_heavy_haul', label: 'Other Heavy Haul' },
+] as const
+
+export const LOGISTICS_COVERAGE_OPTIONS = [
+  { id: 'local', label: 'Local' },
+  { id: 'regional', label: 'Regional' },
+  { id: 'national', label: 'National' },
+  { id: 'cross_border', label: 'Cross-border' },
+] as const
+
+export const FLEET_SIZE_OPTIONS = [
+  { id: '2-10', label: '2–10 trucks' },
+  { id: '11-50', label: '11–50 trucks' },
+  { id: '51-200', label: '51–200 trucks' },
+  { id: '200+', label: '200+ trucks' },
 ] as const

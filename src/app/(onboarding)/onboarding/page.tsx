@@ -8,6 +8,7 @@ import {
   HardHat,
   Repeat,
   Wrench,
+  Truck,
   Check,
   Bell,
   User,
@@ -27,6 +28,9 @@ import {
   MONTHLY_VOLUME_OPTIONS,
   SERVICE_TYPE_OPTIONS,
   SERVICE_AREA_OPTIONS,
+  LOGISTICS_CAPABILITIES,
+  LOGISTICS_COVERAGE_OPTIONS,
+  FLEET_SIZE_OPTIONS,
   INITIAL_ONBOARDING_DATA,
 } from '@/lib/constants/onboarding'
 import type { OnboardingFormData, Archetype } from '@/lib/constants/onboarding'
@@ -207,7 +211,7 @@ function StepArchetype({
   formData: OnboardingFormData
   setFormData: React.Dispatch<React.SetStateAction<OnboardingFormData>>
 }) {
-  const archetypes: { id: Archetype; icon: typeof HardHat; name: string; description: string; examples: string }[] = [
+  const archetypes: { id: Archetype; icon: typeof HardHat; name: string; description: string; examples: string; badge?: string }[] = [
     {
       id: 'operator',
       icon: HardHat,
@@ -227,7 +231,15 @@ function StepArchetype({
       icon: Wrench,
       name: 'Service Provider',
       description: 'You provide services that support equipment transactions.',
-      examples: 'Logistics, rigging, crane, machine shop, demolition, scrap, inspection',
+      examples: 'Rigging, crane, machine shop, demolition, scrap, inspection, fabrication',
+    },
+    {
+      id: 'logistics',
+      icon: Truck,
+      name: 'Logistics',
+      description: 'You move heavy equipment — fleet company or independent driver.',
+      examples: 'Flatbed fleets, lowboy operators, crane trucks, owner-operators',
+      badge: 'No listing tools',
     },
   ]
 
@@ -236,7 +248,7 @@ function StepArchetype({
       <h1 className="mb-2 font-display text-2xl font-bold sm:text-3xl">What best describes you?</h1>
       <p className="mb-8 text-muted-foreground">Choose the role that fits your primary activity. You can update this later.</p>
 
-      <div className="grid gap-4">
+      <div className="grid gap-4 sm:grid-cols-2">
         {archetypes.map((arch) => {
           const Icon = arch.icon
           const selected = formData.archetype === arch.id
@@ -245,7 +257,7 @@ function StepArchetype({
               key={arch.id}
               type="button"
               onClick={() => setFormData((prev) => ({ ...prev, archetype: arch.id }))}
-              className={`flex items-start gap-4 rounded-xl border-2 p-5 text-left transition-all sm:p-6 ${
+              className={`flex items-start gap-4 rounded-xl border-2 p-5 text-left transition-all ${
                 selected
                   ? 'border-primary bg-primary/5 ring-1 ring-primary'
                   : 'border-border hover:border-primary/40'
@@ -265,6 +277,11 @@ function StepArchetype({
                 </div>
                 <p className="mt-1 text-sm text-muted-foreground">{arch.description}</p>
                 <p className="mt-2 text-xs text-muted-foreground/70">{arch.examples}</p>
+                {arch.badge && (
+                  <span className="mt-2 inline-block rounded bg-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground">
+                    {arch.badge}
+                  </span>
+                )}
               </div>
             </button>
           )
@@ -340,8 +357,8 @@ function StepRoleSpecific({
   if (formData.archetype === 'operator') return <OperatorBranch formData={formData} setFormData={setFormData} toggleArrayItem={toggleArrayItem} />
   if (formData.archetype === 'trader') return <TraderBranch formData={formData} setFormData={setFormData} toggleArrayItem={toggleArrayItem} />
   if (formData.archetype === 'service_provider') return <ServiceProviderBranch formData={formData} setFormData={setFormData} toggleArrayItem={toggleArrayItem} />
+  if (formData.archetype === 'logistics') return <LogisticsBranch formData={formData} setFormData={setFormData} toggleArrayItem={toggleArrayItem} />
 
-  // Shouldn't reach here if Step 1 was completed
   return null
 }
 
@@ -552,6 +569,134 @@ function ServiceProviderBranch({
       />
 
       <SkipLink />
+    </div>
+  )
+}
+
+function LogisticsBranch({
+  formData,
+  setFormData,
+  toggleArrayItem,
+}: {
+  formData: OnboardingFormData
+  setFormData: React.Dispatch<React.SetStateAction<OnboardingFormData>>
+  toggleArrayItem: (field: keyof OnboardingFormData, value: string) => void
+}) {
+  return (
+    <div className="space-y-8">
+      <h1 className="mb-2 font-display text-2xl font-bold sm:text-3xl">Tell us about your logistics operation</h1>
+
+      {/* Sub-type */}
+      <div>
+        <Label className="text-base font-medium">I am a…</Label>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          {[
+            { id: 'fleet' as const, label: 'Fleet Company', desc: 'Multiple trucks / equipment' },
+            { id: 'individual' as const, label: 'Individual Driver', desc: 'Owner-operator' },
+          ].map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, logistics_type: t.id }))}
+              className={`rounded-lg border-2 p-4 text-left transition-all ${
+                formData.logistics_type === t.id
+                  ? 'border-primary bg-primary/5'
+                  : 'border-border hover:border-primary/40'
+              }`}
+            >
+              <div className="font-medium">{t.label}</div>
+              <div className="mt-1 text-xs text-muted-foreground">{t.desc}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Fleet size (conditional) */}
+      {formData.logistics_type === 'fleet' && (
+        <div>
+          <Label className="text-base font-medium">Fleet size</Label>
+          <div className="mt-3 flex flex-wrap gap-2">
+            {FLEET_SIZE_OPTIONS.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setFormData((prev) => ({ ...prev, fleet_size: s.id }))}
+                className={`rounded-full border-2 px-4 py-2 text-sm transition-all ${
+                  formData.fleet_size === s.id
+                    ? 'border-primary bg-primary/10 font-medium text-primary'
+                    : 'border-border text-foreground hover:border-primary/40'
+                }`}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Equipment capabilities */}
+      <div>
+        <Label className="text-base font-medium">What can you haul? <span className="text-sm font-normal text-muted-foreground">(select all)</span></Label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {LOGISTICS_CAPABILITIES.map((cap) => (
+            <button
+              key={cap.id}
+              type="button"
+              onClick={() => toggleArrayItem('equipment_capabilities', cap.id)}
+              className={`rounded-full border-2 px-4 py-2 text-sm transition-all ${
+                formData.equipment_capabilities.includes(cap.id)
+                  ? 'border-primary bg-primary/10 font-medium text-primary'
+                  : 'border-border text-foreground hover:border-primary/40'
+              }`}
+            >
+              {cap.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Coverage area */}
+      <div>
+        <Label className="text-base font-medium">Coverage area</Label>
+        <div className="mt-3 flex flex-wrap gap-2">
+          {LOGISTICS_COVERAGE_OPTIONS.map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => setFormData((prev) => ({ ...prev, logistics_coverage: c.id }))}
+              className={`rounded-full border-2 px-4 py-2 text-sm transition-all ${
+                formData.logistics_coverage === c.id
+                  ? 'border-primary bg-primary/10 font-medium text-primary'
+                  : 'border-border text-foreground hover:border-primary/40'
+              }`}
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Service states */}
+      <div>
+        <Label className="text-base font-medium">States / regions you serve</Label>
+        <Input
+          className="mt-2"
+          value={formData.service_area}
+          onChange={(e) => setFormData((prev) => ({ ...prev, service_area: e.target.value }))}
+          placeholder="e.g. TX, LA, OK, Gulf Coast"
+        />
+      </div>
+
+      {/* DOT/MC number */}
+      <div>
+        <Label className="text-base font-medium">DOT or MC number <span className="text-sm font-normal text-muted-foreground">(optional)</span></Label>
+        <Input
+          className="mt-2"
+          value={formData.dot_mc_number}
+          onChange={(e) => setFormData((prev) => ({ ...prev, dot_mc_number: e.target.value }))}
+          placeholder="e.g. MC-123456"
+        />
+      </div>
     </div>
   )
 }

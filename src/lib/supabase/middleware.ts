@@ -127,6 +127,24 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
+  // Logistics guard: block listing/inventory routes for logistics users
+  const archetypeCookie = request.cookies.get('mg_archetype')?.value
+  if (user && archetypeCookie === 'logistics') {
+    const blockedPrefixes = [
+      '/listings/new',
+      '/listings/create',
+      '/listings/import',
+      '/listings/bulk-edit',
+      '/inventory',
+    ]
+    const isBlocked = blockedPrefixes.some((prefix) => pathname.startsWith(prefix))
+    if (isBlocked) {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
   // Company guard: redirect to /companies/new if user has no company membership
   // Only runs when active_company_id cookie is absent (fast path: cookie present = skip)
   const companyGuardExempt = [

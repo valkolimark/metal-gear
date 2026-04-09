@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers'
 import { Header } from '@/components/layout/header'
 import { DesktopNav } from '@/components/layout/desktop-nav'
 import { MobileDrawer } from '@/components/layout/mobile-drawer'
@@ -6,11 +7,13 @@ import { NotificationEducationTrigger } from '@/components/notification-educatio
 import { ImportProgressBannerClient } from '@/components/import-progress-banner-client'
 import { MobileNavClient } from '@/components/mobile-nav/MobileNavClient'
 import { CompanyContextProvider } from '@/components/company/CompanyContextProvider'
+import { ArchetypeMigrationBanner } from '@/components/archetype-migration-banner'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getActiveCompanyId } from '@/app/actions/company-context'
 import { getUserCompanies } from '@/app/actions/company'
 import type { CompanyWithRole } from '@/types/company'
+import type { Archetype } from '@/app/actions/archetype'
 
 export default async function MainLayout({
   children,
@@ -31,6 +34,9 @@ export default async function MainLayout({
 
   let activeCompany: CompanyWithRole | null = null
   let userCompanies: CompanyWithRole[] = []
+  let needsMigration = false
+  let currentArchetype: Archetype | null = null
+  let userId: string | null = null
 
   try {
     const supabase = await createClient()
@@ -94,6 +100,33 @@ export default async function MainLayout({
         activeCompany,
         userCompanies,
       }
+
+      userId = user.id
+
+      // Fetch archetype status for migration banner + cookie sync
+      const { data: archetypeData } = await admin
+        .from('user_business_profiles')
+        .select('archetype, archetype_locked')
+        .eq('user_id', user.id)
+        .maybeSingle()
+
+      if (archetypeData) {
+        currentArchetype = (archetypeData.archetype as Archetype) ?? null
+        needsMigration = !archetypeData.archetype_locked
+
+        // Sync mg_archetype cookie if it doesn't match DB (handles admin overrides)
+        const cookieStore = await cookies()
+        const currentCookie = cookieStore.get('mg_archetype')?.value
+        if (archetypeData.archetype && currentCookie !== archetypeData.archetype) {
+          cookieStore.set('mg_archetype', archetypeData.archetype, {
+            httpOnly: false,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 60 * 60 * 24 * 365,
+            path: '/',
+          })
+        }
+      }
     }
   } catch {
     // Auth may not be available for public routes — continue without mobile nav data
@@ -105,6 +138,11 @@ export default async function MainLayout({
       <Header />
       <DesktopNav />
       <MobileDrawer />
+
+      {/* Archetype migration banner — shown until user confirms */}
+      {needsMigration && userId && (
+        <ArchetypeMigrationBanner userId={userId} currentArchetype={currentArchetype} />
+      )}
 
       {/* Mobile navigation — hidden on md+ */}
       {mobileNavProps && <MobileNavClient {...mobileNavProps} />}

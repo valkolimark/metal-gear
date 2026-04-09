@@ -2874,6 +2874,7 @@ export type Database = {
           requester_id: string
           status: Database["public"]["Enums"]["sos_status"] | null
           title: string
+          transport_needed: boolean
           updated_at: string | null
           urgency: Database["public"]["Enums"]["sos_urgency"] | null
           videos: string[] | null
@@ -3227,7 +3228,13 @@ export type Database = {
       user_business_profiles: {
         Row: {
           archetype: string | null
+          archetype_locked: boolean
           company_name: string
+          dot_mc_number: string | null
+          equipment_capabilities: string[] | null
+          fleet_size: string | null
+          logistics_coverage: string | null
+          logistics_type: string | null
           created_at: string | null
           id: string
           industries: string[] | null
@@ -3264,7 +3271,13 @@ export type Database = {
         }
         Insert: {
           archetype?: string | null
+          archetype_locked?: boolean
           company_name: string
+          dot_mc_number?: string | null
+          equipment_capabilities?: string[] | null
+          fleet_size?: string | null
+          logistics_coverage?: string | null
+          logistics_type?: string | null
           created_at?: string | null
           id?: string
           industries?: string[] | null

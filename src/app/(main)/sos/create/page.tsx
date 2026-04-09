@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import { createSosRequest, uploadSosMedia } from '@/app/actions/sos'
 import {
@@ -42,6 +43,7 @@ export default function CreateSosPage() {
   const [uploading, setUploading] = useState(false)
   const [mode, setMode] = useState<'quick' | 'detailed'>('quick')
   const [aiCategorized, setAiCategorized] = useState(false)
+  const [transportNeeded, setTransportNeeded] = useState(false)
 
   const [equipSearch, setEquipSearch] = useState('')
   const [form, setForm] = useState({
@@ -150,6 +152,7 @@ export default function CreateSosPage() {
         location_state: form.location_state || undefined,
         max_distance_miles: form.max_distance_miles,
         expires_at: expiresAt,
+        transport_needed: transportNeeded,
       })
 
       if (result.error) {
@@ -527,6 +530,17 @@ export default function CreateSosPage() {
             </div>
           </div>
         </section>
+
+        {/* Transport needed toggle */}
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div>
+            <p className="font-body text-sm font-medium text-foreground">I also need transport / rigging</p>
+            <p className="mt-0.5 font-body text-xs text-muted-foreground">
+              Notify logistics and rigging providers who can move this equipment
+            </p>
+          </div>
+          <Switch checked={transportNeeded} onCheckedChange={setTransportNeeded} />
+        </div>
 
         {/* Submit */}
         <Button

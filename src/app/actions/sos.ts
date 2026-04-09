@@ -22,6 +22,7 @@ export interface SosRequestData {
   location_lng?: number
   max_distance_miles: number
   expires_at?: string // ISO string
+  transport_needed?: boolean
 }
 
 export interface SosResponseData {
@@ -107,6 +108,7 @@ export async function createSosRequest(data: SosRequestData) {
       location_lng: lng,
       max_distance_miles: maxDistance,
       expires_at: expiresAt,
+      transport_needed: data.transport_needed ?? false,
     })
     .select('id')
     .single()

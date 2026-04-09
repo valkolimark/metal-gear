@@ -322,7 +322,10 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 
 ## Onboarding (Cycle 23)
 - **Flow:** 5-step role-aware wizard at `/onboarding` (route group `(onboarding)`)
-- **Archetypes:** `operator` (plant/facility), `trader` (dealer/reseller), `service_provider` (logistics/rigging/etc.)
+- **Archetypes:** `operator` (plant/facility), `trader` (dealer/reseller), `service_provider` (rigging/machining/etc.), `logistics` (fleet/driver — blocked from listing tools)
+- **Archetype lock:** `user_business_profiles.archetype_locked` boolean; set on onboarding completion or migration confirmation; `mg_archetype` cookie drives middleware gate
+- **Logistics columns:** `logistics_type` (fleet/individual), `fleet_size`, `equipment_capabilities[]`, `dot_mc_number`, `logistics_coverage` on `user_business_profiles`
+- **SOS transport:** `sos_requests.transport_needed` boolean; routes to logistics users when true
 - **Step 1:** Archetype selection → **Step 2:** Multi-industry select → **Step 3:** Branching role-specific questions → **Step 4:** SOS opt-in + contact visibility → **Step 5:** Profile (name, company, city/state)
 - **Single-submit:** All data held in client state; written to DB via `submitOnboarding()` server action on final step
 - **DB columns (Cycle 23):** `user_business_profiles.archetype`, `sub_role`, `trading_activities`, `service_types`, `service_area`, `sourcing_methods`, `monthly_volume`, `sos_opted_in`

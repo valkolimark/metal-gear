@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { cookies } from 'next/headers'
 import { ONBOARDING_STEPS } from '@/lib/constants/onboarding'
 import type { EnhancedOnboardingData } from '@/lib/constants/onboarding'
 
@@ -400,6 +401,7 @@ export async function submitOnboarding(data: OnboardingFormData) {
     operator: 'end_user',
     trader: 'dealer',
     service_provider: 'services',
+    logistics: 'logistics',
   }
 
   // Combine industries — add custom "Other" value if specified
@@ -427,7 +429,14 @@ export async function submitOnboarding(data: OnboardingFormData) {
     trading_activities: data.archetype === 'trader' && data.trading_activities.length > 0 ? data.trading_activities : null,
     monthly_volume: data.archetype === 'trader' && data.monthly_volume ? data.monthly_volume : null,
     service_types: data.archetype === 'service_provider' && data.service_types.length > 0 ? data.service_types : null,
-    service_area: data.archetype === 'service_provider' && data.service_area ? data.service_area : null,
+    service_area: data.archetype === 'service_provider' || data.archetype === 'logistics' ? (data.service_area || null) : null,
+    // Logistics-specific
+    logistics_type: data.archetype === 'logistics' && data.logistics_type ? data.logistics_type : null,
+    fleet_size: data.archetype === 'logistics' && data.fleet_size ? data.fleet_size : null,
+    equipment_capabilities: data.archetype === 'logistics' && data.equipment_capabilities?.length > 0 ? data.equipment_capabilities : null,
+    dot_mc_number: data.archetype === 'logistics' && data.dot_mc_number ? data.dot_mc_number : null,
+    logistics_coverage: data.archetype === 'logistics' && data.logistics_coverage ? data.logistics_coverage : null,
+    archetype_locked: true,
   }
 
   // Upsert user_business_profiles
@@ -500,6 +509,20 @@ export async function submitOnboarding(data: OnboardingFormData) {
       })
   } catch (err) {
     console.error('Legacy onboarding progress error:', err)
+  }
+
+  // Set mg_archetype cookie
+  try {
+    const cookieStore = await cookies()
+    cookieStore.set('mg_archetype', data.archetype, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 365,
+      path: '/',
+    })
+  } catch {
+    // Cookie setting is non-critical
   }
 
   return { success: true }
