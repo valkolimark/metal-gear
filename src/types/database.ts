@@ -2757,7 +2757,10 @@ export type Database = {
           business_name: string
           created_at: string
           document_url: string | null
+          ein: string | null
+          ein_submitted_at: string | null
           id: string
+          rejection_reason: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           status: string
@@ -2769,7 +2772,10 @@ export type Database = {
           business_name: string
           created_at?: string
           document_url?: string | null
+          ein?: string | null
+          ein_submitted_at?: string | null
           id?: string
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string
@@ -2781,7 +2787,10 @@ export type Database = {
           business_name?: string
           created_at?: string
           document_url?: string | null
+          ein?: string | null
+          ein_submitted_at?: string | null
           id?: string
+          rejection_reason?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           status?: string

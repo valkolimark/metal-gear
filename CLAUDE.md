@@ -132,6 +132,7 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `feed_post_reactions` — Like reactions (post_id, user_id, UNIQUE constraint)
 - `feed_hashtags` — Hashtag aggregation for trending (tag PK, post_count, last_used_at)
 - `listing_freshness_suggestions` — AI refresh suggestions for stale listings (listing_id, seller_id, ai_title_suggestion, ai_price_suggestion, ai_price_reasoning, ai_description_tip, email_sent_at, acted_on, acted_on_at); UNIQUE active-suggestion constraint per listing
+- `seller_verifications` — EIN verification queue (user_id, business_name, tax_id_hash, ein, ein_submitted_at, document_url, status pending/approved/rejected, reviewed_by, reviewed_at, rejection_reason, admin_notes); profile page submits, admin moderation reviews
 - `r2_cleanup_queue` — Async R2 media deletion queue (r2_key, created_at, processed_at, error); processed by `/api/cron/cleanup` (max 50/run)
 
 ## AI Infrastructure

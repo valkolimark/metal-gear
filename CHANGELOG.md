@@ -6,6 +6,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.18.0] — 2026-04-08 · EIN Verification Queue (Cycle 47)
+
+### Added
+- **EIN Verification flow** — users submit EIN and supporting document from profile page; record created in `seller_verifications` with status `pending`
+- **Verification status card** — profile shows pending/approved/rejected state with masked EIN, submission date, and rejection reason; rejected users can resubmit
+- **Admin Verifications queue** — new "Verifications" tab in admin moderation; shows pending submissions with full EIN, document link, seller info, approve and reject (with reason) actions
+- **EIN auto-format** — EIN input auto-formats to `XX-XXXXXXX` as digits are typed
+- `ein`, `ein_submitted_at`, `rejection_reason` columns on `seller_verifications`
+- Admin actions: `getPendingVerifications()`, `approveVerification()`, `rejectVerification()`
+
+### Fixed
+- **EIN/WIN input focus bug** — input no longer loses focus after each keystroke; root cause was nested function component remounting on every parent re-render; extracted to stable `VerificationForm` component
+
+---
+
 ## [4.17.0] — 2026-04-08 · Mobile Feed Polish (Cycle 46)
 
 ### Fixed

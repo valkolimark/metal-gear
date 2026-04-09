@@ -53,12 +53,26 @@ export async function submitVerificationRequest(
     }
   }
 
-  const { error } = await admin.from('seller_verifications').insert({
+  // Strip EIN formatting for plain storage
+  const einDigits = taxId.replace(/\D/g, '')
+  const einFormatted = einDigits.length > 2
+    ? `${einDigits.slice(0, 2)}-${einDigits.slice(2)}`
+    : einDigits
+
+  const { error } = await admin.from('seller_verifications').upsert({
     user_id: user.id,
     business_name: businessName,
     tax_id_hash: taxIdHash,
     document_url: documentUrl,
-  })
+    ein: einFormatted || null,
+    ein_submitted_at: new Date().toISOString(),
+    status: 'pending',
+    // Reset any prior rejection
+    reviewed_at: null,
+    reviewed_by: null,
+    rejection_reason: null,
+    admin_notes: null,
+  }, { onConflict: 'user_id' })
 
   if (error) return { error: error.message }
   return { success: true }
@@ -134,6 +148,7 @@ export async function reviewVerification(
     .update({
       status: action,
       admin_notes: notes || null,
+      rejection_reason: action === 'rejected' ? (notes || null) : null,
       reviewed_by: user.id,
       reviewed_at: new Date().toISOString(),
     })

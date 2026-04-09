@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Shield, AlertTriangle, Flag, Star, Gavel, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Shield, AlertTriangle, Flag, Star, Gavel, MessageSquare, BadgeCheck, ChevronLeft, ChevronRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,8 +17,10 @@ import {
 } from '../actions'
 import type { FeedPostReport } from '../actions'
 import { getAdminDisputes } from '@/app/actions/disputes'
+import { getPendingVerifications } from '@/app/actions/verification'
+import { VerificationQueue } from './components/verification-queue'
 
-type Tab = 'reports' | 'fraud' | 'disputes' | 'transaction_disputes' | 'feed_posts'
+type Tab = 'reports' | 'fraud' | 'disputes' | 'transaction_disputes' | 'feed_posts' | 'verifications'
 
 type Report = Awaited<ReturnType<typeof getReportsQueue>>[number]
 
@@ -53,6 +55,11 @@ export default function AdminModerationPage() {
   const [feedPostReportsLoading, setFeedPostReportsLoading] = useState(true)
   const [feedPostReportsTotal, setFeedPostReportsTotal] = useState(0)
   const [feedPostReportsPage, setFeedPostReportsPage] = useState(1)
+
+  // Verifications state
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingVerifications, setPendingVerifications] = useState<any[]>([])
+  const [verificationsLoading, setVerificationsLoading] = useState(true)
 
   // Fetch reports
   useEffect(() => {
@@ -155,6 +162,26 @@ export default function AdminModerationPage() {
     return () => { cancelled = true }
   }, [refreshKey, feedPostReportsPage])
 
+  // Fetch pending verifications
+  useEffect(() => {
+    let cancelled = false
+    async function fetchVerifications() {
+      setVerificationsLoading(true)
+      try {
+        const result = await getPendingVerifications()
+        if (!cancelled) {
+          setPendingVerifications(result.verifications)
+        }
+      } catch {
+        if (!cancelled) toast.error('Failed to load verifications')
+      } finally {
+        if (!cancelled) setVerificationsLoading(false)
+      }
+    }
+    fetchVerifications()
+    return () => { cancelled = true }
+  }, [refreshKey])
+
   function refresh() {
     setRefreshKey((k) => k + 1)
   }
@@ -249,7 +276,8 @@ export default function AdminModerationPage() {
   const disputeCount = disputedReviews.length
   const txDisputeCount = txDisputes.filter((d) => ['open', 'under_review', 'escalated'].includes(d.status)).length
   const feedPostCount = feedPostReportsTotal
-  const totalCount = pendingCount + fraudCount + disputeCount + txDisputeCount + feedPostCount
+  const verificationCount = pendingVerifications.length
+  const totalCount = pendingCount + fraudCount + disputeCount + txDisputeCount + feedPostCount + verificationCount
 
   const tabs: { key: Tab; label: string }[] = [
     { key: 'reports', label: 'Reports' },
@@ -257,6 +285,7 @@ export default function AdminModerationPage() {
     { key: 'disputes', label: 'Review Disputes' },
     { key: 'transaction_disputes', label: 'Transaction Disputes' },
     { key: 'feed_posts', label: 'Feed Posts' },
+    { key: 'verifications', label: `Verifications${verificationCount > 0 ? ` (${verificationCount})` : ''}` },
   ]
 
   return (
@@ -292,6 +321,11 @@ export default function AdminModerationPage() {
             <MessageSquare className="size-4 text-green-400" />
             <span className="font-body text-sm text-muted-foreground">Feed posts:</span>
             <span className="font-display text-lg font-bold text-foreground">{feedPostCount}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <BadgeCheck className="size-4 text-cyan-400" />
+            <span className="font-body text-sm text-muted-foreground">Verifications:</span>
+            <span className="font-display text-lg font-bold text-foreground">{verificationCount}</span>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Shield className="size-4 text-primary" />
@@ -816,6 +850,30 @@ export default function AdminModerationPage() {
                   </Button>
                 </div>
               </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tab 6 — Verifications */}
+      {activeTab === 'verifications' && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 font-display text-base">
+              <BadgeCheck className="size-4 text-cyan-400" />
+              Pending Verifications ({verificationCount})
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            {verificationsLoading ? (
+              <div className="px-4 py-8 text-center">
+                <p className="font-body text-sm text-muted-foreground">Loading...</p>
+              </div>
+            ) : (
+              <VerificationQueue
+                verifications={pendingVerifications}
+                onRefresh={refresh}
+              />
             )}
           </CardContent>
         </Card>

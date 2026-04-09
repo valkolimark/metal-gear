@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink, Shield, BadgeCheck, Users, Copy, Gift } from 'lucide-react'
+import { Camera, Save, Loader2, Bell, CheckCircle2, Store, ImagePlus, ExternalLink, Shield, Users, Copy, Gift } from 'lucide-react'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,9 @@ import { useAuthStore } from '@/stores/auth-store'
 import { uploadAvatar, updateProfile, updateNotificationPreferences, updateContactSettings } from './actions'
 import { createBillingPortalSession } from '@/app/(main)/checkout/actions'
 import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/actions/storefront'
-import { getVerificationStatus, submitVerificationRequest } from '@/app/actions/verification'
+import { getVerificationStatus } from '@/app/actions/verification'
+import { VerificationForm } from './components/verification-form'
+import { VerificationStatusCard } from './components/verification-status-card'
 import { getReferralData } from '@/app/actions/referrals'
 import { getSoundPrefs, saveSoundPrefs } from '@/hooks/use-notification-sound'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
@@ -95,11 +97,13 @@ export default function ProfilePage() {
     marketing: true,
   })
   const [soundPrefs, setSoundPrefs] = useState(() => getSoundPrefs())
-  const [verificationStatus, setVerificationStatus] = useState<string | null>(null)
-  const [verifyBizName, setVerifyBizName] = useState('')
-  const [verifyTaxId, setVerifyTaxId] = useState('')
-  const [submittingVerify, setSubmittingVerify] = useState(false)
-  const verifyDocRef = useRef<HTMLInputElement>(null)
+  const [verificationData, setVerificationData] = useState<{
+    status: string
+    ein: string | null
+    ein_submitted_at: string | null
+    reviewed_at: string | null
+    rejection_reason: string | null
+  } | null>(null)
   const [storefrontData, setStorefrontData] = useState<Tables<'seller_storefronts'> | null>(null)
   const [sfTagline, setSfTagline] = useState('')
   const [sfFeaturedIds, setSfFeaturedIds] = useState<string[]>([])
@@ -160,7 +164,15 @@ export default function ProfilePage() {
 
       // Load verification status
       getVerificationStatus().then((res) => {
-        setVerificationStatus(res.verification?.status ?? null)
+        if (res.verification) {
+          setVerificationData({
+            status: res.verification.status,
+            ein: res.verification.ein ?? null,
+            ein_submitted_at: res.verification.ein_submitted_at ?? null,
+            reviewed_at: res.verification.reviewed_at ?? null,
+            rejection_reason: res.verification.rejection_reason ?? null,
+          })
+        }
       })
 
       // Load storefront data
@@ -1116,32 +1128,37 @@ export default function ProfilePage() {
 
             <Separator />
 
-            {profile?.is_verified_dealer ? (
-              <div className="flex items-center gap-2 rounded-lg bg-secondary/10 p-3">
-                <BadgeCheck className="size-5 text-secondary" />
-                <p className="font-body text-sm font-medium text-secondary">
-                  Verified Seller
-                </p>
-              </div>
-            ) : verificationStatus === 'pending' ? (
-              <div className="flex items-center gap-2 rounded-lg bg-yellow-500/10 p-3">
-                <Loader2 className="size-5 animate-spin text-yellow-400" />
-                <p className="font-body text-sm text-yellow-400">
-                  Verification request pending review
-                </p>
-              </div>
-            ) : verificationStatus === 'rejected' ? (
-              <div className="space-y-3">
-                <div className="flex items-center gap-2 rounded-lg bg-red-500/10 p-3">
-                  <Shield className="size-5 text-red-400" />
-                  <p className="font-body text-sm text-red-400">
-                    Previous verification request was rejected. You may resubmit.
-                  </p>
-                </div>
-                <VerificationForm />
-              </div>
+            {verificationData ? (
+              <VerificationStatusCard
+                verification={verificationData}
+                userId={user?.id ?? ''}
+                onResubmitted={() => {
+                  getVerificationStatus().then((res) => {
+                    if (res.verification) {
+                      setVerificationData({
+                        status: res.verification.status,
+                        ein: res.verification.ein ?? null,
+                        ein_submitted_at: res.verification.ein_submitted_at ?? null,
+                        reviewed_at: res.verification.reviewed_at ?? null,
+                        rejection_reason: res.verification.rejection_reason ?? null,
+                      })
+                    }
+                  })
+                }}
+              />
             ) : (
-              <VerificationForm />
+              <VerificationForm
+                userId={user?.id ?? ''}
+                onSubmitted={() => {
+                  setVerificationData({
+                    status: 'pending',
+                    ein: null,
+                    ein_submitted_at: new Date().toISOString(),
+                    reviewed_at: null,
+                    rejection_reason: null,
+                  })
+                }}
+              />
             )}
           </CardContent>
         </Card>
@@ -1167,88 +1184,4 @@ export default function ProfilePage() {
     </div>
   )
 
-  function VerificationForm() {
-    return (
-      <div className="space-y-3">
-        <p className="font-body text-sm text-muted-foreground">
-          Get verified to earn buyer trust and display a verified badge.
-        </p>
-        <div className="space-y-2">
-          <Label htmlFor="biz_name" className="font-body">
-            Business Name
-          </Label>
-          <Input
-            id="biz_name"
-            value={verifyBizName}
-            onChange={(e) => setVerifyBizName(e.target.value)}
-            placeholder="Your registered business name"
-            className="font-body"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="tax_id" className="font-body">
-            EIN / Tax ID
-          </Label>
-          <Input
-            id="tax_id"
-            value={verifyTaxId}
-            onChange={(e) => setVerifyTaxId(e.target.value)}
-            placeholder="XX-XXXXXXX"
-            className="font-body"
-          />
-          <p className="font-body text-[10px] text-muted-foreground">
-            Your tax ID is hashed before storage and never stored in plain text.
-          </p>
-        </div>
-        <div className="space-y-2">
-          <Label className="font-body">Business License (optional)</Label>
-          <input
-            ref={verifyDocRef}
-            type="file"
-            accept="image/*,.pdf"
-            className="block w-full font-body text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-primary/20 file:px-3 file:py-1.5 file:font-body file:text-xs file:text-primary"
-          />
-        </div>
-        <Button
-          type="button"
-          disabled={submittingVerify || !verifyBizName || !verifyTaxId}
-          onClick={async () => {
-            setSubmittingVerify(true)
-            try {
-              let docFd: FormData | undefined
-              const file = verifyDocRef.current?.files?.[0]
-              if (file) {
-                docFd = new FormData()
-                docFd.append('file', file)
-              }
-              const result = await submitVerificationRequest(
-                verifyBizName,
-                verifyTaxId,
-                docFd
-              )
-              if (result.error) toast.error(result.error)
-              else {
-                setVerificationStatus('pending')
-                toast.success('Verification request submitted')
-              }
-            } catch {
-              toast.error('Failed to submit verification')
-            } finally {
-              setSubmittingVerify(false)
-            }
-          }}
-          className="font-body"
-        >
-          {submittingVerify ? (
-            <>
-              <Loader2 className="mr-2 size-4 animate-spin" />
-              Submitting...
-            </>
-          ) : (
-            'Submit for Verification'
-          )}
-        </Button>
-      </div>
-    )
-  }
 }
