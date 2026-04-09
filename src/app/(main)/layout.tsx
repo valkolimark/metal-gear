@@ -111,7 +111,7 @@ export default async function MainLayout({
 
       <main
         id="main-content"
-        className="flex flex-1 flex-col pt-[52px] pb-[72px] md:pt-0 md:pb-0 lg:pb-0"
+        className="flex min-w-0 flex-1 flex-col pt-[52px] pb-[72px] md:pt-0 md:pb-0 lg:pb-0"
       >
         {children}
       </main>

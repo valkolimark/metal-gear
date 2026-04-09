@@ -176,7 +176,7 @@ export default async function FeedPage() {
   }))
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex min-h-screen w-full overflow-x-hidden">
       {/* Left sidebar — desktop xl only */}
       <FeedLeftSidebar
         profile={profileResult.data}
@@ -188,9 +188,9 @@ export default async function FeedPage() {
       />
 
       {/* Center + Right wrapper */}
-      <div className="flex flex-1 justify-center gap-6 px-4 py-4 xl:pl-0">
+      <div className="flex min-w-0 flex-1 justify-center gap-6 px-4 py-4 xl:pl-0">
         {/* Center column */}
-        <main className="w-full max-w-[680px] min-w-0">
+        <main className="w-full max-w-[680px] min-w-0 overflow-hidden">
           {/* SOS banner — mobile only, dismissible */}
           <FeedSOSBanner />
 
