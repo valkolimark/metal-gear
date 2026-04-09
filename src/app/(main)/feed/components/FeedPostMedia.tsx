@@ -49,35 +49,37 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
 
   return (
     <>
-      <div className="mt-3">
+      <div className="mt-3 overflow-hidden">
         {images.length === 1 && (
           <div
-            className="relative aspect-[16/10] max-h-[300px] md:max-h-none cursor-pointer overflow-hidden md:rounded-lg"
+            className="cursor-pointer overflow-hidden rounded-lg"
             onClick={() => setLightboxIndex(0)}
           >
             <Image
               src={images[0].media_url}
               alt="Post image"
-              fill
-              className="object-cover"
+              width={680}
+              height={425}
+              className="w-full max-h-[300px] md:max-h-none object-cover rounded-lg"
               sizes="(max-width: 768px) 100vw, 600px"
             />
           </div>
         )}
 
         {images.length === 2 && (
-          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none">
+          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none overflow-hidden">
             {images.map((img, i) => (
               <div
                 key={img.id}
-                className="relative aspect-square cursor-pointer overflow-hidden rounded-lg"
+                className="cursor-pointer overflow-hidden rounded-lg"
                 onClick={() => setLightboxIndex(i)}
               >
                 <Image
                   src={img.media_url}
                   alt={`Post image ${i + 1}`}
-                  fill
-                  className="object-cover"
+                  width={340}
+                  height={340}
+                  className="w-full aspect-square object-cover"
                   sizes="(max-width: 768px) 50vw, 300px"
                 />
               </div>
@@ -86,17 +88,17 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
         )}
 
         {images.length === 3 && (
-          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none">
+          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none overflow-hidden">
             <div
-              className="relative row-span-2 cursor-pointer overflow-hidden rounded-lg"
-              style={{ aspectRatio: '1/1' }}
+              className="row-span-2 cursor-pointer overflow-hidden rounded-lg"
               onClick={() => setLightboxIndex(0)}
             >
               <Image
                 src={images[0].media_url}
                 alt="Post image 1"
-                fill
-                className="object-cover"
+                width={340}
+                height={340}
+                className="w-full h-full object-cover"
                 sizes="(max-width: 768px) 50vw, 300px"
               />
             </div>
@@ -104,14 +106,15 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
               {images.slice(1).map((img, i) => (
                 <div
                   key={img.id}
-                  className="relative aspect-square cursor-pointer overflow-hidden rounded-lg"
+                  className="cursor-pointer overflow-hidden rounded-lg"
                   onClick={() => setLightboxIndex(i + 1)}
                 >
                   <Image
                     src={img.media_url}
                     alt={`Post image ${i + 2}`}
-                    fill
-                    className="object-cover"
+                    width={170}
+                    height={170}
+                    className="w-full aspect-square object-cover"
                     sizes="(max-width: 768px) 25vw, 150px"
                   />
                 </div>
@@ -121,18 +124,19 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
         )}
 
         {images.length >= 4 && (
-          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none">
+          <div className="grid grid-cols-2 gap-1 max-h-[300px] md:max-h-none overflow-hidden">
             {images.slice(0, 4).map((img, i) => (
               <div
                 key={img.id}
-                className="relative aspect-square cursor-pointer overflow-hidden rounded-lg"
+                className="cursor-pointer overflow-hidden rounded-lg"
                 onClick={() => setLightboxIndex(i)}
               >
                 <Image
                   src={img.media_url}
                   alt={`Post image ${i + 1}`}
-                  fill
-                  className="object-cover"
+                  width={340}
+                  height={340}
+                  className="w-full aspect-square object-cover"
                   sizes="(max-width: 768px) 50vw, 300px"
                 />
               </div>

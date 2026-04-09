@@ -405,9 +405,9 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
         )}
       </div>
 
-      {/* Media — edge-to-edge on mobile, padded on desktop */}
+      {/* Media */}
       {post.media.length > 0 && (
-        <div className="md:px-4">
+        <div className="px-4">
           <FeedPostMedia media={post.media} />
         </div>
       )}
