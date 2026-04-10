@@ -27,6 +27,7 @@ import { getStorefront, updateStorefront, uploadStorefrontBanner } from '@/app/a
 import { getVerificationStatus } from '@/app/actions/verification'
 import { VerificationForm } from './components/verification-form'
 import { VerificationStatusCard } from './components/verification-status-card'
+import { EquipmentInterestsEditor } from './components/equipment-interests-editor'
 import { getReferralData } from '@/app/actions/referrals'
 import { getSoundPrefs, saveSoundPrefs } from '@/hooks/use-notification-sound'
 import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
@@ -802,6 +803,27 @@ export default function ProfilePage() {
                 }}
               />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Equipment Interests */}
+        <Card className="border-border bg-card">
+          <CardHeader>
+            <div className="flex items-start justify-between gap-3">
+              <CardTitle className="flex items-center gap-2 font-display text-lg">
+                <Bell className="size-5" />
+                Equipment Interests
+              </CardTitle>
+              <span className="rounded-full bg-[#FF6B2B]/10 px-2 py-1 font-body text-[10px] font-medium uppercase tracking-wide text-[#FF6B2B]">
+                SOS Routing
+              </span>
+            </div>
+            <p className="font-body text-sm text-muted-foreground">
+              Controls your SOS alert matching, For You feed, and discovery personalisation.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <EquipmentInterestsEditor />
           </CardContent>
         </Card>
 

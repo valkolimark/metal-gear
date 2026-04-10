@@ -5,6 +5,7 @@ import { ArrowLeft, Camera, ChevronDown, ChevronUp, X, AlertTriangle, Send } fro
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import Image from 'next/image'
 import { createSosRequest, uploadSosMedia } from '@/app/actions/sos'
@@ -26,6 +27,7 @@ interface SOSConfirmStepProps {
   brandPreference: string
   quantity: number | null
   budget: string
+  transportNeeded: boolean
   aiTaxonomyTier1: string
   aiTaxonomyTier2: string
   aiSubcategory: string
@@ -45,6 +47,7 @@ export function SOSConfirmStep({
   brandPreference,
   quantity,
   budget,
+  transportNeeded,
   aiTaxonomyTier1,
   aiTaxonomyTier2,
   aiSubcategory,
@@ -146,6 +149,7 @@ export function SOSConfirmStep({
         brand: brandPreference || aiManufacturer || undefined,
         model: aiModel || undefined,
         urgency,
+        transport_needed: transportNeeded,
         photos: uploadedMediaUrls,
         max_distance_miles: 500,
         expires_at: new Date(Date.now() + 72 * 60 * 60 * 1000).toISOString(),
@@ -159,8 +163,9 @@ export function SOSConfirmStep({
       // Count vendors from SOS routing (we don't have direct access, but the action returns the id)
       // The vendor count is handled server-side in notifications; we'll show a generic message
       onSubmit(result.data!.id, -1) // -1 signals we don't have the exact count
-    } catch {
-      toast.error('Failed to send SOS. Please try again.')
+    } catch (err) {
+      console.error('[SOSConfirmStep] submit failed', err)
+      toast.error(err instanceof Error ? err.message : 'Failed to send SOS. Please try again.')
     } finally {
       setSending(false)
     }
@@ -287,6 +292,20 @@ export function SOSConfirmStep({
             ? 'Vendors matching your equipment type will be notified immediately'
             : 'Vendors will see this in their SOS feed'}
         </p>
+      </div>
+
+      {/* Transport / rigging */}
+      <div className="flex items-center justify-between rounded-lg border border-border p-4">
+        <div className="pr-3">
+          <p className="font-body text-sm font-medium text-foreground">I also need transport / rigging</p>
+          <p className="mt-0.5 font-body text-xs text-muted-foreground">
+            Notify logistics and rigging providers who can move this equipment
+          </p>
+        </div>
+        <Switch
+          checked={transportNeeded}
+          onCheckedChange={(v) => onChange({ transportNeeded: v })}
+        />
       </div>
 
       {/* Section 4: More details (collapsible) */}

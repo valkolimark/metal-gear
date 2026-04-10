@@ -26,6 +26,7 @@ interface SOSCameraFirstState {
   brandPreference: string
   quantity: number | null
   budget: string
+  transportNeeded: boolean
   sosId: string | null
   vendorsNotified: number
 }
@@ -47,6 +48,7 @@ const initialState: SOSCameraFirstState = {
   brandPreference: '',
   quantity: null,
   budget: '',
+  transportNeeded: false,
   sosId: null,
   vendorsNotified: 0,
 }
@@ -122,6 +124,7 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
           brandPreference={state.brandPreference}
           quantity={state.quantity}
           budget={state.budget}
+          transportNeeded={state.transportNeeded}
           aiTaxonomyTier1={state.aiTaxonomyTier1}
           aiTaxonomyTier2={state.aiTaxonomyTier2}
           aiSubcategory={state.aiSubcategory}

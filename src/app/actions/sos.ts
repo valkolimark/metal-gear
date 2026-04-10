@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotification } from '@/app/actions/notifications'
+import { sendEmail } from '@/lib/email'
 import { SOS_TIER_LIMITS, getAllGroupsForSubcategory } from '@/lib/constants/equipment-taxonomy'
 
 export interface SosRequestData {
@@ -114,82 +115,265 @@ export async function createSosRequest(data: SosRequestData) {
     .single()
 
   if (error) return { error: error.message }
+  if (!sos) return { error: 'Failed to create SOS request' }
 
-  // Route SOS to matching responders — primary tier2 group
-  const { data: responders } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string | null>) => Promise<{ data: { user_id: string; notify_methods: string[] }[] | null }> })
-    .rpc('find_sos_responders', {
-      p_tier2: data.equipment_category,
-      p_subcategory: data.equipment_subcategory || null,
-    })
+  // Fire-and-forget broadcast. Any failure in responder lookup, notification
+  // insertion, or email send must never block the user from seeing their
+  // confirmation — the SOS row is already committed at this point.
+  void broadcastSOSNotifications({
+    sosId: sos.id,
+    requesterUserId: user.id,
+    title: data.title,
+    description: data.description,
+    urgency: data.urgency,
+    equipmentCategory: data.equipment_category,
+    equipmentSubcategory: data.equipment_subcategory,
+    transportNeeded: data.transport_needed ?? false,
+    responderCap: limits.maxResponders,
+  }).catch((err) => {
+    console.error('[SOS broadcast error]', err)
+  })
 
-  // Cross-list expansion: find additional tier2 groups that share this subcategory
+  return { data: { id: sos.id } }
+}
+
+interface BroadcastParams {
+  sosId: string
+  requesterUserId: string
+  title: string
+  description?: string
+  urgency: 'critical' | 'normal'
+  equipmentCategory: string
+  equipmentSubcategory?: string
+  transportNeeded: boolean
+  responderCap: number
+}
+
+async function broadcastSOSNotifications(params: BroadcastParams): Promise<void> {
+  const {
+    sosId,
+    requesterUserId,
+    title,
+    description,
+    urgency,
+    equipmentCategory,
+    equipmentSubcategory,
+    transportNeeded,
+    responderCap,
+  } = params
+
+  const admin = createAdminClient()
+
+  // 1. Get matched responders via find_sos_responders RPC. Swallow errors —
+  // RPC may not exist in some environments; we still want SOS created.
   const allResponders = new Map<string, { user_id: string; notify_methods: string[] }>()
-  if (responders && Array.isArray(responders)) {
-    for (const r of responders) {
-      allResponders.set((r as { user_id: string }).user_id, r as { user_id: string; notify_methods: string[] })
-    }
-  }
 
-  if (data.equipment_subcategory) {
-    const crossGroups = getAllGroupsForSubcategory(data.equipment_subcategory)
-      .filter(g => g !== data.equipment_category)
-    for (const groupId of crossGroups) {
-      const { data: crossResponders } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string | null>) => Promise<{ data: { user_id: string; notify_methods: string[] }[] | null }> })
-        .rpc('find_sos_responders', {
-          p_tier2: groupId,
-          p_subcategory: data.equipment_subcategory,
-        })
-      if (crossResponders && Array.isArray(crossResponders)) {
-        for (const r of crossResponders) {
-          const cr = r as { user_id: string; notify_methods: string[] }
-          if (!allResponders.has(cr.user_id)) {
-            allResponders.set(cr.user_id, cr)
+  try {
+    const { data: responders } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string | null>) => Promise<{ data: { user_id: string; notify_methods: string[] }[] | null }> })
+      .rpc('find_sos_responders', {
+        p_tier2: equipmentCategory,
+        p_subcategory: equipmentSubcategory || null,
+      })
+
+    if (responders && Array.isArray(responders)) {
+      for (const r of responders) {
+        allResponders.set(r.user_id, r)
+      }
+    }
+
+    // Cross-list expansion: subcategories that appear in multiple tier2 groups
+    if (equipmentSubcategory) {
+      const crossGroups = getAllGroupsForSubcategory(equipmentSubcategory)
+        .filter((g) => g !== equipmentCategory)
+      for (const groupId of crossGroups) {
+        const { data: crossResponders } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string | null>) => Promise<{ data: { user_id: string; notify_methods: string[] }[] | null }> })
+          .rpc('find_sos_responders', {
+            p_tier2: groupId,
+            p_subcategory: equipmentSubcategory,
+          })
+        if (crossResponders && Array.isArray(crossResponders)) {
+          for (const r of crossResponders) {
+            if (!allResponders.has(r.user_id)) {
+              allResponders.set(r.user_id, r)
+            }
           }
         }
       }
     }
+  } catch (err) {
+    console.error('[broadcastSOSNotifications] responder lookup failed', err)
   }
 
-  const mergedResponders = Array.from(allResponders.values())
+  let recipientIds = Array.from(allResponders.keys()).filter((id) => id !== requesterUserId)
 
-  if (mergedResponders.length > 0) {
-    // Get requester's company name
-    const { data: bizProfile } = await admin
-      .from('user_business_profiles')
-      .select('company_name')
-      .eq('user_id', user.id)
-      .maybeSingle()
+  // 2. Transport routing: if transport needed, also notify logistics users
+  if (transportNeeded) {
+    try {
+      const { data: logisticsUsers } = await admin
+        .from('user_business_profiles')
+        .select('user_id')
+        .eq('archetype', 'logistics')
+        .limit(500)
 
-    const companyName = bizProfile?.company_name || 'Someone'
-    const responderLimit = limits.maxResponders === Infinity ? mergedResponders.length : Math.min(mergedResponders.length, limits.maxResponders)
-
-    for (let i = 0; i < responderLimit; i++) {
-      const r = mergedResponders[i] as { user_id: string; notify_methods: string[] }
-      if (r.user_id === user.id) continue // Don't notify yourself
-
-      // Log notification delivery
-      for (const method of r.notify_methods || ['in_app']) {
-        await admin
-          .from('sos_notifications')
-          .upsert({
-            sos_request_id: sos.id,
-            notified_user_id: r.user_id,
-            notify_method: method,
-          }, { onConflict: 'sos_request_id,notified_user_id,notify_method' })
+      if (logisticsUsers) {
+        for (const row of logisticsUsers) {
+          if (row.user_id && row.user_id !== requesterUserId && !recipientIds.includes(row.user_id)) {
+            recipientIds.push(row.user_id)
+          }
+        }
       }
-
-      // Send in-app notification via existing system
-      createNotification(
-        r.user_id,
-        'sos_request_match' as never,
-        `SOS: ${companyName} needs a ${data.title}`,
-        `${data.urgency === 'critical' ? 'CRITICAL: ' : ''}${data.description || data.title} — Can you help?`,
-        { sos_id: sos.id, category: data.equipment_category }
-      ).catch(console.error)
+    } catch (err) {
+      console.error('[broadcastSOSNotifications] logistics lookup failed', err)
     }
   }
 
-  return { data: { id: sos.id } }
+  if (recipientIds.length === 0) return
+
+  // 3. Filter by sos_opted_in preference — respect user opt-out
+  try {
+    const { data: optedInProfiles } = await admin
+      .from('user_business_profiles')
+      .select('user_id, sos_opted_in')
+      .in('user_id', recipientIds)
+
+    if (optedInProfiles) {
+      const optedInIds = new Set(
+        optedInProfiles
+          .filter((p) => p.sos_opted_in !== false) // default-true if null
+          .map((p) => p.user_id)
+      )
+      recipientIds = recipientIds.filter((id) => optedInIds.has(id))
+    }
+  } catch (err) {
+    console.error('[broadcastSOSNotifications] sos_opted_in filter failed', err)
+  }
+
+  if (recipientIds.length === 0) return
+
+  // 4. Apply tier-based responder cap
+  if (responderCap !== Infinity && recipientIds.length > responderCap) {
+    recipientIds = recipientIds.slice(0, responderCap)
+  }
+
+  // 5. Get requester's company name for personalized notification copy
+  let companyName = 'Someone'
+  try {
+    const { data: bizProfile } = await admin
+      .from('user_business_profiles')
+      .select('company_name')
+      .eq('user_id', requesterUserId)
+      .maybeSingle()
+    if (bizProfile?.company_name) companyName = bizProfile.company_name
+  } catch {
+    // ignore — fall back to 'Someone'
+  }
+
+  const notifTitle = urgency === 'critical'
+    ? `🚨 CRITICAL SOS: ${companyName} needs a ${title}`
+    : `SOS: ${companyName} needs a ${title}`
+
+  const notifBody = `${urgency === 'critical' ? 'CRITICAL: ' : ''}${description || title} — Can you help?`
+
+  // 6. Fan-out in-app + push notifications via existing createNotification
+  // helper (handles push subscriptions). Fire each as a settled promise.
+  await Promise.allSettled(
+    recipientIds.map((userId) =>
+      createNotification(
+        userId,
+        'sos_request_match',
+        notifTitle,
+        notifBody,
+        { sos_id: sosId, category: equipmentCategory, urgency }
+      )
+    )
+  )
+
+  // 7. Log delivery in sos_notifications (best-effort — table may not be present)
+  try {
+    const rows = recipientIds.map((userId) => ({
+      sos_request_id: sosId,
+      notified_user_id: userId,
+      notify_method: 'in_app',
+    }))
+    if (rows.length > 0) {
+      await admin
+        .from('sos_notifications')
+        .upsert(rows, { onConflict: 'sos_request_id,notified_user_id,notify_method' })
+    }
+  } catch (err) {
+    console.error('[broadcastSOSNotifications] sos_notifications upsert failed', err)
+  }
+
+  // 8. Critical urgency → Resend email to recipients (capped at 500)
+  if (urgency === 'critical') {
+    try {
+      const emailIds = recipientIds.slice(0, 500)
+      const { data: profiles } = await admin
+        .from('profiles')
+        .select('id, display_name, full_name, contact_email')
+        .in('id', emailIds)
+
+      if (profiles && profiles.length > 0) {
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'https://metal-gear-five.vercel.app'
+        const emailJobs = profiles
+          .map((p) => {
+            const contactEmail = (p as { contact_email: string | null }).contact_email
+            if (!contactEmail || contactEmail.length === 0) return null
+            return {
+              email: contactEmail,
+              name: (p as { display_name: string | null }).display_name || (p as { full_name: string | null }).full_name || 'there',
+            }
+          })
+          .filter((job): job is { email: string; name: string } => job !== null)
+
+        await Promise.allSettled(
+          emailJobs.map((job) =>
+            sendEmail({
+              to: job.email,
+              subject: `🚨 Critical SOS on Metal Gear: ${title}`,
+              html: buildCriticalSOSEmailHtml({
+                recipientName: job.name,
+                sosTitle: title,
+                sosId,
+                platformUrl: appUrl,
+              }),
+            })
+          )
+        )
+      }
+    } catch (err) {
+      console.error('[broadcastSOSNotifications] critical email send failed', err)
+    }
+  }
+}
+
+function buildCriticalSOSEmailHtml(params: {
+  recipientName: string
+  sosTitle: string
+  sosId: string
+  platformUrl: string
+}): string {
+  const { recipientName, sosTitle, sosId, platformUrl } = params
+  return `<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head>
+<body style="background:#18191A;color:#E4E6EB;font-family:'Manrope',Arial,sans-serif;margin:0;padding:32px 16px;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="background:#FF6B2B;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:16px;">
+      <span style="color:#fff;font-weight:700;font-size:12px;letter-spacing:0.08em;">🚨 CRITICAL SOS</span>
+    </div>
+    <h1 style="font-size:22px;margin:0 0 8px;color:#fff;">${sosTitle}</h1>
+    <p style="color:#B0B3B8;margin:0 0 24px;">Hi ${recipientName}, a critical equipment need matching your interests was just posted on Metal Gear.</p>
+    <a href="${platformUrl}/sos/${sosId}" style="background:#FF6B2B;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block;">
+      View SOS &amp; Respond
+    </a>
+    <p style="color:#B0B3B8;font-size:12px;margin-top:32px;">
+      You're receiving this because you opted into SOS alerts.
+      <a href="${platformUrl}/profile" style="color:#1877F2;">Manage notification preferences</a>
+    </p>
+  </div>
+</body>
+</html>`
 }
 
 export async function respondToSos(sosId: string, response: SosResponseData) {

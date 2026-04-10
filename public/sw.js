@@ -38,6 +38,8 @@ self.addEventListener('notificationclick', function (event) {
     url = data.transaction_id ? '/transactions/' + data.transaction_id : '/transactions'
   } else if (data.type === 'viewing_response') {
     url = '/schedule'
+  } else if (data.type === 'sos_request_match') {
+    url = data.sos_id ? '/sos/' + data.sos_id : '/sos'
   } else {
     url = '/notifications'
   }

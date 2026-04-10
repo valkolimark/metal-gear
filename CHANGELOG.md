@@ -6,6 +6,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.20.0] — 2026-04-10 · SOS Submission Fix + Equipment Interests Editor + SOS Push Broadcast (Cycle 49)
+
+### Fixed
+- **SOS submission** — responder lookup, sos_notifications upsert, and cross-list expansion moved out of the main create path and wrapped in try/catch so RPC or downstream failures never break SOS creation; real server errors now surface to the submit toast instead of a generic "Failed to send SOS" message
+- **`transport_needed` wiring** — camera-first flow now carries `transportNeeded` through shared state → `SOSConfirmStep` → `createSosRequest()` payload so logistics routing works for both text and camera submission paths
+
+### Added
+- **`broadcastSOSNotifications()`** — new fire-and-forget SOS fan-out in `src/app/actions/sos.ts`; runs after successful insert, never blocks the confirm step
+- **SOS opt-in guard** — recipients filtered by `user_business_profiles.sos_opted_in` before any notification fires
+- **Transport routing** — when `transport_needed` is true, logistics archetype users are added to the recipient set
+- **Critical-urgency email broadcast** — Resend email to matched recipients' `profiles.contact_email` for `urgency = 'critical'` SOS, capped at 500/blast, orange CTA to `/sos/[id]`
+- **`transport_needed` toggle in SOSConfirmStep** — new switch below urgency picker in the camera-first flow
+- **Equipment Interests editor on profile page** — new `EquipmentInterestsEditor` client component with industry chips (blue selected state) and all 28 Tier 2 equipment groups as toggle chips (SOS orange selected state), grouped by Tier 1 bucket
+- **`src/app/actions/interests.ts`** — `getEquipmentInterests()` + `updateEquipmentInterests()` server actions; atomic delete+insert on `user_equipment_interests`, derives `tier1` from taxonomy, upserts `industries` on `user_business_profiles`, revalidates `/profile`, `/feed`, `/dashboard`
+- **Service worker `sos_request_match` click handler** — push clicks now route to `/sos/[id]` instead of the generic `/notifications` fallback
+
+### Changed
+- **SOS create error handling in `SOSConfirmStep`** — catches now surface the actual server error message to the toast instead of a generic string
+
+---
+
 ## [4.19.0] — 2026-04-08 · Four-Archetype Onboarding + Logistics Access Layer (Cycle 48)
 
 ### Added
