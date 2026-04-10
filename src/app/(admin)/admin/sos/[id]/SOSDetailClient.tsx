@@ -20,6 +20,13 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
@@ -34,6 +41,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import {
+  adminEscalateSOSUrgency,
   adminRebroadcastSOS,
   getSOSNotificationLog,
   getSOSResponseTimeline,
@@ -186,6 +194,10 @@ export function SOSDetailClient({ sos, sosId }: Props) {
   const [timelineOpen, setTimelineOpen] = useState(true)
   const [rebroadcasting, setRebroadcasting] = useState(false)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  const [currentUrgency, setCurrentUrgency] = useState<string>(sos.urgency)
+  const [escalating, setEscalating] = useState(false)
+  const [escalateConfirmOpen, setEscalateConfirmOpen] = useState(false)
+  const [pendingUrgency, setPendingUrgency] = useState<'critical' | 'normal' | null>(null)
   const hasFetchedNotif = useRef(false)
 
   // Fetch response timeline on mount
@@ -222,6 +234,41 @@ export function SOSDetailClient({ sos, sosId }: Props) {
           toast.error('Failed to load notification log')
         })
         .finally(() => setLoadingNotif(false))
+    }
+  }
+
+  function handleUrgencyChange(value: string) {
+    if (value !== 'critical' && value !== 'normal') return
+    if (value === currentUrgency) return
+    setPendingUrgency(value)
+    setEscalateConfirmOpen(true)
+  }
+
+  async function handleConfirmEscalate() {
+    if (!pendingUrgency) return
+    setEscalating(true)
+    try {
+      const result = await adminEscalateSOSUrgency(sosId, pendingUrgency)
+      if (!result.success) {
+        toast.error(result.error)
+        return
+      }
+      setCurrentUrgency(result.newUrgency)
+      if (result.newUrgency === 'critical' && result.emailsSent > 0) {
+        toast.success(
+          `Escalated to CRITICAL — sent escalation email to ${result.emailsSent} previously notified user${result.emailsSent === 1 ? '' : 's'}.`
+        )
+      } else if (result.newUrgency === 'critical') {
+        toast.success('Escalated to CRITICAL.')
+      } else {
+        toast.success('Urgency set to Normal.')
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update urgency')
+    } finally {
+      setEscalating(false)
+      setEscalateConfirmOpen(false)
+      setPendingUrgency(null)
     }
   }
 
@@ -297,7 +344,22 @@ export function SOSDetailClient({ sos, sosId }: Props) {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <UrgencyBadge urgency={sos.urgency} />
+              <div className="flex items-center gap-1">
+                <UrgencyBadge urgency={currentUrgency} />
+                <Select
+                  value={currentUrgency === 'critical' ? 'critical' : 'normal'}
+                  onValueChange={handleUrgencyChange}
+                  disabled={escalating || !isActive}
+                >
+                  <SelectTrigger className="h-7 w-[130px] font-body text-xs">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="critical">🚨 Critical</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <StatusBadge status={sos.status} />
               {sos.transport_needed && (
                 <Badge className="flex items-center gap-1 border-0 bg-[#FF6B2B]/15 font-body text-[10px] uppercase text-[#FF6B2B]">
@@ -679,6 +741,74 @@ export function SOSDetailClient({ sos, sosId }: Props) {
           </CardContent>
         )}
       </Card>
+
+      {/* Urgency Escalation Confirmation Dialog */}
+      <Dialog
+        open={escalateConfirmOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            setEscalateConfirmOpen(false)
+            setPendingUrgency(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-display">
+              {pendingUrgency === 'critical' ? 'Escalate to Critical?' : 'Downgrade to Normal?'}
+            </DialogTitle>
+            <DialogDescription className="font-body">
+              {pendingUrgency === 'critical' ? (
+                <>
+                  Changing urgency from <strong>{currentUrgency}</strong> to{' '}
+                  <strong className="text-[#FF6B2B]">CRITICAL</strong> will fire a critical-urgency
+                  email blast to every user already in the notification log for this SOS. In-app
+                  bell notifications will not be re-fired (use Re-broadcast for that).
+                </>
+              ) : (
+                <>
+                  Downgrade urgency from <strong>{currentUrgency}</strong> to{' '}
+                  <strong>Normal</strong>. No notifications will be sent.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setEscalateConfirmOpen(false)
+                setPendingUrgency(null)
+              }}
+              disabled={escalating}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              onClick={handleConfirmEscalate}
+              disabled={escalating}
+              className={
+                pendingUrgency === 'critical'
+                  ? 'bg-red-600 text-white hover:bg-red-700'
+                  : ''
+              }
+            >
+              {escalating ? (
+                <>
+                  <RefreshCw className="mr-1 size-4 animate-spin" />
+                  Updating...
+                </>
+              ) : pendingUrgency === 'critical' ? (
+                'Escalate to Critical'
+              ) : (
+                'Confirm'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Re-broadcast Confirmation Dialog */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>

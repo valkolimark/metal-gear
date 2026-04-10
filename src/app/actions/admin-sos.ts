@@ -4,6 +4,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { createNotification } from '@/app/actions/notifications'
 import { getAllGroupsForSubcategory } from '@/lib/constants/equipment-taxonomy'
 import { sendEmail } from '@/lib/email'
+import { requireAdmin } from '@/lib/admin/permissions'
+import { logAdminAction } from '@/app/(admin)/admin/actions'
 
 // ─── Types ──────────────────────────────────────────────────────────
 
@@ -503,4 +505,118 @@ export async function adminRebroadcastSOS(sosId: string): Promise<RebroadcastRes
   }
 
   return { sent: newRecipientIds.length, skipped: alreadyNotified.size }
+}
+
+// ─── adminEscalateSOSUrgency ───────────────────────────────────────
+
+export type EscalateUrgencyResult =
+  | { success: true; newUrgency: 'critical' | 'normal'; emailsSent: number }
+  | { success: false; error: string }
+
+/**
+ * Change a SOS request's urgency. When escalating from non-critical to
+ * `critical`, this also fires a critical-urgency email blast to every user
+ * already in `sos_notifications` for this SOS (so people who were notified
+ * under "normal" urgency get told it's now critical). In-app + push
+ * notifications are NOT re-fired (we don't want duplicate bell pings); use
+ * the Re-broadcast button for that.
+ */
+export async function adminEscalateSOSUrgency(
+  sosId: string,
+  newUrgency: 'critical' | 'normal'
+): Promise<EscalateUrgencyResult> {
+  const { profile } = await requireAdmin('moderate')
+  const admin = createAdminClient()
+
+  const { data: sos, error: fetchErr } = await admin
+    .from('sos_requests')
+    .select('id, title, description, urgency, status, requester_id')
+    .eq('id', sosId)
+    .maybeSingle()
+
+  if (fetchErr || !sos) return { success: false, error: 'SOS not found' }
+
+  const oldUrgency = sos.urgency ?? 'normal'
+  if (oldUrgency === newUrgency) {
+    return { success: true, newUrgency, emailsSent: 0 }
+  }
+
+  const { error: updateErr } = await admin
+    .from('sos_requests')
+    .update({ urgency: newUrgency, updated_at: new Date().toISOString() })
+    .eq('id', sosId)
+
+  if (updateErr) return { success: false, error: updateErr.message }
+
+  await logAdminAction(profile.id, 'update_sos_urgency', 'sos', sosId, {
+    from: oldUrgency,
+    to: newUrgency,
+  })
+
+  // If escalating to critical, fire email blast to already-notified users
+  let emailsSent = 0
+  const escalatingToCritical = newUrgency === 'critical' && oldUrgency !== 'critical'
+  if (escalatingToCritical && sos.status === 'active') {
+    try {
+      // Get already-notified user IDs
+      const { data: existingNotifs } = await admin
+        .from('sos_notifications')
+        .select('notified_user_id')
+        .eq('sos_request_id', sosId)
+
+      const recipientIds = Array.from(
+        new Set((existingNotifs || []).map((n) => n.notified_user_id))
+      )
+
+      if (recipientIds.length > 0) {
+        // Fetch contact emails
+        const { data: profiles } = await admin
+          .from('profiles')
+          .select('id, display_name, full_name, contact_email')
+          .in('id', recipientIds.slice(0, 500))
+
+        if (profiles && profiles.length > 0) {
+          const appUrl =
+            process.env.NEXT_PUBLIC_APP_URL ?? 'https://metal-gear-five.vercel.app'
+
+          const emailJobs = profiles
+            .map((p) => {
+              const contactEmail = (p as { contact_email: string | null }).contact_email
+              if (!contactEmail || contactEmail.length === 0) return null
+              const display = (p as { display_name: string | null }).display_name
+              const full = (p as { full_name: string | null }).full_name
+              return { email: contactEmail, name: display || full || 'there' }
+            })
+            .filter((job): job is { email: string; name: string } => job !== null)
+
+          await Promise.allSettled(
+            emailJobs.map((job) =>
+              sendEmail({
+                to: job.email,
+                subject: `🚨 ESCALATED to CRITICAL — ${sos.title}`,
+                html: `<!DOCTYPE html>
+<html>
+<body style="background:#18191A;color:#E4E6EB;font-family:Manrope,Arial,sans-serif;margin:0;padding:32px 16px;">
+  <div style="max-width:560px;margin:0 auto;">
+    <div style="background:#FF6B2B;padding:4px 12px;border-radius:4px;display:inline-block;margin-bottom:16px;">
+      <span style="color:#fff;font-weight:700;font-size:12px;letter-spacing:0.08em;">🚨 ESCALATED TO CRITICAL</span>
+    </div>
+    <h1 style="font-size:22px;margin:0 0 8px;color:#fff;">${sos.title}</h1>
+    <p style="color:#B0B3B8;margin:0 0 24px;">Hi ${job.name}, an SOS request you were previously notified about has been escalated to <strong style="color:#fff;">CRITICAL urgency</strong>. The requester needs help immediately.</p>
+    <a href="${appUrl}/sos/${sosId}" style="background:#FF6B2B;color:#fff;padding:14px 28px;border-radius:6px;text-decoration:none;font-weight:700;display:inline-block;">View SOS &amp; Respond</a>
+  </div>
+</body>
+</html>`,
+              })
+            )
+          )
+          emailsSent = emailJobs.length
+        }
+      }
+    } catch (err) {
+      console.error('[adminEscalateSOSUrgency] critical email blast failed', err)
+    }
+  }
+
+  return { success: true, newUrgency, emailsSent }
 }

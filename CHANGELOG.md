@@ -9,6 +9,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 ## [4.21.0] — 2026-04-10 · Admin SOS Detail View + Notification Audit + Re-broadcast (Cycle 50)
 
 ### Added
+- **Admin urgency escalation** — inline Select dropdown next to the urgency badge on `/admin/sos/[id]` lets a moderator change a SOS between Normal and Critical; escalating to Critical fires a one-time critical-urgency email blast to every user already in the notification log (in-app/push are NOT re-fired — use Re-broadcast for that); confirmation Dialog before send; logs to `admin_audit_log` as `update_sos_urgency`
+- **`adminEscalateSOSUrgency()`** — new server action in `src/app/actions/admin-sos.ts`; gated by `requireAdmin('moderate')`
 - **`/admin/sos/[id]`** — dedicated SOS detail page (SSR shell + `SOSDetailClient`); accessible by clicking any row in the SOS Monitor or via the new "Open detail page" dropdown action
 - **Notification Delivery audit panel** — collapsible (closed by default), lazy-loaded once per page load; per-user table with avatar, archetype, status (read vs sent), sent timestamp, read timestamp, and responded indicator with response-preview tooltip; mobile collapses to 3 columns
 - **Notification summary row** — `{responded} responded · {read} read · {unread} unread · {total} total notified` computed from the lazy-loaded log
