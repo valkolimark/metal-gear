@@ -6,6 +6,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.21.0] — 2026-04-10 · Admin SOS Detail View + Notification Audit + Re-broadcast (Cycle 50)
+
+### Added
+- **`/admin/sos/[id]`** — dedicated SOS detail page (SSR shell + `SOSDetailClient`); accessible by clicking any row in the SOS Monitor or via the new "Open detail page" dropdown action
+- **Notification Delivery audit panel** — collapsible (closed by default), lazy-loaded once per page load; per-user table with avatar, archetype, status (read vs sent), sent timestamp, read timestamp, and responded indicator with response-preview tooltip; mobile collapses to 3 columns
+- **Notification summary row** — `{responded} responded · {read} read · {unread} unread · {total} total notified` computed from the lazy-loaded log
+- **Response Timeline** — collapsible (open by default); chronological list of every submitted response with avatar, display name, company, archetype, full message, and price/lead/condition badges
+- **Re-broadcast action** — admin button on the Notification Delivery panel that re-runs SOS recipient matching and only notifies users not already in `sos_notifications`; confirmation Dialog before send; toast reports new vs skipped counts; disabled with tooltip when SOS is not active
+- **`src/app/actions/admin-sos.ts`** — new admin-only server actions: `getSOSDetail()`, `getSOSNotificationLog()`, `getSOSResponseTimeline()`, `adminRebroadcastSOS()`
+
+### Changed
+- **SOS Monitor table rows** — entire row is now clickable and navigates to `/admin/sos/[id]`; existing Actions dropdown still works (`stopPropagation` on cell + trigger); the drawer-based "Quick view" remains as a secondary dropdown action
+- **`broadcastSOSNotifications()` (Cycle 49)** — now sets `sent_at = now()` on the `sos_notifications` upsert so the new audit panel can render delivery timestamps
+
+---
+
 ## [4.20.0] — 2026-04-10 · SOS Submission Fix + Equipment Interests Editor + SOS Push Broadcast (Cycle 49)
 
 ### Fixed

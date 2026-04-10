@@ -290,10 +290,12 @@ async function broadcastSOSNotifications(params: BroadcastParams): Promise<void>
 
   // 7. Log delivery in sos_notifications (best-effort — table may not be present)
   try {
+    const nowIso = new Date().toISOString()
     const rows = recipientIds.map((userId) => ({
       sos_request_id: sosId,
       notified_user_id: userId,
       notify_method: 'in_app',
+      sent_at: nowIso,
     }))
     if (rows.length > 0) {
       await admin

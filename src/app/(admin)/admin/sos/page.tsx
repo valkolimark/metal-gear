@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -174,6 +175,7 @@ function UrgencyBadge({ urgency }: { urgency: string }) {
 // ─── Main Page ──────────────────────────────────────────────────────
 
 export default function AdminSOSPage() {
+  const router = useRouter()
   const [sosList, setSosList] = useState<SOSRow[]>([])
   const [stats, setStats] = useState<SOSStats>({ openCount: 0, fulfilledCount: 0, noMatchWeek: 0 })
   const [total, setTotal] = useState(0)
@@ -557,7 +559,8 @@ export default function AdminSOSPage() {
                   sosList.map((sos) => (
                     <tr
                       key={sos.id}
-                      className="border-b border-border hover:bg-white/[0.02]"
+                      onClick={() => router.push(`/admin/sos/${sos.id}`)}
+                      className="cursor-pointer border-b border-border transition-colors hover:bg-white/[0.02]"
                     >
                       <td className="px-4 py-3">
                         <span className="font-body text-sm text-foreground">
@@ -584,17 +587,21 @@ export default function AdminSOSPage() {
                       <td className="px-4 py-3 font-body text-xs text-muted-foreground">
                         {new Date(sos.created_at).toLocaleDateString()}
                       </td>
-                      <td className="px-4 py-3 text-right">
+                      <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="sm">
+                            <Button variant="ghost" size="sm" onClick={(e) => e.stopPropagation()}>
                               <MoreHorizontal className="size-4" />
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
+                            <DropdownMenuItem onClick={() => router.push(`/admin/sos/${sos.id}`)}>
+                              <Radio className="mr-2 size-4" />
+                              Open detail page
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => openDetail(sos.id)}>
                               <Radio className="mr-2 size-4" />
-                              View details
+                              Quick view (drawer)
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleExtend(sos.id)}>
