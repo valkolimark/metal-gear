@@ -41,30 +41,68 @@ export interface SosFilters {
 }
 
 export async function createSosRequest(data: SosRequestData) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
+  const t0 = Date.now()
+  console.log('[createSosRequest] start', {
+    title: data.title?.slice(0, 50),
+    category: data.equipment_category,
+    urgency: data.urgency,
+  })
+
+  let supabase
+  try {
+    supabase = await createClient()
+  } catch (err) {
+    console.error('[createSosRequest] createClient failed', err)
+    return { error: 'Server error: auth client init failed' }
+  }
+
+  const { data: { user }, error: authError } = await supabase.auth.getUser()
+  if (authError) {
+    console.error('[createSosRequest] auth.getUser error', authError)
+    return { error: `Auth error: ${authError.message}` }
+  }
+  if (!user) {
+    console.warn('[createSosRequest] no user in session')
+    return { error: 'Not authenticated' }
+  }
+
+  console.log('[createSosRequest] user', { id: user.id, elapsed: Date.now() - t0 })
 
   const admin = createAdminClient()
 
   // Check tier limits
-  const { data: profile } = await admin
+  const { data: profile, error: profileError } = await admin
     .from('profiles')
     .select('subscription_tier')
     .eq('id', user.id)
     .single()
+
+  if (profileError) {
+    console.error('[createSosRequest] profile fetch failed', profileError)
+    // Don't fail — fall through with default tier
+  }
 
   const tier = (profile?.subscription_tier || 'free') as keyof typeof SOS_TIER_LIMITS
   // Fall back to free limits if the tier name is unrecognized — prevents
   // server-action crash on unknown tier strings
   const limits = SOS_TIER_LIMITS[tier] ?? SOS_TIER_LIMITS.free
 
+  console.log('[createSosRequest] tier check', { tier, activeSosLimit: limits.activeSos })
+
   // Check active SOS count
-  const { data: countResult } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string>) => Promise<{ data: number | null }> })
+  const { data: countResult, error: countError } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string>) => Promise<{ data: number | null; error: { message: string } | null }> })
     .rpc('get_user_active_sos_count', { p_user_id: user.id })
 
+  if (countError) {
+    console.error('[createSosRequest] active count RPC failed', countError)
+    // Don't fail — assume 0
+  }
+
   const activeCount = (countResult as number) || 0
+  console.log('[createSosRequest] active count', { activeCount, limit: limits.activeSos })
+
   if (activeCount >= limits.activeSos) {
+    console.warn('[createSosRequest] tier limit hit', { tier, activeCount, limit: limits.activeSos })
     return { error: `You can have ${limits.activeSos} active SOS request${limits.activeSos === 1 ? '' : 's'} on your ${tier} plan. Upgrade for more.` }
   }
 
@@ -91,6 +129,8 @@ export async function createSosRequest(data: SosRequestData) {
     lng = lng || userProfile?.location_lng || undefined
   }
 
+  console.log('[createSosRequest] inserting row', { elapsed: Date.now() - t0 })
+
   const { data: sos, error } = await admin
     .from('sos_requests')
     .insert({
@@ -116,8 +156,16 @@ export async function createSosRequest(data: SosRequestData) {
     .select('id')
     .single()
 
-  if (error) return { error: error.message }
-  if (!sos) return { error: 'Failed to create SOS request' }
+  if (error) {
+    console.error('[createSosRequest] insert failed', { code: error.code, message: error.message, details: error.details })
+    return { error: error.message }
+  }
+  if (!sos) {
+    console.error('[createSosRequest] insert returned no row')
+    return { error: 'Failed to create SOS request' }
+  }
+
+  console.log('[createSosRequest] insert success', { sosId: sos.id, totalElapsed: Date.now() - t0 })
 
   // Fire-and-forget broadcast. Any failure in responder lookup, notification
   // insertion, or email send must never block the user from seeing their
