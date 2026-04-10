@@ -6,6 +6,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.21.3] — 2026-04-10 · SOS tier-limit constants hotfix (Cycle 50.3)
+
+### Fixed
+- **`SOS_TIER_LIMITS`** had only `free` / `premium` / `boost` keys (legacy aliases). Users on the modern tier names (`pro` / `business` / `enterprise`) hit `SOS_TIER_LIMITS[tier] === undefined`, and the next line `limits.activeSos` would crash the `createSosRequest` server action with a `TypeError`. Added explicit `pro` / `business` / `enterprise` entries (legacy `premium` / `boost` kept for back-compat) and a defensive `?? SOS_TIER_LIMITS.free` fallback in `createSosRequest` so an unknown tier string can never crash SOS creation
+- Symptom that surfaced this: a free-tier user already at the 1-active-SOS cap clicks Send SOS, the action returns `{ error: 'You can have 1 active SOS request on your free plan...' }`, the toast fires but is easily missed → looks like "the page does nothing"
+
+---
+
 ## [4.21.2] — 2026-04-10 · SOS dashboard query hotfix (Cycle 50.2)
 
 ### Fixed

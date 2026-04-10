@@ -664,6 +664,11 @@ export const TRADING_INTENTS = [
 
 export const SOS_TIER_LIMITS = {
   free: { activeSos: 1, maxReachMiles: 100, maxResponders: 10 },
+  // Modern tiers (Pricing Cycle: free / pro / business / enterprise)
+  pro: { activeSos: 3, maxReachMiles: 500, maxResponders: Infinity },
+  business: { activeSos: 10, maxReachMiles: Infinity, maxResponders: Infinity },
+  enterprise: { activeSos: Infinity, maxReachMiles: Infinity, maxResponders: Infinity },
+  // Legacy aliases — keep so DB rows from before the tier rename still resolve
   premium: { activeSos: 3, maxReachMiles: 500, maxResponders: Infinity },
   boost: { activeSos: Infinity, maxReachMiles: Infinity, maxResponders: Infinity },
 } as const

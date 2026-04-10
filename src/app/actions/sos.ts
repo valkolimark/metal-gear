@@ -55,7 +55,9 @@ export async function createSosRequest(data: SosRequestData) {
     .single()
 
   const tier = (profile?.subscription_tier || 'free') as keyof typeof SOS_TIER_LIMITS
-  const limits = SOS_TIER_LIMITS[tier]
+  // Fall back to free limits if the tier name is unrecognized — prevents
+  // server-action crash on unknown tier strings
+  const limits = SOS_TIER_LIMITS[tier] ?? SOS_TIER_LIMITS.free
 
   // Check active SOS count
   const { data: countResult } = await (admin as unknown as { rpc: (fn: string, params: Record<string, string>) => Promise<{ data: number | null }> })
