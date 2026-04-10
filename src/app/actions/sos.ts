@@ -461,29 +461,43 @@ export async function getSosRequests(filters?: SosFilters) {
 
   const admin = createAdminClient()
 
-  // Get user's equipment interests to filter relevant SOS
-  const { data: interests } = await admin
-    .from('user_equipment_interests')
-    .select('tier2')
-    .eq('user_id', user.id)
+  // Get user's equipment interests + receive-all flag to determine which SOSs they should see
+  const [{ data: interests }, { data: bizProfile }] = await Promise.all([
+    admin
+      .from('user_equipment_interests')
+      .select('tier2')
+      .eq('user_id', user.id),
+    admin
+      .from('user_business_profiles')
+      // sos_receive_all column added 2026-04-10; not yet in generated types
+      .select('sos_receive_all' as 'industries')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+  ])
 
   const userCategories = (interests || []).map((i: { tier2: string }) => i.tier2)
+  const receiveAll =
+    (bizProfile as { sos_receive_all?: boolean | null } | null)?.sos_receive_all === true
 
+  // NOTE: We deliberately do NOT use PostgREST embedded joins for `requester`
+  // here. sos_requests.requester_id is FK'd to auth.users(id), not profiles(id),
+  // so PostgREST can't traverse it and the embed throws PGRST200 server-side.
+  // We fetch profiles separately and merge.
   let query = admin
     .from('sos_requests')
-    .select(`
-      *,
-      requester:profiles!sos_requests_requester_id_fkey(full_name, company_name, avatar_url),
-      response_count:sos_responses(count)
-    `)
+    .select(`*, response_count:sos_responses(count)`)
     .eq('status', 'active')
     .order('created_at', { ascending: false })
 
   if (filters?.category) {
     query = query.eq('equipment_category', filters.category)
-  } else if (userCategories.length > 0) {
+  } else if (!receiveAll && userCategories.length > 0) {
+    // Only filter by interests if the user did NOT opt into receive-all
     query = query.in('equipment_category', userCategories)
   }
+  // If receiveAll is true OR the user has zero interests configured, return
+  // every active SOS — admins/monitors with no interests should see the full
+  // firehose rather than an empty dashboard.
 
   if (filters?.urgency) {
     query = query.eq('urgency', filters.urgency)
@@ -492,7 +506,32 @@ export async function getSosRequests(filters?: SosFilters) {
   const { data, error } = await query.limit(50)
 
   if (error) return { error: error.message }
-  return { requests: data || [] }
+
+  const rows = data || []
+  if (rows.length === 0) return { requests: [] }
+
+  // Fetch requester profiles separately
+  const requesterIds = Array.from(new Set(rows.map((r) => r.requester_id).filter(Boolean)))
+  const { data: profiles } = await admin
+    .from('profiles')
+    .select('id, full_name, display_name, company_name, avatar_url')
+    .in('id', requesterIds)
+
+  const profileMap = new Map<string, { full_name: string | null; company_name: string | null; avatar_url: string | null }>()
+  for (const p of profiles || []) {
+    profileMap.set(p.id, {
+      full_name: p.display_name || p.full_name,
+      company_name: p.company_name,
+      avatar_url: p.avatar_url,
+    })
+  }
+
+  return {
+    requests: rows.map((r) => ({
+      ...r,
+      requester: profileMap.get(r.requester_id) ?? null,
+    })),
+  }
 }
 
 export async function getMySosRequests() {
@@ -522,26 +561,50 @@ export async function getSosDetail(sosId: string) {
 
   const admin = createAdminClient()
 
+  // sos_requests.requester_id and sos_responses.responder_id are FK'd to
+  // auth.users(id), not profiles(id), so PostgREST cannot embed-join through
+  // them. We fetch profiles separately and merge.
   const { data: sos, error } = await admin
     .from('sos_requests')
-    .select(`
-      *,
-      requester:profiles!sos_requests_requester_id_fkey(id, full_name, company_name, avatar_url)
-    `)
+    .select('*')
     .eq('id', sosId)
     .single()
 
   if (error || !sos) return { error: 'SOS request not found' }
 
-  // Get responses with responder info
-  const { data: responses } = await admin
+  // Requester profile
+  const { data: requesterProfile } = await admin
+    .from('profiles')
+    .select('id, full_name, display_name, company_name, avatar_url')
+    .eq('id', sos.requester_id)
+    .maybeSingle()
+
+  // Responses
+  const { data: responsesRaw } = await admin
     .from('sos_responses')
-    .select(`
-      *,
-      responder:profiles!sos_responses_responder_id_fkey(id, full_name, company_name, avatar_url)
-    `)
+    .select('*')
     .eq('sos_request_id', sosId)
     .order('created_at', { ascending: true })
+
+  const responses = responsesRaw || []
+  const responder_profiles_by_id = new Map<string, { id: string; full_name: string | null; company_name: string | null; avatar_url: string | null }>()
+  if (responses.length > 0) {
+    const responderIds = Array.from(new Set(responses.map((r) => r.responder_id).filter(Boolean)))
+    if (responderIds.length > 0) {
+      const { data: respProfiles } = await admin
+        .from('profiles')
+        .select('id, full_name, display_name, company_name, avatar_url')
+        .in('id', responderIds)
+      for (const p of respProfiles || []) {
+        responder_profiles_by_id.set(p.id, {
+          id: p.id,
+          full_name: p.display_name || p.full_name,
+          company_name: p.company_name,
+          avatar_url: p.avatar_url,
+        })
+      }
+    }
+  }
 
   // Get requester's business profile
   const { data: requesterBiz } = await admin
@@ -553,8 +616,22 @@ export async function getSosDetail(sosId: string) {
   const isRequester = sos.requester_id === user.id
 
   return {
-    sos: { ...sos, requester_business: requesterBiz },
-    responses: responses || [],
+    sos: {
+      ...sos,
+      requester: requesterProfile
+        ? {
+            id: requesterProfile.id,
+            full_name: requesterProfile.display_name || requesterProfile.full_name,
+            company_name: requesterProfile.company_name,
+            avatar_url: requesterProfile.avatar_url,
+          }
+        : null,
+      requester_business: requesterBiz,
+    },
+    responses: responses.map((r) => ({
+      ...r,
+      responder: responder_profiles_by_id.get(r.responder_id) ?? null,
+    })),
     isRequester,
   }
 }

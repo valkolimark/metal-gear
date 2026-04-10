@@ -6,6 +6,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.21.2] — 2026-04-10 · SOS dashboard query hotfix (Cycle 50.2)
+
+### Fixed
+- **SOS Dashboard rendered empty for everyone** — `getSosRequests()` (powering `/sos`), `getSosDetail()` (powering `/sos/[id]`), and the `/api/sos/ai` ranking endpoint all used PostgREST embedded joins like `requester:profiles!sos_requests_requester_id_fkey(...)`. But `sos_requests.requester_id` is FK'd to `auth.users(id)`, not `profiles(id)`, so PostgREST returned `PGRST200` ("Could not find a relationship between 'sos_requests' and 'profiles'"). The actions returned `{ error: ... }`, the dashboard's `'error' in result` check skipped state updates, and the page rendered the empty state. **Bug had been silent since SOS shipped in Cycle 6.**
+- All three locations now fetch SOS rows first and resolve requester/responder profiles in a separate query, merging in JS — same pattern used in `admin-sos.ts`
+- **`/sos` dashboard now respects `sos_receive_all`** — users with the receive-all flag get the unfiltered firehose instead of being filtered by their explicit equipment interests
+
+### Diagnostic notes
+- The bug was masked because admin-side `getAdminSOS()` and the new admin detail page (Cycle 50) both avoid embedded joins and fetch profiles separately, so they always rendered correctly. Only the user-facing `/sos` dashboard was broken.
+
+---
+
 ## [4.21.1] — 2026-04-10 · SOS notification delivery hotfix (Cycle 50.1)
 
 ### Fixed

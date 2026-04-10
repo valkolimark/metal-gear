@@ -155,9 +155,11 @@ export async function POST(request: NextRequest) {
           urgency: sos.urgency || 'normal',
         }
 
+        // sos_responses.responder_id FKs to auth.users(id), not profiles(id),
+        // so PostgREST cannot embed-join. Fetch profiles separately if needed.
         const { data: dbResponses } = await admin
           .from('sos_responses')
-          .select('*, responder:profiles!sos_responses_responder_id_fkey(id, full_name)')
+          .select('*')
           .eq('sos_request_id', sosRequestId)
           .order('created_at', { ascending: true })
 
