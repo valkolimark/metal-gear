@@ -206,6 +206,27 @@ async function broadcastSOSNotifications(params: BroadcastParams): Promise<void>
 
   let recipientIds = Array.from(allResponders.keys()).filter((id) => id !== requesterUserId)
 
+  // 1b. Defense-in-depth: pull users with sos_receive_all = true and merge.
+  // The RPC already includes them, but doing a parallel app-level fetch
+  // ensures admins/monitors get notified even if the RPC version drifts.
+  try {
+    const { data: receiveAllUsers } = await admin
+      .from('user_business_profiles')
+      .select('user_id')
+      .eq('sos_receive_all', true)
+      .eq('onboarding_completed', true)
+      .limit(500)
+    if (receiveAllUsers) {
+      for (const row of receiveAllUsers) {
+        if (row.user_id && row.user_id !== requesterUserId && !recipientIds.includes(row.user_id)) {
+          recipientIds.push(row.user_id)
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[broadcastSOSNotifications] sos_receive_all lookup failed', err)
+  }
+
   // 2. Transport routing: if transport needed, also notify logistics users
   if (transportNeeded) {
     try {

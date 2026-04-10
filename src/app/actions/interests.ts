@@ -8,6 +8,7 @@ import { EQUIPMENT_TAXONOMY } from '@/lib/constants/equipment-taxonomy'
 export interface EquipmentInterestsData {
   tier2Groups: string[]
   industries: string[]
+  sosReceiveAll: boolean
 }
 
 // Build a tier2 → tier1 lookup once per invocation
@@ -23,25 +24,31 @@ function getTier1ForTier2(tier2Id: string): string | null {
 export async function getEquipmentInterests(): Promise<EquipmentInterestsData> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { tier2Groups: [], industries: [] }
+  if (!user) return { tier2Groups: [], industries: [], sosReceiveAll: false }
 
   const admin = createAdminClient()
 
-  const [{ data: interests }, { data: profile }] = await Promise.all([
+  const [{ data: interests }, { data: profileRaw }] = await Promise.all([
     admin
       .from('user_equipment_interests')
       .select('tier2')
       .eq('user_id', user.id),
     admin
       .from('user_business_profiles')
-      .select('industries')
+      // sos_receive_all column added 2026-04-10; not yet in generated types
+      .select('industries, sos_receive_all' as 'industries')
       .eq('user_id', user.id)
       .maybeSingle(),
   ])
 
+  const profile = profileRaw as
+    | { industries: string[] | null; sos_receive_all: boolean | null }
+    | null
+
   return {
     tier2Groups: (interests || []).map((r: { tier2: string }) => r.tier2).filter(Boolean),
-    industries: (profile?.industries as string[] | null) ?? [],
+    industries: profile?.industries ?? [],
+    sosReceiveAll: profile?.sos_receive_all ?? false,
   }
 }
 
@@ -92,11 +99,18 @@ export async function updateEquipmentInterests(
       }
     }
 
-    // Update industries on user_business_profiles. Row is guaranteed to exist
-    // for users who completed onboarding; if not, we create a minimal stub row.
+    // Update industries + sos_receive_all on user_business_profiles. Row is
+    // guaranteed to exist for users who completed onboarding; if not, we
+    // create a minimal stub row.
     const { error: profileError, count } = await admin
       .from('user_business_profiles')
-      .update({ industries: data.industries }, { count: 'exact' })
+      .update(
+        {
+          industries: data.industries,
+          sos_receive_all: data.sosReceiveAll,
+        } as { industries: string[]; sos_receive_all: boolean },
+        { count: 'exact' }
+      )
       .eq('user_id', user.id)
 
     if (profileError) {
@@ -111,6 +125,13 @@ export async function updateEquipmentInterests(
           company_name: '',
           primary_role: '',
           industries: data.industries,
+          sos_receive_all: data.sosReceiveAll,
+        } as {
+          user_id: string
+          company_name: string
+          primary_role: string
+          industries: string[]
+          sos_receive_all: boolean
         })
       if (insertProfileError) {
         return { success: false, error: insertProfileError.message }

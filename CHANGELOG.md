@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.21.1] — 2026-04-10 · SOS notification delivery hotfix (Cycle 50.1)
+
+### Fixed
+- **`notifications.type` check constraint** — was missing `sos_request_match` (and every other notification type added after Cycle 5). Every SOS in-app notification insert was silently failing the constraint and getting swallowed by the fire-and-forget `Promise.allSettled` in `createNotification`. Constraint expanded to cover all 24 current notification types
+- **`find_sos_responders()` Postgres RPC** — required SOS subcategory to be a member of `user_equipment_interests.subcategories`, but the Cycle 49 Equipment Interests Editor inserts rows with `subcategories: []` (meaning "match all"). The RPC now treats null/empty subcategories arrays as "match all subcategories under this tier2"
+- **`find_sos_responders()` opt-in gate** — was checking the legacy `sos_responder` boolean. Switched to `sos_opted_in` (the column the current onboarding actually sets)
+- **Recovered the Mireles → Readco SOS** — manually inserted notification + delivery rows for the 2 matching opted-in users (including Mark/Solid Snake) so the missed SOS now appears in their bell + Notification Delivery audit panel
+
+### Added
+- **`user_business_profiles.sos_receive_all`** — new boolean column (default false). When true, the user receives every SOS broadcast regardless of equipment interest matches. Useful for admins, monitors, and dealers who need full market visibility
+- **"Receive all SOS notifications" toggle** — new SOS-orange toggle card in the Profile → Equipment Interests editor; persists to `sos_receive_all`
+- **Defense-in-depth recipient pull** — `broadcastSOSNotifications()` and `adminRebroadcastSOS()` now also fetch `sos_receive_all = true` users at the application level, in addition to relying on the RPC. This ensures admin/monitor delivery even if the RPC version drifts from the application code
+
+### Migration
+- `supabase/migrations/20260410_sos_notification_delivery_fix.sql` — already applied to production via Supabase Management API
+
+---
+
 ## [4.21.0] — 2026-04-10 · Admin SOS Detail View + Notification Audit + Re-broadcast (Cycle 50)
 
 ### Added

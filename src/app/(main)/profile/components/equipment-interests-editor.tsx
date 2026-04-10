@@ -1,9 +1,10 @@
 'use client'
 
 import { useEffect, useState, useTransition } from 'react'
-import { Loader2 } from 'lucide-react'
+import { Loader2, Radio } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
+import { Switch } from '@/components/ui/switch'
 import {
   getEquipmentInterests,
   updateEquipmentInterests,
@@ -20,9 +21,11 @@ export function EquipmentInterestsEditor() {
   const [loading, setLoading] = useState(true)
   const [selectedTier2, setSelectedTier2] = useState<string[]>([])
   const [selectedIndustries, setSelectedIndustries] = useState<string[]>([])
+  const [sosReceiveAll, setSosReceiveAll] = useState(false)
   const [initial, setInitial] = useState<EquipmentInterestsData>({
     tier2Groups: [],
     industries: [],
+    sosReceiveAll: false,
   })
   const [isPending, startTransition] = useTransition()
 
@@ -33,6 +36,7 @@ export function EquipmentInterestsEditor() {
         if (cancelled) return
         setSelectedTier2(data.tier2Groups)
         setSelectedIndustries(data.industries)
+        setSosReceiveAll(data.sosReceiveAll)
         setInitial(data)
       })
       .finally(() => {
@@ -45,7 +49,8 @@ export function EquipmentInterestsEditor() {
 
   const hasChanges =
     sortedJSON(selectedTier2) !== sortedJSON(initial.tier2Groups) ||
-    sortedJSON(selectedIndustries) !== sortedJSON(initial.industries)
+    sortedJSON(selectedIndustries) !== sortedJSON(initial.industries) ||
+    sosReceiveAll !== initial.sosReceiveAll
 
   function toggleTier2(group: string) {
     setSelectedTier2((prev) =>
@@ -61,12 +66,14 @@ export function EquipmentInterestsEditor() {
 
   function handleSave() {
     startTransition(async () => {
-      const result = await updateEquipmentInterests({
+      const payload = {
         tier2Groups: selectedTier2,
         industries: selectedIndustries,
-      })
+        sosReceiveAll,
+      }
+      const result = await updateEquipmentInterests(payload)
       if (result.success) {
-        setInitial({ tier2Groups: selectedTier2, industries: selectedIndustries })
+        setInitial(payload)
         toast.success('Interests updated — your feed and SOS alerts will reflect this shortly.')
       } else {
         toast.error(result.error)
@@ -148,6 +155,24 @@ export function EquipmentInterestsEditor() {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Receive all SOS toggle */}
+      <div className="flex items-start justify-between gap-3 rounded-lg border-2 border-[#FF6B2B]/30 bg-[#FF6B2B]/5 p-4">
+        <div className="flex gap-3">
+          <Radio className="mt-0.5 size-5 shrink-0 text-[#FF6B2B]" />
+          <div>
+            <p className="font-body text-sm font-semibold text-foreground">
+              Receive all SOS notifications
+            </p>
+            <p className="mt-0.5 font-body text-xs text-muted-foreground">
+              Get notified for every SOS posted on the platform, regardless of your equipment
+              interests above. Useful for admins, monitors, and dealers who want full market
+              visibility.
+            </p>
+          </div>
+        </div>
+        <Switch checked={sosReceiveAll} onCheckedChange={setSosReceiveAll} />
       </div>
 
       {/* Save */}

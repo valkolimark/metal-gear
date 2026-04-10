@@ -358,6 +358,23 @@ export async function adminRebroadcastSOS(sosId: string): Promise<RebroadcastRes
 
   let candidateIds = Array.from(allResponders.keys()).filter((id) => id !== sos.requester_id)
 
+  // Defense-in-depth: explicit sos_receive_all subscribers
+  try {
+    const { data: receiveAllUsers } = await admin
+      .from('user_business_profiles')
+      .select('user_id')
+      .eq('sos_receive_all', true)
+      .eq('onboarding_completed', true)
+      .limit(500)
+    for (const row of receiveAllUsers || []) {
+      if (row.user_id && row.user_id !== sos.requester_id && !candidateIds.includes(row.user_id)) {
+        candidateIds.push(row.user_id)
+      }
+    }
+  } catch (err) {
+    console.error('[adminRebroadcastSOS] sos_receive_all lookup failed', err)
+  }
+
   // Transport routing
   if (sos.transport_needed) {
     try {
