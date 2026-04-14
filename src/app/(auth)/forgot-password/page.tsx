@@ -1,7 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { Suspense, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,10 +15,14 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { getProvidersForEmail } from '@/app/actions/auth'
+import { friendlyAuthError } from '@/lib/auth/errors'
 
-export default function ForgotPasswordPage() {
+function ForgotPasswordForm() {
+  const searchParams = useSearchParams()
+  const queryError = searchParams.get('error')
   const [email, setEmail] = useState('')
-  const [error, setError] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(queryError)
   const [isLoading, setIsLoading] = useState(false)
   const [emailSent, setEmailSent] = useState(false)
 
@@ -27,6 +32,25 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
+      // Check whether the account uses OAuth before triggering a reset email.
+      // If it does, we tell the user to use the OAuth button — no reset email
+      // is sent because there is no password to reset.
+      const lookup = await getProvidersForEmail(email)
+      if (lookup.exists && !lookup.hasPassword) {
+        if (lookup.primary === 'google') {
+          setError(
+            'This account uses Google sign-in. Password reset is not available — please continue with Google on the sign-in page.'
+          )
+          return
+        }
+        if (lookup.primary === 'apple') {
+          setError(
+            'This account uses Apple sign-in. Password reset is not available — please continue with Apple on the sign-in page.'
+          )
+          return
+        }
+      }
+
       const supabase = createClient()
       const { error: resetError } = await supabase.auth.resetPasswordForEmail(
         email,
@@ -36,7 +60,7 @@ export default function ForgotPasswordPage() {
       )
 
       if (resetError) {
-        setError(resetError.message)
+        setError(friendlyAuthError(resetError.message))
         return
       }
 
@@ -112,5 +136,13 @@ export default function ForgotPasswordPage() {
         </p>
       </CardFooter>
     </Card>
+  )
+}
+
+export default function ForgotPasswordPage() {
+  return (
+    <Suspense fallback={null}>
+      <ForgotPasswordForm />
+    </Suspense>
   )
 }

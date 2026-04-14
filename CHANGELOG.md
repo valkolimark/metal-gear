@@ -6,6 +6,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.25.0] — 2026-04-14 · Auth: single sign-in method + password reset fix (Cycle 54)
+
+### Added
+- **`public.get_auth_providers_for_email(text)` RPC** — a SECURITY DEFINER Postgres function that, given an email, returns the `provider` values from `auth.identities` for that user (or an empty array). Granted to `service_role` only; revoked from `anon` and `authenticated`. Lets server actions detect whether an account was registered with email, Google, or Apple without exposing `auth.users` directly.
+- **`src/app/actions/auth.ts`** — new `getProvidersForEmail(email)` server action wrapping the RPC. Returns `{ providers, hasPassword, primary, exists }`. Invoked only *after* the user has proven intent to sign in (failed password attempt, forgot-password submit) to avoid email enumeration on page load.
+- **`src/lib/auth/errors.ts`** — `friendlyAuthError()` maps Supabase raw error messages to user-safe copy (`invalid_credentials`, `email_not_confirmed`, `rate_limit`, `user_not_found`, `weak_password`, `otp expired`, OAuth fallback). `providerLabel()` renders `'email and password'` / `'Google sign-in'` / `'Apple sign-in'`.
+- **Login page: `?reset=success` banner** — green banner above the form saying "Password updated. Please log in with your new password." after a successful password reset.
+- **Login page: `?error=wrong_method&provider=<p>` banner** — shown when the OAuth callback bounces a cross-method sign-in attempt. Message is specific per provider (`email` / `google` / `apple`).
+- **Login page: wrong-provider hint after failed password attempt** — when `signInWithPassword()` returns `invalid_credentials`, we call `getProvidersForEmail(email)`. If the account exists but has no `email` identity, we show the relevant "This email is registered with Google/Apple sign-in" message and visually highlight the OAuth button row with a `ring-2 ring-primary` emphasis. If the account doesn't exist at all, we show "No account found with that email." instead of the generic Supabase message.
+- **Forgot-password page: provider pre-check** — before calling `resetPasswordForEmail()`, we look up the email. If the account exists and is OAuth-only, we return `'This account uses Google/Apple sign-in. Password reset is not available — please continue with [provider] on the sign-in page.'` and do not fire the reset email. If the email doesn't exist, we fall through to Supabase's "if an account exists…" generic copy to preserve non-enumeration.
+- **Reset-password page: session gate + explicit sign-out flow** — on mount, `supabase.auth.getUser()` is called; if there's no session we redirect to `/forgot-password?error=This+reset+link+has+expired+or+is+invalid...`. After a successful `updateUser({ password })`, we explicitly `supabase.auth.signOut()` and `window.location.assign('/login?reset=success')` — a full navigation so middleware re-runs against a cleared cookie before the login page mounts. No more "silent login to /dashboard" behavior.
+- **OAuth callback cross-method guard** — `src/app/(auth)/callback/route.ts` now inspects `data.user.identities` after `exchangeCodeForSession()`. If the user has BOTH an `email` identity and a `google`/`apple` identity (Supabase auto-linking did its thing), we `signOut()` and redirect to `/login?error=wrong_method&provider=email`. The guard is skipped when `next=/reset-password` so password recovery never gets blocked.
+
+### Changed
+- **Friendly errors applied everywhere in auth** — login, forgot-password, and reset-password now run Supabase errors through `friendlyAuthError()` so the user-facing copy is specific and actionable. Generic "Something went wrong" / raw Supabase messages are gone.
+- **Forgot-password page now uses `useSearchParams()`** and is wrapped in `<Suspense>` so the reset-password redirect can preseed an error banner via `?error=…`.
+- **Reset-password copy clarified** — the page title keeps "Set New Password" but the description now reads "Enter your new password below. You'll log in again with it." so users don't expect to be dropped into the app.
+
+### Security notes
+- **Account enumeration discipline** — `getProvidersForEmail()` is only called *after* (a) a failed password login or (b) a forgot-password submission. Login-time probing is explicitly avoided. The forgot-password "if an account exists, we sent a link" generic copy is preserved for non-existent emails.
+- **SECURITY DEFINER function scoping** — the RPC is revoked from `anon` and `authenticated`, so it can only be called from server code using the service role key.
+- **Supabase auto-linking recommendation** — disable "Enable automatic identity linking" in the Supabase dashboard (Auth → Settings). The callback-side guard is the belt-and-suspenders defense; the dashboard toggle is the primary fix. Documented in CLAUDE.md.
+
+### Compatibility
+- No user-facing URL changes. `/login`, `/signup`, `/forgot-password`, `/reset-password`, and `/callback` all keep their existing paths and query-param contracts.
+- `redirectTo=` post-login param still respected. OAuth sign-in for fresh Google/Apple accounts still works normally (only multi-identity accounts are blocked). Email confirmation flow for new signups is unaffected (single `email` identity → no block). The password-recovery code-exchange flow is explicitly exempted from the multi-identity guard.
+
+---
+
 ## [4.24.0] — 2026-04-14 · SOS response notifications: badge, toast, sound (Cycle 53)
 
 ### Added

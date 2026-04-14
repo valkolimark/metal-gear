@@ -81,6 +81,15 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - Google OAuth (enabled)
 - Apple SSO (enabled, JWT secret expires Aug 25, 2026)
 
+## Auth Single-Method Enforcement (Cycle 54)
+- **One method per account.** A user registered with email cannot also sign in with Google/Apple, and vice versa. Enforced at two layers: (1) Supabase dashboard → Auth → Settings → **disable "Enable automatic identity linking"** (primary defense), (2) code-level guard in `src/app/(auth)/callback/route.ts` that detects multi-provider identities after `exchangeCodeForSession()`, signs the user out, and redirects to `/login?error=wrong_method&provider=email`. Guard is skipped when `next=/reset-password` so password recovery isn't blocked
+- **Provider lookup RPC:** `public.get_auth_providers_for_email(text)` — SECURITY DEFINER, granted to `service_role` only; returns distinct `provider` values from `auth.identities` for the given email. Created via Supabase Management API in Cycle 54. Wrapped by `getProvidersForEmail()` server action in `src/app/actions/auth.ts`
+- **Enumeration discipline:** `getProvidersForEmail()` is only called *after* a failed password login or a forgot-password submit — never on page load — so the login page cannot be used as an email-enumeration oracle
+- **Friendly error mapper:** `src/lib/auth/errors.ts` — `friendlyAuthError(msg)` maps Supabase raw errors to actionable copy (`invalid_credentials`, `email_not_confirmed`, rate limits, etc.); `providerLabel(p)` renders human-readable provider names
+- **Login page cues:** after a failed password attempt, we probe the provider for that email; if the account is OAuth-only we render a specific "This email is registered with Google/Apple sign-in" message and visually highlight the OAuth button row (`ring-2 ring-primary`). `?reset=success` shows a green "Password updated, please log in" banner. `?error=wrong_method&provider=<p>` shows a cross-method warning
+- **Forgot-password flow:** pre-checks the provider; if OAuth-only, returns a provider-specific message and does NOT send a reset email. Non-existent emails fall through to the generic "if an account exists…" copy to preserve non-enumeration
+- **Reset-password flow:** requires a valid recovery session (`supabase.auth.getUser()` on mount); bounces to `/forgot-password?error=…` if absent. On successful `updateUser({ password })` the page explicitly `signOut()`s and forces `window.location.assign('/login?reset=success')` so the user logs in again with their new password (no silent login to `/dashboard`). The Supabase password-reset email `redirectTo` is `${origin}/callback?next=/reset-password` — always routes through the callback code-exchange before landing on the form
+
 ## Deployment
 Deploys are triggered via Vercel API (not CLI, due to git author mismatch):
 ```bash

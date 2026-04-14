@@ -13,6 +13,34 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { data, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && data.user) {
+      // Cross-method linking guard.
+      //
+      // Skip for the password-recovery flow: `next=/reset-password` always
+      // means the user clicked a reset-password email, so we must preserve
+      // the recovery session and let them set a new password. Any other
+      // callback (OAuth sign-in, email confirmation) is fair game.
+      //
+      // If the user already has both `email` (password) AND an OAuth
+      // identity after this exchange, Supabase's automatic identity
+      // linking merged two accounts. That's the exact case the user
+      // reported as "I can sign in with Google into my email account" —
+      // we sign them out and redirect back to /login with a message
+      // telling them to use their password instead.
+      if (next !== '/reset-password') {
+        const identities = data.user.identities ?? []
+        const providers = new Set(identities.map((i) => i.provider))
+        const hasEmailIdentity = providers.has('email')
+        const hasOAuthIdentity = providers.has('google') || providers.has('apple')
+
+        if (hasEmailIdentity && hasOAuthIdentity) {
+          // Immediately kill the session before redirecting.
+          await supabase.auth.signOut().catch(() => {})
+          return NextResponse.redirect(
+            `${origin}/login?error=wrong_method&provider=email`
+          )
+        }
+      }
+
       // Send welcome email for new users (only once)
       try {
         const admin = createAdminClient()

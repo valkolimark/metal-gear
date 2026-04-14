@@ -18,25 +18,45 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { Separator } from '@/components/ui/separator'
 import { OAuthButtons } from '@/components/auth/oauth-buttons'
+import { getProvidersForEmail } from '@/app/actions/auth'
+import { friendlyAuthError, providerLabel } from '@/lib/auth/errors'
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const redirectTo = searchParams.get('redirectTo') || '/dashboard'
   const callbackError = searchParams.get('error')
+  const callbackProvider = searchParams.get('provider')
+  const resetSuccess = searchParams.get('reset') === 'success'
+
+  const initialError = (() => {
+    if (callbackError === 'auth_callback_error') return 'Authentication failed. Please try again.'
+    if (callbackError === 'wrong_method') {
+      const provider = callbackProvider as 'email' | 'google' | 'apple' | null
+      if (provider === 'email') {
+        return 'This account uses email and password. Please log in with your password instead.'
+      }
+      if (provider === 'google') {
+        return 'This account uses Google sign-in. Please continue with Google.'
+      }
+      if (provider === 'apple') {
+        return 'This account uses Apple sign-in. Please continue with Apple.'
+      }
+      return 'This account uses a different sign-in method.'
+    }
+    return null
+  })()
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string | null>(
-    callbackError === 'auth_callback_error'
-      ? 'Authentication failed. Please try again.'
-      : null
-  )
+  const [error, setError] = useState<string | null>(initialError)
+  const [methodHint, setMethodHint] = useState<'google' | 'apple' | null>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setMethodHint(null)
     setIsLoading(true)
 
     try {
@@ -47,7 +67,33 @@ function LoginForm() {
       })
 
       if (signInError) {
-        setError(signInError.message)
+        // Only probe identity providers when the credentials were wrong —
+        // every other failure already has a specific cause.
+        const isCredentialsError = /invalid login credentials|invalid_credentials/i.test(
+          signInError.message
+        )
+        if (isCredentialsError && email) {
+          try {
+            const lookup = await getProvidersForEmail(email)
+            if (lookup.exists && !lookup.hasPassword) {
+              // Account exists but has no password identity → wrong method.
+              if (lookup.primary === 'google' || lookup.primary === 'apple') {
+                setMethodHint(lookup.primary)
+                setError(
+                  `This email is registered with ${providerLabel(lookup.primary)}. Please continue with ${lookup.primary === 'google' ? 'Google' : 'Apple'}.`
+                )
+                return
+              }
+            }
+            if (!lookup.exists) {
+              setError('No account found with that email.')
+              return
+            }
+          } catch {
+            // Lookup failures fall through to the generic friendly error below
+          }
+        }
+        setError(friendlyAuthError(signInError.message))
         return
       }
 
@@ -69,7 +115,19 @@ function LoginForm() {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <OAuthButtons />
+        {resetSuccess && (
+          <div className="mb-4 rounded-md border border-green-500/40 bg-green-500/10 px-3 py-2 font-body text-sm text-green-700 dark:text-green-400">
+            Password updated. Please log in with your new password.
+          </div>
+        )}
+
+        <div
+          className={
+            methodHint ? 'rounded-lg p-0.5 ring-2 ring-primary' : ''
+          }
+        >
+          <OAuthButtons />
+        </div>
 
         <div className="relative my-6">
           <Separator />
