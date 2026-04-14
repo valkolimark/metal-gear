@@ -171,18 +171,21 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Admin:** Feed Posts moderation tab in `/admin/moderation` — `getFeedPostReports()`, `adminSoftDeleteFeedPost()`
 - **Post constraints:** 1000 char max, up to 4 images OR 1 video, max 10 mentions, edit within 15 min
 
-## Social Feed: Comments, Hashtags, Mentions (Cycle 27a-2)
-- **Comments table:** `feed_post_comments` with RLS, partial index `idx_feed_post_comments_active`, author index
-- **Comment actions:** `getPostComments()` (cached 15s, per-post tag), `addComment()`, `deleteComment()` (soft-delete)
-- **Atomic counts:** `increment_post_comments`, `decrement_post_comments` — Postgres functions
+## Social Feed: Comments, Hashtags, Mentions (Cycle 27a-2, updated Cycle 51)
+- **Comments table:** `feed_post_comments` with RLS, partial index `idx_feed_post_comments_active`, author index; `parent_comment_id uuid REFERENCES feed_post_comments(id) ON DELETE CASCADE` for 1-level-deep threaded replies; partial index `idx_feed_post_comments_parent` on `parent_comment_id WHERE parent_comment_id IS NOT NULL`
+- **Comment actions:** all in `src/app/actions/feed-comments.ts` — `getPostComments()` (cached 15s, returns `CommentWithReplyCount[]`, top-level only via `parent_comment_id IS NULL`), `getReplies(parentCommentId)` (on-demand, no cache), `addComment()`, `addReply()` (rejects depth > 1 server-side by checking parent's `parent_comment_id IS NULL`), `deleteComment()` (hard delete)
+- **Hard delete:** `deleteComment()` removes the row (no `is_deleted` flag); comment authors, post owners, and admins (`superadmin`/`moderator`) can delete; top-level delete counts replies via `head: true` count and decrements `feed_posts.comments_count` by `1 + reply_count` (cascade handles reply rows)
+- **Atomic counts:** `increment_post_comments`, `decrement_post_comments` — Postgres functions; replies also increment via `increment_post_comments`
 - **Mention search:** `/api/feed/mentions-search` — `pg_trgm` GIN-indexed `ILIKE` on `profiles.display_name` + `company_profiles.name`; 60 req/min rate limit
 - **MentionAutocomplete:** dropdown in `FeedComposer` triggered by `@`; debounced 200ms; keyboard nav; inserts `@DisplayName` + tracks entity IDs
 - **Mention resolution:** `resolveMentionedUsers()` (cached 5min) resolves `tagged_user_ids` to display names; `@mentions` in post content link to `/companies/[slug]` or `/sellers/[id]`
-- **CommentSection:** lazy-loads on first expand; per-post count sync; delete/report per comment; `CommentInput` with auto-expand, Enter-to-submit
+- **CommentSection:** lazy-loads on first expand; per-post count sync; delegates row rendering to `CommentItem`; requires `postAuthorId` prop from `FeedPost`
+- **CommentItem:** `'use client'` recursive component; renders avatar, author, timestamp, content, action row (Reply, View replies toggle, overflow menu); uses inline `ReplyInput` for composing replies; recursive render for replies with `isReply=true` (no Reply button, no nested toggle, `pl-8` indent)
+- **ReplyInput:** pre-fills `@ParentAuthorName `, auto-focused, Escape cancels, inline X/Send buttons; calls `addReply()` and returns the hydrated reply optimistically
 - **Hashtag pages:** `/feed/hashtag/[tag]` — SSR with metadata, `totalCount` from `feed_hashtags.post_count` (O(1)), cursor pagination
 - **TrendingHashtags:** `getTrendingHashtags()` cached 1hr; auto-invalidated on post create/delete; used on hashtag pages
-- **Notifications:** `post_comment`, `post_mention` types; fire-and-forget via `Promise.allSettled`; self-notification guards
-- **Components:** `CommentSection`, `CommentInput`, `MentionAutocomplete`, `TrendingHashtags`, `HashtagFeedClient`
+- **Notifications:** `post_comment`, `post_mention` types; fire-and-forget via `Promise.allSettled`; self-notification guards; replies notify the parent comment author (not the post author)
+- **Components:** `CommentSection`, `CommentItem`, `CommentInput`, `ReplyInput`, `MentionAutocomplete`, `TrendingHashtags`, `HashtagFeedClient`
 
 ## Desktop Feed Layout (Cycle 27b-1)
 - **Three-column layout:** Facebook-style on `/feed` — left sidebar (280px), center feed (max 680px), right sidebar (340px)

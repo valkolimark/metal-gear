@@ -6,6 +6,28 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.22.0] — 2026-04-14 · Feed comment replies & owner delete (Cycle 51)
+
+### Added
+- **Threaded replies on feed comments** — Facebook-style 1-level-deep replies. Top-level comments now show a **Reply** text button that opens an inline input pre-filled with `@AuthorName ` and auto-focused. Replies render indented under the parent with no further Reply button (depth gate). A "View N replies" / "Hide replies" toggle expands the reply list on demand via a separate `getReplies()` server action — replies are not fetched up-front.
+- **`parent_comment_id` FK** on `feed_post_comments` with `ON DELETE CASCADE` and partial index `idx_feed_post_comments_parent`. Deleting a parent cascades its replies at the DB level.
+- **`addReply()`** server action — resolves `post_id` from the parent row, rejects if the parent itself has a non-null `parent_comment_id` (depth enforced server-side), increments `comments_count`, notifies the parent comment author.
+- **`getReplies(parentCommentId)`** — on-demand reply fetch, no cache.
+- **`getPostComments()` now returns `CommentWithReplyCount[]`** — each top-level comment carries a `reply_count` so the toggle can render without a follow-up query.
+- **Dedicated `src/app/actions/feed-comments.ts`** — all comment/reply mutations now live here (`getPostComments`, `getReplies`, `addComment`, `addReply`, `deleteComment`). `FeedComment` type moved here; `feed-posts.ts` re-exports it for back-compat.
+- **`CommentItem` component** — extracted from `CommentSection` as a reusable `'use client'` component, used recursively for the reply list.
+- **`ReplyInput` component** — variant of `CommentInput` with `@mention` pre-fill, auto-focus, Escape-to-cancel, and an inline cancel button.
+
+### Changed
+- **Comment deletes are now hard deletes** for all paths — comment authors, post owners, and admins (`superadmin` / `moderator`). The row is removed from `feed_post_comments` rather than soft-deleted via `is_deleted = true`. Deleting a parent comment cascades its replies and decrements `feed_posts.comments_count` by `1 + reply_count`. `is_deleted` column on `feed_post_comments` remains in the schema but is no longer written by the delete path and no longer filtered on reads of top-level comments (replaced by `parent_comment_id IS NULL`).
+- **Post owners can delete any comment on their post** — permission check in `deleteComment()` resolves the post's `author_id` and grants delete rights alongside the comment author and admins.
+- **`CommentSection` signature** — now requires `postAuthorId: string`. `FeedPost` passes `post.author.id`.
+
+### Fixed
+- **Soft-deleted comments no longer linger in the DB** — the hard-delete path reclaims rows instead of leaving orphaned `is_deleted = true` records.
+
+---
+
 ## [4.21.3] — 2026-04-10 · SOS tier-limit constants hotfix (Cycle 50.3)
 
 ### Fixed

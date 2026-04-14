@@ -474,6 +474,7 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
       {/* Comment section */}
       <CommentSection
         postId={post.id}
+        postAuthorId={post.author.id}
         initialCommentsCount={post.comments_count}
         currentUserId={currentUserId}
         currentUser={{
