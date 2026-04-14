@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useCallback } from 'react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { useUIStore } from '@/stores/ui-store'
@@ -43,8 +44,13 @@ export function useNotifications() {
   const { setUnreadNotifications, incrementUnreadNotifications } = useUIStore()
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [loading, setLoading] = useState(true)
-  const { playStandard, playHighPriority, acknowledgeAlert, acknowledgeAllAlerts } =
-    useNotificationSound()
+  const {
+    playStandard,
+    playHighPriority,
+    playSosResponse,
+    acknowledgeAlert,
+    acknowledgeAllAlerts,
+  } = useNotificationSound()
 
   const loadNotifications = useCallback(async () => {
     const result = await getNotifications(20)
@@ -83,7 +89,29 @@ export function useNotifications() {
           setNotifications((prev) => [newNotification, ...prev])
           incrementUnreadNotifications()
 
-          // Play appropriate sound
+          // SOS response → distinct urgent tone + prominent toast with deep link
+          if (newNotification.type === 'sos_response_received') {
+            playSosResponse(newNotification.id)
+
+            const data = newNotification.data as Record<string, unknown> | null
+            const sosId = (data?.sos_id as string | undefined) ?? null
+            const href = sosId ? `/sos/${sosId}?tab=responses` : '/sos'
+
+            toast(newNotification.title, {
+              description: newNotification.body,
+              duration: 8000,
+              className: 'border-l-4 border-l-[#FF6B2B]',
+              action: {
+                label: 'View Response',
+                onClick: () => {
+                  window.location.href = href
+                },
+              },
+            })
+            return
+          }
+
+          // Play appropriate sound for everything else
           if (isHighPriority(newNotification)) {
             playHighPriority(newNotification.id)
           } else {
@@ -96,7 +124,14 @@ export function useNotifications() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [user, setUnreadNotifications, incrementUnreadNotifications, playStandard, playHighPriority])
+  }, [
+    user,
+    setUnreadNotifications,
+    incrementUnreadNotifications,
+    playStandard,
+    playHighPriority,
+    playSosResponse,
+  ])
 
   const markRead = useCallback(async (id: string) => {
     await markNotificationRead(id)

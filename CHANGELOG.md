@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.24.0] — 2026-04-14 · SOS response notifications: badge, toast, sound (Cycle 53)
+
+### Added
+- **`sos-response.wav` sound asset** — a sharp two-pulse 880 Hz → 1200 Hz tone (~600 ms total, 80 ms gap) distinct from `alert.wav`. Generated via `scripts/generate-sounds.mjs`, which now has a third `sosResponseTone()` generator and writes `public/sounds/sos-response.wav` alongside the existing files.
+- **`useNotificationSound().playSosResponse(notificationId?)`** — new play method that preloads `sos-response.wav` at volume 0.65, gates on the existing `highPrioritySoundEnabled` preference, and registers the notification in the alert tracker with `sound: 'sos-response'`. The repeat-cadence interval now dispatches to the right audio element per tracker (alert vs sos-response) so up to 3 replays across 4 minutes work for both types without cross-contamination.
+- **Realtime hook toast** — `useNotifications()` now fires a Sonner toast on every new `sos_response_received` notification: 8-second duration, SOS orange left border (`border-l-[#FF6B2B]`), and a "View Response" action button that deep-links to `/sos/{sos_id}?tab=responses`.
+- **SOS detail page deep-link** — `src/app/(main)/sos/[id]/page.tsx` now reads `?tab=responses` via `useSearchParams()` and smooth-scrolls to the Responses section on load (with `scroll-mt-16` anchor offset so the header doesn't overlap).
+
+### Changed
+- **Notification dropdown: SOS response color → SOS orange.** `sos_response_received` entries in `NOTIFICATION_COLORS` now use `text-[#FF6B2B]`, and the unread left-border/background tint for this type switches from red (`border-red-500 bg-red-500/5`) to SOS orange (`border-[#FF6B2B] bg-[#FF6B2B]/5`), visually distinguishing "someone replied to *your* SOS" from generic SOS broadcasts. Other SOS notification types keep their existing red styling.
+- **Dropdown deep link for SOS responses** — `getNotificationHref()` now returns `/sos/{sos_id}?tab=responses` for `sos_response_received` so clicking the notification jumps straight to the responses list. Other SOS types still link to `/sos/{sos_id}` without a tab param.
+- **Realtime hook sound routing** — new `sos_response_received` notifications route to `playSosResponse()` *before* the generic `isHighPriority()` check, so the distinct SOS-response tone always wins over the generic `alert.wav` tone.
+
+### Compatibility note
+- **No new `type` string introduced.** The existing `sos_response_received` type (in the `NotificationType` union, the `notifications_type_check` constraint, and already fired by `respondToSos()` since cycle 50.1) is the canonical type. No DB migration was needed: all UX upgrades target the existing type to avoid breaking historical notifications, push-notification tags, the `NOTIFICATION_ICONS` / `NOTIFICATION_COLORS` maps, and the realtime sound routing.
+
+---
+
 ## [4.23.0] — 2026-04-14 · SOS form: validation, image upload, text-only (Cycle 52)
 
 ### Added

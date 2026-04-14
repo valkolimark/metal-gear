@@ -37,10 +37,13 @@ export function getSoundPrefs(): SoundPreferences {
 }
 
 // High-priority alert tracking for repeating cadence
+type TrackerSound = 'alert' | 'sos-response'
+
 interface AlertTracker {
   playCount: number
   firstPlayed: number
   acknowledged: boolean
+  sound: TrackerSound
 }
 
 const REPEAT_INTERVAL_MS = 2 * 60 * 1000 // 2 minutes
@@ -50,6 +53,7 @@ const CHECK_INTERVAL_MS = 30 * 1000 // check every 30 seconds
 export function useNotificationSound() {
   const standardRef = useRef<HTMLAudioElement | null>(null)
   const alertRef = useRef<HTMLAudioElement | null>(null)
+  const sosResponseRef = useRef<HTMLAudioElement | null>(null)
   const alertTrackers = useRef<Map<string, AlertTracker>>(new Map())
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
@@ -65,13 +69,18 @@ export function useNotificationSound() {
     alert.volume = 0.6
     alertRef.current = alert
 
+    const sosResponse = new Audio('/sounds/sos-response.wav')
+    sosResponse.preload = 'auto'
+    sosResponse.volume = 0.65
+    sosResponseRef.current = sosResponse
+
     // Start interval for repeating high-priority alerts
     intervalRef.current = setInterval(() => {
       const prefs = loadSoundPrefs()
       if (!prefs.highPrioritySoundEnabled) return
 
       const now = Date.now()
-      alertTrackers.current.forEach((tracker, _id) => {
+      alertTrackers.current.forEach((tracker) => {
         if (tracker.acknowledged) return
         if (tracker.playCount >= MAX_PLAYS) return
 
@@ -79,7 +88,9 @@ export function useNotificationSound() {
         const nextPlayAt = tracker.playCount * REPEAT_INTERVAL_MS
         if (elapsed >= nextPlayAt) {
           tracker.playCount++
-          alertRef.current?.play().catch(() => {})
+          const audio =
+            tracker.sound === 'sos-response' ? sosResponseRef.current : alertRef.current
+          audio?.play().catch(() => {})
         }
       })
     }, CHECK_INTERVAL_MS)
@@ -106,6 +117,26 @@ export function useNotificationSound() {
         playCount: 1,
         firstPlayed: Date.now(),
         acknowledged: false,
+        sound: 'alert',
+      })
+    }
+  }, [])
+
+  const playSosResponse = useCallback((notificationId?: string) => {
+    const prefs = loadSoundPrefs()
+    // SOS response is the most time-sensitive notification on the platform.
+    // It rides the high-priority preference toggle so users who muted that
+    // category also mute SOS response, but it plays its own distinct tone
+    // and gets tracked for the repeating cadence.
+    if (!prefs.highPrioritySoundEnabled) return
+    sosResponseRef.current?.play().catch(() => {})
+
+    if (notificationId && !alertTrackers.current.has(notificationId)) {
+      alertTrackers.current.set(notificationId, {
+        playCount: 1,
+        firstPlayed: Date.now(),
+        acknowledged: false,
+        sound: 'sos-response',
       })
     }
   }, [])
@@ -126,6 +157,7 @@ export function useNotificationSound() {
   return {
     playStandard,
     playHighPriority,
+    playSosResponse,
     acknowledgeAlert,
     acknowledgeAllAlerts,
   }

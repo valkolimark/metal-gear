@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useParams, useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback, useRef } from 'react'
+import { useParams, useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import {
   ArrowLeft, AlertTriangle, Clock, MapPin, MessageSquare,
@@ -44,7 +44,9 @@ const CONDITIONS = [
 export default function SosDetailPage() {
   const params = useParams()
   const router = useRouter()
+  const searchParams = useSearchParams()
   const sosId = params.id as string
+  const responsesRef = useRef<HTMLDivElement | null>(null)
 
   const [sos, setSos] = useState<Record<string, unknown> | null>(null)
   const [responses, setResponses] = useState<Record<string, unknown>[]>([])
@@ -76,6 +78,17 @@ export default function SosDetailPage() {
   useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Deep-link from notification: ?tab=responses scrolls to the responses section.
+  useEffect(() => {
+    if (loading) return
+    if (searchParams.get('tab') !== 'responses') return
+    // Defer so the responses section is laid out before we scroll
+    const handle = requestAnimationFrame(() => {
+      responsesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+    return () => cancelAnimationFrame(handle)
+  }, [loading, searchParams])
 
   // Real-time subscription for new responses
   useEffect(() => {
@@ -253,7 +266,7 @@ export default function SosDetailPage() {
       </div>
 
       {/* Responses */}
-      <div className="mb-6">
+      <div ref={responsesRef} className="mb-6 scroll-mt-16">
         <h2 className="mb-3 font-display text-lg font-semibold text-foreground">
           Responses ({responses.length})
         </h2>

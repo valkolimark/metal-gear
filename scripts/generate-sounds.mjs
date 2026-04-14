@@ -98,12 +98,46 @@ function highPriorityAlert(t, duration) {
   return signal * 0.45
 }
 
+// SOS response: sharp two-pulse (880Hz → 1200Hz), ~600ms total, 80ms gap.
+// Distinct from alert.wav (which is low→high industrial); this one is brighter
+// and more urgent to signal a vendor replied to a live SOS request.
+function sosResponseTone(t /* duration unused */) {
+  const pulse1Start = 0
+  const pulse1End = 0.22
+  const pulse2Start = 0.30 // 80ms gap after first pulse ends
+  const pulse2End = 0.56
+
+  let signal = 0
+  if (t >= pulse1Start && t < pulse1End) {
+    const lt = t - pulse1Start
+    const env = Math.exp(-lt * 10) * Math.max(0, 1 - lt / (pulse1End - pulse1Start))
+    const f = 880 // A5
+    signal =
+      0.55 * Math.sin(2 * Math.PI * f * lt) +
+      0.3 * Math.sin(2 * Math.PI * f * 2 * lt) +
+      0.1 * Math.sin(2 * Math.PI * f * 3 * lt)
+    signal *= env
+  } else if (t >= pulse2Start && t < pulse2End) {
+    const lt = t - pulse2Start
+    const env = Math.exp(-lt * 9) * Math.max(0, 1 - lt / (pulse2End - pulse2Start))
+    const f = 1200 // brighter second pulse
+    signal =
+      0.55 * Math.sin(2 * Math.PI * f * lt) +
+      0.3 * Math.sin(2 * Math.PI * f * 2 * lt) +
+      0.12 * Math.sin(2 * Math.PI * f * 3 * lt)
+    signal *= env
+  }
+  return signal * 0.5
+}
+
 // Generate and write WAV files
 const standardSamples = generateSamples(0.4, standardNotification)
 const alertSamples = generateSamples(0.6, highPriorityAlert)
+const sosResponseSamples = generateSamples(0.6, sosResponseTone)
 
 writeFileSync(join(SOUNDS_DIR, 'notification.wav'), samplesToWav(standardSamples))
 writeFileSync(join(SOUNDS_DIR, 'alert.wav'), samplesToWav(alertSamples))
+writeFileSync(join(SOUNDS_DIR, 'sos-response.wav'), samplesToWav(sosResponseSamples))
 
-console.log('Generated notification.wav and alert.wav in public/sounds/')
+console.log('Generated notification.wav, alert.wav, and sos-response.wav in public/sounds/')
 console.log('Note: WAV files are used directly — browsers support WAV natively.')

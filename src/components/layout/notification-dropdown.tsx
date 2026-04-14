@@ -60,7 +60,7 @@ const NOTIFICATION_COLORS: Record<string, string> = {
   offer_rejected: 'text-red-400',
   offer_countered: 'text-yellow-400',
   sos_request_match: 'text-red-500',
-  sos_response_received: 'text-red-400',
+  sos_response_received: 'text-[#FF6B2B]',
   sos_response_accepted: 'text-green-400',
   sos_expired: 'text-muted-foreground',
   sos_fulfilled: 'text-green-400',
@@ -103,8 +103,9 @@ function getNotificationHref(notification: Notification): string | null {
     case 'offer_rejected':
     case 'offer_countered':
       return data.listing_id ? `/listings/${data.listing_id}` : null
-    case 'sos_request_match':
     case 'sos_response_received':
+      return data.sos_id ? `/sos/${data.sos_id}?tab=responses` : '/sos'
+    case 'sos_request_match':
     case 'sos_response_accepted':
     case 'sos_expired':
     case 'sos_fulfilled':
@@ -234,14 +235,17 @@ export function NotificationDropdown() {
                   const isUnread = !notification.read_at
 
                   const isSos = notification.type.startsWith('sos_')
+                  const isSosResponse = notification.type === 'sos_response_received'
 
                   const content = (
                     <div
                       className={`flex gap-3 px-4 py-3 transition-colors hover:bg-surface ${
                         isUnread
-                          ? isSos
-                            ? 'border-l-2 border-red-500 bg-red-500/5'
-                            : 'bg-primary/5'
+                          ? isSosResponse
+                            ? 'border-l-2 border-[#FF6B2B] bg-[#FF6B2B]/5'
+                            : isSos
+                              ? 'border-l-2 border-red-500 bg-red-500/5'
+                              : 'bg-primary/5'
                           : ''
                       }`}
                       onClick={() => {
