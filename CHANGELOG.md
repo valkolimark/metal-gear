@@ -6,6 +6,33 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.23.0] — 2026-04-14 · SOS form: validation, image upload, text-only (Cycle 52)
+
+### Added
+- **Field-level validation on the SOS text form** (`src/app/(main)/sos/create/page.tsx`) — category, title, and description now track `touched` state and render inline `text-destructive` errors below the field. The Send SOS button is no longer natively `disabled`; it uses `aria-disabled` so a click on an invalid form marks all required fields as touched, toasts a fix-it message, and smooth-scrolls to the first error.
+- **Inline validation in `SOSConfirmStep`** — description now requires ≥20 trimmed characters (with a friendly "describe what you need in at least a few sentences…" message). Submit is `aria-disabled` and reveals the error + focuses the textarea instead of silently returning.
+- **Client upload helper** `src/app/(main)/sos/create/upload-helper.ts` — `uploadSosPhotoWithRetry()` wraps `uploadSosMedia()` and performs one silent retry on transient `server` failures. Used by `create/page.tsx`, `SOSConfirmStep`, and `SOSProcessingStep`.
+- **Specific upload error codes** — `uploadSosMedia()` now returns a discriminated `{ error, code }` shape (`auth` / `missing` / `too_large` / `bad_type` / `corrupt` / `server`) so the UI can render targeted messages like "Photo must be under 10MB" or "Only JPG, PNG, WebP, and HEIC photos are supported" instead of a generic failure.
+- **HEIC/HEIF image support** — `validateImageBytes()` in `src/lib/security/file-validation.ts` now recognizes the ISO base-media "ftyp" box for HEIF brands (`heic`, `heix`, `hevc`, `mif1`, …) and returns `image/heic`. `extFromContentType()` in `src/lib/media.ts` maps `image/heic`, `image/heif`, and their sequence variants to `.heic` / `.heif`.
+- **Inline upload error banner** — both the text flow and `SOSConfirmStep` now render the upload error next to the photo picker and show a "Retrying…" label while the auto-retry is in flight.
+- **"Selected: <category label>" confirmation line** beneath the category field, so users can see which taxonomy entry is actually stored (not just what they typed in the search box).
+
+### Changed
+- **`uploadSosMedia()`** (`src/app/actions/sos.ts`) — case-insensitive MIME allowlist, 10 MB size check, magic-byte validation via `validateImageBytes()`. The detected MIME (not the browser-reported header) is passed to R2 so an uppercase `.JPEG` upload is stored as `image/jpeg`. Errors are no longer interpolated from raw `err.message`; each failure mode returns a user-safe message.
+- **`extFromContentType()`** — lowercases the content type before lookup; accepts `image/jpeg`, `image/jpg`, `image/pjpeg`, `image/heic`, `image/heif`, and their sequence variants. Uppercase `.JPEG` uploads no longer fall through to a `.bin` extension on R2.
+- **File input `accept` attributes** on the text form and `SOSConfirmStep` now allow `image/heic`, `image/heif`, and the `.heic` / `.heif` extension forms (plus `.jpg/.jpeg/.png/.webp`) so iPhone photo pickers surface the right files.
+- **Description placeholder** in both the text form and `SOSConfirmStep` updated to "Describe the equipment, issue, or need in detail. Include model numbers, symptoms, or specs if you have them."
+
+### Fixed
+- **Silent disabled Send SOS button** — clicking the (visually) disabled button now reveals every validation error at once and scrolls to the first problem. Previously a click on a disabled button did nothing and gave no feedback about which field was the blocker.
+- **Brand name typed into equipment category** — the category field is a taxonomy-backed search; a free-text entry like "Alfa Laval" no longer leaves the field looking filled while `form.equipment_category` stays empty. An inline error now reads: *"Select a category from the list (e.g. 'Oil cleaning centrifuges', not a brand name)."*
+- **Text-only SOS rejected** — `SOSConfirmStep.handleSubmit()` previously did `if (!description.trim()) return` with no user feedback, and the submit button's native `disabled` attribute swallowed clicks. Both replaced with visible validation + aria-disabled click-to-reveal. `createSosRequest()` already accepted empty `photos`, so text-only now round-trips end-to-end once the UI unblock is in place.
+- **`.JPEG` / `.JPG` uppercase extensions** no longer fall through the MIME allowlist.
+- **HEIC photos from iPhones** — no longer stored as `.bin` on R2; stored as `.heic` with `image/heic` content type. (Conversion to JPEG is not performed — HEIC is accepted as-is.)
+- **Generic "Failed to upload image" error** replaced with specific, actionable messages depending on failure mode (auth, size, type, corruption, or transient server).
+
+---
+
 ## [4.22.0] — 2026-04-14 · Feed comment replies & owner delete (Cycle 51)
 
 ### Added

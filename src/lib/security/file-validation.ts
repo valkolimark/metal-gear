@@ -14,6 +14,20 @@ const ALLOWED_IMAGE_SIGNATURES: Array<{
   { bytes: [0x47, 0x49, 0x46, 0x38], mime: 'image/gif' },
 ]
 
+// HEIC/HEIF are ISO base media containers: bytes 4..11 = "ftypheic" / "ftypheix" / "ftypmif1" / "ftyphevc" / "ftyphevx"
+const HEIF_BRANDS = new Set([
+  'heic',
+  'heix',
+  'heim',
+  'heis',
+  'hevc',
+  'hevx',
+  'hevm',
+  'hevs',
+  'mif1',
+  'msf1',
+])
+
 const ALLOWED_VIDEO_SIGNATURES: Array<{
   offset?: number
   bytes: number[]
@@ -48,8 +62,8 @@ export async function validateImageBytes(
 ): Promise<FileValidationResult> {
   const slice =
     file instanceof File
-      ? new Uint8Array(await file.slice(0, 12).arrayBuffer())
-      : new Uint8Array(file.buffer, file.byteOffset, Math.min(12, file.length))
+      ? new Uint8Array(await file.slice(0, 16).arrayBuffer())
+      : new Uint8Array(file.buffer, file.byteOffset, Math.min(16, file.length))
 
   for (const sig of ALLOWED_IMAGE_SIGNATURES) {
     if (matchesBytes(slice, sig.bytes)) {
@@ -61,10 +75,21 @@ export async function validateImageBytes(
     }
   }
 
+  // HEIC/HEIF: "ftyp" at offset 4 followed by a known HEIF brand
+  if (slice.length >= 12) {
+    const ftyp = String.fromCharCode(slice[4], slice[5], slice[6], slice[7])
+    if (ftyp === 'ftyp') {
+      const brand = String.fromCharCode(slice[8], slice[9], slice[10], slice[11]).toLowerCase()
+      if (HEIF_BRANDS.has(brand)) {
+        return { valid: true, detectedMime: 'image/heic' }
+      }
+    }
+  }
+
   return {
     valid: false,
     reason:
-      'File content does not match an allowed image format (JPEG, PNG, WebP, GIF)',
+      'File content does not match an allowed image format (JPEG, PNG, WebP, GIF, HEIC)',
   }
 }
 

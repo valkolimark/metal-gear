@@ -752,21 +752,69 @@ export async function markSosFulfilled(sosId: string, fulfilledBy: string) {
   return { success: true }
 }
 
-export async function uploadSosMedia(formData: FormData) {
+const SOS_MAX_FILE_BYTES = 10 * 1024 * 1024 // 10 MB
+const SOS_ACCEPTED_MIMES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/pjpeg',
+  'image/png',
+  'image/webp',
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence',
+])
+
+type UploadSosMediaResult =
+  | { path: string; url: string }
+  | { error: string; code: 'auth' | 'missing' | 'too_large' | 'bad_type' | 'corrupt' | 'server' }
+
+export async function uploadSosMedia(formData: FormData): Promise<UploadSosMediaResult> {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Not authenticated' }
+  if (!user) return { error: 'Please sign in to upload photos.', code: 'auth' }
 
-  const file = formData.get('file') as File
-  if (!file) return { error: 'No file provided' }
+  const file = formData.get('file') as File | null
+  if (!file) return { error: 'No file provided.', code: 'missing' }
 
-  const { uploadSOSMedia } = await import('@/lib/media')
+  if (file.size > SOS_MAX_FILE_BYTES) {
+    const mb = Math.round(SOS_MAX_FILE_BYTES / (1024 * 1024))
+    return { error: `Photo must be under ${mb}MB.`, code: 'too_large' }
+  }
+
+  const declaredType = (file.type || '').toLowerCase().trim()
+  if (declaredType && !SOS_ACCEPTED_MIMES.has(declaredType)) {
+    return {
+      error: 'Only JPG, PNG, WebP, and HEIC photos are supported.',
+      code: 'bad_type',
+    }
+  }
+
   const buffer = Buffer.from(await file.arrayBuffer())
 
+  // Magic-byte validation — authoritative over the browser-reported MIME.
+  const { validateImageBytes } = await import('@/lib/security/file-validation')
+  const validation = await validateImageBytes(buffer)
+  if (!validation.valid) {
+    return {
+      error: 'Only JPG, PNG, WebP, and HEIC photos are supported.',
+      code: 'corrupt',
+    }
+  }
+
+  // Use detected MIME as the stored content-type so R2 serves it correctly
+  // even if the browser lied (e.g. reported `image/JPEG` or `application/octet-stream`).
+  const storedContentType = validation.detectedMime
+
   try {
-    const url = await uploadSOSMedia(buffer, user.id, file.type)
+    const { uploadSOSMedia } = await import('@/lib/media')
+    const url = await uploadSOSMedia(buffer, user.id, storedContentType)
     return { path: url, url }
   } catch (err) {
-    return { error: `Upload failed: ${err instanceof Error ? err.message : 'R2 error'}` }
+    console.error('[uploadSosMedia] R2 upload failed', err)
+    return {
+      error: 'Upload failed — please try again.',
+      code: 'server',
+    }
   }
 }

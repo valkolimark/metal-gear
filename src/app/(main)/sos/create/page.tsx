@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { ArrowLeft, Send, AlertTriangle, Clock, MapPin, Camera } from 'lucide-react'
 import Link from 'next/link'
@@ -10,7 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
-import { createSosRequest, uploadSosMedia } from '@/app/actions/sos'
+import { createSosRequest } from '@/app/actions/sos'
+import { uploadSosPhotoWithRetry } from './upload-helper'
 import {
   EQUIPMENT_TAXONOMY,
   searchTaxonomy,
@@ -35,12 +36,16 @@ const DISTANCE_OPTIONS = [
   { value: 99999, label: 'Nationwide' },
 ]
 
+type FieldKey = 'equipment_category' | 'title' | 'description'
+
 export default function CreateSosPage() {
   const router = useRouter()
   const [flowMode, setFlowMode] = useState<'camera' | 'text'>('camera')
   const [sending, setSending] = useState(false)
   const [photos, setPhotos] = useState<string[]>([])
   const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [uploadRetrying, setUploadRetrying] = useState(false)
   const [mode, setMode] = useState<'quick' | 'detailed'>('quick')
   const [aiCategorized, setAiCategorized] = useState(false)
   const [transportNeeded, setTransportNeeded] = useState(false)
@@ -60,6 +65,33 @@ export default function CreateSosPage() {
     max_distance_miles: 500,
     expiry_hours: '72',
   })
+
+  // Field-level validation state (touched → show errors)
+  const [touched, setTouched] = useState<Record<FieldKey, boolean>>({
+    equipment_category: false,
+    title: false,
+    description: false,
+  })
+  const fieldRefs = useRef<Record<FieldKey, HTMLElement | null>>({
+    equipment_category: null,
+    title: null,
+    description: null,
+  })
+
+  const errors: Partial<Record<FieldKey, string>> = {}
+  if (!form.equipment_category) {
+    errors.equipment_category =
+      "Select a category from the list (e.g. 'Oil cleaning centrifuges', not a brand name)."
+  }
+  if (!form.title.trim() || form.title.trim().length < 10) {
+    errors.title = 'Title is required (at least 10 characters).'
+  }
+  // Description is not strictly required on the server but we warn if too short.
+  if (form.description.trim() && form.description.trim().length < 20) {
+    errors.description =
+      'Please describe what you need in at least a few sentences so vendors can respond accurately.'
+  }
+  const hasErrors = Object.keys(errors).length > 0
 
   // Camera-first flow is the default
   if (flowMode === 'camera') {
@@ -104,31 +136,46 @@ export default function CreateSosPage() {
     const files = e.target.files
     if (!files) return
     if (photos.length + files.length > 5) {
-      toast.error('Maximum 5 photos allowed')
+      setUploadError("You've reached the maximum number of photos for this SOS.")
       return
     }
 
     setUploading(true)
-    for (const file of Array.from(files)) {
-      const fd = new FormData()
-      fd.append('file', file)
-      const result = await uploadSosMedia(fd)
-      if (result.error) {
-        toast.error(result.error)
-      } else if (result.path) {
-        setPhotos((prev) => [...prev, result.path!])
+    setUploadError(null)
+    try {
+      for (const file of Array.from(files)) {
+        const outcome = await uploadSosPhotoWithRetry(file, () => setUploadRetrying(true))
+        setUploadRetrying(false)
+        if (!outcome.ok) {
+          setUploadError(outcome.error)
+          continue
+        }
+        setPhotos((prev) => [...prev, outcome.url])
+      }
+    } finally {
+      setUploading(false)
+      setUploadRetrying(false)
+      // Reset the input so re-selecting the same file re-triggers the change event.
+      e.target.value = ''
+    }
+  }
+
+  const scrollToFirstError = () => {
+    const order: FieldKey[] = ['equipment_category', 'title', 'description']
+    for (const key of order) {
+      if (errors[key]) {
+        fieldRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        return
       }
     }
-    setUploading(false)
   }
 
   const handleSubmit = async () => {
-    if (!form.equipment_category) {
-      toast.error('Select an equipment category')
-      return
-    }
-    if (!form.title.trim()) {
-      toast.error('Title is required')
+    if (hasErrors) {
+      setTouched({ equipment_category: true, title: true, description: true })
+      toast.error('Please fix the highlighted fields before sending.')
+      // Defer scroll so the error UI has a frame to render
+      requestAnimationFrame(() => scrollToFirstError())
       return
     }
 
@@ -224,12 +271,17 @@ export default function CreateSosPage() {
             What do you need?
           </h2>
 
-          <div className="space-y-2">
+          <div
+            className="space-y-2"
+            ref={(el) => { fieldRefs.current.equipment_category = el }}
+          >
             <Label>Equipment Category <span className="text-primary">*</span></Label>
             <Input
               placeholder="Search equipment (e.g., centrifuge, valve, pump)..."
               value={equipSearch}
               onChange={(e) => setEquipSearch(e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, equipment_category: true }))}
+              aria-invalid={touched.equipment_category && !!errors.equipment_category}
             />
             {/* Search results */}
             {equipSearch && (() => {
@@ -259,8 +311,13 @@ export default function CreateSosPage() {
             {!equipSearch && (
               <select
                 value={form.equipment_category}
-                onChange={(e) => updateForm('equipment_category', e.target.value)}
+                onChange={(e) => {
+                  updateForm('equipment_category', e.target.value)
+                  setTouched((t) => ({ ...t, equipment_category: true }))
+                }}
+                onBlur={() => setTouched((t) => ({ ...t, equipment_category: true }))}
                 className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground"
+                aria-invalid={touched.equipment_category && !!errors.equipment_category}
               >
                 <option value="">Select category...</option>
                 {EQUIPMENT_TAXONOMY.map((tier1) => (
@@ -271,6 +328,14 @@ export default function CreateSosPage() {
                   </optgroup>
                 ))}
               </select>
+            )}
+            {form.equipment_category && (
+              <p className="text-xs text-muted-foreground">
+                Selected: <span className="font-medium text-foreground">{getTier2Label(form.equipment_category)}</span>
+              </p>
+            )}
+            {touched.equipment_category && errors.equipment_category && (
+              <p className="mt-1 text-sm text-destructive">{errors.equipment_category}</p>
             )}
           </div>
 
@@ -315,25 +380,41 @@ export default function CreateSosPage() {
             </div>
           </div>
 
-          <div className="space-y-2">
+          <div
+            className="space-y-2"
+            ref={(el) => { fieldRefs.current.title = el }}
+          >
             <Label>Title <span className="text-primary">*</span></Label>
             <Input
               value={form.title}
               onChange={(e) => updateForm('title', e.target.value)}
+              onBlur={() => setTouched((t) => ({ ...t, title: true }))}
               placeholder="Short description of what you need"
+              aria-invalid={touched.title && !!errors.title}
             />
             <p className="text-xs text-muted-foreground">Auto-generated from your selections, edit if needed</p>
+            {touched.title && errors.title && (
+              <p className="mt-1 text-sm text-destructive">{errors.title}</p>
+            )}
           </div>
 
-          <div className="space-y-2">
+          <div
+            className="space-y-2"
+            ref={(el) => { fieldRefs.current.description = el }}
+          >
             <Label>Description</Label>
             <textarea
               value={form.description}
               onChange={(e) => setForm((p) => ({ ...p, description: e.target.value }))}
-              placeholder="Detailed description of your need — specs, quantity, condition requirements..."
+              onBlur={() => setTouched((t) => ({ ...t, description: true }))}
+              placeholder="Describe the equipment, issue, or need in detail. Include model numbers, symptoms, or specs if you have them."
               rows={3}
               className="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground"
+              aria-invalid={touched.description && !!errors.description}
             />
+            {touched.description && errors.description && (
+              <p className="mt-1 text-sm text-destructive">{errors.description}</p>
+            )}
           </div>
         </section>
 
@@ -394,10 +475,14 @@ export default function CreateSosPage() {
           <div className="flex items-center gap-3">
             <label className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed border-border bg-surface px-4 py-3 text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground">
               <Camera className="size-4" />
-              {uploading ? 'Uploading...' : `Add Photos (${photos.length}/5)`}
+              {uploadRetrying
+                ? 'Retrying…'
+                : uploading
+                  ? 'Uploading...'
+                  : `Add Photos (${photos.length}/5)`}
               <input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
                 multiple
                 onChange={handlePhotoUpload}
                 className="hidden"
@@ -405,6 +490,10 @@ export default function CreateSosPage() {
               />
             </label>
           </div>
+
+          {uploadError && (
+            <p className="text-sm text-destructive">{uploadError}</p>
+          )}
 
           {photos.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -545,8 +634,10 @@ export default function CreateSosPage() {
         {/* Submit */}
         <Button
           onClick={handleSubmit}
-          disabled={sending || !form.equipment_category || !form.title.trim()}
-          className="w-full gap-2 bg-red-600 text-white hover:bg-red-700"
+          aria-disabled={sending || hasErrors}
+          className={`w-full gap-2 bg-red-600 text-white hover:bg-red-700 ${
+            sending || hasErrors ? 'opacity-70' : ''
+          }`}
           size="lg"
         >
           {sending ? (
@@ -558,6 +649,11 @@ export default function CreateSosPage() {
             </>
           )}
         </Button>
+        {hasErrors && (touched.equipment_category || touched.title || touched.description) && (
+          <p className="text-center text-xs text-muted-foreground">
+            Fix the highlighted fields above to send.
+          </p>
+        )}
       </div>
     </div>
   )

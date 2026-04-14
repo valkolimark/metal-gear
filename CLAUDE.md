@@ -297,6 +297,15 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Render guards:** SnipeFeed hidden when no equipment interests; TeamActivity only shown when activeCompany exists with members
 - **`listing_views.viewer_id`** — existing column used for team activity tracking (indexed)
 
+## SOS Form Validation & Upload (Cycle 52)
+- **Required-field gate:** the Send SOS button uses `aria-disabled` (not native `disabled`) so a click on an invalid form marks every required field as touched, toasts a fix-it message, and smooth-scrolls to the first error via per-field `ref` callbacks stored in a `useRef` map
+- **Category validation:** the taxonomy search UI stores the selected tier2 id in `form.equipment_category`; free-text brand names never populate this field. Inline error: *"Select a category from the list (e.g. 'Oil cleaning centrifuges', not a brand name)."* A "Selected: <label>" line renders under the field as confirmation
+- **Title / description gates:** title requires ≥10 chars; description requires ≥20 chars in `SOSConfirmStep` (warning-only on the text form — `createSosRequest()` accepts empty description); the camera flow's confirm step replaces `if (!description.trim()) return` with visible error + textarea focus/scroll
+- **Upload helper:** `src/app/(main)/sos/create/upload-helper.ts` — `uploadSosPhotoWithRetry(file, onRetry?)` wraps `uploadSosMedia()` with one silent retry on transient `server` failures; used by the text form, `SOSConfirmStep`, and `SOSProcessingStep`
+- **`uploadSosMedia()` server action:** returns `{ path, url }` on success or `{ error, code }` where `code` is one of `auth` / `missing` / `too_large` / `bad_type` / `corrupt` / `server`. Performs 10 MB size check, case-insensitive MIME allowlist (JPEG/PNG/WebP/HEIC/HEIF), and `validateImageBytes()` magic-byte check; the *detected* MIME (not browser-reported) is passed to R2 so uppercase `.JPEG` uploads and spoofed content-types are normalized
+- **HEIC/HEIF support:** `validateImageBytes()` recognizes the ISO base-media "ftyp" box for HEIF brands (`heic`, `heix`, `hevc`, `mif1`, …); `extFromContentType()` maps these to `.heic` / `.heif`; iPhone photos upload as-is (no Sharp conversion)
+- **Inline error UI:** upload errors render next to the photo picker as `text-destructive`, not just toasts; retries show a "Retrying…" label on the picker button
+
 ## SOS Camera-First Flow (Cycle 31-2)
 - **Components:** `src/app/(main)/sos/create/components/` — `SOSCameraFirstFlow` (orchestrator), `SOSCaptureStep`, `SOSProcessingStep`, `SOSConfirmStep`, `SOSSentStep`
 - **Flow:** 4-step: Capture (photo/upload) → Processing (R2 upload + AI analysis) → Confirm (pre-filled, editable) → Sent (vendor count + dashboard link)

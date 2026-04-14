@@ -7,18 +7,25 @@ const R2_PUBLIC_URL = process.env.R2_PUBLIC_URL!
 const CUSTOMER_SUBDOMAIN = process.env.CLOUDFLARE_CUSTOMER_SUBDOMAIN!
 
 function extFromContentType(contentType: string): string {
+  const normalized = (contentType || '').toLowerCase().trim()
   const map: Record<string, string> = {
     'image/jpeg': 'jpg',
+    'image/jpg': 'jpg',
+    'image/pjpeg': 'jpg',
     'image/png': 'png',
     'image/gif': 'gif',
     'image/webp': 'webp',
     'image/svg+xml': 'svg',
+    'image/heic': 'heic',
+    'image/heif': 'heif',
+    'image/heic-sequence': 'heic',
+    'image/heif-sequence': 'heif',
     'application/pdf': 'pdf',
     'video/mp4': 'mp4',
     'video/quicktime': 'mov',
     'video/webm': 'webm',
   }
-  return map[contentType] || 'bin'
+  return map[normalized] || 'bin'
 }
 
 export async function uploadListingImage(

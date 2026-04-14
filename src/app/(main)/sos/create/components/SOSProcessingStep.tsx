@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react'
 import { Loader2 } from 'lucide-react'
 import Image from 'next/image'
 import { toast } from 'sonner'
-import { uploadSosMedia } from '@/app/actions/sos'
+import { uploadSosPhotoWithRetry } from '../upload-helper'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
 
 const STATUS_MESSAGES = [
@@ -40,24 +40,16 @@ export function SOSProcessingStep({ files, onComplete, onError }: SOSProcessingS
     hasStarted.current = true
 
     async function process() {
-      // Step 1: Upload all files to R2
+      // Step 1: Upload all files to R2 (one silent retry on transient errors)
       const uploadedUrls: string[] = []
       for (const file of files) {
-        try {
-          const fd = new FormData()
-          fd.append('file', file)
-          const result = await uploadSosMedia(fd)
-          if (result.error || !result.path) {
-            toast.error(result.error || 'Upload failed')
-            onError()
-            return
-          }
-          uploadedUrls.push(result.path)
-        } catch {
-          toast.error('Failed to upload image')
+        const outcome = await uploadSosPhotoWithRetry(file)
+        if (!outcome.ok) {
+          toast.error(outcome.error)
           onError()
           return
         }
+        uploadedUrls.push(outcome.url)
       }
 
       // Step 2: AI analysis — convert first image(s) to base64

@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { toast } from 'sonner'
 import Image from 'next/image'
-import { createSosRequest, uploadSosMedia } from '@/app/actions/sos'
+import { createSosRequest } from '@/app/actions/sos'
+import { uploadSosPhotoWithRetry } from '../upload-helper'
 import {
   EQUIPMENT_TAXONOMY,
   getTier2Label,
@@ -62,10 +63,22 @@ export function SOSConfirmStep({
   const [sending, setSending] = useState(false)
   const [expanded, setExpanded] = useState(false)
   const [uploading, setUploading] = useState(false)
+  const [uploadRetrying, setUploadRetrying] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const [descriptionTouched, setDescriptionTouched] = useState(false)
   const [localPreviews, setLocalPreviews] = useState<string[]>([])
   const [editCategory, setEditCategory] = useState(aiTaxonomyTier2)
   const [editSubcategory, setEditSubcategory] = useState(aiSubcategory)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const descriptionRef = useRef<HTMLTextAreaElement>(null)
+
+  const trimmedDescription = description.trim()
+  const descriptionError =
+    trimmedDescription.length === 0
+      ? 'Describe what you need so vendors can respond.'
+      : trimmedDescription.length < 20
+        ? 'Please describe what you need in at least a few sentences so vendors can respond accurately.'
+        : null
 
   const totalPhotos = uploadedMediaUrls.length + localPreviews.length
 
@@ -83,41 +96,41 @@ export function SOSConfirmStep({
     if (!fileList) return
     const remaining = MAX_PHOTOS - totalPhotos
     if (remaining <= 0) {
-      toast.error(`Maximum ${MAX_PHOTOS} photos allowed`)
+      setUploadError("You've reached the maximum number of photos for this SOS.")
       return
     }
 
     setUploading(true)
+    setUploadError(null)
     const newUrls: string[] = []
     const newPreviews: string[] = []
 
-    for (let i = 0; i < Math.min(fileList.length, remaining); i++) {
-      const file = fileList[i]
-      if (!file.type.startsWith('image/')) {
-        toast.error('Please select an image file.')
-        continue
-      }
-      if (file.size > MAX_FILE_SIZE) {
-        toast.error('Image must be under 10MB.')
-        continue
+    try {
+      for (let i = 0; i < Math.min(fileList.length, remaining); i++) {
+        const file = fileList[i]
+        if (file.size > MAX_FILE_SIZE) {
+          setUploadError('Photo must be under 10MB.')
+          continue
+        }
+
+        const outcome = await uploadSosPhotoWithRetry(file, () => setUploadRetrying(true))
+        setUploadRetrying(false)
+        if (!outcome.ok) {
+          setUploadError(outcome.error)
+          continue
+        }
+        newUrls.push(outcome.url)
+        newPreviews.push(URL.createObjectURL(file))
       }
 
-      const fd = new FormData()
-      fd.append('file', file)
-      const result = await uploadSosMedia(fd)
-      if (result.error || !result.path) {
-        toast.error(result.error || 'Upload failed')
-        continue
+      if (newUrls.length > 0) {
+        onChange({ uploadedMediaUrls: [...uploadedMediaUrls, ...newUrls] })
+        setLocalPreviews(prev => [...prev, ...newPreviews])
       }
-      newUrls.push(result.path)
-      newPreviews.push(URL.createObjectURL(file))
+    } finally {
+      setUploading(false)
+      setUploadRetrying(false)
     }
-
-    if (newUrls.length > 0) {
-      onChange({ uploadedMediaUrls: [...uploadedMediaUrls, ...newUrls] })
-      setLocalPreviews(prev => [...prev, ...newPreviews])
-    }
-    setUploading(false)
   }
 
   const handleRemovePhoto = (index: number) => {
@@ -131,7 +144,15 @@ export function SOSConfirmStep({
   }
 
   const handleSubmit = async () => {
-    if (!description.trim()) return
+    if (descriptionError) {
+      setDescriptionTouched(true)
+      toast.error(descriptionError)
+      requestAnimationFrame(() => {
+        descriptionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+        descriptionRef.current?.focus()
+      })
+      return
+    }
 
     setSending(true)
     try {
@@ -222,10 +243,15 @@ export function SOSConfirmStep({
               className="flex size-16 flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground transition-colors hover:border-[#FF6B2B]/50 hover:text-[#FF6B2B]"
             >
               <Camera className="size-4" />
-              <span className="text-[10px]">{uploading ? '...' : 'Add'}</span>
+              <span className="text-[10px]">
+                {uploadRetrying ? 'Retry' : uploading ? '...' : 'Add'}
+              </span>
             </button>
           )}
         </div>
+        {uploadError && (
+          <p className="mt-2 font-body text-xs text-destructive">{uploadError}</p>
+        )}
         {uploadedMediaUrls.length === 1 && (
           <p className="mt-1.5 font-body text-xs text-muted-foreground">
             Add nameplate photo for better matches &rarr;
@@ -234,7 +260,7 @@ export function SOSConfirmStep({
         <input
           ref={fileInputRef}
           type="file"
-          accept="image/*"
+          accept="image/jpeg,image/jpg,image/png,image/webp,image/heic,image/heif,.jpg,.jpeg,.png,.webp,.heic,.heif"
           multiple
           onChange={(e) => {
             handleAddPhotos(e.target.files)
@@ -247,17 +273,29 @@ export function SOSConfirmStep({
 
       {/* Section 2: Description */}
       <div className="space-y-2">
-        <Label className="font-body text-sm">Describe the issue</Label>
+        <Label className="font-body text-sm">
+          Describe the issue <span className="text-[#FF6B2B]">*</span>
+        </Label>
         <textarea
+          ref={descriptionRef}
           value={description}
           onChange={(e) => onChange({ description: e.target.value.slice(0, MAX_DESCRIPTION) })}
-          placeholder="What's wrong? What do you need?"
+          onBlur={() => setDescriptionTouched(true)}
+          placeholder="Describe the equipment, issue, or need in detail. Include model numbers, symptoms, or specs if you have them."
           rows={3}
           className="w-full rounded-md border border-border bg-surface px-3 py-2 font-body text-sm text-foreground placeholder:text-muted-foreground"
+          aria-invalid={descriptionTouched && !!descriptionError}
         />
-        <p className="text-right font-body text-xs text-muted-foreground">
-          {description.length}/{MAX_DESCRIPTION}
-        </p>
+        <div className="flex items-start justify-between gap-2">
+          {descriptionTouched && descriptionError ? (
+            <p className="font-body text-xs text-destructive">{descriptionError}</p>
+          ) : (
+            <span />
+          )}
+          <p className="font-body text-xs text-muted-foreground">
+            {description.length}/{MAX_DESCRIPTION}
+          </p>
+        </div>
       </div>
 
       {/* Section 3: Urgency toggle */}
@@ -394,8 +432,10 @@ export function SOSConfirmStep({
       {/* Submit CTA */}
       <Button
         onClick={handleSubmit}
-        disabled={sending || !description.trim()}
-        className="w-full gap-2 bg-[#FF6B2B] text-white hover:bg-[#FF6B2B]/90"
+        aria-disabled={sending || !!descriptionError}
+        className={`w-full gap-2 bg-[#FF6B2B] text-white hover:bg-[#FF6B2B]/90 ${
+          sending || descriptionError ? 'opacity-70' : ''
+        }`}
         size="lg"
       >
         {sending ? (
