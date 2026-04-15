@@ -16,6 +16,7 @@ interface SOSItem {
 interface FeedActiveSOSRowProps {
   activeSOS: SOSItem[]
   hasInterests: boolean
+  currentUserId?: string
 }
 
 function timeAgo(date: string) {
@@ -37,7 +38,11 @@ function urgencyBadge(urgency: string | null) {
   return <Badge className="bg-blue-500/20 text-blue-500 text-[10px] px-1.5 py-0">Normal</Badge>
 }
 
-export function FeedActiveSOSRow({ activeSOS, hasInterests }: FeedActiveSOSRowProps) {
+export function FeedActiveSOSRow({
+  activeSOS,
+  hasInterests,
+  currentUserId,
+}: FeedActiveSOSRowProps) {
   return (
     <section className="mb-4">
       <div className="flex items-center justify-between mb-2">
@@ -76,27 +81,37 @@ export function FeedActiveSOSRow({ activeSOS, hasInterests }: FeedActiveSOSRowPr
             </p>
           </div>
         ) : (
-          activeSOS.map((sos) => (
-            <Link
-              key={sos.id}
-              href={`/sos/${sos.id}`}
-              className="w-[200px] shrink-0 rounded-xl border border-border bg-card hover:bg-muted/50 p-3 cursor-pointer h-[100px] flex flex-col justify-between transition-colors"
-            >
-              <div className="flex items-center gap-2">
-                {urgencyBadge(sos.urgency)}
-                {sos.created_at && (
-                  <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground ml-auto">
-                    <Clock className="size-3" />
-                    {timeAgo(sos.created_at)}
-                  </span>
-                )}
-              </div>
-              <p className="font-body text-sm font-medium text-foreground truncate">
-                {sos.equipment_category.replace(/_/g, ' ')}
-              </p>
-              <p className="font-body text-xs text-primary">Respond &rarr;</p>
-            </Link>
-          ))
+          activeSOS.map((sos) => {
+            const isOwn = currentUserId && sos.requester_id === currentUserId
+            return (
+              <Link
+                key={sos.id}
+                href={`/sos/${sos.id}`}
+                className="w-[200px] shrink-0 rounded-xl border border-border bg-card hover:bg-muted/50 p-3 cursor-pointer h-[100px] flex flex-col justify-between transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  {urgencyBadge(sos.urgency)}
+                  {isOwn && (
+                    <Badge className="bg-[#FF6B2B]/15 text-[#FF6B2B] text-[10px] px-1.5 py-0">
+                      Yours
+                    </Badge>
+                  )}
+                  {sos.created_at && (
+                    <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground ml-auto">
+                      <Clock className="size-3" />
+                      {timeAgo(sos.created_at)}
+                    </span>
+                  )}
+                </div>
+                <p className="font-body text-sm font-medium text-foreground truncate">
+                  {sos.equipment_category.replace(/_/g, ' ')}
+                </p>
+                <p className="font-body text-xs text-primary">
+                  {isOwn ? 'View responses \u2192' : 'Respond \u2192'}
+                </p>
+              </Link>
+            )
+          })
         )}
       </div>
     </section>

@@ -51,6 +51,7 @@ export default function SosDetailPage() {
   const [sos, setSos] = useState<Record<string, unknown> | null>(null)
   const [responses, setResponses] = useState<Record<string, unknown>[]>([])
   const [isRequester, setIsRequester] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
 
@@ -74,6 +75,26 @@ export default function SosDetailPage() {
     setIsRequester(result.isRequester)
     setLoading(false)
   }, [sosId, router])
+
+  // Grab the viewer's id once — needed for "You responded" detection and
+  // for the dashboard's "unread responses" heuristic.
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data }) => {
+      setCurrentUserId(data.user?.id ?? null)
+    })
+  }, [])
+
+  // Record that this SOS has been viewed so the dashboard's unread dot
+  // clears for the owner.
+  useEffect(() => {
+    if (!isRequester || typeof window === 'undefined') return
+    try {
+      localStorage.setItem(`mg-sos-last-viewed-${sosId}`, String(Date.now()))
+    } catch {
+      // ignore quota / private-mode errors
+    }
+  }, [isRequester, sosId, responses.length])
 
   useEffect(() => {
     loadData()
@@ -188,7 +209,7 @@ export default function SosDetailPage() {
           <ArrowLeft className="size-5" />
         </Link>
         <div className="flex-1">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge
               variant={sos.urgency === 'critical' ? 'destructive' : 'secondary'}
             >
@@ -201,12 +222,39 @@ export default function SosDetailPage() {
             <Badge variant="outline">
               {(sos.status as string).toUpperCase()}
             </Badge>
+            {isRequester && (
+              <span className="rounded-md border border-[#FF6B2B] bg-[#FF6B2B]/10 px-2 py-0.5 font-display text-[10px] font-semibold uppercase tracking-wide text-[#FF6B2B]">
+                Your SOS Request
+              </span>
+            )}
           </div>
           <h1 className="mt-1 font-display text-xl font-bold text-foreground">
             {sos.title as string}
           </h1>
         </div>
       </div>
+
+      {/* "You responded" indicator for non-requester viewers who already responded */}
+      {!isRequester && currentUserId && responses.some((r) => r.responder_id === currentUserId) && (
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-lg border border-green-500/30 bg-green-500/5 px-4 py-3">
+          <div className="flex items-center gap-2">
+            <Check className="size-4 text-green-500" />
+            <p className="font-body text-sm text-foreground">
+              You responded to this SOS
+            </p>
+          </div>
+          <a
+            href="#responses"
+            onClick={(e) => {
+              e.preventDefault()
+              responsesRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }}
+            className="font-body text-xs font-semibold text-primary hover:underline"
+          >
+            View your response
+          </a>
+        </div>
+      )}
 
       {/* SOS Details */}
       <div className="mb-6 rounded-lg border border-border bg-surface p-4">

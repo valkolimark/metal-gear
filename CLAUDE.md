@@ -316,6 +316,17 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **HEIC/HEIF support:** `validateImageBytes()` recognizes the ISO base-media "ftyp" box for HEIF brands (`heic`, `heix`, `hevc`, `mif1`, …); `extFromContentType()` maps these to `.heic` / `.heif`; iPhone photos upload as-is (no Sharp conversion)
 - **Inline error UI:** upload errors render next to the photo picker as `text-destructive`, not just toasts; retries show a "Retrying…" label on the picker button
 
+## SOS Dashboard & Microcopy (Cycle 55)
+- **Two-section dashboard:** `/sos` renders `My SOS Requests` (from `getMySosRequests()`) above `Active SOS in Your Categories` (from `getSosRequests()` with mine filtered out). Header button is a filled SOS-orange "Send SOS" → `/sos/create`
+- **Response chip:** 44 px min touch target, SOS orange (`#FF6B2B`) when `response_count > 0`, muted gray otherwise. `response_count` is a PostgREST aggregation returned as `Array<{count:number}>` — use `extractResponseCount()` in `src/app/(main)/sos/page.tsx`
+- **Unread pulse:** `localStorage['mg-sos-last-viewed-{id}']` set by the SOS detail page when the owner visits; dashboard compares against the SOS's `created_at` to decide whether to render the pulsing white dot
+- **Sort control:** `response_recency` (default) / `posted` / `urgency` — pure client-side reorder
+- **Notification permission hint:** one-shot per session (`sessionStorage['mg-sos-notif-hint-shown']`), fires when any own SOS has 0 responses older than 30 min and `Notification.permission === 'default'`; opens `NotificationEducationModal`
+- **SOSEducationBlocks:** `src/app/(main)/sos/create/components/SOSEducationBlocks.tsx` — `HowSosWorksHint` (collapsible three-audience explainer) and `MultiSegmentCallout` (animated SOS-orange callout below the transport toggle); both used by the camera confirm step and the text form
+- **`SOSSentStep` props:** now `{ vendorsNotified, sosTitle?, transportIncluded?, onReset }`. Nice-work callout renders only when `transportIncluded`. `vendorsNotified > 0` → "Delivered to N matching vendors"; otherwise "Vendors will be notified as they come online"
+- **Ownership clarity on `/sos/[id]`:** "Your SOS Request" pill (SOS orange) next to urgency/status when `isRequester`. "You responded to this SOS" green banner with scroll-to-responses link for non-requester viewers who already responded. Owner visit writes `mg-sos-last-viewed-{id}` to clear the dashboard pulse
+- **`FeedActiveSOSRow.currentUserId`** (optional) — renders "Yours" badge on own cards and flips CTA to "View responses →"
+
 ## SOS Camera-First Flow (Cycle 31-2)
 - **Components:** `src/app/(main)/sos/create/components/` — `SOSCameraFirstFlow` (orchestrator), `SOSCaptureStep`, `SOSProcessingStep`, `SOSConfirmStep`, `SOSSentStep`
 - **Flow:** 4-step: Capture (photo/upload) → Processing (R2 upload + AI analysis) → Confirm (pre-filled, editable) → Sent (vendor count + dashboard link)

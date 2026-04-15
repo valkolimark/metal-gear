@@ -196,7 +196,11 @@ export default async function FeedPage() {
 
           {/* Active SOS row above composer — desktop only */}
           <div className="hidden md:block">
-            <FeedActiveSOSRow activeSOS={activeSOS} hasInterests={forYou.hasInterests} />
+            <FeedActiveSOSRow
+              activeSOS={activeSOS}
+              hasInterests={forYou.hasInterests}
+              currentUserId={user.id}
+            />
           </div>
 
           <FeedPageClient

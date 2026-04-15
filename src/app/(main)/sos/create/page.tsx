@@ -21,6 +21,7 @@ import {
 import type { Tier2Group } from '@/lib/constants/equipment-taxonomy'
 import { QuickSOS } from '@/components/sos/QuickSOS'
 import { SOSCameraFirstFlow } from './components/SOSCameraFirstFlow'
+import { HowSosWorksHint, MultiSegmentCallout } from './components/SOSEducationBlocks'
 
 const EXPIRY_OPTIONS = [
   { value: '24', label: '24 hours' },
@@ -230,6 +231,9 @@ export default function CreateSosPage() {
       </div>
 
       <div className="space-y-8">
+        {/* How SOS works (collapsible) */}
+        <HowSosWorksHint />
+
         {/* Quick SOS Mode */}
         {mode === 'quick' && (
           <QuickSOS
@@ -621,14 +625,17 @@ export default function CreateSosPage() {
         </section>
 
         {/* Transport needed toggle */}
-        <div className="flex items-center justify-between rounded-lg border border-border p-4">
-          <div>
-            <p className="font-body text-sm font-medium text-foreground">I also need transport / rigging</p>
-            <p className="mt-0.5 font-body text-xs text-muted-foreground">
-              Notify logistics and rigging providers who can move this equipment
-            </p>
+        <div>
+          <div className="flex items-center justify-between rounded-lg border border-border p-4">
+            <div>
+              <p className="font-body text-sm font-medium text-foreground">I also need transport / rigging</p>
+              <p className="mt-0.5 font-body text-xs text-muted-foreground">
+                Notify logistics and rigging providers who can move this equipment
+              </p>
+            </div>
+            <Switch checked={transportNeeded} onCheckedChange={setTransportNeeded} />
           </div>
-          <Switch checked={transportNeeded} onCheckedChange={setTransportNeeded} />
+          <MultiSegmentCallout visible={transportNeeded} />
         </div>
 
         {/* Submit */}

@@ -6,6 +6,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.26.0] — 2026-04-14 · SOS dashboard UX + inline education & microcopy (Cycle 55)
+
+### Added
+- **SOS dashboard split into two explicit sections** — `src/app/(main)/sos/page.tsx` now fetches `getMySosRequests()` and `getSosRequests()` in parallel and renders them under "My SOS Requests" and "Active SOS in Your Categories" headers. Broadcast SOSs that the viewer already owns are filtered out of section 2 to avoid duplication.
+- **Prominent response chip on every owned SOS card** — 44 px minimum touch target, SOS orange (`#FF6B2B`) when `response_count > 0`, muted gray otherwise ("No responses yet"). Chip links directly to `/sos/{id}?tab=responses` so the dashboard → deep-link flow is one tap.
+- **Unread pulse dot** — the chip shows a pulsing white dot when `response_count > 0` AND `localStorage['mg-sos-last-viewed-{id}']` is older than the SOS's `created_at`. Last-viewed timestamp is written on the detail page in a `useEffect` when the owner visits, so opening the SOS clears the pulse on next dashboard load.
+- **Sort control** on "My SOS Requests" — three options: most recent response (default), most recently posted, urgency (critical first). Pure client-side reorder on already-loaded data.
+- **Notification permission hint** — a one-time-per-session orange banner above the dashboard that fires when the user has any SOS with 0 responses older than 30 minutes AND `Notification.permission === 'default'`. "Turn on notifications" opens the existing `NotificationEducationModal`; "Not now" dismisses via `sessionStorage`.
+- **`SOSEducationBlocks`** component — `src/app/(main)/sos/create/components/SOSEducationBlocks.tsx` exports `HowSosWorksHint` (collapsible, default closed, explains the three vendor audiences) and `MultiSegmentCallout` (animated SOS-orange left-border callout that appears below the "I also need transport / rigging" toggle when flipped on). Both are used by the camera-first `SOSConfirmStep` and the text-form `create/page.tsx`.
+- **`SOSSentStep` Nice-work variant** — now accepts `sosTitle` and `transportIncluded` props. Always shows the SOS title in quotes, the vendor count when available, and a "Nice work — you just sent one SOS that covers equipment, repair, AND logistics…" orange callout when logistics was included. `vendorsNotified > 0` → "Delivered to N matching vendors." Otherwise "Vendors will be notified as they come online." Button labels changed from "View SOS Dashboard" / "Send Another SOS" to "View My SOS" / "Send Another".
+- **"Yours" badge on the home-feed SOS row** — `FeedActiveSOSRow` now accepts `currentUserId` and renders a subtle SOS-orange "Yours" badge on cards where `sos.requester_id === currentUserId`. The card's CTA flips from "Respond →" to "View responses →" for owned SOSs. `/feed/page.tsx` passes `currentUserId={user.id}`.
+- **SOS detail page ownership clarity** — a "Your SOS Request" pill (SOS orange) renders next to the urgency/status badges when `isRequester`. A separate green "You responded to this SOS" banner renders for non-requester viewers who already have a row in `responses`, with a "View your response" link that scrolls to the responses section. The detail page also writes `localStorage['mg-sos-last-viewed-{id}']` for owners so the dashboard's unread pulse clears.
+
+### Changed
+- **SOS dashboard header** — title now uses SOS orange (`#FF6B2B`) for the Siren icon (previously red). The "My Requests" outline button is replaced with a filled SOS-orange "Send SOS" button that links directly to `/sos/create`. Separate `/sos/my-requests` page still works but is no longer the primary entry point.
+- **Camera-flow + text-flow submit handlers** — both forms now pass the SOS title and the `transportNeeded` flag into `SOSSentStep` via `SOSCameraFirstFlow` state (`sentTitle`, `sentTransport`) so the confirmation screen can render the Nice-work variant correctly.
+- **`SOSConfirmStep.onSubmit` signature** — now `(sosId, vendorCount, sosTitle) => void` to propagate the generated title upward.
+
+### Fixed
+- **Dashboard broadcast list no longer showed a user's own SOSs mixed in with other users' SOSs.** They're now filtered out of the broadcast list and always appear in the "My SOS Requests" section, eliminating a double-render.
+
+### Compatibility
+- No DB schema or server-action changes. All work is client-side rendering, prop plumbing, and localStorage.
+- `/sos/my-requests` page kept in place — still functional — but no longer linked from the main dashboard header.
+- `FeedActiveSOSRow.currentUserId` is an optional prop, so any other callers of that component keep working unchanged.
+
+---
+
 ## [4.25.0] — 2026-04-14 · Auth: single sign-in method + password reset fix (Cycle 54)
 
 ### Added

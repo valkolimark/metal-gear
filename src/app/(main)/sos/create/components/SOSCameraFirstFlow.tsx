@@ -28,6 +28,8 @@ interface SOSCameraFirstState {
   budget: string
   transportNeeded: boolean
   sosId: string | null
+  sentTitle: string
+  sentTransport: boolean
   vendorsNotified: number
 }
 
@@ -50,6 +52,8 @@ const initialState: SOSCameraFirstState = {
   budget: '',
   transportNeeded: false,
   sosId: null,
+  sentTitle: '',
+  sentTransport: false,
   vendorsNotified: 0,
 }
 
@@ -134,8 +138,15 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
           aiConfidence={state.aiConfidence}
           onChange={(partial) => setState(s => ({ ...s, ...partial }))}
           onBack={() => setState(s => ({ ...s, step: 'capture', capturedFiles: [], uploadedMediaUrls: [] }))}
-          onSubmit={(sosId, vendorCount) =>
-            setState(s => ({ ...s, step: 'sent', sosId, vendorsNotified: vendorCount }))
+          onSubmit={(sosId, vendorCount, sentTitle) =>
+            setState(s => ({
+              ...s,
+              step: 'sent',
+              sosId,
+              vendorsNotified: vendorCount,
+              sentTitle: sentTitle ?? '',
+              sentTransport: s.transportNeeded,
+            }))
           }
         />
       )}
@@ -143,6 +154,8 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
       {state.step === 'sent' && (
         <SOSSentStep
           vendorsNotified={state.vendorsNotified}
+          sosTitle={state.sentTitle || undefined}
+          transportIncluded={state.sentTransport}
           onReset={() => setState({ ...initialState })}
         />
       )}

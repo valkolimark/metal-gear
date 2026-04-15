@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import Image from 'next/image'
 import { createSosRequest } from '@/app/actions/sos'
 import { uploadSosPhotoWithRetry } from '../upload-helper'
+import { HowSosWorksHint, MultiSegmentCallout } from './SOSEducationBlocks'
 import {
   EQUIPMENT_TAXONOMY,
   getTier2Label,
@@ -38,7 +39,7 @@ interface SOSConfirmStepProps {
   aiConfidence: number
   onChange: (partial: Record<string, unknown>) => void
   onBack: () => void
-  onSubmit: (sosId: string, vendorCount: number) => void
+  onSubmit: (sosId: string, vendorCount: number, sosTitle: string) => void
 }
 
 export function SOSConfirmStep({
@@ -183,7 +184,7 @@ export function SOSConfirmStep({
 
       // Count vendors from SOS routing (we don't have direct access, but the action returns the id)
       // The vendor count is handled server-side in notifications; we'll show a generic message
-      onSubmit(result.data!.id, -1) // -1 signals we don't have the exact count
+      onSubmit(result.data!.id, -1, title)
     } catch (err) {
       console.error('[SOSConfirmStep] submit failed', err)
       toast.error(err instanceof Error ? err.message : 'Failed to send SOS. Please try again.')
@@ -203,6 +204,9 @@ export function SOSConfirmStep({
         <ArrowLeft className="size-3.5" />
         Retake photo
       </button>
+
+      {/* How SOS works (collapsible) */}
+      <HowSosWorksHint />
 
       {/* AI confidence notice */}
       {aiConfidence > 0 && aiConfidence < 0.5 && (
@@ -333,17 +337,20 @@ export function SOSConfirmStep({
       </div>
 
       {/* Transport / rigging */}
-      <div className="flex items-center justify-between rounded-lg border border-border p-4">
-        <div className="pr-3">
-          <p className="font-body text-sm font-medium text-foreground">I also need transport / rigging</p>
-          <p className="mt-0.5 font-body text-xs text-muted-foreground">
-            Notify logistics and rigging providers who can move this equipment
-          </p>
+      <div>
+        <div className="flex items-center justify-between rounded-lg border border-border p-4">
+          <div className="pr-3">
+            <p className="font-body text-sm font-medium text-foreground">I also need transport / rigging</p>
+            <p className="mt-0.5 font-body text-xs text-muted-foreground">
+              Notify logistics and rigging providers who can move this equipment
+            </p>
+          </div>
+          <Switch
+            checked={transportNeeded}
+            onCheckedChange={(v) => onChange({ transportNeeded: v })}
+          />
         </div>
-        <Switch
-          checked={transportNeeded}
-          onCheckedChange={(v) => onChange({ transportNeeded: v })}
-        />
+        <MultiSegmentCallout visible={transportNeeded} />
       </div>
 
       {/* Section 4: More details (collapsible) */}
