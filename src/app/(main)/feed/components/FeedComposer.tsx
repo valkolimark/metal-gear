@@ -211,7 +211,7 @@ export function FeedComposer({
           }
         }, 3000)
 
-        toast.success('Video uploaded! Processing will finish in ~1 min.')
+        // Video uploaded — tile shows "Ready to post", user can submit now
       } catch (err) {
         setMedia((prev) =>
           prev.map((m, i) => (i === index ? { ...m, status: 'error' as const } : m))
@@ -275,6 +275,7 @@ export function FeedComposer({
         })),
       })
 
+      const hadVideo = readyMedia.some((m) => m.mediaType === 'video')
       onPostCreated(post)
       setContent('')
       setMedia([])
@@ -282,6 +283,9 @@ export function FeedComposer({
       tempPostIdRef.current = crypto.randomUUID()
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
+      }
+      if (hadVideo) {
+        toast.success('Post is live! Your video will appear once processing finishes (~1 min).', { duration: 6000 })
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create post')
@@ -380,16 +384,21 @@ export function FeedComposer({
                   ) : (
                     <div className="flex aspect-video items-center justify-center">
                       <div className="text-center">
-                        <Video className="mx-auto size-8 text-muted-foreground" />
-                        <p className="mt-1 font-body text-xs text-muted-foreground">
+                        <Video className={`mx-auto size-8 ${m.status === 'processing' ? 'text-green-500' : 'text-muted-foreground'}`} />
+                        <p className={`mt-1 font-body text-xs ${m.status === 'processing' ? 'text-green-600 dark:text-green-400 font-medium' : 'text-muted-foreground'}`}>
                           {m.status === 'uploading'
                             ? `Uploading ${m.progress}%`
                             : m.status === 'processing'
-                            ? 'Processing...'
+                            ? 'Ready to post'
                             : m.status === 'error'
                             ? 'Upload failed'
                             : 'Ready'}
                         </p>
+                        {m.status === 'processing' && (
+                          <p className="mt-0.5 font-body text-[10px] text-muted-foreground">
+                            Video will finish processing after you post
+                          </p>
+                        )}
                       </div>
                     </div>
                   )}
