@@ -9,7 +9,6 @@ import {
   Loader2,
   Upload,
   X,
-  GripVertical,
   Video,
   AlertTriangle,
 } from 'lucide-react'
@@ -32,7 +31,6 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { checkListingLimit } from '@/app/actions/tier'
 import {
-  uploadListingImageAction,
   uploadListingVideoAction,
 } from './actions'
 import {
@@ -48,6 +46,7 @@ import { ListingQualityScore } from '@/components/listings/ListingQualityScore'
 import { AIPriceSuggestion } from '@/components/listings/AIPriceSuggestion'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
 import { MultiPhotoUploader } from '@/components/upload/MultiPhotoUploader'
+import { PhotoTipsBanner } from '@/components/upload/PhotoTipsBanner'
 
 const STEPS = ['AI Assist', 'Details', 'Photos', 'Pricing', 'Review']
 
@@ -165,61 +164,8 @@ export default function CreateListingPage() {
     })
   }
 
-  // Photo upload
+  // Photo count for header display
   const totalImageCount = preloadedImages.length + images.length
-  const handleFileSelect = useCallback(
-    async (files: FileList | null) => {
-      if (!files || !user) return
-      const currentTotal = preloadedImages.length + images.length
-      const remaining = maxPhotos - currentTotal
-      const toUpload = Array.from(files).slice(0, remaining)
-
-      if (toUpload.length === 0) {
-        toast.error(`Maximum ${maxPhotos} photos allowed on your plan`)
-        return
-      }
-
-      for (const file of toUpload) {
-        if (file.size > 10 * 1024 * 1024) {
-          toast.error(`${file.name} exceeds 10MB limit`)
-          continue
-        }
-
-        const tempId = crypto.randomUUID()
-        const preview = URL.createObjectURL(file)
-
-        setImages((prev) => [
-          ...prev,
-          { id: tempId, file, preview, storage_path: '', url: '', uploading: true },
-        ])
-
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('listingId', listingId)
-
-        const result = await uploadListingImageAction(fd)
-
-        if (result.error || !result.url) {
-          toast.error(result.error || `Failed to upload ${file.name}`)
-          setImages((prev) => prev.filter((i) => i.id !== tempId))
-          continue
-        }
-
-        setImages((prev) =>
-          prev.map((i) =>
-            i.id === tempId
-              ? { ...i, storage_path: result.url!, url: result.url!, uploading: false }
-              : i
-          )
-        )
-      }
-    },
-    [user, images.length, maxPhotos, preloadedImages.length, listingId]
-  )
-
-  function removeImage(id: string) {
-    setImages((prev) => prev.filter((i) => i.id !== id))
-  }
 
   // Video upload
   const handleVideoSelect = useCallback(
@@ -797,43 +743,18 @@ export default function CreateListingPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Preloaded images from AI analysis */}
-            {preloadedImages.length > 0 && (
-              <div className="mb-4">
-                <p className="mb-2 flex items-center gap-1 font-body text-xs text-muted-foreground">
-                  <Check className="size-3" /> Carried over from AI analysis
-                </p>
-                <div className="grid grid-cols-3 gap-2">
-                  {preloadedImages.map((url, index) => (
-                    <div key={url} className="group relative aspect-square overflow-hidden rounded-lg border border-border">
-                      <img src={url} alt={`AI captured image ${index + 1}`} className="size-full object-cover" />
-                      <button
-                        type="button"
-                        onClick={() => setPreloadedImages(prev => prev.filter(u => u !== url))}
-                        className="absolute right-1 top-1 flex size-5 items-center justify-center rounded-full bg-black/60 text-white text-xs opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
-                        aria-label="Remove image"
-                      >
-                        <X className="size-3" />
-                      </button>
-                      {index === 0 && images.length === 0 && (
-                        <Badge className="absolute bottom-1 left-1 bg-primary text-xs text-white">
-                          Cover
-                        </Badge>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <PhotoTipsBanner className="mb-1" />
 
-            {/* Multi-photo uploader */}
+            {/* All photos in one unified uploader — AI carry-forward + user-added */}
             <MultiPhotoUploader
-              maxFiles={maxPhotos - preloadedImages.length}
+              maxFiles={maxPhotos}
               uploadUrl="/api/listings/upload-media"
               uploadFields={{ listingId }}
-              existingUrls={[]}
-              onComplete={(urls) => {
-                setImages(urls.filter(u => !preloadedImages.includes(u)).map((url, i) => ({
+              existingUrls={preloadedImages}
+              onComplete={(allUrls) => {
+                // allUrls includes existingUrls (preloads) + newly uploaded
+                const newUrls = allUrls.filter(u => !preloadedImages.includes(u))
+                setImages(newUrls.map((url, i) => ({
                   id: `uploaded-${i}`,
                   preview: url,
                   storage_path: url,
@@ -842,9 +763,14 @@ export default function CreateListingPage() {
                 })))
               }}
               onRemove={(url) => {
-                setImages((prev) => prev.filter((i) => i.url !== url))
+                // If removing a preloaded image, update preloadedImages state
+                if (preloadedImages.includes(url)) {
+                  setPreloadedImages(prev => prev.filter(u => u !== url))
+                } else {
+                  setImages(prev => prev.filter(i => i.url !== url))
+                }
               }}
-              label="Add photos"
+              label="Add more photos"
               upgradeNudge={tier === 'free' ? `Upgrade to Pro for up to 20 photos per listing` : null}
             />
 

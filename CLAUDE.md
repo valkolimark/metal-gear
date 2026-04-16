@@ -433,6 +433,12 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Server actions:** `src/app/actions/companies-public.ts` — `getPublicCompanyBySlug()`, `getCompanyActiveListings()`, `getCompanyReputationStats()`, `getCompanyListingCount()`
 - **Middleware:** `/companies/[slug]` exempt from auth redirect (same pattern as `/listings/[id]` and `/sellers/[id]`)
 
+## Listing Creation Photos Step (Cycle 57)
+- **Unified photo grid:** AI carry-forward photos from `AIImageCapture` (Cycle 31-1) render as the first tiles INSIDE `MultiPhotoUploader`'s grid via `existingUrls` prop. They are NOT visually segregated or labeled "AI." The first tile shows a "Cover" badge.
+- **"+ Add more photos" tile:** persistent grid tile (not a separate button below) showing `N / maxFiles` counter. Always visible when below tier cap.
+- **Tier caps:** Free 5, Pro 20, Business 30, Enterprise 50 (from `TIER_LIMITS` in `src/lib/constants.ts`). Caps enforced by `MultiPhotoUploader.maxFiles`.
+- **`PhotoTipsBanner`:** `src/components/upload/PhotoTipsBanner.tsx` — dismissable education banner above the photo uploader on listing create only. Four tips: wide shot, nameplate/data tag, wear points, parts & teardown. SOS orange left border. Expanded by default; collapsed after "Got it" via `localStorage['mg-photo-tips-dismissed']`. Does not render on <360px viewports. Uses `useSyncExternalStore` for SSR-safe localStorage/matchMedia reads.
+
 ## Listing Detail Page Architecture
 The listing detail page (`src/app/(main)/listings/[id]/page.tsx`) is a **Server Component** that fetches data server-side and passes to 7 client sub-components:
 - `ListingGallery` — image/video gallery: desktop 44px thumbnails (max 6, "+N more" overflow tile opens image lightbox), video tiles open separate video modal; mobile swipe unchanged

@@ -6,6 +6,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.28.0] — 2026-04-16 · Listing photo UX fix + industrial photo guidance (Cycle 57)
+
+### Fixed
+- **Listing Photos step "only 2 photos" illusion** — the 2 AI carry-forward photos from `AIImageCapture` were rendered in a segregated section labeled "Carried over from AI analysis" ABOVE the `MultiPhotoUploader`, with the uploader showing `0/18` (on Pro). Users perceived the cap as 2. Now the AI photos render as the first tiles INSIDE the uploader grid, indistinguishable from user-added photos. The `N / maxFiles` counter shows the true total (e.g., `2 / 20`). Bug ticket: *"Market listing: be able to select more than 2 photos ... GE Frame 9 Turbine in pieces, 50+ pics."*
+- **"+ Add more photos" now a persistent tile** in the uploader grid (same row as existing photos) instead of a full-width dashed button below. Always visible when below cap, showing `N / maxFiles`. Much clearer affordance that more photos are expected.
+- **Removed dead code** — old sequential `handleFileSelect` / `removeImage` / `uploadListingImageAction` from listing create page, replaced by `MultiPhotoUploader` in Cycle 56.
+
+### Added
+- **`PhotoTipsBanner`** — `src/components/upload/PhotoTipsBanner.tsx`; dismissable education banner with industrial equipment photography guidance. Four tips: wide shot, nameplate/data tag, wear points, parts & teardown. SOS orange left border (`#FF6B2B`). Expanded by default on first visit; collapsed after "Got it" (persisted via `localStorage['mg-photo-tips-dismissed']`). Does not render on viewports <360px. Placed on listing create Photos step only (listing edit has no general photo manager).
+- **Cover badge** — first photo in the uploader grid now shows a "Cover" label, giving users a mental model for photo ordering.
+
+### Compatibility
+- Tier caps unchanged: Free 5, Pro 20, Business 30, Enterprise 50.
+- `MultiPhotoUploader` props are additive — feed composer and SOS callers are unaffected.
+- Teardown/parts-lot listing type (50+ photos) flagged for future cycle.
+
+---
+
 ## [4.27.0] — 2026-04-16 · Media bug fixes + performance audit (Cycle 56)
 
 ### Fixed

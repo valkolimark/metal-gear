@@ -2,7 +2,7 @@
 
 import { useState, useRef, useCallback, useEffect } from 'react'
 import Image from 'next/image'
-import { ImagePlus, X, Check, Loader2, RefreshCw, ArrowUp, ArrowDown } from 'lucide-react'
+import { ImagePlus, X, Check, Loader2, RefreshCw } from 'lucide-react'
 import { toast } from 'sonner'
 import { uploadFileWithProgress } from '@/lib/upload/xhr-upload'
 import { uploadInParallel } from '@/lib/upload/parallel'
@@ -43,7 +43,6 @@ export function MultiPhotoUploader({
   onComplete,
   existingUrls = [],
   onRemove,
-  onReorder,
   disabled = false,
   className = '',
   label = 'Add photos',
@@ -94,7 +93,7 @@ export function MultiPhotoUploader({
 
       for (const file of files) {
         if (toUpload.length >= remaining) {
-          newErrors.push(`Skipped ${file.name} — max ${maxFiles} photos`)
+          newErrors.push(`Skipped ${file.name} — you can add ${remaining} more photo${remaining === 1 ? '' : 's'}`)
           continue
         }
         if (file.size > maxSizeBytes) {
@@ -111,7 +110,6 @@ export function MultiPhotoUploader({
       if (newErrors.length > 0) setErrors(newErrors)
       if (toUpload.length === 0) return
 
-      // Create items immediately with preview URLs
       const newItems: UploadItem[] = toUpload.map((file) => ({
         id: crypto.randomUUID(),
         file,
@@ -123,11 +121,9 @@ export function MultiPhotoUploader({
 
       setItems((prev) => [...prev, ...newItems])
 
-      // Don't start a new batch if one is already running
       if (isUploadingRef.current) return
       isUploadingRef.current = true
 
-      // Start uploading after state update
       setTimeout(() => {
         uploadInParallel(
           toUpload,
@@ -220,15 +216,7 @@ export function MultiPhotoUploader({
     })
   }
 
-  const moveItem = (index: number, direction: 'up' | 'down') => {
-    const targetIdx = direction === 'up' ? index - 1 : index + 1
-    // For existing URLs
-    if (index < existingUrls.length && onReorder) {
-      const newUrls = [...existingUrls]
-      ;[newUrls[index], newUrls[targetIdx]] = [newUrls[targetIdx], newUrls[index]]
-      onReorder(newUrls)
-    }
-  }
+  const hasTiles = existingUrls.length > 0 || items.length > 0
 
   return (
     <div
@@ -240,124 +228,152 @@ export function MultiPhotoUploader({
       onDragLeave={() => setIsDragOver(false)}
       onDrop={canAddMore ? handleDrop : undefined}
     >
-      {/* Existing photos */}
-      {(existingUrls.length > 0 || items.length > 0) && (
-        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-          {existingUrls.map((url, idx) => (
-            <div
-              key={url}
-              className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
-            >
-              <Image
-                src={url}
-                alt={`Photo ${idx + 1}`}
-                fill
-                className="object-cover"
-                sizes="120px"
-              />
-              <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
-                <div className="absolute right-1 top-1 flex gap-0.5">
-                  {onReorder && idx > 0 && (
-                    <button
-                      onClick={() => moveItem(idx, 'up')}
-                      className="flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                    >
-                      <ArrowUp className="size-3" />
-                    </button>
-                  )}
-                  {onReorder && idx < existingUrls.length - 1 && (
-                    <button
-                      onClick={() => moveItem(idx, 'down')}
-                      className="flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                    >
-                      <ArrowDown className="size-3" />
-                    </button>
-                  )}
-                  {onRemove && (
-                    <button
-                      onClick={() => onRemove(url)}
-                      className="flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
-                    >
-                      <X className="size-3" />
-                    </button>
-                  )}
-                </div>
+      {/* Unified tile grid: existing + uploading + "add more" tile */}
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+        {/* Existing photo tiles */}
+        {existingUrls.map((url, idx) => (
+          <div
+            key={url}
+            className="group relative aspect-square overflow-hidden rounded-lg border border-border bg-muted"
+          >
+            <Image
+              src={url}
+              alt={`Photo ${idx + 1}`}
+              fill
+              className="object-cover"
+              sizes="120px"
+            />
+            <div className="absolute inset-0 opacity-0 transition-opacity group-hover:opacity-100">
+              <div className="absolute right-1 top-1 flex gap-0.5">
+                {onRemove && (
+                  <button
+                    onClick={() => onRemove(url)}
+                    className="flex size-6 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                  >
+                    <X className="size-3" />
+                  </button>
+                )}
               </div>
             </div>
-          ))}
+            {idx === 0 && (
+              <span className="absolute bottom-1 left-1 rounded bg-primary px-1.5 py-0.5 font-body text-[10px] font-medium text-white">
+                Cover
+              </span>
+            )}
+          </div>
+        ))}
 
-          {/* New upload items */}
-          {items.map((item) => (
-            <div
-              key={item.id}
-              className={`relative aspect-square overflow-hidden rounded-lg border bg-muted ${
-                item.status === 'error' ? 'border-destructive' : 'border-border'
+        {/* New upload item tiles */}
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className={`group relative aspect-square overflow-hidden rounded-lg border bg-muted ${
+              item.status === 'error' ? 'border-destructive' : 'border-border'
+            }`}
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={item.previewUrl}
+              alt="Upload preview"
+              className="h-full w-full object-cover"
+            />
+
+            {item.status === 'queued' && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/40">
+                <Loader2 className="size-5 animate-spin text-white" />
+              </div>
+            )}
+
+            {item.status === 'uploading' && (
+              <>
+                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/30">
+                  <div
+                    className="h-full bg-primary transition-all duration-200"
+                    style={{ width: `${item.progress}%` }}
+                  />
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <span className="font-body text-xs font-medium text-white drop-shadow">
+                    {item.progress}%
+                  </span>
+                </div>
+              </>
+            )}
+
+            {item.status === 'done' && (
+              <div className="absolute bottom-1 right-1 flex size-5 items-center justify-center rounded-full bg-green-500 text-white">
+                <Check className="size-3" />
+              </div>
+            )}
+
+            {item.status === 'error' && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/50">
+                <button
+                  onClick={() => handleRetry(item)}
+                  className="flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 font-body text-xs text-destructive hover:bg-white"
+                  title={item.error}
+                >
+                  <RefreshCw className="size-3" />
+                  Retry
+                </button>
+              </div>
+            )}
+
+            <button
+              onClick={() => removeItem(item.id)}
+              className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
+              style={{ opacity: item.status === 'error' ? 1 : undefined }}
+            >
+              <X className="size-3" />
+            </button>
+          </div>
+        ))}
+
+        {/* "+ Add more" tile — always visible when below cap */}
+        {canAddMore && (
+          <>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              onChange={handleFileSelect}
+            />
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className={`flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed transition-colors ${
+                isDragOver
+                  ? 'border-primary bg-primary/5 text-primary'
+                  : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
               }`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={item.previewUrl}
-                alt="Upload preview"
-                className="h-full w-full object-cover"
-              />
+              <ImagePlus className="size-6" />
+              <span className="mt-1 font-body text-[11px] leading-tight">
+                {hasTiles ? label : 'Add photos'}
+              </span>
+              <span className="mt-0.5 font-body text-[10px] text-muted-foreground">
+                {totalCount} / {maxFiles}
+              </span>
+            </button>
+          </>
+        )}
 
-              {/* Queued overlay */}
-              {item.status === 'queued' && (
-                <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-                  <Loader2 className="size-5 animate-spin text-white" />
-                </div>
-              )}
+        {/* At-limit tile */}
+        {isAtLimit && (
+          <div className="flex aspect-square flex-col items-center justify-center rounded-lg border-2 border-dashed border-border text-muted-foreground">
+            <Check className="size-5" />
+            <span className="mt-1 font-body text-[11px]">
+              {totalCount} / {maxFiles}
+            </span>
+          </div>
+        )}
+      </div>
 
-              {/* Uploading progress */}
-              {item.status === 'uploading' && (
-                <>
-                  <div className="absolute inset-0 bg-black/30" />
-                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-black/30">
-                    <div
-                      className="h-full bg-primary transition-all duration-200"
-                      style={{ width: `${item.progress}%` }}
-                    />
-                  </div>
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="font-body text-xs font-medium text-white drop-shadow">
-                      {item.progress}%
-                    </span>
-                  </div>
-                </>
-              )}
-
-              {/* Done badge */}
-              {item.status === 'done' && (
-                <div className="absolute bottom-1 right-1 flex size-5 items-center justify-center rounded-full bg-green-500 text-white">
-                  <Check className="size-3" />
-                </div>
-              )}
-
-              {/* Error overlay with retry */}
-              {item.status === 'error' && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 bg-black/50">
-                  <button
-                    onClick={() => handleRetry(item)}
-                    className="flex items-center gap-1 rounded-full bg-white/90 px-2 py-1 font-body text-xs text-destructive hover:bg-white"
-                    title={item.error}
-                  >
-                    <RefreshCw className="size-3" />
-                    Retry
-                  </button>
-                </div>
-              )}
-
-              {/* Remove button */}
-              <button
-                onClick={() => removeItem(item.id)}
-                className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100 [.group:hover_&]:opacity-100"
-                style={{ opacity: item.status === 'error' ? 1 : undefined }}
-              >
-                <X className="size-3" />
-              </button>
-            </div>
-          ))}
-        </div>
+      {/* Empty state — when no tiles at all and can add */}
+      {!hasTiles && !canAddMore && !isAtLimit && (
+        <p className="font-body text-sm text-muted-foreground">No photos yet.</p>
       )}
 
       {/* Errors */}
@@ -366,31 +382,6 @@ export function MultiPhotoUploader({
           {errors.map((err, i) => (
             <p key={i} className="font-body text-xs text-destructive">{err}</p>
           ))}
-        </div>
-      )}
-
-      {/* Add button / drop zone */}
-      {canAddMore && (
-        <div>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept="image/*"
-            multiple
-            className="hidden"
-            onChange={handleFileSelect}
-          />
-          <button
-            onClick={() => fileInputRef.current?.click()}
-            className={`flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-6 font-body text-sm transition-colors ${
-              isDragOver
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border text-muted-foreground hover:border-primary/50 hover:text-foreground'
-            }`}
-          >
-            <ImagePlus className="size-5" />
-            {label} ({totalCount}/{maxFiles})
-          </button>
         </div>
       )}
 
