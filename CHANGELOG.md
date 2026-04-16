@@ -9,7 +9,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 ## [4.28.1] — 2026-04-16 · Video upload + playback hotfix
 
 ### Fixed
-- **Video uploads stuck at 0%** — two issues: (1) `tus-js-client` sends PATCH requests but Cloudflare's Direct Creator Upload URL expects a multipart POST — replaced TUS with XHR POST. (2) CSP `connect-src` was missing `upload.cloudflarestream.com` (the actual upload domain returned by Cloudflare, not `upload.videodelivery.net`). Browser silently blocked the XHR.
+- **Video uploads stuck at 0%** — three issues found and fixed: (1) `tus-js-client` sends PATCH requests but Cloudflare's Direct Creator Upload URL expects a multipart POST. (2) `captureVideoFirstFrame()` in the feed composer created a `<video>` element that could hang forever if the browser couldn't seek the file (common with `.mov`). (3) CSP `connect-src` was missing `upload.cloudflarestream.com`. **Fix:** reverted both feed and listing video uploads to the proven server-side proxy pattern — XHR POST to `/api/feed/upload-media` (feed) and new `/api/listings/upload-video` (listings), which proxy to Cloudflare Stream via `uploadToStream()`. Removed all TUS/direct-upload/client-thumbnail-capture code. This is the same flow that produced the existing working video in the database.
 - **Feed video iframe blocked by CSP** (previous deploy) — added `iframe.videodelivery.net` to `frame-src` CSP directive. Videos now play when clicked instead of showing white.
 - **Listing video uploads failed at 10MB** (previous deploy) — listing videos now upload directly to Cloudflare via XHR (same as feed), bypassing the 10MB Vercel server action body limit.
 

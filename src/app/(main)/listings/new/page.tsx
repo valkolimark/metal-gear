@@ -30,7 +30,6 @@ import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { checkListingLimit } from '@/app/actions/tier'
-import { createStreamDirectUpload } from '@/app/actions/stream'
 import {
   EQUIPMENT_CATEGORIES,
   INDUSTRIES,
@@ -165,7 +164,7 @@ export default function CreateListingPage() {
   // Photo count for header display
   const totalImageCount = preloadedImages.length + images.length
 
-  // Video upload via TUS direct to Cloudflare Stream
+  // Video upload via XHR to /api/listings/upload-video
   const handleVideoSelect = useCallback(
     async (files: FileList | null) => {
       if (!files || !user || maxVideos === 0) return
@@ -192,36 +191,40 @@ export default function CreateListingPage() {
         ])
 
         try {
-          // Get direct upload URL from Cloudflare
-          const directUpload = await createStreamDirectUpload()
-          if ('error' in directUpload) {
-            throw new Error(directUpload.error)
-          }
-
-          // Upload via XHR directly to Cloudflare's one-time upload URL
-          await new Promise<void>((resolve, reject) => {
+          const result = await new Promise<{
+            videoId: string
+            embedUrl: string
+            thumbnailUrl: string
+          }>((resolve, reject) => {
             const xhr = new XMLHttpRequest()
             xhr.addEventListener('load', () => {
-              if (xhr.status >= 200 && xhr.status < 300) resolve()
-              else reject(new Error(`Upload failed (${xhr.status})`))
+              if (xhr.status >= 200 && xhr.status < 300) {
+                resolve(JSON.parse(xhr.responseText))
+              } else {
+                try {
+                  const err = JSON.parse(xhr.responseText)
+                  reject(new Error(err.error || `Upload failed (${xhr.status})`))
+                } catch {
+                  reject(new Error(`Upload failed (${xhr.status})`))
+                }
+              }
             })
             xhr.addEventListener('error', () => reject(new Error('Network error during video upload')))
 
             const fd = new FormData()
             fd.append('file', file)
-            xhr.open('POST', directUpload.uploadUrl)
+            fd.append('listingId', listingId)
+            xhr.open('POST', '/api/listings/upload-video')
             xhr.send(fd)
           })
-
-          const embedUrl = `https://iframe.videodelivery.net/${directUpload.uid}`
 
           setVideos((prev) =>
             prev.map((v) =>
               v.id === tempId
                 ? {
                     ...v,
-                    storage_path: directUpload.uid,
-                    url: embedUrl,
+                    storage_path: result.videoId,
+                    url: result.embedUrl,
                     uploading: false,
                   }
                 : v
@@ -234,7 +237,7 @@ export default function CreateListingPage() {
         }
       }
     },
-    [user, videos.length, maxVideos]
+    [user, videos.length, maxVideos, listingId]
   )
 
   // Drag and drop reorder
