@@ -2,13 +2,16 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { ImagePlus, Video, X, Loader2, Play } from 'lucide-react'
+import { ImagePlus, Video, X, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { createFeedPost } from '@/app/actions/feed-posts'
+import { createStreamDirectUpload } from '@/app/actions/stream'
 import type { FeedPostWithDetails } from '@/app/actions/feed-posts'
 import { MentionAutocomplete } from './MentionAutocomplete'
+
+const STREAM_CUSTOMER_SUBDOMAIN = 'customer-305dqqczrx52n91m.cloudflarestream.com'
 
 interface FeedComposerProps {
   currentUserId: string
@@ -54,7 +57,7 @@ export function FeedComposer({
 
   const hasVideo = media.some((m) => m.mediaType === 'video')
   const hasImages = media.some((m) => m.mediaType === 'image')
-  const isUploading = media.some((m) => m.status === 'uploading' || m.status === 'processing')
+  const isUploading = media.some((m) => m.status === 'uploading')
 
   const extractHashtags = (text: string): string[] => {
     const matches = text.match(/#[\w]+/g)
@@ -63,12 +66,12 @@ export function FeedComposer({
 
   const tempPostIdRef = useRef(crypto.randomUUID())
 
-  // Upload file via XHR to /api/feed/upload-media (handles both images and videos)
-  const uploadFile = useCallback(
-    async (file: File, type: 'image' | 'video') => {
+  // Upload IMAGE via XHR to our API route (small files, proxied through Vercel)
+  const uploadImage = useCallback(
+    async (file: File) => {
       const entry: UploadedMedia = {
         url: '',
-        mediaType: type,
+        mediaType: 'image',
         status: 'uploading',
         progress: 0,
         file,
@@ -79,57 +82,109 @@ export function FeedComposer({
       try {
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', type)
+        formData.append('type', 'image')
         formData.append('postId', tempPostIdRef.current)
 
-        const xhr = new XMLHttpRequest()
-        const uploadPromise = new Promise<{
-          url: string
-          streamVideoId?: string
-          thumbnailUrl?: string
-          status: string
-        }>((resolve, reject) => {
+        const result = await new Promise<{ url: string }>((resolve, reject) => {
+          const xhr = new XMLHttpRequest()
           xhr.upload.addEventListener('progress', (e) => {
             if (e.lengthComputable) {
               const pct = Math.round((e.loaded / e.total) * 100)
               setMedia((prev) =>
-                prev.map((m, i) =>
-                  i === index ? { ...m, progress: pct } : m
-                )
+                prev.map((m, i) => (i === index ? { ...m, progress: pct } : m))
               )
             }
           })
-
           xhr.addEventListener('load', () => {
             if (xhr.status >= 200 && xhr.status < 300) {
               resolve(JSON.parse(xhr.responseText))
             } else {
               try {
-                const err = JSON.parse(xhr.responseText)
-                reject(new Error(err.error || `Upload failed (${xhr.status})`))
+                reject(new Error(JSON.parse(xhr.responseText).error || `Upload failed (${xhr.status})`))
               } catch {
                 reject(new Error(`Upload failed (${xhr.status})`))
               }
             }
           })
-
           xhr.addEventListener('error', () => reject(new Error('Upload failed')))
-
           xhr.open('POST', '/api/feed/upload-media')
           xhr.send(formData)
         })
 
-        const result = await uploadPromise
+        setMedia((prev) =>
+          prev.map((m, i) =>
+            i === index ? { ...m, url: result.url, status: 'ready' as const, progress: 100 } : m
+          )
+        )
+      } catch (err) {
+        setMedia((prev) =>
+          prev.map((m, i) => (i === index ? { ...m, status: 'error' as const } : m))
+        )
+        toast.error(err instanceof Error ? err.message : 'Upload failed')
+      }
+    },
+    [media.length]
+  )
+
+  // Upload VIDEO directly to Cloudflare (large files, bypasses Vercel)
+  const uploadVideo = useCallback(
+    async (file: File) => {
+      const entry: UploadedMedia = {
+        url: '',
+        mediaType: 'video',
+        status: 'uploading',
+        progress: 0,
+        file,
+      }
+      setMedia((prev) => [...prev, entry])
+      const index = media.length
+
+      try {
+        // Step 1: Get a one-time upload URL from Cloudflare (tiny server action call)
+        const directUpload = await createStreamDirectUpload()
+        if ('error' in directUpload) {
+          throw new Error(directUpload.error)
+        }
+
+        // Step 2: POST video directly to Cloudflare (bypasses Vercel — no size limit)
+        await new Promise<void>((resolve, reject) => {
+          const xhr = new XMLHttpRequest()
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round((e.loaded / e.total) * 100)
+              setMedia((prev) =>
+                prev.map((m, i) => (i === index ? { ...m, progress: pct } : m))
+              )
+            }
+          })
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 400) {
+              resolve()
+            } else {
+              reject(new Error(`Cloudflare upload failed (${xhr.status})`))
+            }
+          })
+          xhr.addEventListener('error', () => reject(new Error('Network error during video upload')))
+
+          const fd = new FormData()
+          fd.append('file', file)
+          xhr.open('POST', directUpload.uploadUrl)
+          xhr.send(fd)
+        })
+
+        // Step 3: Upload complete — video is now processing at Cloudflare
+        const embedUrl = `https://iframe.videodelivery.net/${directUpload.uid}`
+        const thumbnailUrl = `https://${STREAM_CUSTOMER_SUBDOMAIN}/${directUpload.uid}/thumbnails/thumbnail.jpg`
 
         setMedia((prev) =>
           prev.map((m, i) =>
             i === index
               ? {
                   ...m,
-                  url: result.url,
-                  streamVideoId: result.streamVideoId,
-                  thumbnailUrl: result.thumbnailUrl,
-                  status: result.status === 'ready' ? 'ready' : 'processing',
+                  url: embedUrl,
+                  streamVideoId: directUpload.uid,
+                  thumbnailUrl,
+                  status: 'processing' as const,
                   progress: 100,
                 }
               : m
@@ -137,33 +192,31 @@ export function FeedComposer({
         )
 
         // Poll for video processing status
-        if (type === 'video' && result.status === 'processing' && result.streamVideoId) {
-          const pollInterval = setInterval(async () => {
-            try {
-              const res = await fetch(
-                `/api/feed/upload-media?streamVideoId=${result.streamVideoId}`
-              )
-              const { status } = await res.json()
-              if (status === 'ready' || status === 'error') {
-                clearInterval(pollInterval)
-                setMedia((prev) =>
-                  prev.map((m, i) =>
-                    i === index ? { ...m, status: status as 'ready' | 'error' } : m
-                  )
-                )
-              }
-            } catch {
+        const pollInterval = setInterval(async () => {
+          try {
+            const res = await fetch(
+              `/api/feed/upload-media?streamVideoId=${directUpload.uid}`
+            )
+            const data = await res.json()
+            if (data.status === 'ready' || data.status === 'error') {
               clearInterval(pollInterval)
+              setMedia((prev) =>
+                prev.map((m, i) =>
+                  i === index ? { ...m, status: data.status as 'ready' | 'error' } : m
+                )
+              )
             }
-          }, 3000)
-        }
+          } catch {
+            clearInterval(pollInterval)
+          }
+        }, 3000)
+
+        toast.success('Video uploaded! Processing will finish in ~1 min.')
       } catch (err) {
         setMedia((prev) =>
-          prev.map((m, i) =>
-            i === index ? { ...m, status: 'error' as const } : m
-          )
+          prev.map((m, i) => (i === index ? { ...m, status: 'error' as const } : m))
         )
-        toast.error(err instanceof Error ? err.message : 'Upload failed')
+        toast.error(err instanceof Error ? err.message : 'Video upload failed')
       }
     },
     [media.length]
@@ -178,7 +231,7 @@ export function FeedComposer({
         toast.error(`${file.name} exceeds 10MB limit`)
         continue
       }
-      uploadFile(file, 'image')
+      uploadImage(file)
     }
     e.target.value = ''
   }
@@ -190,7 +243,7 @@ export function FeedComposer({
       toast.error('Video exceeds 200MB limit')
       return
     }
-    uploadFile(file, 'video')
+    uploadVideo(file)
     e.target.value = ''
   }
 
@@ -298,7 +351,6 @@ export function FeedComposer({
             />
           </div>
 
-          {/* Hashtag preview */}
           {hashtags.length > 0 && (
             <div className="mt-1 flex flex-wrap gap-1">
               {hashtags.map((tag) => (
@@ -309,7 +361,6 @@ export function FeedComposer({
             </div>
           )}
 
-          {/* Media previews */}
           {media.length > 0 && (
             <div className="mt-3 grid grid-cols-2 gap-2">
               {media.map((m, i) => (
@@ -336,24 +387,19 @@ export function FeedComposer({
                             : m.status === 'processing'
                             ? 'Processing...'
                             : m.status === 'error'
-                            ? 'Error'
+                            ? 'Upload failed'
                             : 'Ready'}
                         </p>
                       </div>
                     </div>
                   )}
 
-                  {/* Progress bar */}
                   {m.status === 'uploading' && (
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
-                      <div
-                        className="h-full bg-primary transition-all"
-                        style={{ width: `${m.progress}%` }}
-                      />
+                      <div className="h-full bg-primary transition-all" style={{ width: `${m.progress}%` }} />
                     </div>
                   )}
 
-                  {/* Remove button — 44px touch target */}
                   <button
                     className="absolute right-0 top-0 flex size-11 items-center justify-center"
                     onClick={() => removeMedia(i)}
@@ -367,20 +413,11 @@ export function FeedComposer({
             </div>
           )}
 
-          {/* Actions */}
           <div className="mt-3 flex items-center justify-between">
             <div className="flex gap-1">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                multiple
-                className="hidden"
-                onChange={handleImageSelect}
-              />
+              <input ref={fileInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleImageSelect} />
               <Button
-                variant="ghost"
-                size="sm"
+                variant="ghost" size="sm"
                 className="gap-1.5 font-body text-xs text-muted-foreground"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={hasVideo || media.filter((m) => m.mediaType === 'image').length >= MAX_IMAGES}
@@ -389,16 +426,9 @@ export function FeedComposer({
                 Photo
               </Button>
 
-              <input
-                ref={videoInputRef}
-                type="file"
-                accept="video/*"
-                className="hidden"
-                onChange={handleVideoSelect}
-              />
+              <input ref={videoInputRef} type="file" accept="video/*" className="hidden" onChange={handleVideoSelect} />
               <Button
-                variant="ghost"
-                size="sm"
+                variant="ghost" size="sm"
                 className="gap-1.5 font-body text-xs text-muted-foreground"
                 onClick={() => videoInputRef.current?.click()}
                 disabled={hasImages || hasVideo}
@@ -414,15 +444,8 @@ export function FeedComposer({
                   {MAX_CHARS - content.length} remaining
                 </span>
               )}
-              <Button
-                size="sm"
-                className="font-body text-xs"
-                disabled={!canPost}
-                onClick={handleSubmit}
-              >
-                {isSubmitting ? (
-                  <Loader2 className="mr-1 size-3.5 animate-spin" />
-                ) : null}
+              <Button size="sm" className="font-body text-xs" disabled={!canPost} onClick={handleSubmit}>
+                {isSubmitting ? <Loader2 className="mr-1 size-3.5 animate-spin" /> : null}
                 Post
               </Button>
             </div>
