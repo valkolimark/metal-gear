@@ -190,31 +190,34 @@ export function FeedComposer({
           )
         }
 
-        // 3. Upload via TUS — use uploadUrl (not endpoint) because Cloudflare
-        // Direct Creator Uploads return a pre-created upload URL
-        const { Upload: TusUpload } = await import('tus-js-client')
-
+        // 3. Upload via XHR directly to Cloudflare's one-time upload URL
+        // (Direct Creator Upload expects a multipart POST, not TUS PATCH)
         await new Promise<void>((resolve, reject) => {
-          const upload = new TusUpload(file, {
-            uploadUrl: directUpload.uploadUrl,
-            chunkSize: 5 * 1024 * 1024, // 5MB chunks
-            retryDelays: [0, 1000, 3000],
-            metadata: {
-              filename: file.name,
-              filetype: file.type,
-            },
-            onProgress: (bytesUploaded, bytesTotal) => {
-              const pct = Math.round((bytesUploaded / bytesTotal) * 100)
+          const xhr = new XMLHttpRequest()
+          xhr.upload.addEventListener('progress', (e) => {
+            if (e.lengthComputable) {
+              const pct = Math.round((e.loaded / e.total) * 100)
               setMedia((prev) =>
                 prev.map((m, i) =>
                   i === index ? { ...m, progress: pct } : m
                 )
               )
-            },
-            onSuccess: () => resolve(),
-            onError: (err) => reject(err),
+            }
           })
-          upload.start()
+          xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+              resolve()
+            } else {
+              reject(new Error(`Upload failed (${xhr.status})`))
+            }
+          })
+          xhr.addEventListener('error', () => reject(new Error('Network error during video upload')))
+
+          const formData = new FormData()
+          formData.append('file', file)
+
+          xhr.open('POST', directUpload.uploadUrl)
+          xhr.send(formData)
         })
 
         // 4. Upload complete — video is now processing at Cloudflare

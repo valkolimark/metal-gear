@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.28.1] — 2026-04-16 · Video upload + playback hotfix
+
+### Fixed
+- **Video uploads stuck at 0%** — Cloudflare's Direct Creator Upload (`/stream/direct_upload`) returns a one-time POST URL, not a TUS-compatible endpoint. The `tus-js-client` library sends PATCH requests which the URL doesn't accept, causing uploads to hang silently. Replaced TUS with XHR multipart POST directly to Cloudflare's upload URL. Progress events now work correctly for both feed and listing video uploads.
+- **Feed video iframe blocked by CSP** (previous deploy) — added `iframe.videodelivery.net` to `frame-src` CSP directive. Videos now play when clicked instead of showing white.
+- **Listing video uploads failed at 10MB** (previous deploy) — listing videos now upload directly to Cloudflare via XHR (same as feed), bypassing the 10MB Vercel server action body limit.
+
+---
+
 ## [4.28.0] — 2026-04-16 · Listing photo UX fix + industrial photo guidance (Cycle 57)
 
 ### Fixed

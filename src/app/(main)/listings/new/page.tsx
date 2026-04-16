@@ -198,22 +198,19 @@ export default function CreateListingPage() {
             throw new Error(directUpload.error)
           }
 
-          // Upload via TUS directly to Cloudflare
-          const { Upload: TusUpload } = await import('tus-js-client')
-
+          // Upload via XHR directly to Cloudflare's one-time upload URL
           await new Promise<void>((resolve, reject) => {
-            const upload = new TusUpload(file, {
-              uploadUrl: directUpload.uploadUrl,
-              chunkSize: 5 * 1024 * 1024,
-              retryDelays: [0, 1000, 3000],
-              metadata: {
-                filename: file.name,
-                filetype: file.type,
-              },
-              onSuccess: () => resolve(),
-              onError: (err) => reject(err),
+            const xhr = new XMLHttpRequest()
+            xhr.addEventListener('load', () => {
+              if (xhr.status >= 200 && xhr.status < 300) resolve()
+              else reject(new Error(`Upload failed (${xhr.status})`))
             })
-            upload.start()
+            xhr.addEventListener('error', () => reject(new Error('Network error during video upload')))
+
+            const fd = new FormData()
+            fd.append('file', file)
+            xhr.open('POST', directUpload.uploadUrl)
+            xhr.send(fd)
           })
 
           const embedUrl = `https://iframe.videodelivery.net/${directUpload.uid}`
