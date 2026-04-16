@@ -995,6 +995,7 @@ export type Database = {
           media_url: string
           post_id: string
           sort_order: number
+          status: string
           stream_video_id: string | null
           thumbnail_url: string | null
         }
@@ -1005,6 +1006,7 @@ export type Database = {
           media_url: string
           post_id: string
           sort_order?: number
+          status?: string
           stream_video_id?: string | null
           thumbnail_url?: string | null
         }
@@ -1015,6 +1017,7 @@ export type Database = {
           media_url?: string
           post_id?: string
           sort_order?: number
+          status?: string
           stream_video_id?: string | null
           thumbnail_url?: string | null
         }

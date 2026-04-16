@@ -47,6 +47,7 @@ import { AITitleOptimizer } from '@/components/listings/AITitleOptimizer'
 import { ListingQualityScore } from '@/components/listings/ListingQualityScore'
 import { AIPriceSuggestion } from '@/components/listings/AIPriceSuggestion'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
+import { MultiPhotoUploader } from '@/components/upload/MultiPhotoUploader'
 
 const STEPS = ['AI Assist', 'Details', 'Photos', 'Pricing', 'Review']
 
@@ -825,58 +826,27 @@ export default function CreateListingPage() {
               </div>
             )}
 
-            {/* Upload options */}
-            {totalImageCount >= maxPhotos ? (
-              <div className="rounded-lg border border-border bg-surface px-4 py-3 text-center">
-                <p className="font-body text-sm text-muted-foreground">Maximum {maxPhotos} photos reached.</p>
-              </div>
-            ) : (
-            <div className="grid gap-3 sm:grid-cols-2">
-              {/* Camera capture (mobile) */}
-              <label className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary/50 sm:hidden">
-                <Upload className="mb-2 size-6 text-primary" />
-                <p className="font-body text-sm font-medium text-foreground">
-                  Take Photo
-                </p>
-                <p className="mt-0.5 font-body text-xs text-muted-foreground">
-                  Use your camera
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                  className="hidden"
-                />
-              </label>
-
-              {/* Gallery / file picker */}
-              <label
-                className="flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-border py-8 transition-colors hover:border-primary/50 sm:col-span-2 sm:py-12"
-                onDragOver={(e) => e.preventDefault()}
-                onDrop={(e) => {
-                  e.preventDefault()
-                  handleFileSelect(e.dataTransfer.files)
-                }}
-              >
-                <Upload className="mb-2 size-6 text-muted-foreground sm:mb-3 sm:size-8" />
-                <p className="font-body text-sm font-medium text-foreground">
-                  <span className="hidden sm:inline">Drag & drop photos or click to browse</span>
-                  <span className="sm:hidden">Choose from Gallery</span>
-                </p>
-                <p className="mt-0.5 font-body text-xs text-muted-foreground sm:mt-1">
-                  JPG, PNG, WebP up to 10MB each
-                </p>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => handleFileSelect(e.target.files)}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            )}
+            {/* Multi-photo uploader */}
+            <MultiPhotoUploader
+              maxFiles={maxPhotos - preloadedImages.length}
+              uploadUrl="/api/listings/upload-media"
+              uploadFields={{ listingId }}
+              existingUrls={[]}
+              onComplete={(urls) => {
+                setImages(urls.filter(u => !preloadedImages.includes(u)).map((url, i) => ({
+                  id: `uploaded-${i}`,
+                  preview: url,
+                  storage_path: url,
+                  url,
+                  uploading: false,
+                })))
+              }}
+              onRemove={(url) => {
+                setImages((prev) => prev.filter((i) => i.url !== url))
+              }}
+              label="Add photos"
+              upgradeNudge={tier === 'free' ? `Upgrade to Pro for up to 20 photos per listing` : null}
+            />
 
             {/* Video upload (Premium/Boost only) */}
             {maxVideos > 0 && (
@@ -928,48 +898,7 @@ export default function CreateListingPage() {
               </div>
             )}
 
-            {/* Image grid with drag reorder */}
-            {images.length > 0 && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                {images.map((img, idx) => (
-                  <div
-                    key={img.id}
-                    draggable
-                    onDragStart={() => handleDragStart(idx)}
-                    onDragOver={(e) => handleDragOver(e, idx)}
-                    onDragEnd={handleDragEnd}
-                    className={`group relative aspect-square overflow-hidden rounded-lg border border-border ${
-                      dragIdx === idx ? 'opacity-50' : ''
-                    }`}
-                  >
-                    <img
-                      src={img.preview || img.url}
-                      alt={`Photo ${idx + 1}`}
-                      className="size-full object-cover"
-                    />
-                    {img.uploading && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/60">
-                        <Loader2 className="size-6 animate-spin text-white" />
-                      </div>
-                    )}
-                    <div className="absolute left-1 top-1 cursor-grab opacity-0 transition-opacity group-hover:opacity-100">
-                      <GripVertical className="size-5 text-white drop-shadow" />
-                    </div>
-                    <button
-                      onClick={() => removeImage(img.id)}
-                      className="absolute right-1 top-1 flex size-6 items-center justify-center rounded-full bg-black/60 text-white opacity-0 transition-opacity hover:bg-black/80 group-hover:opacity-100"
-                    >
-                      <X className="size-4" />
-                    </button>
-                    {idx === 0 && (
-                      <Badge className="absolute bottom-1 left-1 bg-primary text-xs text-white">
-                        Cover
-                      </Badge>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
+            {/* Images uploaded via MultiPhotoUploader are tracked in `images` state */}
           </CardContent>
         </Card>
       )}

@@ -3,14 +3,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import Image from 'next/image'
 import { ChevronLeft, ChevronRight, X } from 'lucide-react'
-import { VideoPlayer } from '@/components/ui/video-player'
+import { FeedVideoPlayer } from '@/components/feed/FeedVideoPlayer'
 import type { FeedPostWithDetails } from '@/app/actions/feed-posts'
 
 interface FeedPostMediaProps {
   media: FeedPostWithDetails['media']
+  postId: string
 }
 
-export function FeedPostMedia({ media }: FeedPostMediaProps) {
+export function FeedPostMedia({ media, postId }: FeedPostMediaProps) {
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   const handleKeyDown = useCallback(
@@ -36,10 +37,11 @@ export function FeedPostMedia({ media }: FeedPostMediaProps) {
   if (media.length === 1 && media[0].media_type === 'video') {
     return (
       <div className="mt-3 max-h-[300px] md:max-h-none overflow-hidden">
-        <VideoPlayer
-          videoId={media[0].stream_video_id ?? undefined}
-          embedUrl={media[0].media_url}
-          thumbnailUrl={media[0].thumbnail_url ?? undefined}
+        <FeedVideoPlayer
+          streamVideoId={media[0].stream_video_id}
+          thumbnailUrl={media[0].thumbnail_url}
+          status={media[0].status ?? 'ready'}
+          postId={postId}
         />
       </div>
     )

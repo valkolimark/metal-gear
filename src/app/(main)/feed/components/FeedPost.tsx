@@ -408,7 +408,7 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
       {/* Media */}
       {post.media.length > 0 && (
         <div className="px-4">
-          <FeedPostMedia media={post.media} />
+          <FeedPostMedia media={post.media} postId={post.id} />
         </div>
       )}
 

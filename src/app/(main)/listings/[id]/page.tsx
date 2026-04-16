@@ -59,7 +59,7 @@ export default async function ListingDetailPage({
     ? admin.from('company_profiles').select('*').eq('id', listing.company_id).maybeSingle()
     : Promise.resolve({ data: null })
 
-  // Fetch all related data in parallel
+  // Fetch all related data in parallel — includes credit/reveal pre-fetch to avoid waterfall
   const [
     { data: images },
     { data: videos },
@@ -68,6 +68,9 @@ export default async function ListingDetailPage({
     conditionResult,
     reviewsResult,
     radarResult,
+    revealedContacts,
+    viewerTier,
+    viewerCreditBalance,
   ] = await Promise.all([
     admin
       .from('listing_images')
@@ -90,6 +93,15 @@ export default async function ListingDetailPage({
     currentUser
       ? isListingInRadar(currentUser.id, id)
       : Promise.resolve(false),
+    currentUser
+      ? getRevealedContacts(currentUser.id)
+      : Promise.resolve([] as string[]),
+    currentUser
+      ? getActiveTier(currentUser.id)
+      : Promise.resolve('free' as string),
+    currentUser
+      ? getCreditBalance(currentUser.id)
+      : Promise.resolve(null),
   ])
 
   if (!seller) notFound()
@@ -122,28 +134,20 @@ export default async function ListingDetailPage({
 
     let alreadyRevealed = false
     if (!canSee && currentUser && sellerVisibility === 'pro_plus') {
-      // Check if already revealed this month
-      const revealedContacts = await getRevealedContacts(currentUser.id)
+      // Use pre-fetched data (no waterfall)
       alreadyRevealed = revealedContacts.includes(seller.id)
       if (alreadyRevealed) canSee = true
 
-      // Enterprise gets unlimited
-      if (!canSee) {
-        const viewerTier = await getActiveTier(currentUser.id)
-        if (viewerTier === 'enterprise') canSee = true
-      }
+      if (!canSee && viewerTier === 'enterprise') canSee = true
     }
 
-    // Fetch credit balance for non-enterprise users who haven't revealed yet
-    if (currentUser && !canSee && sellerVisibility === 'pro_plus') {
-      const balance = await getCreditBalance(currentUser.id)
-      if (balance) {
-        creditBalance = {
-          creditsRemaining: balance.creditsRemaining,
-          creditsUsedThisMonth: balance.creditsUsedThisMonth,
-          monthlyAllowance: balance.monthlyAllowance,
-          tier: balance.tier,
-        }
+    // Use pre-fetched credit balance for non-enterprise users who haven't revealed yet
+    if (currentUser && !canSee && sellerVisibility === 'pro_plus' && viewerCreditBalance) {
+      creditBalance = {
+        creditsRemaining: viewerCreditBalance.creditsRemaining,
+        creditsUsedThisMonth: viewerCreditBalance.creditsUsedThisMonth,
+        monthlyAllowance: viewerCreditBalance.monthlyAllowance,
+        tier: viewerCreditBalance.tier,
       }
     }
 

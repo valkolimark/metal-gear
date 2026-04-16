@@ -29,6 +29,7 @@ export interface FeedPostWithDetails {
     stream_video_id: string | null
     thumbnail_url: string | null
     sort_order: number
+    status: 'processing' | 'ready' | 'error'
   }>
   viewer_has_reacted: boolean
 }
@@ -115,7 +116,7 @@ async function fetchFeedPosts(
       : Promise.resolve({ data: [] }),
     supabase
       .from('feed_post_media')
-      .select('id, post_id, media_url, media_type, stream_video_id, thumbnail_url, sort_order')
+      .select('id, post_id, media_url, media_type, stream_video_id, thumbnail_url, sort_order, status')
       .in('post_id', postIds)
       .order('sort_order', { ascending: true }),
     supabase
@@ -180,6 +181,7 @@ export async function createFeedPost(params: {
     streamVideoId?: string
     thumbnailUrl?: string
     sortOrder: number
+    status?: 'processing' | 'ready' | 'error'
   }>
 }): Promise<{ post: FeedPostWithDetails }> {
   const trimmedContent = sanitizeText(params.content).slice(0, 1000)
@@ -226,6 +228,7 @@ export async function createFeedPost(params: {
           stream_video_id: m.streamVideoId ?? null,
           thumbnail_url: m.thumbnailUrl ?? null,
           sort_order: m.sortOrder,
+          status: m.mediaType === 'video' ? (m.status ?? 'processing') : 'ready',
         }))
       )
 
@@ -250,7 +253,7 @@ export async function createFeedPost(params: {
   // Fetch the full post with details for client-side prepend
   const { data: mediaRows } = await supabase
     .from('feed_post_media')
-    .select('id, post_id, media_url, media_type, stream_video_id, thumbnail_url, sort_order')
+    .select('id, post_id, media_url, media_type, stream_video_id, thumbnail_url, sort_order, status')
     .eq('post_id', post.id)
     .order('sort_order', { ascending: true })
 
@@ -550,7 +553,7 @@ export async function getHashtagPosts(params: {
       : Promise.resolve({ data: [] }),
     supabase
       .from('feed_post_media')
-      .select('id, post_id, media_url, media_type, stream_video_id, thumbnail_url, sort_order')
+      .select('id, post_id, media_url, media_type, stream_video_id, thumbnail_url, sort_order, status')
       .in('post_id', postIds)
       .order('sort_order', { ascending: true }),
   ])

@@ -2,11 +2,12 @@
 
 import { useState, useRef, useCallback } from 'react'
 import Image from 'next/image'
-import { ImagePlus, Video, X, Loader2 } from 'lucide-react'
+import { ImagePlus, Video, X, Loader2, Play } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar'
 import { createFeedPost } from '@/app/actions/feed-posts'
+import { createStreamDirectUpload } from '@/app/actions/stream'
 import type { FeedPostWithDetails } from '@/app/actions/feed-posts'
 import { MentionAutocomplete } from './MentionAutocomplete'
 
@@ -32,6 +33,7 @@ interface UploadedMedia {
 
 const MAX_CHARS = 1000
 const MAX_IMAGES = 4
+const MAX_VIDEO_DURATION = 600 // 10 min
 
 export function FeedComposer({
   currentUserId,
@@ -54,22 +56,21 @@ export function FeedComposer({
 
   const hasVideo = media.some((m) => m.mediaType === 'video')
   const hasImages = media.some((m) => m.mediaType === 'image')
-  const isUploading = media.some((m) => m.status === 'uploading' || m.status === 'processing')
+  const isUploading = media.some((m) => m.status === 'uploading')
 
-  // Extract hashtags from content
   const extractHashtags = (text: string): string[] => {
     const matches = text.match(/#[\w]+/g)
     return matches ? [...new Set(matches.map((t) => t.slice(1).toLowerCase()))] : []
   }
 
-  // Generate a temporary post ID for upload keying
   const tempPostIdRef = useRef(crypto.randomUUID())
 
-  const uploadFile = useCallback(
-    async (file: File, type: 'image' | 'video') => {
+  // Upload image via XHR (existing pattern)
+  const uploadImage = useCallback(
+    async (file: File) => {
       const entry: UploadedMedia = {
         url: '',
-        mediaType: type,
+        mediaType: 'image',
         status: 'uploading',
         progress: 0,
         file,
@@ -80,7 +81,7 @@ export function FeedComposer({
       try {
         const formData = new FormData()
         formData.append('file', file)
-        formData.append('type', type)
+        formData.append('type', 'image')
         formData.append('postId', tempPostIdRef.current)
 
         const xhr = new XMLHttpRequest()
@@ -110,56 +111,138 @@ export function FeedComposer({
           })
 
           xhr.addEventListener('error', () => reject(new Error('Upload failed')))
-
           xhr.open('POST', '/api/feed/upload-media')
           xhr.send(formData)
         })
 
         const result = await uploadPromise
+        setMedia((prev) =>
+          prev.map((m, i) =>
+            i === index
+              ? { ...m, url: result.url, status: 'ready' as const, progress: 100 }
+              : m
+          )
+        )
+      } catch (err) {
+        setMedia((prev) =>
+          prev.map((m, i) =>
+            i === index ? { ...m, status: 'error' as const } : m
+          )
+        )
+        toast.error(err instanceof Error ? err.message : 'Upload failed')
+      }
+    },
+    [media.length]
+  )
+
+  // Upload video via TUS direct to Cloudflare Stream
+  const uploadVideo = useCallback(
+    async (file: File) => {
+      // Client-side duration check
+      const duration = await getVideoDuration(file)
+      if (duration > MAX_VIDEO_DURATION) {
+        toast.error('Video must be under 10 minutes')
+        return
+      }
+
+      const entry: UploadedMedia = {
+        url: '',
+        mediaType: 'video',
+        status: 'uploading',
+        progress: 0,
+        file,
+      }
+      setMedia((prev) => [...prev, entry])
+      const index = media.length
+
+      try {
+        // 1. Get direct upload URL from our server
+        const directUpload = await createStreamDirectUpload()
+        if ('error' in directUpload) {
+          throw new Error(directUpload.error)
+        }
+
+        // 2. Capture first frame as client-side thumbnail
+        let clientThumbnailUrl: string | undefined
+        try {
+          const thumbnailBlob = await captureVideoFirstFrame(file)
+          if (thumbnailBlob) {
+            const thumbFd = new FormData()
+            thumbFd.append('file', thumbnailBlob, 'poster.jpg')
+            thumbFd.append('type', 'image')
+            thumbFd.append('postId', tempPostIdRef.current)
+            const thumbRes = await fetch('/api/feed/upload-media', { method: 'POST', body: thumbFd })
+            if (thumbRes.ok) {
+              const thumbData = await thumbRes.json()
+              clientThumbnailUrl = thumbData.url
+            }
+          }
+        } catch {
+          // Skip thumbnail silently if it fails
+        }
+
+        // Update entry with thumbnail
+        if (clientThumbnailUrl) {
+          setMedia((prev) =>
+            prev.map((m, i) =>
+              i === index ? { ...m, thumbnailUrl: clientThumbnailUrl } : m
+            )
+          )
+        }
+
+        // 3. Upload via TUS
+        const { Upload: TusUpload } = await import('tus-js-client')
+
+        await new Promise<void>((resolve, reject) => {
+          const upload = new TusUpload(file, {
+            endpoint: directUpload.uploadUrl,
+            chunkSize: 5 * 1024 * 1024, // 5MB chunks
+            retryDelays: [0, 1000, 3000],
+            metadata: {
+              filename: file.name,
+              filetype: file.type,
+            },
+            onProgress: (bytesUploaded, bytesTotal) => {
+              const pct = Math.round((bytesUploaded / bytesTotal) * 100)
+              setMedia((prev) =>
+                prev.map((m, i) =>
+                  i === index ? { ...m, progress: pct } : m
+                )
+              )
+            },
+            onSuccess: () => resolve(),
+            onError: (err) => reject(err),
+          })
+          upload.start()
+        })
+
+        // 4. Upload complete — video is now processing at Cloudflare
+        const embedUrl = `https://iframe.videodelivery.net/${directUpload.uid}`
+        const thumbnailUrl = clientThumbnailUrl || `https://customer-305dqqczrx52n91m.cloudflarestream.com/${directUpload.uid}/thumbnails/thumbnail.jpg`
 
         setMedia((prev) =>
           prev.map((m, i) =>
             i === index
               ? {
                   ...m,
-                  url: result.url,
-                  streamVideoId: result.streamVideoId,
-                  thumbnailUrl: result.thumbnailUrl,
-                  status: result.status === 'ready' ? 'ready' : 'processing',
+                  url: embedUrl,
+                  streamVideoId: directUpload.uid,
+                  thumbnailUrl,
+                  status: 'ready' as const,
                   progress: 100,
                 }
               : m
           )
         )
 
-        // Poll for video processing status
-        if (type === 'video' && result.status === 'processing' && result.streamVideoId) {
-          const pollInterval = setInterval(async () => {
-            try {
-              const res = await fetch(
-                `/api/feed/upload-media?streamVideoId=${result.streamVideoId}`
-              )
-              const { status } = await res.json()
-              if (status === 'ready' || status === 'error') {
-                clearInterval(pollInterval)
-                setMedia((prev) =>
-                  prev.map((m, i) =>
-                    i === index ? { ...m, status: status as 'ready' | 'error' } : m
-                  )
-                )
-              }
-            } catch {
-              clearInterval(pollInterval)
-            }
-          }, 3000)
-        }
+        toast.success('Video uploaded! It will finish processing in ~1 min.')
       } catch (err) {
         setMedia((prev) =>
           prev.map((m, i) =>
-            i === index ? { ...m, status: 'error' } : m
+            i === index ? { ...m, status: 'error' as const } : m
           )
         )
-        toast.error(err instanceof Error ? err.message : 'Upload failed')
+        toast.error(err instanceof Error ? err.message : 'Video upload failed')
       }
     },
     [media.length]
@@ -174,7 +257,7 @@ export function FeedComposer({
         toast.error(`${file.name} exceeds 10MB limit`)
         continue
       }
-      uploadFile(file, 'image')
+      uploadImage(file)
     }
     e.target.value = ''
   }
@@ -186,7 +269,7 @@ export function FeedComposer({
       toast.error('Video exceeds 200MB limit')
       return
     }
-    uploadFile(file, 'video')
+    uploadVideo(file)
     e.target.value = ''
   }
 
@@ -214,6 +297,7 @@ export function FeedComposer({
           streamVideoId: m.streamVideoId,
           thumbnailUrl: m.thumbnailUrl,
           sortOrder: i,
+          status: m.mediaType === 'video' ? 'processing' as const : 'ready' as const,
         })),
       })
 
@@ -224,6 +308,10 @@ export function FeedComposer({
       tempPostIdRef.current = crypto.randomUUID()
       if (textareaRef.current) {
         textareaRef.current.style.height = 'auto'
+      }
+
+      if (readyMedia.some((m) => m.mediaType === 'video')) {
+        toast.success('Your post is live! Video will appear in ~1 min.')
       }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to create post')
@@ -236,12 +324,10 @@ export function FeedComposer({
     const val = e.target.value
     if (val.length <= MAX_CHARS) {
       setContent(val)
-      // Remove mentions that are no longer in the text
       setMentionedEntities((prev) =>
         prev.filter((m) => val.includes(`@${m.displayName}`))
       )
     }
-    // Auto-resize
     const ta = e.target
     ta.style.height = 'auto'
     ta.style.height = ta.scrollHeight + 'px'
@@ -290,7 +376,6 @@ export function FeedComposer({
                   if (prev.some((m) => m.id === mention.id)) return prev
                   return [...prev, mention]
                 })
-                // Re-focus textarea
                 textareaRef.current?.focus()
               }}
             />
@@ -324,6 +409,23 @@ export function FeedComposer({
                     <div className="flex aspect-video items-center justify-center">
                       <Loader2 className="size-6 animate-spin text-muted-foreground" />
                     </div>
+                  ) : m.thumbnailUrl ? (
+                    <div className="relative flex aspect-video items-center justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={m.thumbnailUrl} alt="Video preview" className="h-full w-full object-cover" />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                        {m.status === 'uploading' ? (
+                          <div className="text-center">
+                            <div className="mx-auto mb-1 h-1 w-16 overflow-hidden rounded-full bg-white/30">
+                              <div className="h-full bg-white transition-all" style={{ width: `${m.progress}%` }} />
+                            </div>
+                            <p className="font-body text-xs text-white">Uploading {m.progress}%</p>
+                          </div>
+                        ) : (
+                          <Play className="size-8 text-white/80" fill="currentColor" />
+                        )}
+                      </div>
+                    </div>
                   ) : (
                     <div className="flex aspect-video items-center justify-center">
                       <div className="text-center">
@@ -341,8 +443,8 @@ export function FeedComposer({
                     </div>
                   )}
 
-                  {/* Progress bar */}
-                  {m.status === 'uploading' && (
+                  {/* Progress bar for images */}
+                  {m.mediaType === 'image' && m.status === 'uploading' && (
                     <div className="absolute bottom-0 left-0 right-0 h-1 bg-muted">
                       <div
                         className="h-full bg-primary transition-all"
@@ -429,4 +531,67 @@ export function FeedComposer({
       </div>
     </div>
   )
+}
+
+/** Get video duration via HTMLVideoElement */
+function getVideoDuration(file: File): Promise<number> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.onloadedmetadata = () => {
+      URL.revokeObjectURL(video.src)
+      resolve(video.duration)
+    }
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src)
+      resolve(0) // Let it through — server will validate
+    }
+    video.src = URL.createObjectURL(file)
+  })
+}
+
+/** Capture the first frame of a video as a JPEG blob */
+function captureVideoFirstFrame(file: File): Promise<Blob | null> {
+  return new Promise((resolve) => {
+    const video = document.createElement('video')
+    video.preload = 'metadata'
+    video.muted = true
+    video.playsInline = true
+
+    video.onloadeddata = () => {
+      video.currentTime = 0.1
+    }
+
+    video.onseeked = () => {
+      try {
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        const ctx = canvas.getContext('2d')
+        if (!ctx) {
+          resolve(null)
+          return
+        }
+        ctx.drawImage(video, 0, 0)
+        canvas.toBlob(
+          (blob) => {
+            URL.revokeObjectURL(video.src)
+            resolve(blob)
+          },
+          'image/jpeg',
+          0.8
+        )
+      } catch {
+        URL.revokeObjectURL(video.src)
+        resolve(null)
+      }
+    }
+
+    video.onerror = () => {
+      URL.revokeObjectURL(video.src)
+      resolve(null)
+    }
+
+    video.src = URL.createObjectURL(file)
+  })
 }

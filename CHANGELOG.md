@@ -6,6 +6,45 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.27.0] — 2026-04-16 · Media bug fixes + performance audit (Cycle 56)
+
+### Fixed
+- **Feed video playback** — replaced eager iframe loading with poster-first pattern using `FeedVideoPlayer`. Videos in `processing` state show a thumbnail + animated "Processing video…" badge instead of a broken-media icon. Auto-polls for status every 5s (max 2 min).
+- **VideoPlayer poster-first** — the existing `VideoPlayer` component now shows a thumbnail with a play button instead of loading the Cloudflare Stream iframe immediately. Reduces feed weight by one iframe per video until user taps.
+- **Listing detail waterfall** — moved `getRevealedContacts()`, `getActiveTier()`, and `getCreditBalance()` into the main `Promise.all` batch, eliminating 3 sequential awaits on the listing detail page.
+
+### Added
+- **`FeedVideoPlayer`** component — `src/components/feed/FeedVideoPlayer.tsx`; handles processing/ready/error states with polling, poster-first iframe embed, 10s load timeout with retry, and graceful fallback for missing `stream_video_id`.
+- **`MultiPhotoUploader`** component — `src/components/upload/MultiPhotoUploader.tsx`; reusable multi-file upload primitive supporting up to N photos in parallel (concurrency cap 4), per-file progress bars, inline error/retry, drag-and-drop, and tier-aware `maxFiles`.
+- **Parallel upload utilities** — `src/lib/upload/parallel.ts` (pLimit-style concurrency) and `src/lib/upload/xhr-upload.ts` (XHR with `onprogress` events).
+- **Listing image upload API** — `POST /api/listings/upload-media` for client-side XHR uploads with auth, rate limit (30/10min), and magic-byte validation.
+- **SOS image upload API** — `POST /api/sos/upload-media` for client-side XHR uploads with auth, rate limit (20/10min), and magic-byte validation.
+- **Cloudflare Stream Direct Creator Uploads** — `createStreamDirectUpload()` server action returns a one-time TUS URL; client uploads directly to Cloudflare via `tus-js-client` (no Vercel in the path). Real progress bar during upload.
+- **Client-side video first-frame thumbnail** — captures frame 0.1s via `<video>` + `<canvas>`, uploads to R2 as immediate poster while Stream transcodes.
+- **Stream actions** — `src/app/actions/stream.ts`: `createStreamDirectUpload()`, `attachStreamVideoToFeedPost()`, `attachStreamVideoToListing()`, `uploadVideoPoster()`.
+- **Skeleton loading pages** — added `loading.tsx` for `/feed`, `/listings/[id]`, `/sos`, `/radar` — all structurally match their real page layouts.
+- **`feed_post_media.status`** column — `TEXT NOT NULL DEFAULT 'ready'` with check constraint `(processing, ready, error)` and partial index on `status = 'processing'`.
+
+### Changed
+- **Feed composer video flow** — now uses TUS direct upload instead of proxying through Vercel. Posts are submittable as soon as upload completes (video shows as "processing" in the feed). Toast: "Your post is live! Video will appear in ~1 min."
+- **Listing creation photos** — replaced sequential server-action uploads with `MultiPhotoUploader` using XHR to `/api/listings/upload-media` for parallel uploads with real progress.
+- **Video status polling endpoint** — `GET /api/feed/upload-media` now returns `thumbnailUrl` and `hlsUrl` alongside `status`.
+- **`FeedPostWithDetails.media`** type includes `status` field (`processing | ready | error`).
+
+### Performance
+- **Image optimization** — added `formats: ['image/avif', 'image/webp']` and `minimumCacheTTL: 2592000` (30-day CDN cache) to `next.config.ts` images config.
+- **CSP updated** — added `https://*.cloudflarestream.com` and `https://upload.videodelivery.net` to `connect-src` for TUS direct uploads.
+- **Listing detail waterfall eliminated** — 3 sequential credit/reveal/tier awaits moved to parallel batch (saves ~200–400ms on detail page load).
+- **Skeleton loading states** — 4 new `loading.tsx` files ensure immediate structural rendering before data loads.
+
+### Compatibility
+- All existing `feed_post_media` rows default to `status = 'ready'` (no data migration needed).
+- `VideoPlayer` is backward-compatible — existing callers with `embedUrl`/`videoId` props work unchanged; poster-first is the only visual change.
+- `FeedPostMedia` now requires `postId` prop (passed from `FeedPost`).
+- `tus-js-client` added as a new dependency.
+
+---
+
 ## [4.26.0] — 2026-04-14 · SOS dashboard UX + inline education & microcopy (Cycle 55)
 
 ### Added

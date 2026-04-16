@@ -342,8 +342,22 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - **Unified media:** `src/lib/media.ts` — `uploadListingImage()`, `uploadListingVideo()`, `uploadAvatar()`, `uploadSOSMedia()`, `uploadDisputeEvidence()`, `uploadConditionReport()`, `uploadMessageAttachmentFile()`, `uploadStorefrontBannerFile()`, `uploadVerificationDocument()`, `uploadCompanyLogo()`, `uploadCompanyBanner()`, `uploadFeedPostMedia()`, `deleteFeedPostMedia()`, `deleteMedia()`
 - **Key naming:** `listings/{id}/images/{uuid}.ext`, `avatars/{userId}/{uuid}.ext`, `sos/{sosId}/{uuid}.ext`, etc.
 - **Video columns on listing_videos:** `stream_video_id`, `thumbnail_url`, `embed_url`, `hls_url`, `duration_seconds`, `status` (processing/ready/error)
+- **Video columns on feed_post_media:** `stream_video_id`, `thumbnail_url`, `status` (processing/ready/error — added Cycle 56)
+- **FeedVideoPlayer:** `src/components/feed/FeedVideoPlayer.tsx` — poster-first pattern; shows thumbnail+play button, swaps to Stream iframe on click; handles processing (polls 5s × 24), error, and missing-stream states
+- **VideoPlayer poster-first:** `src/components/ui/video-player.tsx` — same poster-first pattern for listing videos; shows thumbnail until user taps play
+- **MultiPhotoUploader:** `src/components/upload/MultiPhotoUploader.tsx` — reusable multi-file upload; up to N photos in parallel (concurrency 4); per-file progress, retry, drag-and-drop; uses XHR via `src/lib/upload/xhr-upload.ts`
+- **Upload API routes:** `POST /api/listings/upload-media`, `POST /api/feed/upload-media`, `POST /api/sos/upload-media` — all with auth, rate limit, magic-byte validation
+- **TUS Direct Upload (Cycle 56):** `createStreamDirectUpload()` in `src/app/actions/stream.ts` — returns one-time TUS URL; client uploads directly to Cloudflare via `tus-js-client`; no Vercel in the video upload path
+- **Client-side video thumbnail:** Feed composer captures first frame via `<video>` + `<canvas>`, uploads to R2 as immediate poster while Stream transcodes
+- **Stream actions:** `src/app/actions/stream.ts` — `createStreamDirectUpload()`, `attachStreamVideoToFeedPost()`, `attachStreamVideoToListing()`, `uploadVideoPoster()`
 - **Migration script:** `scripts/migrate-media.ts` — run with `--limit=N` for test batches
 - Supabase Storage URLs still resolve for legacy data; new uploads go exclusively to R2/Stream
+
+## Performance (Cycle 56)
+- **Image optimization:** `next.config.ts` — `formats: ['image/avif', 'image/webp']`, `minimumCacheTTL: 2592000` (30-day CDN cache); all 7 remote patterns configured
+- **Skeleton loading:** `loading.tsx` files for `/feed`, `/search`, `/listings/[id]`, `/sos`, `/dashboard`, `/radar`, `/messages` — structurally match real page layouts
+- **Parallel data fetching:** feed page (13 concurrent), listing detail (10 concurrent — credit/reveal/tier pre-fetched in parallel batch)
+- **Poster-first video:** videos in feed and listings render a static thumbnail; iframe loads only on user tap — saves one full Cloudflare iframe per video in viewport
 
 ## Critical Pattern
 All database operations MUST use server actions with `createAdminClient()`. Client-side Supabase DB/storage calls hang in production. All media uploads MUST go through `src/lib/media.ts` — never use Supabase Storage for new uploads. **Never pass functions from Server Components to Client Components** — use server actions in separate `'use server'` files instead. Server actions live in:

@@ -95,7 +95,11 @@ export async function GET(request: NextRequest): Promise<Response> {
   try {
     const video = await getStreamVideo(streamVideoId)
     const status = video.readyToStream ? 'ready' : video.status?.state === 'error' ? 'error' : 'processing'
-    return NextResponse.json({ status })
+    return NextResponse.json({
+      status,
+      thumbnailUrl: video.thumbnail ?? null,
+      hlsUrl: video.playback?.hls ?? null,
+    })
   } catch {
     return NextResponse.json({ status: 'error' })
   }
