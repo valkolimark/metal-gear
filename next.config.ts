@@ -31,7 +31,7 @@ const securityHeaders = [
       "font-src 'self' https://fonts.gstatic.com",
       "img-src 'self' data: blob: https://media.metalgear.com https://*.cloudflare.com https://*.supabase.co https://lh3.googleusercontent.com https://*.tile.openstreetmap.org https://api.qrserver.com",
       "media-src 'self' blob: https://media.metalgear.com https://*.cloudflare.com https://*.cloudflarestream.com",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.stripe.com https://cloudflarestream.com https://*.cloudflare.com https://*.cloudflarestream.com https://upload.videodelivery.net https://*.sentry.io",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.anthropic.com https://api.stripe.com https://cloudflarestream.com https://*.cloudflare.com https://*.cloudflarestream.com https://upload.cloudflarestream.com https://upload.videodelivery.net https://*.sentry.io",
       "frame-src 'self' https://js.stripe.com https://hooks.stripe.com https://*.cloudflarestream.com https://iframe.videodelivery.net https://videodelivery.net",
       "object-src 'none'",
       "base-uri 'self'",
