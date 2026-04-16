@@ -190,12 +190,13 @@ export function FeedComposer({
           )
         }
 
-        // 3. Upload via TUS
+        // 3. Upload via TUS — use uploadUrl (not endpoint) because Cloudflare
+        // Direct Creator Uploads return a pre-created upload URL
         const { Upload: TusUpload } = await import('tus-js-client')
 
         await new Promise<void>((resolve, reject) => {
           const upload = new TusUpload(file, {
-            endpoint: directUpload.uploadUrl,
+            uploadUrl: directUpload.uploadUrl,
             chunkSize: 5 * 1024 * 1024, // 5MB chunks
             retryDelays: [0, 1000, 3000],
             metadata: {

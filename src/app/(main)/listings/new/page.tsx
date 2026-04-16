@@ -30,9 +30,7 @@ import { Separator } from '@/components/ui/separator'
 import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { checkListingLimit } from '@/app/actions/tier'
-import {
-  uploadListingVideoAction,
-} from './actions'
+import { createStreamDirectUpload } from '@/app/actions/stream'
 import {
   EQUIPMENT_CATEGORIES,
   INDUSTRIES,
@@ -167,7 +165,7 @@ export default function CreateListingPage() {
   // Photo count for header display
   const totalImageCount = preloadedImages.length + images.length
 
-  // Video upload
+  // Video upload via TUS direct to Cloudflare Stream
   const handleVideoSelect = useCallback(
     async (files: FileList | null) => {
       if (!files || !user || maxVideos === 0) return
@@ -193,30 +191,50 @@ export default function CreateListingPage() {
           { id: tempId, file, preview, storage_path: '', url: '', uploading: true },
         ])
 
-        const fd = new FormData()
-        fd.append('file', file)
-        fd.append('listingId', listingId)
+        try {
+          // Get direct upload URL from Cloudflare
+          const directUpload = await createStreamDirectUpload()
+          if ('error' in directUpload) {
+            throw new Error(directUpload.error)
+          }
 
-        const result = await uploadListingVideoAction(fd)
+          // Upload via TUS directly to Cloudflare
+          const { Upload: TusUpload } = await import('tus-js-client')
 
-        if (result.error || !result.video) {
-          toast.error(result.error || `Failed to upload ${file.name}`)
-          setVideos((prev) => prev.filter((v) => v.id !== tempId))
-          continue
-        }
+          await new Promise<void>((resolve, reject) => {
+            const upload = new TusUpload(file, {
+              uploadUrl: directUpload.uploadUrl,
+              chunkSize: 5 * 1024 * 1024,
+              retryDelays: [0, 1000, 3000],
+              metadata: {
+                filename: file.name,
+                filetype: file.type,
+              },
+              onSuccess: () => resolve(),
+              onError: (err) => reject(err),
+            })
+            upload.start()
+          })
 
-        setVideos((prev) =>
-          prev.map((v) =>
-            v.id === tempId
-              ? {
-                  ...v,
-                  storage_path: result.video!.videoId,
-                  url: result.video!.embedUrl,
-                  uploading: false,
-                }
-              : v
+          const embedUrl = `https://iframe.videodelivery.net/${directUpload.uid}`
+
+          setVideos((prev) =>
+            prev.map((v) =>
+              v.id === tempId
+                ? {
+                    ...v,
+                    storage_path: directUpload.uid,
+                    url: embedUrl,
+                    uploading: false,
+                  }
+                : v
+            )
           )
-        )
+          toast.success('Video uploaded! It will finish processing shortly.')
+        } catch (err) {
+          toast.error(err instanceof Error ? err.message : `Failed to upload ${file.name}`)
+          setVideos((prev) => prev.filter((v) => v.id !== tempId))
+        }
       }
     },
     [user, videos.length, maxVideos]
