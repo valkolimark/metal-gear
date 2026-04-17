@@ -77,7 +77,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-4 pb-28 md:pb-6">
+    <div className="mx-auto max-w-5xl p-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] md:pb-6">
       {/* Photo strip */}
       <div className="mb-4 flex gap-2 overflow-x-auto">
         {photos.map((url, i) => (
@@ -224,15 +224,20 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
           </div>
 
           {Object.entries(fields.specs ?? {}).length > 0 && (
-            <div className="rounded-lg border bg-card p-3">
+            <div className="overflow-hidden rounded-lg border bg-card p-3">
               <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Specs
               </div>
               <ul className="mt-2 grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
                 {Object.entries(fields.specs ?? {}).map(([k, v]) => (
-                  <li key={k} className="flex justify-between gap-2 border-b py-1 last:border-b-0">
-                    <span className="text-muted-foreground">{k}</span>
-                    <span className="font-medium">{String(v)}</span>
+                  <li
+                    key={k}
+                    className="flex flex-col gap-0.5 border-b py-1.5 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
+                  >
+                    <span className="min-w-0 break-words text-muted-foreground">{k}</span>
+                    <span className="min-w-0 break-words font-medium sm:text-right">
+                      {String(v)}
+                    </span>
                   </li>
                 ))}
               </ul>
@@ -277,20 +282,21 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
         </aside>
       </div>
 
-      {/* Sticky mobile + footer action bar */}
-      <div className="fixed inset-x-0 bottom-0 z-20 border-t bg-background/95 p-3 backdrop-blur md:static md:mt-8 md:border-0 md:bg-transparent md:p-0">
-        <div className="mx-auto flex max-w-5xl items-center justify-between gap-2">
+      {/* Action bar — inline, not fixed. On mobile the extra margin-bottom
+          clears the MobileBottomNav (56px + safe-area-inset-bottom). */}
+      <div className="mt-8 mb-[calc(env(safe-area-inset-bottom)+4rem)] rounded-lg border bg-card p-3 md:mb-0 md:border-0 md:bg-transparent md:p-0">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <button
             type="button"
             onClick={onDiscard}
-            className="inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
+            className="inline-flex items-center justify-center gap-1 rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
           >
             <Trash2 className="h-4 w-4" /> Discard
           </button>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Link
               href="/listings"
-              className="rounded-md px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
+              className="rounded-md px-3 py-2 text-center text-sm text-muted-foreground hover:bg-muted"
             >
               Save for later
             </Link>
@@ -298,7 +304,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
               onClick={onPublish}
               disabled={publishing}
               size="lg"
-              className="bg-[#FF6B2B] text-white hover:bg-[#e65a1e]"
+              className="w-full bg-[#FF6B2B] text-white hover:bg-[#e65a1e] sm:w-auto"
             >
               {publishing ? "Publishing…" : "Publish listing"}
             </Button>
