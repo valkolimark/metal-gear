@@ -73,8 +73,8 @@ export function SpecsEditor({ draftId, specs }: Props) {
   const entries = Object.entries(local)
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-card p-3">
-      <div className="flex items-center justify-between">
+    <div className="w-full min-w-0 overflow-hidden rounded-lg border bg-card p-3">
+      <div className="flex min-w-0 items-center justify-between gap-2">
         <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Specs
         </div>
@@ -82,7 +82,7 @@ export function SpecsEditor({ draftId, specs }: Props) {
           <button
             type="button"
             onClick={() => setAddingNew(true)}
-            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10"
+            className="inline-flex shrink-0 items-center gap-1 rounded-md px-2 py-1 text-xs text-primary hover:bg-primary/10"
           >
             <Plus className="h-3.5 w-3.5" /> Add spec
           </button>
@@ -91,10 +91,12 @@ export function SpecsEditor({ draftId, specs }: Props) {
 
       <ul className="mt-2 space-y-1 text-sm">
         {entries.map(([k, v]) => (
-          <li key={k} className="border-b py-1.5 last:border-b-0">
+          <li key={k} className="min-w-0 border-b py-1.5 last:border-b-0">
             {editingKey === k ? (
-              <div className="space-y-2">
-                <div className="text-xs font-medium text-muted-foreground">{k}</div>
+              <div className="w-full min-w-0 space-y-2">
+                <div className="break-words text-xs font-medium text-muted-foreground">
+                  {k}
+                </div>
                 <input
                   autoFocus
                   value={draftValue}
@@ -105,49 +107,54 @@ export function SpecsEditor({ draftId, specs }: Props) {
                   }}
                   className="w-full rounded-md border bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 />
-                <div className="flex gap-2">
+                <div className="flex w-full min-w-0 gap-2">
                   <button
                     type="button"
                     onClick={commitEdit}
                     disabled={pending}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+                    className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
                   >
-                    <Check className="h-4 w-4" /> Save
+                    <Check className="h-4 w-4 shrink-0" /> Save
                   </button>
                   <button
                     type="button"
                     onClick={() => setEditingKey(null)}
-                    className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+                    className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-2 text-sm font-medium text-muted-foreground hover:bg-muted"
                   >
-                    <X className="h-4 w-4" /> Cancel
+                    <X className="h-4 w-4 shrink-0" /> Cancel
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-0.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
-                <span className="min-w-0 break-words text-muted-foreground">{k}</span>
-                <div className="flex min-w-0 items-start gap-2 sm:justify-end">
-                  <button
-                    type="button"
-                    onClick={() => startEdit(k)}
-                    className="inline-flex min-w-0 items-center gap-1.5 break-words text-left font-medium hover:text-primary sm:text-right"
-                  >
-                    <span className="min-w-0 break-words">
+              <div className="flex min-w-0 items-start gap-2">
+                <button
+                  type="button"
+                  onClick={() => startEdit(k)}
+                  className="flex min-w-0 flex-1 flex-col items-start gap-0.5 rounded px-1 py-0.5 text-left hover:bg-muted/40"
+                >
+                  <span className="w-full break-words text-xs text-muted-foreground">
+                    {k}
+                  </span>
+                  <span className="flex w-full min-w-0 items-start gap-1">
+                    <span className="min-w-0 flex-1 break-words font-medium">
                       {String(v) || (
                         <em className="italic text-muted-foreground">Tap to add</em>
                       )}
                     </span>
-                    <Pencil className="h-3 w-3 shrink-0 text-muted-foreground/60" aria-hidden />
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => removeSpec(k)}
-                    className="shrink-0 rounded p-1 text-muted-foreground hover:bg-muted"
-                    aria-label={`Remove ${k}`}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                    <Pencil
+                      className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground/60"
+                      aria-hidden
+                    />
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => removeSpec(k)}
+                  className="mt-1 shrink-0 rounded p-2 text-muted-foreground hover:bg-muted"
+                  aria-label={`Remove ${k}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             )}
           </li>
@@ -169,14 +176,14 @@ export function SpecsEditor({ draftId, specs }: Props) {
             onChange={(e) => setNewVal(e.target.value)}
             className="w-full rounded-md border bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
-          <div className="flex gap-2">
+          <div className="flex w-full min-w-0 gap-2">
             <button
               type="button"
               onClick={addSpec}
               disabled={pending}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+              className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
             >
-              <Check className="h-4 w-4" /> Add
+              <Check className="h-4 w-4 shrink-0" /> Add
             </button>
             <button
               type="button"
@@ -185,9 +192,9 @@ export function SpecsEditor({ draftId, specs }: Props) {
                 setNewKey("")
                 setNewVal("")
               }}
-              className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+              className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-2 text-sm font-medium text-muted-foreground hover:bg-muted"
             >
-              <X className="h-4 w-4" /> Cancel
+              <X className="h-4 w-4 shrink-0" /> Cancel
             </button>
           </div>
         </div>

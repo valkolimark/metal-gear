@@ -251,6 +251,17 @@ body.drawer-open {
   padding-bottom: max(8px, env(safe-area-inset-bottom));
 }
 
+/* Hide the mobile bottom nav whenever an input, textarea, or select
+   has focus — on iOS the keyboard leaves a `fixed bottom-0` bar floating
+   mid-screen because `position: fixed` tracks the layout viewport, not
+   the visual viewport. Requires :has() support (iOS Safari 16.4+, all
+   modern Chromium/Firefox). Older browsers simply see the bar, same as
+   pre-fix behavior. */
+body:has(input:focus, textarea:focus, select:focus, [contenteditable="true"]:focus)
+  .mobile-bottom-nav {
+  display: none;
+}
+
 /* ================================================================
    OCEAN PALETTE — DARK MODE
    Selector: html.dark[data-palette="ocean"]

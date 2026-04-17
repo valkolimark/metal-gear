@@ -78,7 +78,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
   }
 
   return (
-    <div className="mx-auto max-w-5xl p-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] md:pb-6">
+    <div className="mx-auto w-full max-w-5xl overflow-x-hidden p-4 pb-[calc(env(safe-area-inset-bottom)+1.5rem)] md:pb-6">
       {/* Photo strip */}
       <div className="mb-4 flex gap-2 overflow-x-auto">
         {photos.map((url, i) => (
@@ -140,7 +140,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
       )}
 
       <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_320px]">
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <InlineEditField
             draftId={draft.id}
             field="title"
@@ -255,7 +255,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
           )}
         </div>
 
-        <aside className="space-y-4">
+        <aside className="min-w-0 space-y-4">
           <div className="rounded-lg border bg-card p-3">
             <InlineEditField
               draftId={draft.id}

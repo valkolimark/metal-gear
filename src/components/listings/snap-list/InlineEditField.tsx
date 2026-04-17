@@ -110,7 +110,7 @@ export function InlineEditField({
 
   if (editing) {
     return (
-      <div className={cn("group relative space-y-2", className)}>
+      <div className={cn("group relative w-full min-w-0 space-y-2", className)}>
         <label className="text-xs font-medium text-muted-foreground">{label}</label>
         {variant === "textarea" ? (
           <textarea
@@ -154,21 +154,21 @@ export function InlineEditField({
             className="w-full rounded-md border bg-background px-3 py-2 text-base focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           />
         )}
-        <div className="flex gap-2">
+        <div className="flex w-full min-w-0 gap-2">
           <button
             type="button"
             onClick={commit}
             disabled={pending}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-4 text-sm font-medium text-primary-foreground disabled:opacity-60"
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md bg-primary px-2 text-sm font-medium text-primary-foreground disabled:opacity-60"
           >
-            <Check className="h-4 w-4" /> Save
+            <Check className="h-4 w-4 shrink-0" /> Save
           </button>
           <button
             type="button"
             onClick={cancel}
-            className="inline-flex min-h-11 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-4 text-sm font-medium text-muted-foreground hover:bg-muted"
+            className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border bg-background px-2 text-sm font-medium text-muted-foreground hover:bg-muted"
           >
-            <X className="h-4 w-4" /> Cancel
+            <X className="h-4 w-4 shrink-0" /> Cancel
           </button>
         </div>
       </div>
