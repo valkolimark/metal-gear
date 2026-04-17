@@ -37,6 +37,7 @@ function mapDraftRow(row: Record<string, unknown>): SnapListDraft {
       condition: fields.condition ?? null,
       specs: fields.specs ?? {},
       priceSuggestion: fields.priceSuggestion ?? null,
+      askingPrice: fields.askingPrice ?? null,
       locationCity: fields.locationCity ?? null,
       locationState: fields.locationState ?? null,
     },
@@ -128,28 +129,27 @@ export async function getDraft(
   return mapDraftRow(row as Record<string, unknown>)
 }
 
-const AllowedEditableFields = new Set([
-  "title",
-  "description",
-  "category",
-  "tier1",
-  "tier2",
-  "subcategory",
-  "manufacturer",
-  "model",
-  "serialNumber",
-  "year",
-  "condition",
-  "specs",
-  "priceSuggestion",
-  "locationCity",
-  "locationState",
+// Protected keys — the application owns these, user cannot rewrite them.
+const ProtectedFields = new Set([
+  "id",
+  "ownerId",
+  "companyId",
+  "publishedListingId",
+  "status",
+  "analysisStage",
 ])
 
+// Field names must be safe identifiers: starts with a letter, 1–50 chars of
+// [A-Za-z0-9_]. This covers our own fields (title, description, manufacturer,
+// askingPrice, …), Claude-generated clarifying-question field names
+// (materials, intended_application, …), and spec keys (bowl_rpm, …).
+const FieldNamePattern = /^[A-Za-z][A-Za-z0-9_]{0,49}$/
+
 const UpdateFieldSchema = z.object({
-  field: z.string().refine((f) => AllowedEditableFields.has(f), {
-    message: "field not editable",
-  }),
+  field: z
+    .string()
+    .refine((f) => FieldNamePattern.test(f), { message: "invalid field name" })
+    .refine((f) => !ProtectedFields.has(f), { message: "field not editable" }),
   value: z.any(),
 })
 
@@ -276,7 +276,15 @@ export async function publishDraft(
       ? conditionMap[draft.fields.condition]
       : "good"
 
-  const priceCents = draft.fields.priceSuggestion?.median ?? null
+  // Prefer dealer-set asking price; fall back to AI suggestion median.
+  const askingDollars =
+    typeof draft.fields.askingPrice === "number" && draft.fields.askingPrice > 0
+      ? draft.fields.askingPrice
+      : null
+  const priceCents =
+    askingDollars !== null
+      ? Math.round(askingDollars * 100)
+      : draft.fields.priceSuggestion?.median ?? null
   const specs = draft.fields.specs ?? {}
 
   const { data: listing, error: insertErr } = await admin

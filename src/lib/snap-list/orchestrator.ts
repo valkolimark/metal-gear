@@ -39,6 +39,7 @@ export function projectAnalysisToDraftFields(
     condition: analysis.condition.tier,
     specs: analysis.specs,
     priceSuggestion: null,
+    askingPrice: null,
     locationCity: null,
     locationState: null,
   }

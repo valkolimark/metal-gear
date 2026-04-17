@@ -39,6 +39,12 @@ import type {
 
 const CLAUDE_MODEL = "claude-sonnet-4-20250514"
 
+// A photo must carry at least this many characters of OCR text before we
+// treat it as a nameplate capture. Below the threshold we'd be labeling a
+// side-of-machine warning sticker or a single-word brand decal as a
+// "nameplate" — confusing when the dealer didn't actually shoot the data tag.
+const MIN_NAMEPLATE_OCR_CHARS = 30
+
 function pickNameplatePhoto(
   ocrResults: NameplateOCRResult[],
 ): { index: number | null; text: string; result: NameplateOCRResult | null } {
@@ -51,8 +57,11 @@ function pickNameplatePhoto(
       best = i
     }
   }
-  if (best === -1 || bestLen === 0) {
-    return { index: null, text: "", result: null }
+  if (best === -1 || bestLen < MIN_NAMEPLATE_OCR_CHARS) {
+    // Still return any OCR text we did find — it can still inform Claude —
+    // but don't mark a specific photo as "the nameplate."
+    const anyText = best >= 0 ? ocrResults[best].fullText : ""
+    return { index: null, text: anyText, result: best >= 0 ? ocrResults[best] : null }
   }
   return { index: best, text: ocrResults[best].fullText, result: ocrResults[best] }
 }

@@ -84,6 +84,8 @@ export interface SnapListDraftFields {
   condition: "excellent" | "good" | "fair" | "poor" | null
   specs: Record<string, string | number>
   priceSuggestion: PriceSuggestion | null
+  /** Dealer-set asking price in whole dollars (not cents). Null until they set one. */
+  askingPrice: number | null
   locationCity: string | null
   locationState: string | null
 }

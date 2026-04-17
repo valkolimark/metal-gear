@@ -11,6 +11,7 @@ import { InlineEditField } from "./InlineEditField"
 import { PriceSuggestionCard } from "./PriceSuggestionCard"
 import { PhotoCoachCard } from "./PhotoCoachCard"
 import { ClarifyingQuestion } from "./ClarifyingQuestion"
+import { SpecsEditor } from "./SpecsEditor"
 import {
   publishDraft,
   discardDraft,
@@ -87,7 +88,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
           >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={url} alt={`Photo ${i + 1}`} className="h-full w-full object-cover" />
-            {i === draft.nameplatePhotoIndex && (
+            {draft.nameplatePhotoIndex !== null && i === draft.nameplatePhotoIndex && (
               <span className="absolute left-1 top-1 rounded bg-primary px-1 text-[10px] font-medium text-primary-foreground">
                 Nameplate
               </span>
@@ -147,6 +148,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
             value={fields.title}
             confidence={conf.suggested_title ?? 0}
             placeholder="e.g. 2018 Caterpillar 336 Excavator"
+            hint="Tap to edit title"
           />
 
           {fields.tier1 && fields.tier2 && (
@@ -166,6 +168,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
             confidence={conf.suggested_description ?? 1.0}
             variant="textarea"
             placeholder="Describe the equipment, condition, and any recent maintenance."
+            hint="Tap to edit description"
           />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -223,26 +226,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
             />
           </div>
 
-          {Object.entries(fields.specs ?? {}).length > 0 && (
-            <div className="overflow-hidden rounded-lg border bg-card p-3">
-              <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Specs
-              </div>
-              <ul className="mt-2 grid grid-cols-1 gap-1 text-sm sm:grid-cols-2">
-                {Object.entries(fields.specs ?? {}).map(([k, v]) => (
-                  <li
-                    key={k}
-                    className="flex flex-col gap-0.5 border-b py-1.5 last:border-b-0 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
-                  >
-                    <span className="min-w-0 break-words text-muted-foreground">{k}</span>
-                    <span className="min-w-0 break-words font-medium sm:text-right">
-                      {String(v)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <SpecsEditor draftId={draft.id} specs={fields.specs ?? {}} />
 
           {draft.clarifyingQuestions.length > 0 && (
             <div className="space-y-2">
@@ -272,6 +256,23 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
         </div>
 
         <aside className="space-y-4">
+          <div className="rounded-lg border bg-card p-3">
+            <InlineEditField
+              draftId={draft.id}
+              field="askingPrice"
+              label="Your asking price"
+              value={fields.askingPrice}
+              confidence={1.0}
+              variant="number"
+              placeholder={
+                fields.priceSuggestion?.median
+                  ? `Suggested: $${Math.round(fields.priceSuggestion.median / 100).toLocaleString()}`
+                  : "e.g. 12500"
+              }
+              displayPrefix="$"
+              hint="Tap to set price"
+            />
+          </div>
           <PriceSuggestionCard price={fields.priceSuggestion} />
           <PhotoCoachCard
             draftId={draft.id}
