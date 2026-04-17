@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useTransition } from "react"
+import { useRef, useState, useTransition } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { toast } from "sonner"
@@ -41,6 +41,15 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
   const fields = draft.fields
 
   const anyLowConfidence = Object.values(conf).some((c) => c < 0.55)
+
+  const uploaderRef = useRef<HTMLDivElement | null>(null)
+  const openUploader = () => {
+    setShowUploader(true)
+    // Next tick so the uploader is in the DOM before we scroll.
+    requestAnimationFrame(() => {
+      uploaderRef.current?.scrollIntoView({ behavior: "smooth", block: "center" })
+    })
+  }
 
   const onPublish = () => {
     startPublish(async () => {
@@ -102,7 +111,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
         ))}
         <button
           type="button"
-          onClick={() => setShowUploader((v) => !v)}
+          onClick={() => (showUploader ? setShowUploader(false) : openUploader())}
           className="flex h-20 w-20 shrink-0 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground hover:bg-muted/50"
         >
           <Upload className="h-5 w-5" />
@@ -110,7 +119,10 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
       </div>
 
       {showUploader && (
-        <div className="mb-4 rounded-lg border bg-card p-3">
+        <div
+          ref={uploaderRef}
+          className="mb-4 rounded-lg border bg-card p-3"
+        >
           <MultiPhotoUploader
             maxFiles={15}
             uploadUrl="/api/listings/upload-media"
@@ -278,7 +290,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
             draftId={draft.id}
             ownerId={currentUserId}
             coach={draft.photoCoach}
-            onAddPhoto={() => setShowUploader(true)}
+            onAddPhoto={openUploader}
           />
         </aside>
       </div>

@@ -15,9 +15,16 @@ CRITICAL RULES:
 1. Return ONLY valid JSON. No markdown fences. No preamble. No explanation outside the JSON.
 2. Never invent data. If you cannot read or infer a value, use null and set confidence low.
 3. Every field that has a "confidence" slot must include a number from 0.0 (no confidence) to 1.0 (certain).
-4. When OCR_TEXT is provided, treat it as the ground truth for manufacturer / model / serial / year — OCR is more reliable than visual inference for nameplate fields. Only override OCR if it is clearly garbled.
-5. Map tier1 / tier2 / subcategory by BRACKET ID from the TAXONOMY reference (e.g. "excavators", not "Excavators"). If nothing fits, use null.
-6. Fraud flags: mark is_suspicious=true if the image appears to be a stock catalog photo, AI-generated, or shows different equipment than the OCR text suggests.
+4. OCR text is ground truth for FIELD VALUES (serial, model, year). But OCR CANNOT distinguish which nameplate is the equipment's — that is a visual/semantic judgment you must make.
+5. **Sub-component nameplates vs. equipment nameplates.** Industrial equipment routinely carries multiple nameplates: one for the main equipment, and separate ones for its sub-components (motor, drive, pump end, controller, flow meter). The dealer wants the EQUIPMENT manufacturer, never the sub-component brand.
+   Common motor / sub-component brands (these are NOT the equipment manufacturer unless the equipment itself is a motor or drive):
+   **Motors:** BALDOR, ABB, WEG, SIEMENS, TOSHIBA, MARATHON, US MOTORS, LEESON, TECO, NIDEC, LAFERT
+   **VFDs / drives:** ABB, Siemens, Allen-Bradley, Yaskawa, Mitsubishi, Danfoss, Rockwell, Hitachi
+   **Bearings:** SKF, FAG, Timken, NSK, NTN
+   **Seals:** John Crane, EagleBurgmann, Chesterton, Flowserve, AESSEAL
+   Equipment manufacturer examples by category — **centrifuges:** Alfa Laval, Westfalia, GEA, AMETEK, Ferrum, Heinkel, Rousselet, Pennwalt, Tolhurst, OLHU. **Pumps:** Sulzer, Flowserve, Goulds, ITT, Grundfos, KSB. **Turbines:** GE, Siemens, Mitsubishi, Solar. **Excavators:** Caterpillar, Komatsu, Volvo, Hitachi, John Deere. If the loudest OCR text is a motor brand but the equipment class is clearly something else (centrifuge, pump, turbine), IGNORE the motor brand for manufacturer and look harder at the other photos / visible badges on the main body.
+6. Map tier1 / tier2 / subcategory by BRACKET ID from the TAXONOMY reference (e.g. "excavators", not "Excavators"). If nothing fits, use null.
+7. Fraud flags: mark is_suspicious=true if the image appears to be a stock catalog photo, AI-generated, or shows different equipment than the OCR text suggests.
 
 RESPONSE JSON SCHEMA:
 {
@@ -64,10 +71,18 @@ export function buildTaxonomyReference(taxonomy: TaxonomyTree): string {
   return lines.join("\n")
 }
 
+export interface PhotoOcrEntry {
+  /** 0-indexed position in the photo array. */
+  photoIndex: number
+  /** Full OCR text for that photo. Empty string when no text detected. */
+  text: string
+}
+
 export interface PromptInput {
   photoCount: number
-  ocrText: string | null
-  /** If OCR was stronger on a specific photo, tell the model so it can focus. */
+  /** Per-photo OCR so Claude can disambiguate which nameplate belongs to the equipment vs. a sub-component. */
+  perPhotoOcr: PhotoOcrEntry[]
+  /** Heuristic pick: photo with most OCR text. Just a hint; Claude should override when sub-component brands are present. */
   nameplateHintPhotoIndex: number | null
   taxonomy: TaxonomyTree
 }
@@ -77,7 +92,7 @@ export interface PromptInput {
  * this returns only the text portion of the user message.
  */
 export function buildEquipmentIdentificationPrompt(input: PromptInput): string {
-  const { photoCount, ocrText, nameplateHintPhotoIndex, taxonomy } = input
+  const { photoCount, perPhotoOcr, nameplateHintPhotoIndex, taxonomy } = input
   const lines: string[] = []
 
   if (photoCount === 1) {
@@ -86,21 +101,28 @@ export function buildEquipmentIdentificationPrompt(input: PromptInput): string {
     lines.push(
       `Analyze these ${photoCount} equipment photographs together — they are all of the same unit.`,
     )
-    if (nameplateHintPhotoIndex !== null) {
-      lines.push(
-        `Photo ${nameplateHintPhotoIndex + 1} contained the most readable nameplate text — focus there for manufacturer/model/serial/year.`,
-      )
-    }
   }
 
-  if (ocrText && ocrText.trim().length > 0) {
+  const photosWithText = perPhotoOcr.filter((p) => p.text && p.text.trim().length > 0)
+
+  if (photosWithText.length > 0) {
     lines.push("")
-    lines.push(
-      "OCR_TEXT (extracted from nameplate by Google Vision — treat as ground truth unless obviously garbled):",
-    )
-    lines.push("```")
-    lines.push(ocrText.trim())
-    lines.push("```")
+    lines.push("PER-PHOTO OCR (extracted by Google Cloud Vision). Each block below is one photo's extracted text. Use this to pick the EQUIPMENT nameplate over sub-component nameplates:")
+    lines.push("")
+    for (const entry of photosWithText) {
+      lines.push(`--- Photo ${entry.photoIndex + 1} ---`)
+      lines.push(entry.text.trim())
+      lines.push("")
+    }
+    if (photosWithText.length > 1) {
+      lines.push(
+        "⚠ MULTIPLE nameplates detected. Walk through them: identify the equipment class visually first (centrifuge? pump? turbine? excavator?). Then pick the manufacturer from the nameplate whose brand MATCHES that class. Ignore nameplates whose brand is in the motor / drive / seal list (Baldor, ABB, WEG, Siemens, SKF, …) — those belong to sub-components. Record sub-component brands in `key_specs` (e.g. `{ \"motor_brand\": \"BALDOR\", \"motor_model\": \"...\" }`) rather than in `manufacturer`.",
+      )
+    } else if (nameplateHintPhotoIndex !== null) {
+      lines.push(
+        `Only photo ${nameplateHintPhotoIndex + 1} had readable OCR. Confirm the brand you see matches the equipment class before using it as the manufacturer.`,
+      )
+    }
   } else {
     lines.push("")
     lines.push(

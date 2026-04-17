@@ -144,22 +144,41 @@ describe("mergeOCRWithVisual", () => {
 })
 
 describe("buildEquipmentIdentificationPrompt", () => {
-  it("includes OCR text when provided", () => {
+  it("includes per-photo OCR blocks and labels each photo", () => {
     const out = buildEquipmentIdentificationPrompt({
       photoCount: 2,
-      ocrText: "CATERPILLAR MODEL 336",
+      perPhotoOcr: [
+        { photoIndex: 0, text: "" },
+        { photoIndex: 1, text: "CATERPILLAR MODEL 336" },
+      ],
       nameplateHintPhotoIndex: 1,
       taxonomy: fakeTaxonomy,
     })
-    expect(out).toContain("OCR_TEXT")
+    expect(out).toContain("PER-PHOTO OCR")
+    expect(out).toContain("--- Photo 2 ---")
     expect(out).toContain("CATERPILLAR MODEL 336")
-    expect(out).toContain("Photo 2 contained")
   })
 
-  it("notes when OCR is empty", () => {
+  it("warns about multi-nameplate disambiguation when more than one photo has OCR text", () => {
+    const out = buildEquipmentIdentificationPrompt({
+      photoCount: 3,
+      perPhotoOcr: [
+        { photoIndex: 0, text: "AMETEK CENTRIFUGE SPEED 1530 RPM" },
+        { photoIndex: 1, text: "BALDOR MOTOR 10 HP 1760 RPM CLASS I" },
+        { photoIndex: 2, text: "" },
+      ],
+      nameplateHintPhotoIndex: 1,
+      taxonomy: fakeTaxonomy,
+    })
+    expect(out).toMatch(/MULTIPLE nameplates/i)
+    expect(out).toContain("BALDOR")
+    expect(out).toContain("AMETEK")
+  })
+
+  it("notes when OCR is empty across all photos", () => {
     const out = buildEquipmentIdentificationPrompt({
       photoCount: 1,
-      ocrText: null,
+      perPhotoOcr: [{ photoIndex: 0, text: "" }],
       nameplateHintPhotoIndex: null,
       taxonomy: fakeTaxonomy,
     })
@@ -169,7 +188,7 @@ describe("buildEquipmentIdentificationPrompt", () => {
   it("always includes taxonomy bracket IDs", () => {
     const out = buildEquipmentIdentificationPrompt({
       photoCount: 1,
-      ocrText: null,
+      perPhotoOcr: [],
       nameplateHintPhotoIndex: null,
       taxonomy: fakeTaxonomy,
     })

@@ -98,7 +98,7 @@ async function fetchImageAsBase64(
 
 async function callClaude(
   photoUrls: string[],
-  ocrText: string,
+  perPhotoOcr: Array<{ photoIndex: number; text: string }>,
   nameplateHintIndex: number | null,
   options: EquipmentAnalysisOptions,
 ): Promise<{ output: ClaudeIdentificationOutput | null; raw: string; error?: string }> {
@@ -128,7 +128,7 @@ async function callClaude(
 
   const promptText = buildEquipmentIdentificationPrompt({
     photoCount: imageBlocks.length,
-    ocrText: ocrText || null,
+    perPhotoOcr: perPhotoOcr.filter((p) => p.photoIndex < imageBlocks.length),
     nameplateHintPhotoIndex: nameplateHintIndex,
     taxonomy: options.taxonomyContext,
   })
@@ -218,9 +218,13 @@ export async function analyzeEquipmentImages(
 
   const nameplate = pickNameplatePhoto(ocrResults)
 
-  // ─── Parallel stage 2 — Claude ─────────────────────────────────────────
+  // ─── Parallel stage 2 — Claude (pass per-photo OCR for sub-component disambiguation) ───
+  const perPhotoOcr = ocrResults.map((r, i) => ({
+    photoIndex: i,
+    text: r?.fullText ?? "",
+  }))
   const claudeStart = Date.now()
-  const claudeRes = await callClaude(photoUrls, nameplate.text, nameplate.index, options)
+  const claudeRes = await callClaude(photoUrls, perPhotoOcr, nameplate.index, options)
   reportStage("claude", Date.now() - claudeStart)
   if (claudeRes.error) errors.push(`claude_${claudeRes.error}`)
 

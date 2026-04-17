@@ -86,29 +86,13 @@ export function extractFieldsFromOCR(
     out.model = { value: modelMatch[1], confidence: 0.8 }
   }
 
-  // Manufacturer — harder. If a block's text is in an uppercase logo-like
-  // style AND is the largest block, we treat it as a hint. Confidence stays
-  // modest so Claude can override.
-  if (blocks.length > 0) {
-    const topBlock = [...blocks]
-      .sort((a, b) => boundsArea(b) - boundsArea(a))
-      .find((b) => b.text.length >= 2 && b.text.length <= 30 && !/[\d:]/.test(b.text))
-    if (topBlock) {
-      out.manufacturer = {
-        value: topBlock.text.trim().split(/\s+/)[0].toUpperCase(),
-        confidence: Math.min(0.75, topBlock.confidence || 0.6),
-      }
-    }
-  }
+  // Manufacturer is NOT extracted heuristically — the largest OCR block was
+  // grabbing motor-brand logos (BALDOR, ABB, WEG) off sub-component
+  // nameplates and promoting them to the equipment manufacturer. Claude
+  // disambiguates this from the full per-photo OCR plus the images.
+  void blocks
 
   return out
-}
-
-function boundsArea(block: OCRBlock): number {
-  if (!block.bounds || block.bounds.length < 3) return 0
-  const xs = block.bounds.map((p) => p.x)
-  const ys = block.bounds.map((p) => p.y)
-  return (Math.max(...xs) - Math.min(...xs)) * (Math.max(...ys) - Math.min(...ys))
 }
 
 export interface MergeOutput {
