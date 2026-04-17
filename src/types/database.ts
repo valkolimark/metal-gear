@@ -170,47 +170,47 @@ export type Database = {
         Row: {
           added_at: string | null
           collection_id: string
+          feed_post_id: string | null
           id: string
           item_type: string
           listing_id: string | null
-          feed_post_id: string | null
+          notes: string | null
+          video_listing_id: string | null
+          video_post_id: string | null
           video_ref_id: string | null
           video_source_type: string | null
           video_thumbnail_url: string | null
           video_title: string | null
-          video_listing_id: string | null
-          video_post_id: string | null
-          notes: string | null
         }
         Insert: {
           added_at?: string | null
           collection_id: string
+          feed_post_id?: string | null
           id?: string
           item_type?: string
           listing_id?: string | null
-          feed_post_id?: string | null
+          notes?: string | null
+          video_listing_id?: string | null
+          video_post_id?: string | null
           video_ref_id?: string | null
           video_source_type?: string | null
           video_thumbnail_url?: string | null
           video_title?: string | null
-          video_listing_id?: string | null
-          video_post_id?: string | null
-          notes?: string | null
         }
         Update: {
           added_at?: string | null
           collection_id?: string
+          feed_post_id?: string | null
           id?: string
           item_type?: string
           listing_id?: string | null
-          feed_post_id?: string | null
+          notes?: string | null
+          video_listing_id?: string | null
+          video_post_id?: string | null
           video_ref_id?: string | null
           video_source_type?: string | null
           video_thumbnail_url?: string | null
           video_title?: string | null
-          video_listing_id?: string | null
-          video_post_id?: string | null
-          notes?: string | null
         }
         Relationships: [
           {
@@ -218,6 +218,13 @@ export type Database = {
             columns: ["collection_id"]
             isOneToOne: false
             referencedRelation: "collections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "collection_items_feed_post_id_fkey"
+            columns: ["feed_post_id"]
+            isOneToOne: false
+            referencedRelation: "feed_posts"
             referencedColumns: ["id"]
           },
           {
@@ -235,17 +242,17 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
-            foreignKeyName: "collection_items_feed_post_id_fkey"
-            columns: ["feed_post_id"]
+            foreignKeyName: "collection_items_video_listing_id_fkey"
+            columns: ["video_listing_id"]
             isOneToOne: false
-            referencedRelation: "feed_posts"
+            referencedRelation: "listings"
             referencedColumns: ["id"]
           },
           {
             foreignKeyName: "collection_items_video_listing_id_fkey"
             columns: ["video_listing_id"]
             isOneToOne: false
-            referencedRelation: "listings"
+            referencedRelation: "pricing_comparables"
             referencedColumns: ["id"]
           },
           {
@@ -943,6 +950,7 @@ export type Database = {
           created_at: string
           id: string
           is_deleted: boolean
+          parent_comment_id: string | null
           post_id: string
         }
         Insert: {
@@ -952,6 +960,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_deleted?: boolean
+          parent_comment_id?: string | null
           post_id: string
         }
         Update: {
@@ -961,6 +970,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_deleted?: boolean
+          parent_comment_id?: string | null
           post_id?: string
         }
         Relationships: [
@@ -976,6 +986,13 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "feed_post_comments_parent_comment_id_fkey"
+            columns: ["parent_comment_id"]
+            isOneToOne: false
+            referencedRelation: "feed_post_comments"
             referencedColumns: ["id"]
           },
           {
@@ -1206,6 +1223,114 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      listing_drafts: {
+        Row: {
+          analysis_stage: string | null
+          clarifying_questions: Json | null
+          claude_raw: Json | null
+          company_id: string | null
+          confidence_scores: Json
+          created_at: string
+          error_message: string | null
+          expires_at: string
+          fields: Json
+          id: string
+          internal_duplicate_listing_id: string | null
+          nameplate_photo_index: number | null
+          ocr_raw: Json | null
+          owner_id: string
+          photo_coach: Json | null
+          photo_urls: string[]
+          published_listing_id: string | null
+          status: string
+          stock_photo_matches: string[] | null
+          updated_at: string
+          web_detection_raw: Json | null
+        }
+        Insert: {
+          analysis_stage?: string | null
+          clarifying_questions?: Json | null
+          claude_raw?: Json | null
+          company_id?: string | null
+          confidence_scores?: Json
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string
+          fields?: Json
+          id?: string
+          internal_duplicate_listing_id?: string | null
+          nameplate_photo_index?: number | null
+          ocr_raw?: Json | null
+          owner_id: string
+          photo_coach?: Json | null
+          photo_urls?: string[]
+          published_listing_id?: string | null
+          status?: string
+          stock_photo_matches?: string[] | null
+          updated_at?: string
+          web_detection_raw?: Json | null
+        }
+        Update: {
+          analysis_stage?: string | null
+          clarifying_questions?: Json | null
+          claude_raw?: Json | null
+          company_id?: string | null
+          confidence_scores?: Json
+          created_at?: string
+          error_message?: string | null
+          expires_at?: string
+          fields?: Json
+          id?: string
+          internal_duplicate_listing_id?: string | null
+          nameplate_photo_index?: number | null
+          ocr_raw?: Json | null
+          owner_id?: string
+          photo_coach?: Json | null
+          photo_urls?: string[]
+          published_listing_id?: string | null
+          status?: string
+          stock_photo_matches?: string[] | null
+          updated_at?: string
+          web_detection_raw?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "listing_drafts_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_internal_duplicate_listing_id_fkey"
+            columns: ["internal_duplicate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_internal_duplicate_listing_id_fkey"
+            columns: ["internal_duplicate_listing_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_comparables"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_published_listing_id_fkey"
+            columns: ["published_listing_id"]
+            isOneToOne: false
+            referencedRelation: "listings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listing_drafts_published_listing_id_fkey"
+            columns: ["published_listing_id"]
+            isOneToOne: false
+            referencedRelation: "pricing_comparables"
             referencedColumns: ["id"]
           },
         ]
@@ -1511,6 +1636,7 @@ export type Database = {
           ai_analyzed: boolean | null
           ai_assist_accepted: boolean | null
           ai_assist_used: boolean | null
+          ai_assisted: boolean
           ai_fraud_flagged: boolean | null
           ai_fraud_reason: string | null
           ai_price_accepted: boolean | null
@@ -1544,6 +1670,7 @@ export type Database = {
           refreshed_at: string | null
           seller_id: string
           sku: string | null
+          source_draft_id: string | null
           specifications: Json | null
           specs: Json | null
           status: string
@@ -1559,6 +1686,7 @@ export type Database = {
           ai_analyzed?: boolean | null
           ai_assist_accepted?: boolean | null
           ai_assist_used?: boolean | null
+          ai_assisted?: boolean
           ai_fraud_flagged?: boolean | null
           ai_fraud_reason?: string | null
           ai_price_accepted?: boolean | null
@@ -1592,6 +1720,7 @@ export type Database = {
           refreshed_at?: string | null
           seller_id: string
           sku?: string | null
+          source_draft_id?: string | null
           specifications?: Json | null
           specs?: Json | null
           status?: string
@@ -1607,6 +1736,7 @@ export type Database = {
           ai_analyzed?: boolean | null
           ai_assist_accepted?: boolean | null
           ai_assist_used?: boolean | null
+          ai_assisted?: boolean
           ai_fraud_flagged?: boolean | null
           ai_fraud_reason?: string | null
           ai_price_accepted?: boolean | null
@@ -1640,6 +1770,7 @@ export type Database = {
           refreshed_at?: string | null
           seller_id?: string
           sku?: string | null
+          source_draft_id?: string | null
           specifications?: Json | null
           specs?: Json | null
           status?: string
@@ -1661,6 +1792,13 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_source_draft_id_fkey"
+            columns: ["source_draft_id"]
+            isOneToOne: false
+            referencedRelation: "listing_drafts"
             referencedColumns: ["id"]
           },
         ]
@@ -2817,6 +2955,112 @@ export type Database = {
           },
         ]
       }
+      snap_list_accuracy_reviews: {
+        Row: {
+          ai_value: string | null
+          correct: boolean
+          created_at: string
+          draft_id: string
+          field_name: string
+          id: string
+          notes: string | null
+          reviewer_id: string
+        }
+        Insert: {
+          ai_value?: string | null
+          correct: boolean
+          created_at?: string
+          draft_id: string
+          field_name: string
+          id?: string
+          notes?: string | null
+          reviewer_id: string
+        }
+        Update: {
+          ai_value?: string | null
+          correct?: boolean
+          created_at?: string
+          draft_id?: string
+          field_name?: string
+          id?: string
+          notes?: string | null
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snap_list_accuracy_reviews_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "listing_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snap_list_events: {
+        Row: {
+          created_at: string
+          draft_id: string | null
+          event_type: string
+          id: number
+          owner_id: string
+          payload: Json
+        }
+        Insert: {
+          created_at?: string
+          draft_id?: string | null
+          event_type: string
+          id?: number
+          owner_id: string
+          payload?: Json
+        }
+        Update: {
+          created_at?: string
+          draft_id?: string | null
+          event_type?: string
+          id?: number
+          owner_id?: string
+          payload?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snap_list_events_draft_id_fkey"
+            columns: ["draft_id"]
+            isOneToOne: false
+            referencedRelation: "listing_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      snap_list_usage: {
+        Row: {
+          analysis_count: number
+          created_at: string
+          id: string
+          month_year: string
+          owner_id: string
+          publish_count: number
+          updated_at: string
+        }
+        Insert: {
+          analysis_count?: number
+          created_at?: string
+          id?: string
+          month_year: string
+          owner_id: string
+          publish_count?: number
+          updated_at?: string
+        }
+        Update: {
+          analysis_count?: number
+          created_at?: string
+          id?: string
+          month_year?: string
+          owner_id?: string
+          publish_count?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       sos_notifications: {
         Row: {
           id: string
@@ -2906,6 +3150,7 @@ export type Database = {
           requester_id: string
           status?: Database["public"]["Enums"]["sos_status"] | null
           title: string
+          transport_needed?: boolean
           updated_at?: string | null
           urgency?: Database["public"]["Enums"]["sos_urgency"] | null
           videos?: string[] | null
@@ -2934,6 +3179,7 @@ export type Database = {
           requester_id?: string
           status?: Database["public"]["Enums"]["sos_status"] | null
           title?: string
+          transport_needed?: boolean
           updated_at?: string | null
           urgency?: Database["public"]["Enums"]["sos_urgency"] | null
           videos?: string[] | null
@@ -3233,15 +3479,15 @@ export type Database = {
           archetype: string | null
           archetype_locked: boolean
           company_name: string
+          created_at: string | null
           dot_mc_number: string | null
           equipment_capabilities: string[] | null
           fleet_size: string | null
-          logistics_coverage: string | null
-          logistics_type: string | null
-          created_at: string | null
           id: string
           industries: string[] | null
           job_title: string | null
+          logistics_coverage: string | null
+          logistics_type: string | null
           monthly_volume: string | null
           onboarding_completed: boolean | null
           onboarding_completed_at: string | null
@@ -3262,6 +3508,7 @@ export type Database = {
           sos_categories: string[] | null
           sos_notify_methods: string[] | null
           sos_opted_in: boolean | null
+          sos_receive_all: boolean
           sos_responder: boolean | null
           sos_urgency_level: string | null
           sourcing_methods: string[] | null
@@ -3276,15 +3523,15 @@ export type Database = {
           archetype?: string | null
           archetype_locked?: boolean
           company_name: string
+          created_at?: string | null
           dot_mc_number?: string | null
           equipment_capabilities?: string[] | null
           fleet_size?: string | null
-          logistics_coverage?: string | null
-          logistics_type?: string | null
-          created_at?: string | null
           id?: string
           industries?: string[] | null
           job_title?: string | null
+          logistics_coverage?: string | null
+          logistics_type?: string | null
           monthly_volume?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
@@ -3305,6 +3552,7 @@ export type Database = {
           sos_categories?: string[] | null
           sos_notify_methods?: string[] | null
           sos_opted_in?: boolean | null
+          sos_receive_all?: boolean
           sos_responder?: boolean | null
           sos_urgency_level?: string | null
           sourcing_methods?: string[] | null
@@ -3317,11 +3565,17 @@ export type Database = {
         }
         Update: {
           archetype?: string | null
+          archetype_locked?: boolean
           company_name?: string
           created_at?: string | null
+          dot_mc_number?: string | null
+          equipment_capabilities?: string[] | null
+          fleet_size?: string | null
           id?: string
           industries?: string[] | null
           job_title?: string | null
+          logistics_coverage?: string | null
+          logistics_type?: string | null
           monthly_volume?: string | null
           onboarding_completed?: boolean | null
           onboarding_completed_at?: string | null
@@ -3342,6 +3596,7 @@ export type Database = {
           sos_categories?: string[] | null
           sos_notify_methods?: string[] | null
           sos_opted_in?: boolean | null
+          sos_receive_all?: boolean
           sos_responder?: boolean | null
           sos_urgency_level?: string | null
           sourcing_methods?: string[] | null
@@ -3583,6 +3838,7 @@ export type Database = {
       }
     }
     Functions: {
+      cleanup_expired_drafts: { Args: never; Returns: number }
       decrement_feed_hashtags: { Args: { tags: string[] }; Returns: undefined }
       decrement_post_comments: { Args: { p_post_id: string }; Returns: number }
       decrement_post_reactions: { Args: { p_post_id: string }; Returns: number }
@@ -3593,6 +3849,10 @@ export type Database = {
           notify_methods: string[]
           user_id: string
         }[]
+      }
+      get_auth_providers_for_email: {
+        Args: { p_email: string }
+        Returns: string[]
       }
       get_for_you_feed: {
         Args: { p_cursor: string; p_limit: number; p_user_id: string }
@@ -3612,6 +3872,10 @@ export type Database = {
       get_user_active_sos_count: {
         Args: { p_user_id: string }
         Returns: number
+      }
+      increment_import_counter: {
+        Args: { amount?: number; column_name: string; import_id: string }
+        Returns: undefined
       }
       increment_post_comments: { Args: { p_post_id: string }; Returns: number }
       increment_post_reactions: { Args: { p_post_id: string }; Returns: number }

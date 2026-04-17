@@ -38,7 +38,7 @@ export default async function ListingCreatePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
-            href="/listings/new"
+            href="/listings/snap"
             className="group relative flex flex-col gap-4 rounded-xl border border-border bg-card p-6 hover:border-primary hover:shadow-md transition-all duration-150"
           >
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-150">

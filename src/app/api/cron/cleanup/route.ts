@@ -125,6 +125,15 @@ export async function GET(request: Request) {
     results.r2_cleanup = { deleted: 0, error: e instanceof Error ? e.message : 'Unknown' }
   }
 
+  // Snap & List — delete expired listing drafts (analyzing/ready/failed/discarded past expires_at).
+  try {
+    const { data, error } = await admin.rpc('cleanup_expired_drafts')
+    if (error) throw error
+    results.expired_drafts = { deleted: typeof data === 'number' ? data : 0 }
+  } catch (e) {
+    results.expired_drafts = { deleted: 0, error: e instanceof Error ? e.message : 'Unknown' }
+  }
+
   const totalDeleted = Object.values(results).reduce((sum, r) => sum + r.deleted, 0)
 
   console.log('[cron/cleanup]', JSON.stringify({ totalDeleted, results }))

@@ -228,7 +228,7 @@ export default function ListingsPage() {
           </p>
         </div>
         <Button asChild className="font-body">
-          <Link href="/listings/create">
+          <Link href="/listings/snap">
             <Plus className="mr-2 size-4" />
             Create Listing
           </Link>

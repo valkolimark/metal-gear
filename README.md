@@ -9,6 +9,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ## Features
 
 ### Marketplace
+- **Snap & List** (Cycle 58) — upload 1–10 photos and AI drafts the full listing (title, category, description, specs, nameplate fields, condition, price range from real comparables, photo coach). Google Cloud Vision OCR + Claude Sonnet analysis in ~8–12 seconds. Inline-editable review screen with amber dots on low-confidence fields. Free tier: 3/month; Pro+: unlimited. AI-Assisted badge on published listings. Old multi-step flow preserved at `/listings/new?mode=advanced`.
 - Multi-step listing creation with photo drag-and-drop reorder, draft saves, and gallery detail pages
 - Full-text search with filters (category, condition, price range, location radius), sort options, and grid/list toggle
 - 3-tier equipment taxonomy: 4 Tier 1 buckets, 28 Tier 2 groups, ~252 subcategories with cross-referencing
@@ -190,6 +191,11 @@ STRIPE_WEBHOOK_SECRET=your_webhook_secret
 
 RESEND_API_KEY=your_resend_key
 ANTHROPIC_API_KEY=your_anthropic_key
+
+# Google Cloud Vision — Snap & List (Cycle 58)
+# Base64-encode the full service-account JSON: `base64 < key.json | tr -d '\n'`
+GOOGLE_CLOUD_PROJECT_ID=your_gcp_project_id
+GOOGLE_APPLICATION_CREDENTIALS_JSON=base64_encoded_service_account_json
 
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=your_vapid_public
 VAPID_PRIVATE_KEY=your_vapid_private

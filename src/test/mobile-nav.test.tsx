@@ -62,7 +62,7 @@ describe('MobileNav', () => {
 
     expect(hrefs).toContain('/dashboard')
     expect(hrefs).toContain('/search')
-    expect(hrefs).toContain('/listings/new')
+    expect(hrefs).toContain('/listings/snap')
     expect(hrefs).toContain('/messages')
     expect(hrefs).toContain('/profile')
   })

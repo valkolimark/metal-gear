@@ -57,6 +57,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - `/api/listings/[id]/ask` — Ask Metal Gear streaming AI chat with professor mode (listing-context, 10/day free, 100/day Pro+)
 - `/api/help/chat` — AI Help Assistant streaming chat (platform-context, 30 req/hr rate limit)
 - `/api/feed/upload-media` — Feed post media upload (POST: multipart upload with auth/size/rate limit; GET: video status polling)
+- `/api/snap-list/analyze` — Snap & List pilot: POST photoUrls → kicks off `analyzePhotos` server action, returns `draftId` (5/10min rate limit)
 
 ## Pricing Tiers
 - **Free:** 3 listings, 5 photos, 100mi search radius
@@ -75,6 +76,7 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Cloudflare account:** c61e1a513e96a3b9df409959c2853c9c
 - **R2 bucket:** metal-gear-media → `media.metalgear.com`
 - **Stream subdomain:** customer-305dqqczrx52n91m.cloudflarestream.com
+- **Google Cloud Vision (Cycle 58):** project `metalgear-488603`; service account `metal-gear-vision@metalgear-488603.iam.gserviceaccount.com`. Used by `src/lib/google-vision.ts` for nameplate OCR (`DOCUMENT_TEXT_DETECTION`) and stock-photo fraud detection (`WEB_DETECTION`). Credentials supplied via `GOOGLE_CLOUD_PROJECT_ID` + `GOOGLE_APPLICATION_CREDENTIALS_JSON` (base64). Free tier: 1,000 units/feature/month.
 
 ## Auth Providers
 - Email/password (Supabase Auth)
@@ -143,6 +145,10 @@ Cycle prompts live in `/prompts/`. Start a new session by pasting the relevant p
 - `listing_freshness_suggestions` — AI refresh suggestions for stale listings (listing_id, seller_id, ai_title_suggestion, ai_price_suggestion, ai_price_reasoning, ai_description_tip, email_sent_at, acted_on, acted_on_at); UNIQUE active-suggestion constraint per listing
 - `seller_verifications` — EIN verification queue (user_id, business_name, tax_id_hash, ein, ein_submitted_at, document_url, status pending/approved/rejected, reviewed_by, reviewed_at, rejection_reason, admin_notes); profile page submits, admin moderation reviews
 - `r2_cleanup_queue` — Async R2 media deletion queue (r2_key, created_at, processed_at, error); processed by `/api/cron/cleanup` (max 50/run)
+- `listing_drafts` (Cycle 58) — Snap & List draft state (photo_urls, nameplate_photo_index, raw AI outputs in JSONB, structured `fields` + `confidence_scores`, `photo_coach`, `clarifying_questions`, `stock_photo_matches`, status lifecycle `analyzing/ready/publishing/published/discarded/failed`, 7-day `expires_at` TTL); RLS: owner-only SELECT/ALL
+- `snap_list_usage` (Cycle 58) — Monthly analysis + publish counters per user (unique on `owner_id, month_year`); Free: 3/month, paid: unlimited
+- `snap_list_events` (Cycle 58) — Pilot funnel event log (BIGSERIAL, 14 event_type CHECK constraint); no user-facing RLS policy (admin server actions only)
+- `snap_list_accuracy_reviews` (Cycle 58) — Manual OCR accuracy sample per field (unique on `draft_id, field_name, reviewer_id`); admin-only
 
 ## AI Infrastructure
 - **Anthropic SDK:** `@anthropic-ai/sdk` with client at `src/lib/anthropic.ts`
@@ -432,6 +438,23 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Components:** `CompanyHero` (banner, logo, stats), `CompanyListings` (active listings grid), `CompanyReputation` (star distribution + recent reviews)
 - **Server actions:** `src/app/actions/companies-public.ts` — `getPublicCompanyBySlug()`, `getCompanyActiveListings()`, `getCompanyReputationStats()`, `getCompanyListingCount()`
 - **Middleware:** `/companies/[slug]` exempt from auth redirect (same pattern as `/listings/[id]` and `/sellers/[id]`)
+
+## Snap & List — AI-assisted listing creation (Cycle 58)
+- **Primary flow:** `/listings/snap` is now the **default** listing creation entry. `/listings/new` redirects to `/listings/snap`; `/listings/new?mode=advanced` preserves the old multi-step form for edge cases. `/listings/create` single-listing tile, `MobileBottomNav +` action, `MobileMenuDrawer` "Post a Listing", and header "Create Listing" all route to `/listings/snap`.
+- **Pilot framing:** this is an **accuracy pilot** for a new vision pipeline. Cycle 59 will migrate `/api/listings/analyze-image`, SOS image analysis, and admin moderation onto the same pipeline ONLY if pilot metrics justify it. For now those callers stay on the existing Claude-only flow.
+- **Reusable vision-analysis layer:** `src/lib/vision-analysis/` — domain-agnostic pipeline (`analyzeEquipmentImages(photoUrls, options)`). Fans out Google Vision OCR + web detection + Claude via `Promise.allSettled`. **MUST NOT** import from `@/lib/snap-list/`, `listing_drafts`, `listings`, or any domain table — enforce via `grep -rnE "^\s*(import\|require).*(snap-list\|listing_drafts\|@/app/actions)" src/lib/vision-analysis/`. Types in `types.ts` are stable — Cycle 59 depends on their shape.
+- **Snap & List orchestrator:** `src/lib/snap-list/orchestrator.ts` — pure functions that compose `analyzeEquipmentImages` output with pricing + photo coaching. The only module coupling vision analysis to the `listing_drafts` persistence layer sits in the server actions.
+- **Server actions:** `src/app/actions/snap-list.ts` (top-level `analyzePhotos`, deferred via Next.js `after()`), `snap-list-draft.ts` (`createDraft` / `getDraft` / `updateDraftField` / `publishDraft` / `discardDraft` / `appendDraftPhotos`), `snap-list-usage.ts` (quota), `comparable-listings.ts` (`findComparables` + `getPriceSuggestion`), `photo-coach.ts`.
+- **3-screen UX:** (1) upload — `SnapUploadZone` reuses `MultiPhotoUploader` with a client-minted UUID key, starts analysis and redirects. (2) `/listings/snap/analyzing/[draftId]` — `AnalysisStream` polls draft every 400ms, renders animated stage timeline. (3) `/listings/snap/review/[draftId]` — `ReviewDraft` with `InlineEditField` (click-to-edit, blur-to-save), `ConfirmFlag` amber dots on fields with confidence <0.75, `PriceSuggestionCard`, `PhotoCoachCard`, `ClarifyingQuestion` tap-to-answer inline cards. Publish button is SOS orange `#FF6B2B`.
+- **Condition multipliers for price suggestion:** excellent ×1.15, good ×1.00, fair ×0.80, poor ×0.65. Requires ≥5 comparables for a confident range — otherwise renders "not enough data" with a clear message.
+- **Quota gating:** `SNAP_LIST_QUOTA` in `src/lib/constants.ts`: `free: 3/month`, paid tiers: `Infinity`. Enforced in `analyzePhotos`; free users see `QuotaBanner`. Exceeded returns HTTP 402.
+- **AI-Assisted badge:** `SnapListBadge` renders on listing detail when `listings.ai_assisted = true` (added as subtle trust signal near the title badges).
+- **Pilot instrumentation:** `src/lib/snap-list/events.ts` `logSnapListEvent()` — fire-and-forget, **never throws** (covered by `src/test/snap-list-events.test.ts`). 14 event types across the funnel. Post-publish edits auto-logged by Postgres trigger `snap_list_post_publish_edit_trigger`.
+- **Admin dashboard:** `/admin/snap-list-metrics` — superadmin + analyst only (gated by `view_financials` permission). Five `MetricCard` tiles (field edit rate, time-to-publish, abandonment, post-publish edit rate, manual OCR accuracy), daily `MetricsTrendChart` (recharts), `AccuracySampler` for 30 random published drafts with per-field ✓/✗ review buttons.
+- **Targets / red flags:** field edit <20%/>40%, time-to-publish <3min/>8min median, abandonment <25%/>50%, post-publish edit <30%/>60%, OCR accuracy ≥95%/<85%.
+- **Graceful degradation:** Google Vision down → Claude-only with lower confidence. Claude down → draft `status=failed` with retry. Never blocks publish when confidence is low, but shows warning banner.
+- **DB columns added to `listings`:** `ai_assisted BOOLEAN NOT NULL DEFAULT false`, `source_draft_id UUID REFERENCES listing_drafts(id)`. Partial index on `ai_assisted WHERE ai_assisted = true`.
+- **Cleanup cron:** `/api/cron/cleanup` calls `cleanup_expired_drafts()` (Postgres fn, SECURITY INVOKER). Drafts auto-expire 7 days after creation if not published.
 
 ## Listing Creation Photos Step (Cycle 57)
 - **Unified photo grid:** AI carry-forward photos from `AIImageCapture` (Cycle 31-1) render as the first tiles INSIDE `MultiPhotoUploader`'s grid via `existingUrls` prop. They are NOT visually segregated or labeled "AI." The first tile shows a "Cover" badge.

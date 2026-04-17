@@ -54,6 +54,17 @@ export const TIER_LIMITS = {
 
 export type SubscriptionTier = keyof typeof TIER_LIMITS
 
+// Snap & List monthly quota — AI-assisted listing creations per month.
+// Free users get a taste; paid tiers are unlimited.
+export const SNAP_LIST_QUOTA: Record<SubscriptionTier, number> = {
+  free: 3,
+  pro: Infinity,
+  business: Infinity,
+  enterprise: Infinity,
+  premium: Infinity, // legacy alias for pro
+  boost: Infinity,   // legacy alias for business
+}
+
 export const TIER_PRICES = {
   free: 0,
   pro: 17900,        // $179/mo in cents

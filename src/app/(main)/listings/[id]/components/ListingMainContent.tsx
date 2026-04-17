@@ -26,6 +26,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog'
 import { APP_URL } from '@/lib/constants'
+import { SnapListBadge } from '@/components/listings/snap-list/SnapListBadge'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -139,6 +140,9 @@ export function ListingMainContent({ listing, seller }: Props) {
               Recently Updated
             </Badge>
           )}
+          {(listing as Listing & { ai_assisted?: boolean | null }).ai_assisted ? (
+            <SnapListBadge />
+          ) : null}
         </div>
 
         {/* Meta info */}

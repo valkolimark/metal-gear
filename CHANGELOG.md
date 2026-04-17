@@ -6,6 +6,68 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.29.0] — 2026-04-17 · Snap & List — Single-Photo Listing Creation Pilot (Cycle 58)
+
+### Added
+- **`/listings/snap`** — new **default** listing creation flow. Dealer uploads 1–10 photos, AI drafts the listing end-to-end (title, category, description, specs, nameplate data, condition, suggested price range from real comparables, photo coach), dealer reviews inline and publishes with one tap. The old multi-step form is preserved at `/listings/new?mode=advanced` for edge cases. `/listings/new` without `?mode=advanced` now redirects to Snap & List.
+- **`/listings/snap/analyzing/[draftId]`** — streaming reveal screen with stage-by-stage progress (reading nameplate → identifying → categorizing → finding comps → writing → photo coach). Polls draft status every 400ms.
+- **`/listings/snap/review/[draftId]`** — inline-editable review screen. Low-confidence fields render with an amber `ConfirmFlag` dot that clears on first edit. Clarifying questions, photo coach suggestions, and stock-photo warnings render inline — no blocking modals.
+- **New vendor: Google Cloud Vision** — `DOCUMENT_TEXT_DETECTION` for nameplate OCR accuracy (~97% vs Claude-only ~80%) and `WEB_DETECTION` for stock-photo fraud detection. Credentials supplied via `GOOGLE_CLOUD_PROJECT_ID` + `GOOGLE_APPLICATION_CREDENTIALS_JSON` (base64-encoded service-account JSON). Free tier covers pilot volume (~1,000 units/feature/month).
+- **`src/lib/vision-analysis/`** — NEW REUSABLE LAYER. Domain-agnostic pipeline (`analyzeEquipmentImages(photoUrls, options)`) designed to outlive Snap & List. Cycle 59 will migrate SOS, the existing `/api/listings/analyze-image` endpoint, and admin moderation to this same pipeline. Zero imports from `@/lib/snap-list/`, `listing_drafts`, or any domain table — enforced by architecture grep (`grep -rnE "^\s*(import|require).*(snap-list|listing_drafts|@/app/actions)" src/lib/vision-analysis/` must return empty).
+- **`src/lib/google-vision.ts`** — low-level wrapper exporting `detectNameplateText(url)` and `detectWebMatches(url)`. Module-singleton client; lazy init from base64 credentials; never throws (returns typed empty result on failure so callers can fall back to Claude-only analysis).
+- **`src/lib/snap-list/orchestrator.ts`** — pure functions gluing vision-analysis output to draft fields + pricing intelligence + photo coaching. `computePriceSuggestion` uses median + IQR range with condition multipliers (excellent ×1.15, good ×1.00, fair ×0.80, poor ×0.65). Returns `hasEnoughData=false` with clear messaging when fewer than 5 comparables.
+- **Server actions** — `analyzePhotos()` (kicks off async pipeline via Next.js `after()`), `createDraft / getDraft / updateDraftField / publishDraft / discardDraft / appendDraftPhotos`, `checkSnapListQuota / incrementSnapListUsage`, `findComparables / getPriceSuggestion`, `generatePhotoCoaching`.
+- **API route** `/api/snap-list/analyze` — thin POST wrapper with per-user rate limit (5 per 10 min, token bucket).
+- **AI-Assisted badge** — `SnapListBadge` renders next to the title on listing detail when `listings.ai_assisted = true`. Subtle trust signal for buyers.
+- **Free tier quota** — 3 AI-assisted listings/month. Pro/Business/Enterprise: unlimited. Enforced at `analyzePhotos` kickoff; exceeded attempts return HTTP 402 with an upgrade prompt.
+
+### Pilot instrumentation (required for Cycle 59 consolidation decision)
+- **`snap_list_events` table** — logs 14 event types across the funnel (`draft_created`, `analysis_started`, `analysis_stage_completed`, `analysis_completed`, `analysis_failed`, `field_viewed`, `field_edited`, `clarifying_question_answered`, `photo_coach_suggestion_acted`, `photos_added_post_analysis`, `draft_abandoned`, `draft_discarded`, `draft_published`, `listing_edited_post_publish`).
+- **`logSnapListEvent()`** — fire-and-forget logger in `src/lib/snap-list/events.ts`. Wraps every DB call in try/catch and never throws — instrumentation failures cannot break user flow. Covered by `src/test/snap-list-events.test.ts` (three scenarios: DB returns error, DB throws, DB rejects).
+- **Post-publish edit trigger** — Postgres trigger `snap_list_post_publish_edit_trigger` on `listings` fires `listing_edited_post_publish` events when an AI-assisted listing is edited within 24h of publish.
+- **`snap_list_accuracy_reviews` table** — admin-only manual accuracy sample for nameplate OCR verification.
+- **`/admin/snap-list-metrics`** — new admin dashboard, RBAC-gated to superadmin + analyst (`view_financials` permission). Shows the five pilot metrics as `MetricCard` tiles with target + red-flag thresholds and green/yellow/red status, a daily `MetricsTrendChart` (analyses / publishes / field edits), and the `AccuracySampler` — 30 random published drafts with ✓/✗ per-field review buttons and a running accuracy percent.
+
+### Pilot metric targets
+| Metric | Target | Red flag |
+|---|---|---|
+| Field edit rate | ≤ 20% | ≥ 40% |
+| Median time to publish | ≤ 3 min | ≥ 8 min |
+| Draft abandonment | ≤ 25% | ≥ 50% |
+| Post-publish edit rate | ≤ 30% | ≥ 60% |
+| Nameplate OCR accuracy (manual) | ≥ 95% | ≤ 85% |
+
+### Database
+- **`listing_drafts`** — full draft state (photo urls, raw OCR/Claude/web-detection JSONB, structured `fields` + `confidence_scores`, `photo_coach`, `clarifying_questions`, `stock_photo_matches`, status lifecycle `analyzing / ready / publishing / published / discarded / failed`, 7-day `expires_at` TTL). RLS: owner-only SELECT/ALL.
+- **`snap_list_usage`** — monthly analysis + publish counters per user (unique on `owner_id, month_year`).
+- **`snap_list_events`** — pilot event log (BIGSERIAL, 14 event_type CHECK constraint). RLS enabled, no user-facing policy — metrics accessed via admin server actions only.
+- **`snap_list_accuracy_reviews`** — admin accuracy sample records (unique on `draft_id, field_name, reviewer_id`).
+- **`listings`** — added `ai_assisted BOOLEAN NOT NULL DEFAULT false` and `source_draft_id UUID REFERENCES listing_drafts(id)` with partial index `idx_listings_ai_assisted WHERE ai_assisted = true`.
+- **`cleanup_expired_drafts()`** — SECURITY INVOKER Postgres function wired into `/api/cron/cleanup`. Deletes drafts past `expires_at` in statuses `analyzing / ready / failed / discarded`; returns count for the cron summary payload.
+- **`log_post_publish_edit()`** + trigger — inserts `listing_edited_post_publish` events when an AI-assisted listing is updated within 24h of creation.
+
+### Constants & env
+- **`SNAP_LIST_QUOTA`** in `src/lib/constants.ts` — `free: 3, pro/business/enterprise: Infinity` (+ legacy aliases).
+- **`.env.local.example`** — adds `GOOGLE_CLOUD_PROJECT_ID` and `GOOGLE_APPLICATION_CREDENTIALS_JSON` with usage note about base64 encoding.
+
+### Tests
+- `src/test/vision-analysis.test.ts` — confidence scoring, OCR field extraction, `mergeOCRWithVisual` conflict resolution (OCR wins at >0.85 conf), prompt builder taxonomy + OCR-text inclusion.
+- `src/test/snap-list-orchestrator.test.ts` — price aggregation math (<5 comps / normal / outliers), condition multipliers, `projectAnalysisToDraftFields`, `topCoachingSuggestions` priority sort.
+- `src/test/snap-list-events.test.ts` — critical invariant: logger never throws across DB error / sync throw / async reject.
+- `e2e/snap-list.spec.ts` — auth gating, `/listings/new` → `/listings/snap` redirect, `?mode=advanced` bypass.
+
+### Graceful degradation
+- **Google Vision down or unconfigured** — analysis proceeds with Claude-only; nameplate fields get lower visual-only confidence (0.4–0.8) and show `ConfirmFlag` dots.
+- **Claude down** — draft transitions to `failed` with `error_message`; analyzing screen shows "Try again" + "Review what we got" (partial results preserved).
+- **Partial photo upload failure** — standard `MultiPhotoUploader` per-file retry; analysis only starts once all uploads complete.
+
+### Out of scope (flagged for future cycles)
+- pHash internal duplicate detection UI (column `internal_duplicate_listing_id` present but unused this cycle).
+- Teardown / parts-lot listings (>10 photos) — suggest advanced mode.
+- SOS and existing listing analyzer migration — **Cycle 59** pending pilot metrics.
+
+---
+
 ## [4.28.1] — 2026-04-16 · Video upload + playback hotfix
 
 ### Fixed
