@@ -157,7 +157,7 @@ export function SOSConfirmStep({
 
     setSending(true)
     try {
-      // Build title from AI data
+      // Build title from analysis data
       const catLabel = getTier2Label(editCategory) || aiEquipmentType
       const subLabel = editSubcategory ? getSubcategoryLabel(editSubcategory) : ''
       const parts = [brandPreference || aiManufacturer, subLabel || catLabel, aiModel].filter(Boolean)
@@ -208,7 +208,7 @@ export function SOSConfirmStep({
       {/* How SOS works (collapsible) */}
       <HowSosWorksHint />
 
-      {/* AI confidence notice */}
+      {/* Low-confidence notice */}
       {aiConfidence > 0 && aiConfidence < 0.5 && (
         <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3">
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-amber-500" />

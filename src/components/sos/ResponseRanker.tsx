@@ -73,7 +73,7 @@ export function ResponseRanker({ sosRequestId, responseCount }: ResponseRankerPr
           ) : (
             <>
               <BarChart3 className="mr-2 size-4" />
-              AI: Rank responses by quality
+              Rank responses by quality
             </>
           )}
         </Button>

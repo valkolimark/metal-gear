@@ -90,6 +90,8 @@ export interface TaxonomyTier1Bucket {
 }
 export type TaxonomyTree = TaxonomyTier1Bucket[]
 
+export type AnalysisMode = "snap-list" | "sos" | "listing-helper"
+
 export interface EquipmentAnalysisOptions {
   /** Domain-specific taxonomy passed in by the caller — keeps this lib pure. */
   taxonomyContext: TaxonomyTree
@@ -99,6 +101,12 @@ export interface EquipmentAnalysisOptions {
   anthropicApiKey?: string
   /** Fires when each internal stage completes — used by orchestrators for streaming UX. */
   onStageComplete?: (stage: string, durationMs: number) => void
+  /**
+   * Domain-specific framing for the Claude prompt. Only changes the framing
+   * sentence; the JSON response schema is identical across modes. Default
+   * `'snap-list'` preserves Cycle 58 behavior.
+   */
+  mode?: AnalysisMode
 }
 
 export { OCRBlock }

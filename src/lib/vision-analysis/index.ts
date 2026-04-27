@@ -28,6 +28,7 @@ export {
   type FieldEvidence,
 } from "./confidence"
 export type {
+  AnalysisMode,
   EquipmentAnalysisResult,
   EquipmentAnalysisOptions,
   EquipmentIdentification,

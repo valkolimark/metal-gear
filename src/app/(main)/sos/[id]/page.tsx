@@ -319,7 +319,7 @@ export default function SosDetailPage() {
           Responses ({responses.length})
         </h2>
 
-        {/* AI Response Ranker — shown to requester */}
+        {/* Response Ranker — shown to requester */}
         {isRequester && responses.length >= 2 && (
           <ResponseRanker
             sosRequestId={sosId}

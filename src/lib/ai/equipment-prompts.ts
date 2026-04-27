@@ -1,4 +1,11 @@
-// Equipment analysis prompts — Cycle 27c
+/**
+ * @deprecated Cycle 60 — superseded by src/lib/vision-analysis/prompts.ts.
+ * No active callers should remain after Cycle 60. Scheduled for removal in
+ * Cycle 64+. If you are reading this and need image-analysis prompts, use
+ * `analyzeEquipmentImages()` from `@/lib/vision-analysis`.
+ */
+
+// Equipment analysis prompts — Cycle 27c (deprecated Cycle 60)
 
 export const EQUIPMENT_ANALYSIS_SYSTEM_PROMPT = `You are an expert industrial equipment analyst with 25+ years of experience identifying heavy machinery used in oil & gas, petrochemical, mining, and manufacturing industries.
 

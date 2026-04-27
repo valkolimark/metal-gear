@@ -205,3 +205,40 @@ describe("buildTaxonomyReference", () => {
     expect(out).toContain("[excavators]")
   })
 })
+
+describe("buildEquipmentIdentificationPrompt — mode dispatch (Cycle 60)", () => {
+  it("injects SOS framing when mode is 'sos'", () => {
+    const out = buildEquipmentIdentificationPrompt({
+      photoCount: 1,
+      perPhotoOcr: [{ photoIndex: 0, text: "" }],
+      nameplateHintPhotoIndex: null,
+      taxonomy: fakeTaxonomy,
+      mode: "sos",
+    })
+    expect(out).toContain("MODE: SOS")
+    expect(out).toContain("requesting parts")
+  })
+
+  it("injects listing-helper framing when mode is 'listing-helper'", () => {
+    const out = buildEquipmentIdentificationPrompt({
+      photoCount: 1,
+      perPhotoOcr: [{ photoIndex: 0, text: "" }],
+      nameplateHintPhotoIndex: null,
+      taxonomy: fakeTaxonomy,
+      mode: "listing-helper",
+    })
+    expect(out).toContain("MODE: LISTING HELPER")
+    expect(out).toContain("editing a listing manually")
+  })
+
+  it("defaults to snap-list (no framing sentence) when mode is omitted", () => {
+    const out = buildEquipmentIdentificationPrompt({
+      photoCount: 1,
+      perPhotoOcr: [{ photoIndex: 0, text: "" }],
+      nameplateHintPhotoIndex: null,
+      taxonomy: fakeTaxonomy,
+    })
+    expect(out).not.toContain("MODE: SOS")
+    expect(out).not.toContain("MODE: LISTING HELPER")
+  })
+})

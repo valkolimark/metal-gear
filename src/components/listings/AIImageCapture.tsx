@@ -215,6 +215,7 @@ export default function AIImageCapture({ onComplete, onSkip, listingId }: AIImag
           wideShot: wideShot?.base64,
           nameplateShot: nameplateShot?.base64,
           mimeType: 'image/jpeg',
+          mode: 'listing-helper',
         }),
         signal: controller.signal,
       })

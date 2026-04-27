@@ -60,7 +60,7 @@ export function QuickSOS({ onCategorized, onSwitchToDetailed }: QuickSOSProps) {
         setError(data.error || 'Failed to categorize')
       }
     } catch {
-      setError('Failed to connect to AI service')
+      setError('Failed to reach the analysis service')
     } finally {
       setLoading(false)
     }
@@ -110,7 +110,7 @@ export function QuickSOS({ onCategorized, onSwitchToDetailed }: QuickSOSProps) {
           {loading && (
             <div className="flex items-center gap-2 rounded bg-background/50 p-3">
               <Loader2 className="size-4 animate-spin text-primary" />
-              <span className="font-body text-sm text-muted-foreground">AI is routing your SOS...</span>
+              <span className="font-body text-sm text-muted-foreground">Routing your SOS...</span>
             </div>
           )}
 
@@ -238,7 +238,7 @@ export function QuickSOS({ onCategorized, onSwitchToDetailed }: QuickSOSProps) {
         {/* Confidence indicator */}
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="font-body text-[10px]">
-            AI confidence: {result.confidence}
+            Confidence: {result.confidence}
           </Badge>
         </div>
       </CardContent>

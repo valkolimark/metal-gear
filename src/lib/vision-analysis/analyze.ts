@@ -131,6 +131,7 @@ async function callClaude(
     perPhotoOcr: perPhotoOcr.filter((p) => p.photoIndex < imageBlocks.length),
     nameplateHintPhotoIndex: nameplateHintIndex,
     taxonomy: options.taxonomyContext,
+    mode: options.mode,
   })
 
   try {

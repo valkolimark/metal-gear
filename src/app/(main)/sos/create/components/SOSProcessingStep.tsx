@@ -34,7 +34,7 @@ export function SOSProcessingStep({ files, onComplete, onError }: SOSProcessingS
     return () => clearInterval(interval)
   }, [])
 
-  // Run upload + AI analysis
+  // Run upload + photo analysis
   useEffect(() => {
     if (hasStarted.current) return
     hasStarted.current = true
@@ -52,7 +52,7 @@ export function SOSProcessingStep({ files, onComplete, onError }: SOSProcessingS
         uploadedUrls.push(outcome.url)
       }
 
-      // Step 2: AI analysis — convert first image(s) to base64
+      // Step 2: Photo analysis — convert first image(s) to base64
       let aiResult: AIAnalysisResult | null = null
       try {
         const toBase64 = (file: File): Promise<string> =>
@@ -80,6 +80,7 @@ export function SOSProcessingStep({ files, onComplete, onError }: SOSProcessingS
             nameplateShot,
             mimeType: files[0].type || 'image/jpeg',
             nameplateMimeType: files[1]?.type || undefined,
+            mode: 'sos',
           }),
           signal: controller.signal,
         })
@@ -90,7 +91,7 @@ export function SOSProcessingStep({ files, onComplete, onError }: SOSProcessingS
           aiResult = await res.json()
         }
       } catch (err) {
-        // AI failure is non-blocking — proceed with empty pre-fills
+        // Analysis failure is non-blocking — proceed with empty pre-fills
         if (err instanceof DOMException && err.name === 'AbortError') {
           // Timeout — handled below
         }

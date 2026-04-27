@@ -5,7 +5,14 @@
  * same builder can serve any caller (Snap & List, SOS, admin moderation).
  */
 
-import type { TaxonomyTree } from "./types"
+import type { AnalysisMode, TaxonomyTree } from "./types"
+
+const MODE_FRAMING: Record<AnalysisMode, string> = {
+  "snap-list": "",
+  sos: "MODE: SOS — the user is requesting parts, service, or replacement equipment. Identify the equipment as specifically as possible to help match suppliers. If a serial or model number is partially visible, prioritize extracting it.",
+  "listing-helper":
+    "MODE: LISTING HELPER — the user is editing a listing manually and asked for help with one specific photo. Return only fields visible in this photo; do not infer fields not directly supported by visual evidence.",
+}
 
 export const EQUIPMENT_VISION_SYSTEM_PROMPT = `You are an expert industrial equipment analyst with 25+ years of experience identifying heavy machinery used in oil & gas, petrochemical, mining, and manufacturing industries.
 
@@ -85,6 +92,8 @@ export interface PromptInput {
   /** Heuristic pick: photo with most OCR text. Just a hint; Claude should override when sub-component brands are present. */
   nameplateHintPhotoIndex: number | null
   taxonomy: TaxonomyTree
+  /** Domain framing. Default `'snap-list'` adds no framing sentence. */
+  mode?: AnalysisMode
 }
 
 /**
@@ -92,8 +101,14 @@ export interface PromptInput {
  * this returns only the text portion of the user message.
  */
 export function buildEquipmentIdentificationPrompt(input: PromptInput): string {
-  const { photoCount, perPhotoOcr, nameplateHintPhotoIndex, taxonomy } = input
+  const { photoCount, perPhotoOcr, nameplateHintPhotoIndex, taxonomy, mode } = input
   const lines: string[] = []
+
+  const framing = MODE_FRAMING[mode ?? "snap-list"]
+  if (framing) {
+    lines.push(framing)
+    lines.push("")
+  }
 
   if (photoCount === 1) {
     lines.push("Analyze this equipment photograph.")

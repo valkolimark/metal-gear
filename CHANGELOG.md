@@ -6,6 +6,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.31.0] — 2026-04-22 · Vision pipeline consolidation: SOS + listing analyzer migrated (Cycle 60)
+
+### Changed
+- **`/api/listings/analyze-image`** routed through the shared vision pipeline (`src/lib/vision-analysis/`). The route now bridges incoming base64 to a temporary R2 key (`tmp/analyze/{userId}/{uuid}.{ext}`), invokes `analyzeEquipmentImages()`, and projects the result into the legacy `AIAnalysisResult` envelope. Best-effort cleanup of the temp keys on success or failure. Both consumers (Photo-to-Listing's manual-form helper, SOS camera-first flow) keep working without code changes — same response shape, same auth gate, same input contract.
+- **SOS camera-first flow** (`SOSProcessingStep.tsx`) now passes `mode: 'sos'` to the analyzer route. Manual-form helper (`AIImageCapture.tsx`) passes `mode: 'listing-helper'`. Both flows now use the same OCR + Vision pipeline that powers Photo-to-Listing.
+- **`src/lib/vision-analysis/index.ts`** accepts a new `mode: 'snap-list' | 'sos' | 'listing-helper'` option. Default `'snap-list'` preserves Cycle 58 behavior. Mode injects domain-specific framing into the Claude prompt without changing the JSON schema.
+- **SOS UI copy neutralized** (Cycle 59 rule extended to `src/app/(main)/sos` + `src/components/sos`): "AI is routing your SOS…" → "Routing your SOS…", "AI: Rank responses by quality" → "Rank responses by quality", "AI confidence" badge → "Confidence", "Failed to connect to AI service" → "Failed to reach the analysis service".
+
+### Added
+- **`src/lib/sos/vision-orchestrator.ts`** — pure-function SOS orchestrator. `projectAnalysisToSosFields(result)` maps vision output to SOS field suggestions (manufacturer, model, equipment_type, condition, key_specs, taxonomy, suggested title/description). `buildSosClarifyingQuestions(result)` returns 0–3 SOS-specific clarifying questions ("Replacement part or whole machine?", "Failure mode?", "How many do you need?"). No imports from `@/lib/sos/*`, `@/app/actions/*`, or domain tables — orchestrator stays domain-isolated.
+- **SOS-mode prompt framing** — when `mode: 'sos'`, the Claude prompt is nudged toward "user requesting parts/service; prioritize specific identification" without changing the JSON schema.
+- **Listing-helper-mode prompt framing** — when `mode: 'listing-helper'`, the prompt limits inference to fields visibly supported in the photo.
+- **`AnalysisMode` type** exported from `@/lib/vision-analysis`.
+
+### Deprecated
+- **`src/lib/ai/equipment-prompts.ts`** — superseded by `src/lib/vision-analysis/prompts.ts`. Header `@deprecated` tag added; no active callers remain. Scheduled for removal in Cycle 64+.
+
+### Tests
+- `src/test/sos-vision-orchestrator.test.ts` — 6 tests covering full / partial / empty result projection plus clarifying-question generation (always 0–3, never throws on null input).
+- `src/test/vision-analysis.test.ts` — 3 new test cases asserting mode-dispatched prompt framing and the snap-list default.
+- `e2e/sos.spec.ts` — analyzer route auth gate + non-breaking input-contract regression.
+
+### Architecture invariants (still enforced)
+- `grep -rnE "^\s*(import|require).*(snap-list|sos|listing_drafts|sos_requests|@/app/actions)" src/lib/vision-analysis/` returns empty. The vision-analysis layer remains domain-isolated; orchestrators per domain compose its output with persistence.
+
+### Audit findings (resolved)
+- `src/app/actions/sos.ts` has no server-side image-analysis path; SOS analysis is client-driven through the analyzer route. No code change to `sos.ts` this cycle.
+- No admin moderation image-analysis surface found; nothing additional to migrate.
+- The analyzer route's base64 input contract was preserved via a temp-R2 bridge to keep the existing clients (`SOSProcessingStep`, `AIImageCapture`) source-compatible.
+
+### Rationale
+Cycle 58 introduced `src/lib/vision-analysis/` as a reusable layer; Cycle 60 retires the parallel Claude-only image path so all image analysis on the platform runs through one pipeline. This is the prerequisite for Cycle 61 (Equipment Registry — nameplate disambiguation hooks into the shared pipeline) and Cycle 62 (cost telemetry — instrumentation hooks into the shared pipeline). One pipeline, one accuracy story, one place to optimize.
+
+---
+
 ## [4.30.0] — 2026-04-21 · Manual-first listing creation; Snap & List demoted to experimental (Cycle 59)
 
 ### Changed
