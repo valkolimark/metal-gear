@@ -13,6 +13,10 @@ export interface SosRequestData {
   equipment_subcategory?: string
   brand?: string
   model?: string
+  /** Equipment Registry FK (Cycle 61a). Free-text `brand` continues to populate alongside. */
+  manufacturer_id?: string
+  /** Equipment Registry model FK. Requires manufacturer_id. */
+  manufacturer_model_id?: string
   urgency: 'critical' | 'normal'
   photos?: string[]
   videos?: string[]
@@ -131,28 +135,34 @@ export async function createSosRequest(data: SosRequestData) {
 
   console.log('[createSosRequest] inserting row', { elapsed: Date.now() - t0 })
 
-  const { data: sos, error } = await admin
+  const insertPayload: Record<string, unknown> = {
+    requester_id: user.id,
+    title: data.title,
+    description: data.description || null,
+    equipment_category: data.equipment_category,
+    equipment_subcategory: data.equipment_subcategory || null,
+    brand: data.brand || null,
+    model: data.model || null,
+    urgency: data.urgency,
+    photos: data.photos || [],
+    videos: data.videos || [],
+    notes: data.notes || null,
+    location_city: city,
+    location_state: state,
+    location_lat: lat,
+    location_lng: lng,
+    max_distance_miles: maxDistance,
+    expires_at: expiresAt,
+    transport_needed: data.transport_needed ?? false,
+  }
+  // Equipment Registry FKs (Cycle 61a) — only set when caller provided them.
+  if (data.manufacturer_id) insertPayload.manufacturer_id = data.manufacturer_id
+  if (data.manufacturer_model_id) insertPayload.manufacturer_model_id = data.manufacturer_model_id
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: sos, error } = await (admin as any)
     .from('sos_requests')
-    .insert({
-      requester_id: user.id,
-      title: data.title,
-      description: data.description || null,
-      equipment_category: data.equipment_category,
-      equipment_subcategory: data.equipment_subcategory || null,
-      brand: data.brand || null,
-      model: data.model || null,
-      urgency: data.urgency,
-      photos: data.photos || [],
-      videos: data.videos || [],
-      notes: data.notes || null,
-      location_city: city,
-      location_state: state,
-      location_lat: lat,
-      location_lng: lng,
-      max_distance_miles: maxDistance,
-      expires_at: expiresAt,
-      transport_needed: data.transport_needed ?? false,
-    })
+    .insert(insertPayload)
     .select('id')
     .single()
 

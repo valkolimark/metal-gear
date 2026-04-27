@@ -22,6 +22,8 @@ import type { Tier2Group } from '@/lib/constants/equipment-taxonomy'
 import { QuickSOS } from '@/components/sos/QuickSOS'
 import { SOSCameraFirstFlow } from './components/SOSCameraFirstFlow'
 import { HowSosWorksHint, MultiSegmentCallout } from './components/SOSEducationBlocks'
+import { ManufacturerAutocomplete } from '@/components/registry/ManufacturerAutocomplete'
+import { ModelAutocomplete } from '@/components/registry/ModelAutocomplete'
 
 const EXPIRY_OPTIONS = [
   { value: '24', label: '24 hours' },
@@ -57,6 +59,8 @@ export default function CreateSosPage() {
     equipment_subcategory: '',
     brand: '',
     model: '',
+    manufacturer_id: null as string | null,
+    manufacturer_model_id: null as string | null,
     title: '',
     description: '',
     urgency: 'critical' as 'critical' | 'normal',
@@ -193,6 +197,8 @@ export default function CreateSosPage() {
         equipment_subcategory: form.equipment_subcategory || undefined,
         brand: form.brand || undefined,
         model: form.model || undefined,
+        manufacturer_id: form.manufacturer_id ?? undefined,
+        manufacturer_model_id: form.manufacturer_model_id ?? undefined,
         urgency: form.urgency,
         photos,
         notes: form.notes || undefined,
@@ -367,18 +373,50 @@ export default function CreateSosPage() {
 
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>Brand</Label>
-              <Input
-                value={form.brand}
-                onChange={(e) => updateForm('brand', e.target.value)}
+              <Label>Manufacturer</Label>
+              <ManufacturerAutocomplete
+                value={{ manufacturerId: form.manufacturer_id, manufacturerText: form.brand }}
+                onChange={(next) => {
+                  setForm((prev) => {
+                    // Manufacturer change clears the model FK; keep the free-text model
+                    // value so the user doesn't lose what they typed.
+                    const modelIdReset = next.manufacturerId !== prev.manufacturer_id ? null : prev.manufacturer_model_id
+                    const updated = {
+                      ...prev,
+                      brand: next.manufacturerText,
+                      manufacturer_id: next.manufacturerId,
+                      manufacturer_model_id: modelIdReset,
+                    }
+                    // Re-derive title (same logic as updateForm).
+                    const catLabel = getTier2Label(updated.equipment_category)
+                    const subLabel = updated.equipment_subcategory ? getSubcategoryLabel(updated.equipment_subcategory) : ''
+                    const parts = [updated.brand, subLabel || catLabel, updated.model].filter(Boolean)
+                    updated.title = parts.join(' ') || catLabel || ''
+                    return updated
+                  })
+                }}
                 placeholder="e.g., Fisher"
               />
             </div>
             <div className="space-y-2">
               <Label>Model</Label>
-              <Input
-                value={form.model}
-                onChange={(e) => updateForm('model', e.target.value)}
+              <ModelAutocomplete
+                value={{ modelId: form.manufacturer_model_id, modelText: form.model }}
+                onChange={(next) => {
+                  setForm((prev) => {
+                    const updated = {
+                      ...prev,
+                      model: next.modelText,
+                      manufacturer_model_id: next.modelId,
+                    }
+                    const catLabel = getTier2Label(updated.equipment_category)
+                    const subLabel = updated.equipment_subcategory ? getSubcategoryLabel(updated.equipment_subcategory) : ''
+                    const parts = [updated.brand, subLabel || catLabel, updated.model].filter(Boolean)
+                    updated.title = parts.join(' ') || catLabel || ''
+                    return updated
+                  })
+                }}
+                manufacturerId={form.manufacturer_id}
                 placeholder="e.g., DVC6200"
               />
             </div>

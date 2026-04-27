@@ -6,6 +6,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.32.0] — 2026-04-27 · Equipment Registry: seeding + autocomplete (Cycle 61a)
+
+### Added
+- **Equipment Registry tables** — `manufacturers` (slug, name, aliases[], country, tier 1/2/3, equipment_categories[], parent_manufacturer_id, source_file), `manufacturer_models` (manufacturer FK, slug, name, series, equipment_type), `registry_match_feedback` (audit trail of accept/reject/override on registry suggestions). `pg_trgm` extension enabled with GIN indexes on names + alias arrays for sub-100ms fuzzy autocomplete.
+- **Seed pipeline** — `scripts/seed-equipment-registry.ts` reads the 14 `data/manufacturers/*.md` research files (centrifuges, compressors, conveyors, crushers/mills, dryers, extruders, filter presses, gearboxes, heat exchangers, mixers, motors, pumps, tanks/pressure vessels, valves), chunks each by H2 section, sends to Claude Sonnet 4 for structured extraction, and inserts via `createAdminClient()`. Idempotent slug-keyed upsert; aliases capture sub-brand relationships (Lightnin → SPX FLOW, Prochem/Greerco/Kenics → Chemineer/NOV, Sharples → Alfa Laval, …). Two-pass insert resolves parent FKs after all manufacturers persist.
+- **Migration script** — `scripts/migrate-equipment-registry.ts` runs the schema migration via the Supabase Management API. 15 idempotent statements, 6 verifications, fails loud on missing tables/columns. Adds `manufacturer_id`, `manufacturer_model_id`, `registry_match_confidence`, `registry_match_method` columns to `listings` (the latter two are wired in 61b for backfill); adds the same FK pair to `sos_requests`.
+- **`src/lib/registry/`** — pure-function domain layer. `index.ts` exports stable types (`Manufacturer`, `ManufacturerModel`, `RegistryMatch`, `COMPONENT_CATEGORIES`); `match.ts` exports `normalizeManufacturerString` (strips Inc./LLC/GmbH/Co./…, parentheticals, normalizes whitespace), `scoreCandidate` (exact 1.0 / alias 0.95 / substring 0.85 / trigram-Jaccard 0–0.85), and `disambiguateNameplateCandidates` (the "Baldor fix" — equipment-category overlap boosts non-component manufacturers when multiple OCR brand candidates appear on one nameplate; demotes component-only vendors when a non-component hit is present). Pure functions, no DB, no I/O. The vision-analysis layer never imports from `@/lib/registry/*`; 61b will inject this module via a callback parameter to preserve domain isolation.
+- **`src/app/actions/registry.ts`** — `searchManufacturers`, `getManufacturerById`, `searchModels`, `recordRegistryFeedback`. Zod-validated, RLS-respecting (read for `authenticated`, feedback insert owner-checked). `searchManufacturers` accepts an `equipmentType` bias to sort hits with category overlap first.
+- **`src/components/registry/ManufacturerAutocomplete.tsx`** + **`ModelAutocomplete.tsx`** — controlled typeahead components. 200ms debounced search via the server actions, keyboard navigation (↑/↓/Enter/Esc), close-on-outside-click. **Free-text fallback always present as the last item** ("Use '<typed>' as-is") — the autocomplete is a helper, not a gate. Tier-1 manufacturers render in a slightly bolder weight as a subtle trust signal (no copy). `ModelAutocomplete` is disabled with a hint until a manufacturer is picked.
+- **`scripts/seed-equipment-registry.prompt.ts`** — extraction prompt module exporting `EXTRACTION_SYSTEM_PROMPT`, `buildExtractionPrompt(input)`, and `primaryCategoryFromFilename(filename)`. Separated from the seed runner so the prompt structure can be unit-tested without invoking the LLM.
+- **Tests** — `src/test/registry-match.test.ts` (22 tests, including the centrifuge+Baldor disambiguation, motor-only correctness, empty-input safety), `src/test/registry-actions.test.ts` (16 tests covering Zod validation, ownership enforcement on feedback writes, equipmentType boost), `src/test/seed-extraction.test.ts` (8 tests asserting prompt structure + `primaryCategoryFromFilename` filename → tag derivation).
+
+### Changed
+- **Manual listing form (`AdvancedListingForm.tsx`)** — explicit Manufacturer + Model fields added to step 1 (Details), placed above the generic Specifications section. Free-text continues to mirror to `specifications.manufacturer` and `specifications.model` for compatibility with `AITitleOptimizer` / `AIDescriptionGenerator`. New fields write `manufacturer_id` and `manufacturer_model_id` to `listings` on both draft save and publish. Picking a different manufacturer clears the model FK but preserves the typed model text.
+- **SOS create form (`/sos/create` text flow)** — Brand and Model inputs replaced with `ManufacturerAutocomplete` + `ModelAutocomplete`. `createSosRequest` server action accepts new optional `manufacturer_id` and `manufacturer_model_id`; insert payload writes them only when present. The free-text `brand` and `model` columns continue to populate alongside (industrial UX rule: subsidiaries, custom builds, regional brands won't always be in the registry).
+- **Listing detail (`ListingSpecs`)** — accepts a new `verifiedSpecKeys: string[]` prop. When the listing has a non-null `manufacturer_id` / `manufacturer_model_id`, the corresponding spec rows render a small green `ShieldCheck` icon with a "Verified manufacturer" tooltip. Free-text-only listings render plain text — no false-trust signal.
+
+### Architecture invariants
+- Free-text fallback is mandatory across both forms — no Zod or UI gate rejects free-text manufacturer/model.
+- Registry seed is reproducible: re-running `scripts/seed-equipment-registry.ts` against updated `.md` files updates rows in place; never duplicates. Re-running on a fresh DB reproduces the seeded state.
+- Vision-analysis layer stays domain-isolated. `grep -rnE "from ['\"]\@?/lib/registry" src/lib/vision-analysis/` returns empty (verified pre-commit). 61b will wire the registry into vision via a callback parameter rather than imports.
+
+### Deferred to 61b (`4.32.1`)
+- Registry-aware OCR disambiguation in `analyzeEquipmentImages()` (the Baldor-fix logic landing in production via `src/lib/snap-list/orchestrator.ts`, `src/lib/sos/vision-orchestrator.ts`, and `/api/listings/analyze-image`).
+- Backfill of existing `listings` and `sos_requests` rows against the registry (`scripts/backfill-registry-matches.ts`).
+
+### Rationale
+The Equipment Registry is the foundation for canonicalized search, accurate matchmaking, registry-aware OCR (61b), and the future external manufacturers API (deferred). Seeding from the `.md` research files (rather than committing static SQL) means new manufacturer research drops into `data/manufacturers/` and re-running the seed picks it up. Splitting the cycle at autocomplete-vs-disambiguation keeps the 61a deploy small and the production-data backfill (61b) under its own change window.
+
+---
+
 ## [4.31.0] — 2026-04-22 · Vision pipeline consolidation: SOS + listing analyzer migrated (Cycle 60)
 
 ### Changed

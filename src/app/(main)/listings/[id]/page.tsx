@@ -248,6 +248,10 @@ export default async function ListingDetailPage({
           <ListingSpecs
             specs={listing.specifications as Record<string, string> | null}
             conditionReport={conditionResult.report as Parameters<typeof ListingSpecs>[0]['conditionReport'] ?? null}
+            verifiedSpecKeys={[
+              ...((listing as { manufacturer_id?: string | null }).manufacturer_id ? ['manufacturer'] : []),
+              ...((listing as { manufacturer_model_id?: string | null }).manufacturer_model_id ? ['model'] : []),
+            ]}
           />
           {/* Mobile: AskMetalGear below main content */}
           <div className="lg:hidden">

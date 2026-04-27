@@ -11,6 +11,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ### Marketplace
 - Create listings by uploading photos and filling in details on the multi-step manual form at `/listings/new` — drag-and-drop reorder, draft saves, and gallery detail pages.
 - An experimental **Photo-to-Listing** option is available at the top of the creation flow: upload photos and we'll draft the listing for you to review and edit. Free tier: 3 drafts/month; paid tiers: unlimited. Drafts surface a "Photo-to-Listing draft" badge on the published listing. (Pilot — Cycle 58 / 59.)
+- Manufacturer and Model fields offer typeahead suggestions backed by the **Equipment Registry** — a curated, type-organized database of industrial OEMs across 14 categories (centrifuges, pumps, mixers, valves, motors, gearboxes, heat exchangers, dryers, compressors, conveyors, crushers/mills, extruders, filter presses, tanks/pressure vessels). Free-text entry is always available for OEMs not yet in the registry. Listings with a confirmed registry match show a "Verified manufacturer" badge on the detail page. (Cycle 61a.)
 - Full-text search with filters (category, condition, price range, location radius), sort options, and grid/list toggle
 - 3-tier equipment taxonomy: 4 Tier 1 buckets, 28 Tier 2 groups, ~252 subcategories with cross-referencing
 - Location-based discovery with Leaflet/OpenStreetMap, haversine distance sorting, and radius filters

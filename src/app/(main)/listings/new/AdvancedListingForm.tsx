@@ -46,6 +46,8 @@ import type { AIAnalysisResult } from '@/types/ai-analysis'
 import { MultiPhotoUploader } from '@/components/upload/MultiPhotoUploader'
 import { PhotoTipsBanner } from '@/components/upload/PhotoTipsBanner'
 import { PhotoToListingHint } from '@/components/listings/PhotoToListingHint'
+import { ManufacturerAutocomplete } from '@/components/registry/ManufacturerAutocomplete'
+import { ModelAutocomplete } from '@/components/registry/ModelAutocomplete'
 
 const STEPS = ['Photo Assist', 'Details', 'Photos', 'Pricing', 'Review']
 
@@ -64,6 +66,10 @@ interface ListingForm {
   quantity: string
   sku: string
   warehouse_location: string
+  /** Equipment Registry FK (Cycle 61a). Free-text mirrored to specifications.manufacturer. */
+  manufacturer_id: string | null
+  /** Equipment Registry model FK. Mirrored to specifications.model. */
+  manufacturer_model_id: string | null
 }
 
 interface UploadedImage {
@@ -132,6 +138,8 @@ export default function AdvancedListingForm() {
     quantity: '1',
     sku: '',
     warehouse_location: '',
+    manufacturer_id: null,
+    manufacturer_model_id: null,
   })
 
   function handleChange(
@@ -360,6 +368,8 @@ export default function AdvancedListingForm() {
         ai_assist_accepted: aiAssistAccepted,
         ai_price_suggested: aiPriceSuggested,
         ai_price_accepted: aiPriceAccepted,
+        manufacturer_id: form.manufacturer_id,
+        manufacturer_model_id: form.manufacturer_model_id,
       })
       if (error) throw error
       toast.success('Draft saved')
@@ -416,6 +426,8 @@ export default function AdvancedListingForm() {
           ai_assist_accepted: aiAssistAccepted,
           ai_price_suggested: aiPriceSuggested,
           ai_price_accepted: aiPriceAccepted,
+          manufacturer_id: form.manufacturer_id,
+          manufacturer_model_id: form.manufacturer_model_id,
         })
         .select()
         .single()
@@ -704,6 +716,60 @@ export default function AdvancedListingForm() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            {/* Manufacturer + Model (Equipment Registry, Cycle 61a) */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label className="font-body" htmlFor="mfr">Manufacturer</Label>
+                <ManufacturerAutocomplete
+                  id="mfr"
+                  value={{
+                    manufacturerId: form.manufacturer_id,
+                    manufacturerText: form.specifications?.manufacturer ?? '',
+                  }}
+                  onChange={(next) => {
+                    setForm((prev) => {
+                      const specs = { ...prev.specifications }
+                      if (next.manufacturerText) specs.manufacturer = next.manufacturerText
+                      else delete specs.manufacturer
+                      // Manufacturer change clears model FK; keep free-text model value.
+                      const modelIdReset = next.manufacturerId !== prev.manufacturer_id ? null : prev.manufacturer_model_id
+                      return {
+                        ...prev,
+                        specifications: specs,
+                        manufacturer_id: next.manufacturerId,
+                        manufacturer_model_id: modelIdReset,
+                      }
+                    })
+                  }}
+                  placeholder="e.g., Haas, Sharples, ABB"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="font-body" htmlFor="mdl">Model</Label>
+                <ModelAutocomplete
+                  id="mdl"
+                  value={{
+                    modelId: form.manufacturer_model_id,
+                    modelText: form.specifications?.model ?? '',
+                  }}
+                  onChange={(next) => {
+                    setForm((prev) => {
+                      const specs = { ...prev.specifications }
+                      if (next.modelText) specs.model = next.modelText
+                      else delete specs.model
+                      return {
+                        ...prev,
+                        specifications: specs,
+                        manufacturer_model_id: next.modelId,
+                      }
+                    })
+                  }}
+                  manufacturerId={form.manufacturer_id}
+                  placeholder="e.g., VF-2, P-3000"
+                />
+              </div>
             </div>
 
             {/* Specifications */}

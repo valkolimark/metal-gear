@@ -22,6 +22,8 @@ interface ConditionReport {
 interface Props {
   specs: Record<string, string> | null
   conditionReport: ConditionReport | null
+  /** Spec keys that map to a confirmed Equipment Registry entry (Cycle 61a). Renders a Verified tooltip. */
+  verifiedSpecKeys?: string[]
 }
 
 function gradeColor(grade: string) {
@@ -45,8 +47,9 @@ function scoreTextColor(score: number) {
   return 'text-red-500 dark:text-red-400'
 }
 
-export function ListingSpecs({ specs, conditionReport }: Props) {
+export function ListingSpecs({ specs, conditionReport, verifiedSpecKeys = [] }: Props) {
   const [reportExpanded, setReportExpanded] = useState(false)
+  const verifiedSet = new Set(verifiedSpecKeys.map(k => k.toLowerCase()))
 
   const hasSpecs = specs && Object.keys(specs).length > 0
   if (!hasSpecs && !conditionReport) return null
@@ -60,23 +63,34 @@ export function ListingSpecs({ specs, conditionReport }: Props) {
             Technical Specifications
           </h2>
           <div className="divide-y divide-zinc-200 dark:divide-zinc-800 rounded-lg overflow-hidden">
-            {Object.entries(specs).map(([key, val], i) => (
-              <div
-                key={key}
-                className={`flex py-3 px-3 text-sm ${
-                  i % 2 === 0
-                    ? 'bg-zinc-50 dark:bg-zinc-900/40'
-                    : ''
-                }`}
-              >
-                <span className="w-48 shrink-0 font-body font-medium text-zinc-500 dark:text-zinc-400">
-                  {key}
-                </span>
-                <span className="font-body text-zinc-800 dark:text-zinc-100">
-                  {String(val)}
-                </span>
-              </div>
-            ))}
+            {Object.entries(specs).map(([key, val], i) => {
+              const isVerified = verifiedSet.has(key.toLowerCase())
+              return (
+                <div
+                  key={key}
+                  className={`flex py-3 px-3 text-sm ${
+                    i % 2 === 0
+                      ? 'bg-zinc-50 dark:bg-zinc-900/40'
+                      : ''
+                  }`}
+                >
+                  <span className="w-48 shrink-0 font-body font-medium text-zinc-500 dark:text-zinc-400">
+                    {key}
+                  </span>
+                  <span className="flex items-center gap-1.5 font-body text-zinc-800 dark:text-zinc-100">
+                    {String(val)}
+                    {isVerified && (
+                      <span title="Verified manufacturer" className="inline-flex">
+                        <ShieldCheck
+                          className="size-3.5 text-green-500 dark:text-green-400"
+                          aria-label="Verified manufacturer"
+                        />
+                      </span>
+                    )}
+                  </span>
+                </div>
+              )
+            })}
           </div>
         </section>
       )}
