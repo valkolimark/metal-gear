@@ -6,6 +6,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.30.0] — 2026-04-21 · Manual-first listing creation; Snap & List demoted to experimental (Cycle 59)
+
+### Changed
+- **Manual listing creation is now the default.** `/listings/new` renders the multi-step manual form. The Cycle 58 redirect to `/listings/snap` is reversed. Back-compat: `/listings/new?mode=advanced` still renders the manual form (same as default now).
+- **Entry points restored to the manual flow.** Mobile bottom-nav `+` action, `MobileMenuDrawer` "Post a Listing", desktop/mobile header "Create Listing" button, "My Listings" header CTA, and the `/listings/create` Single Listing tile all route to `/listings/new` (the manual form), not `/listings/snap`.
+- **Snap & List renamed to "Photo-to-Listing" in all user-visible copy** and labeled "experimental". URL `/listings/snap` is unchanged and still works end-to-end. Internal code identifiers (`SnapListBadge`, `snap_list_events`, `SNAP_LIST_QUOTA`, `/admin/snap-list-metrics`) are unchanged.
+- **`SnapListBadge` rendered text** changes from "AI-Assisted" to "Photo-to-Listing draft". Component name and import paths unchanged. All existing listings with `ai_assisted = true` now display the new label.
+- **`QuotaBanner` copy** on the Photo-to-Listing upload screen replaces "free AI listings/month" with "Photo-to-Listing drafts this month".
+- **Analysis stage labels** on `/listings/snap/analyzing/[draftId]` rewritten to neutral language ("Drafting description…", "Reviewing your photos…", "Analyzing your photos…").
+- **Manual-form copy pass.** `AIDescriptionGenerator`, `AIImageCapture`, `AIPriceSuggestion`, and `ConfirmFlag` user-visible strings rewritten to remove "AI" / "AI-Assisted" / "AI-Generated" labels; component file/export names unchanged.
+
+### Added
+- **`PhotoToListingHint`** — `src/components/listings/PhotoToListingHint.tsx`. Small, dismissable entry-point card rendered above the manual form. "Try Photo-to-Listing" label with an "experimental" pill and a neutral "Try it" outline CTA. Dismissal persisted via `localStorage['mg-photo-to-listing-dismissed']`. Hidden below 360px. Uses `useSyncExternalStore` for SSR-safe localStorage read.
+- **`/listings/new?mode=photo`** query-string variant redirects to `/listings/snap` (used by the hint card and any future deep-links).
+
+### Preserved
+- **Snap & List / Photo-to-Listing pipeline fully intact.** `src/lib/vision-analysis/`, `src/lib/snap-list/orchestrator.ts`, `src/lib/google-vision.ts`, all Snap & List server actions, `/api/snap-list/analyze`, all pilot tables, `cleanup_expired_drafts()` cron — all unchanged. Cycle 60 SOS + `/api/listings/analyze-image` migration onto the shared vision layer is unaffected.
+- **Pilot instrumentation stays live.** `snap_list_events`, `snap_list_usage`, `snap_list_accuracy_reviews`, and `/admin/snap-list-metrics` continue to function. Volume is expected to drop as Photo-to-Listing becomes opt-in. AccuracySampler remains valuable at lower volume.
+- **All Cycle 58 graceful-degradation paths** (Google Vision unavailable → Claude-only, Claude unavailable → draft failed) still apply to the experimental flow.
+
+### Tests
+- `e2e/snap-list.spec.ts` — updated assertions for the reversed routing (`/listings/new` renders the form; `?mode=photo` redirects to `/listings/snap`; `?mode=advanced` renders the form for back-compat).
+- `src/test/mobile-nav.test.tsx` — `+` action href updated from `/listings/snap` to `/listings/new`.
+
+### Rationale
+Cycle 58 shipped Snap & List as the default flow with pilot instrumentation designed to measure whether AI-first creation works for industrial B2B. Early product feedback from plant-manager testers indicated AI-first UX creates distrust in listing quality for high-value equipment. Reverting to manual-first while keeping the experimental flow (and its pilot instrumentation) alive lets us preserve the pipeline investment and continue gathering accuracy data at lower volume, while giving buyers the trustworthy, deterministic creation flow they expect. Cycle 60 continues as planned (SOS + image-analyzer migration onto `src/lib/vision-analysis/`).
+
+---
+
 ## [4.29.0] — 2026-04-17 · Snap & List — Single-Photo Listing Creation Pilot (Cycle 58)
 
 ### Added

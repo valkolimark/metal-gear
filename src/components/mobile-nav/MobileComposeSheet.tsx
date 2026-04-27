@@ -48,7 +48,7 @@ export function MobileComposeSheet({ open, onClose }: MobileComposeSheetProps) {
       bg: 'bg-blue-500/10',
       onClick: () => {
         onClose()
-        router.push('/listings/snap')
+        router.push('/listings/new')
       },
     },
     {

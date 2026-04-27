@@ -9,8 +9,8 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ## Features
 
 ### Marketplace
-- **Snap & List** (Cycle 58) — upload 1–10 photos and AI drafts the full listing (title, category, description, specs, nameplate fields, condition, price range from real comparables, photo coach). Google Cloud Vision OCR + Claude Sonnet analysis in ~8–12 seconds. Inline-editable review screen with amber dots on low-confidence fields. Free tier: 3/month; Pro+: unlimited. AI-Assisted badge on published listings. Old multi-step flow preserved at `/listings/new?mode=advanced`.
-- Multi-step listing creation with photo drag-and-drop reorder, draft saves, and gallery detail pages
+- Create listings by uploading photos and filling in details on the multi-step manual form at `/listings/new` — drag-and-drop reorder, draft saves, and gallery detail pages.
+- An experimental **Photo-to-Listing** option is available at the top of the creation flow: upload photos and we'll draft the listing for you to review and edit. Free tier: 3 drafts/month; paid tiers: unlimited. Drafts surface a "Photo-to-Listing draft" badge on the published listing. (Pilot — Cycle 58 / 59.)
 - Full-text search with filters (category, condition, price range, location radius), sort options, and grid/list toggle
 - 3-tier equipment taxonomy: 4 Tier 1 buckets, 28 Tier 2 groups, ~252 subcategories with cross-referencing
 - Location-based discovery with Leaflet/OpenStreetMap, haversine distance sorting, and radius filters

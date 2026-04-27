@@ -123,7 +123,7 @@ export function AIPriceSuggestion({
           ) : (
             <>
               <BarChart3 className="mr-2 size-4" />
-              Get AI Price Estimate
+              Get Price Estimate
             </>
           )}
         </Button>

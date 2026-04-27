@@ -4,9 +4,9 @@ import AdvancedListingForm from "./AdvancedListingForm"
 export const dynamic = "force-dynamic"
 
 /**
- * `/listings/new` is now the alias route. When hit without `?mode=advanced`,
- * we redirect to the new Snap & List flow. The multi-step form remains
- * accessible at `/listings/new?mode=advanced` for edge cases.
+ * `/listings/new` is the default listing creation entry: the multi-step manual
+ * form. `?mode=photo` redirects to the experimental Photo-to-Listing flow at
+ * `/listings/snap`. `?mode=advanced` is a back-compat alias for the default.
  */
 export default async function NewListingPage({
   searchParams,
@@ -14,7 +14,7 @@ export default async function NewListingPage({
   searchParams: Promise<{ mode?: string }>
 }) {
   const { mode } = await searchParams
-  if (mode !== "advanced") {
+  if (mode === "photo") {
     redirect("/listings/snap")
   }
   return <AdvancedListingForm />

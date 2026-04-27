@@ -45,8 +45,9 @@ import { AIPriceSuggestion } from '@/components/listings/AIPriceSuggestion'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
 import { MultiPhotoUploader } from '@/components/upload/MultiPhotoUploader'
 import { PhotoTipsBanner } from '@/components/upload/PhotoTipsBanner'
+import { PhotoToListingHint } from '@/components/listings/PhotoToListingHint'
 
-const STEPS = ['AI Assist', 'Details', 'Photos', 'Pricing', 'Review']
+const STEPS = ['Photo Assist', 'Details', 'Photos', 'Pricing', 'Review']
 
 interface ListingForm {
   title: string
@@ -521,6 +522,8 @@ export default function AdvancedListingForm() {
           List your industrial equipment for sale
         </p>
       </div>
+
+      <PhotoToListingHint />
 
       {/* Step indicators */}
       <div className="block sm:hidden text-sm text-muted-foreground mb-4 font-body">Step {step + 1} of {STEPS.length} — {STEPS[step]}</div>

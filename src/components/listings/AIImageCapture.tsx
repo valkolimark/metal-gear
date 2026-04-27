@@ -306,10 +306,10 @@ export default function AIImageCapture({ onComplete, onSkip, listingId }: AIImag
           </div>
           <div>
             <h2 className="font-display text-xl font-bold text-foreground">
-              AI-Assist
+              Photo Assist
             </h2>
             <p className="mt-1 font-body text-sm text-muted-foreground">
-              Let AI fill in your listing by analyzing equipment photos
+              Pre-fill your listing from equipment photos. You&apos;ll review every field before publishing.
             </p>
           </div>
           <div className="flex w-full max-w-xs flex-col gap-3">
@@ -715,7 +715,7 @@ export default function AIImageCapture({ onComplete, onSkip, listingId }: AIImag
                 className="flex items-center gap-1 font-body text-xs text-muted-foreground hover:text-foreground"
               >
                 <ChevronDown className={`size-3 transition-transform ${showAlternatives ? 'rotate-180' : ''}`} />
-                AI also considered {result.taxonomy.alternatives.length} alternative{result.taxonomy.alternatives.length > 1 ? 's' : ''}
+                Also considered {result.taxonomy.alternatives.length} alternative{result.taxonomy.alternatives.length > 1 ? 's' : ''}
               </button>
               {showAlternatives && (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -759,7 +759,7 @@ export default function AIImageCapture({ onComplete, onSkip, listingId }: AIImag
                       )}
                       {!(key in editedFields) && (
                         <Badge className="bg-primary/20 px-1.5 py-0 font-body text-[10px] text-primary">
-                          AI
+                          Draft
                         </Badge>
                       )}
                     </span>
@@ -772,7 +772,7 @@ export default function AIImageCapture({ onComplete, onSkip, listingId }: AIImag
           {/* Low confidence hint */}
           {isLowConfidence && (
             <p className="font-body text-xs text-amber-600 dark:text-amber-400">
-              Fields with yellow borders had low AI confidence. Please verify or correct them.
+              Fields with yellow borders had lower confidence. Please verify or correct them.
             </p>
           )}
 

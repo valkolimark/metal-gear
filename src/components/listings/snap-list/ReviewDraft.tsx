@@ -145,7 +145,7 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
               Please verify the fields with amber dots
             </div>
             <div className="text-amber-800/80 dark:text-amber-200/80">
-              The AI was less certain on those — tap to edit. The dot clears when you confirm.
+              These had lower confidence — tap to edit. The dot clears when you confirm.
             </div>
           </div>
         </div>

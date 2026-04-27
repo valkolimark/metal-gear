@@ -29,8 +29,8 @@ const STAGE_LABELS: Record<SnapListAnalysisStage, { label: string; icon: string 
   identifying: { label: "Identifying the equipment…", icon: "🏷️" },
   categorizing: { label: "Categorizing…", icon: "📂" },
   pricing: { label: "Finding comparable listings…", icon: "💵" },
-  writing: { label: "Writing your description…", icon: "✍️" },
-  coaching: { label: "Reviewing photo quality…", icon: "📸" },
+  writing: { label: "Drafting description…", icon: "✍️" },
+  coaching: { label: "Reviewing your photos…", icon: "📸" },
   complete: { label: "Draft ready", icon: "✓" },
 }
 
@@ -75,7 +75,7 @@ export function AnalysisStream({
     <div className="mx-auto max-w-xl space-y-4 p-6">
       <header className="text-center">
         <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Sparkles className="h-3.5 w-3.5 animate-pulse" /> Analyzing
+          <Sparkles className="h-3.5 w-3.5 animate-pulse" /> Analyzing your photos…
         </div>
         <h1 className="mt-3 text-2xl font-semibold">
           Working on your listing…

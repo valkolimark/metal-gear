@@ -233,7 +233,7 @@ export function MobileMenuDrawer({
           {/* Marketplace */}
           <NavGroupHeader>Marketplace</NavGroupHeader>
           <NavRow href="/search" icon={Search} label="Browse Equipment" />
-          <NavRow href="/listings/create" icon={Plus} label="Post a Listing" />
+          <NavRow href="/listings/new" icon={Plus} label="Post a Listing" />
           <NavRow href="/sos" icon={AlertTriangle} label="SOS Dashboard" />
           <NavRow
             href="/insights"

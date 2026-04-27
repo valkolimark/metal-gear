@@ -42,14 +42,14 @@ export function SnapUploadZone({ quota }: Props) {
   return (
     <div className="mx-auto max-w-3xl space-y-5 p-4">
       <header className="text-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1 text-xs font-medium text-primary">
-          <Sparkles className="h-3.5 w-3.5" /> AI-assisted
+        <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-[11px] font-medium uppercase tracking-wide text-amber-700 dark:text-amber-300">
+          <Sparkles className="h-3.5 w-3.5" /> experimental
         </div>
         <h1 className="mt-3 text-2xl font-semibold md:text-3xl">
-          Snap photos. We&apos;ll build the listing.
+          Photo-to-Listing
         </h1>
         <p className="mt-2 text-sm text-muted-foreground">
-          Upload 1–10 photos. Include a nameplate shot if you have one — we&apos;ll read the manufacturer, model, and serial number automatically.
+          Upload photos and we&apos;ll draft a listing you can review and edit. Include a nameplate shot if you have one — we&apos;ll pull manufacturer, model, and serial number when we can. Results vary.
         </p>
       </header>
 
@@ -78,14 +78,14 @@ export function SnapUploadZone({ quota }: Props) {
           className="shadow-lg"
         >
           {isStarting ? (
-            <>Starting analysis…</>
+            <>Starting…</>
           ) : urls.length === 0 ? (
             <>
               <Camera className="mr-2 h-4 w-4" /> Add photos first
             </>
           ) : (
             <>
-              <Sparkles className="mr-2 h-4 w-4" /> Analyze {urls.length} photo
+              <Sparkles className="mr-2 h-4 w-4" /> Draft from {urls.length} photo
               {urls.length === 1 ? "" : "s"}
             </>
           )}
@@ -95,10 +95,10 @@ export function SnapUploadZone({ quota }: Props) {
       <div className="text-center text-xs text-muted-foreground">
         Prefer the step-by-step form?{" "}
         <Link
-          href="/listings/new?mode=advanced"
+          href="/listings/new"
           className="underline underline-offset-2 hover:text-foreground"
         >
-          Use advanced mode
+          Use the manual form
         </Link>
       </div>
     </div>

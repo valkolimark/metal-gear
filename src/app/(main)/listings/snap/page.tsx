@@ -7,9 +7,9 @@ import { SnapUploadZone } from "@/components/listings/snap-list/SnapUploadZone"
 export const dynamic = "force-dynamic"
 
 export const metadata = {
-  title: "Snap & List — AI-assisted listing",
+  title: "Photo-to-Listing (experimental)",
   description:
-    "Upload photos of your equipment and Metal Gear's AI will draft the listing for you.",
+    "Upload photos and we'll draft a listing you can review and edit.",
 }
 
 export default async function SnapListUploadPage() {

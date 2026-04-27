@@ -38,7 +38,7 @@ export default async function ListingCreatePage() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Link
-            href="/listings/snap"
+            href="/listings/new"
             className="group relative flex flex-col gap-4 rounded-xl border border-border bg-card p-6 hover:border-primary hover:shadow-md transition-all duration-150"
           >
             <div className="flex items-center justify-center w-12 h-12 rounded-lg bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-150">
@@ -47,8 +47,8 @@ export default async function ListingCreatePage() {
             <div>
               <h2 className="text-lg font-semibold font-display mb-1">Single Listing</h2>
               <p className="text-sm text-muted-foreground font-body leading-relaxed">
-                List one piece of equipment with photos, AI-assisted specs,
-                pricing intelligence, and quality scoring.
+                List one piece of equipment with photos, specs, pricing
+                intelligence, and quality scoring.
               </p>
             </div>
             <span className="mt-auto text-sm font-medium text-primary font-body flex items-center gap-1 group-hover:gap-2 transition-all">

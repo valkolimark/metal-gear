@@ -15,7 +15,7 @@ export function MobileNav() {
   const navItems = [
     { href: '/dashboard', label: t('home'), icon: Home },
     { href: '/search', label: t('search'), icon: Search },
-    { href: '/listings/snap', label: t('sell'), icon: PlusCircle, highlight: true },
+    { href: '/listings/new', label: t('sell'), icon: PlusCircle, highlight: true },
     { href: '/messages', label: t('messages'), icon: MessageSquare, badge: true },
     { href: '/profile', label: t('profile'), icon: User },
   ]

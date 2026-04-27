@@ -125,10 +125,10 @@ export function AIDescriptionGenerator({
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-body text-[10px] gap-1 bg-primary/10 text-primary border-0">
                 <Sparkles className="size-2.5" />
-                AI Copy
+                Draft
               </Badge>
               <span className="font-body text-sm font-medium text-foreground">
-                Generate description with AI
+                Draft a description from your specs
               </span>
             </div>
             {summary && (
@@ -184,7 +184,7 @@ export function AIDescriptionGenerator({
             <div className="flex items-center gap-2">
               <Badge variant="secondary" className="font-body text-[10px] gap-1 bg-primary/10 text-primary border-0">
                 <Sparkles className="size-2.5" />
-                AI-Generated Description
+                Drafted Description
               </Badge>
             </div>
 
