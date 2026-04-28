@@ -21,6 +21,9 @@ interface SOSCameraFirstState {
   aiSubcategory: string
   aiSuggestedDescription: string
   aiConfidence: number
+  /** Equipment Registry FK (Cycle 61b) — only set on confident matches. */
+  registryManufacturerId: string | null
+  registryManufacturerModelId: string | null
   description: string
   urgency: 'normal' | 'critical'
   brandPreference: string
@@ -45,6 +48,8 @@ const initialState: SOSCameraFirstState = {
   aiSubcategory: '',
   aiSuggestedDescription: '',
   aiConfidence: 0,
+  registryManufacturerId: null,
+  registryManufacturerModelId: null,
   description: '',
   urgency: 'normal',
   brandPreference: '',
@@ -72,6 +77,13 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
     const tier2 = aiResult?.taxonomy?.tier2 || ''
     const subcategory = aiResult?.taxonomy?.subcategory || ''
     const confidence = aiResult?.overallConfidence ?? 0
+    // Cycle 61b — only carry forward FKs at high registry confidence so we
+    // never tag an SOS with a low-confidence guess.
+    const reg = aiResult?.registryMatch ?? null
+    const registryManufacturerId =
+      reg && reg.confidence >= 0.9 ? reg.manufacturerId : null
+    const registryManufacturerModelId =
+      reg && reg.confidence >= 0.9 ? reg.manufacturerModelId : null
 
     // Build suggested description
     const parts = [equipmentType, manufacturer, model].filter(Boolean)
@@ -92,6 +104,8 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
       aiSubcategory: subcategory,
       aiSuggestedDescription: suggestedDescription,
       aiConfidence: confidence,
+      registryManufacturerId,
+      registryManufacturerModelId,
       description: suggestedDescription,
       brandPreference: manufacturer,
     }))
@@ -136,6 +150,8 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
           aiModel={state.aiModel}
           aiEquipmentType={state.aiEquipmentType}
           aiConfidence={state.aiConfidence}
+          registryManufacturerId={state.registryManufacturerId}
+          registryManufacturerModelId={state.registryManufacturerModelId}
           onChange={(partial) => setState(s => ({ ...s, ...partial }))}
           onBack={() => setState(s => ({ ...s, step: 'capture', capturedFiles: [], uploadedMediaUrls: [] }))}
           onSubmit={(sosId, vendorCount, sentTitle) =>

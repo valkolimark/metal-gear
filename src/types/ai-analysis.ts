@@ -51,6 +51,18 @@ export interface FieldConfidenceScores {
   fraud: number
 }
 
+/**
+ * Equipment Registry match summary (Cycle 61b). Surfaced when the analyzer
+ * was wired with a `registryLookup` callback. Null when no callback ran or
+ * no usable hit was returned.
+ */
+export interface RegistryMatchInfo {
+  manufacturerId: string | null
+  manufacturerModelId: string | null
+  confidence: number
+  method: 'exact' | 'alias' | 'fuzzy' | 'none'
+}
+
 export interface AIAnalysisResult {
   taxonomy: TaxonomyResult
   listing: ListingResult
@@ -62,6 +74,8 @@ export interface AIAnalysisResult {
   lowConfidenceFields?: string[]
   analysisMode?: 'single_image' | 'multi_image'
   wasReprompted?: boolean
+  // Cycle 61b
+  registryMatch?: RegistryMatchInfo | null
 }
 
 export interface AIAnalysisErrorResponse {

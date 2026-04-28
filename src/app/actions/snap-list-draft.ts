@@ -40,6 +40,8 @@ function mapDraftRow(row: Record<string, unknown>): SnapListDraft {
       askingPrice: fields.askingPrice ?? null,
       locationCity: fields.locationCity ?? null,
       locationState: fields.locationState ?? null,
+      manufacturerId: fields.manufacturerId ?? null,
+      manufacturerModelId: fields.manufacturerModelId ?? null,
     },
     confidenceScores: (row.confidence_scores as Record<string, number>) ?? {},
     clarifyingQuestions: (row.clarifying_questions as SnapListDraft["clarifyingQuestions"]) ?? [],
@@ -287,31 +289,45 @@ export async function publishDraft(
       : draft.fields.priceSuggestion?.median ?? null
   const specs = draft.fields.specs ?? {}
 
+  // Equipment Registry FKs (Cycle 61b) — propagate from draft when the
+  // analyzer found a confident match. Free-text manufacturer/model strings
+  // are still persisted via title/specifications, so listings without a
+  // registry hit publish unchanged.
+  const listingPayload: Record<string, unknown> = {
+    seller_id: user.id,
+    company_id: companyId,
+    title,
+    description,
+    category,
+    condition,
+    price_cents: priceCents,
+    negotiable: true,
+    contact_for_price: priceCents === null,
+    location_city: draft.fields.locationCity ?? undefined,
+    location_state: draft.fields.locationState ?? undefined,
+    specifications: specs as unknown as Json,
+    specs: specs as unknown as Json,
+    quantity: 1,
+    status: "active",
+    ai_assist_used: true,
+    ai_assist_accepted: true,
+    ai_assisted: true,
+    source_draft_id: draft.id,
+    ai_price_suggested: priceCents,
+    expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
+  }
+  if (draft.fields.manufacturerId) {
+    listingPayload.manufacturer_id = draft.fields.manufacturerId
+    listingPayload.registry_match_method = "user_confirmed"
+  }
+  if (draft.fields.manufacturerModelId) {
+    listingPayload.manufacturer_model_id = draft.fields.manufacturerModelId
+  }
+
   const { data: listing, error: insertErr } = await admin
     .from("listings")
-    .insert({
-      seller_id: user.id,
-      company_id: companyId,
-      title,
-      description,
-      category,
-      condition,
-      price_cents: priceCents,
-      negotiable: true,
-      contact_for_price: priceCents === null,
-      location_city: draft.fields.locationCity ?? undefined,
-      location_state: draft.fields.locationState ?? undefined,
-      specifications: specs as unknown as Json,
-      specs: specs as unknown as Json,
-      quantity: 1,
-      status: "active",
-      ai_assist_used: true,
-      ai_assist_accepted: true,
-      ai_assisted: true,
-      source_draft_id: draft.id,
-      ai_price_suggested: priceCents,
-      expires_at: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString(),
-    })
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .insert(listingPayload as any)
     .select("id")
     .single()
 

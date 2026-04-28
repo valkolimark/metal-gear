@@ -37,6 +37,9 @@ interface SOSConfirmStepProps {
   aiModel: string
   aiEquipmentType: string
   aiConfidence: number
+  /** Equipment Registry FK pair carried forward from the analyzer (Cycle 61b). */
+  registryManufacturerId?: string | null
+  registryManufacturerModelId?: string | null
   onChange: (partial: Record<string, unknown>) => void
   onBack: () => void
   onSubmit: (sosId: string, vendorCount: number, sosTitle: string) => void
@@ -57,6 +60,8 @@ export function SOSConfirmStep({
   aiModel,
   aiEquipmentType,
   aiConfidence,
+  registryManufacturerId = null,
+  registryManufacturerModelId = null,
   onChange,
   onBack,
   onSubmit,
@@ -163,6 +168,19 @@ export function SOSConfirmStep({
       const parts = [brandPreference || aiManufacturer, subLabel || catLabel, aiModel].filter(Boolean)
       const title = parts.join(' ') || catLabel || aiEquipmentType || 'Equipment needed'
 
+      // Cycle 61b — only forward the registry FK when the user hasn't
+      // overridden the brand text. If they edited the brand field after
+      // analysis, drop the FK so we don't tie the SOS to a manufacturer
+      // they no longer want.
+      const brandUntouched =
+        !brandPreference || brandPreference === aiManufacturer
+      const fkManufacturerId =
+        brandUntouched && registryManufacturerId ? registryManufacturerId : undefined
+      const fkModelId =
+        brandUntouched && registryManufacturerModelId
+          ? registryManufacturerModelId
+          : undefined
+
       const result = await createSosRequest({
         title,
         description,
@@ -170,6 +188,8 @@ export function SOSConfirmStep({
         equipment_subcategory: editSubcategory || aiSubcategory || undefined,
         brand: brandPreference || aiManufacturer || undefined,
         model: aiModel || undefined,
+        manufacturer_id: fkManufacturerId,
+        manufacturer_model_id: fkModelId,
         urgency,
         transport_needed: transportNeeded,
         photos: uploadedMediaUrls,

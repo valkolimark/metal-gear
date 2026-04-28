@@ -88,6 +88,10 @@ export interface SnapListDraftFields {
   askingPrice: number | null
   locationCity: string | null
   locationState: string | null
+  /** Equipment Registry FK (Cycle 61b). Null when no confident match was found. */
+  manufacturerId: string | null
+  /** Equipment Registry model FK. Null unless manufacturerId is also set. */
+  manufacturerModelId: string | null
 }
 
 /** Shape of a draft row loaded from the DB and hydrated for the UI. */

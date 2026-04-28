@@ -6,6 +6,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.32.1] — 2026-04-27 · Equipment Registry: nameplate disambiguation + backfill (Cycle 61b)
+
+### Added
+- **Registry-aware nameplate disambiguation in production** — `analyzeEquipmentImages()` now accepts an optional `registryLookup` callback on `EquipmentAnalysisOptions`. The vision-analysis layer remains domain-isolated (no imports from `@/lib/registry/*` or `@/app/actions/*`). All three consumers — Photo-to-Listing (`src/app/actions/snap-list.ts`), SOS camera-first (`/api/listings/analyze-image` route via `mode=sos`), and the manual-form Photo Helper (same route via `mode=listing-helper`) — pass `buildNameplateRegistryCallback()` as the lookup. The callback runs `searchManufacturers` + `disambiguateNameplateCandidates` (the "Baldor fix" from 61a). When confidence ≥ 0.90 the analyzer overrides `identification.manufacturer` with the canonical registry name; the FK pair is attached to `result.registryMatch` for the orchestrator to persist.
+- **`src/lib/registry/nameplate-callback.ts`** — shared factory that joins registry + vision-analysis. The only place these layers touch each other. Pure-server module, never imported from `src/lib/vision-analysis/`. Optional dependency injection (`searchManufacturers` / `searchModels`) makes it unit-testable. Manufacturer threshold 0.90 for FK persistence; model lookup only fires above that, with a stricter 0.90 acceptance threshold on the model itself.
+- **`scripts/backfill-registry-matches.ts`** — one-time idempotent backfill that walks every `listings` and `sos_requests` row with a NULL `manufacturer_id` and a free-text manufacturer present. Loads all manufacturers once into memory, scores each row via the same `disambiguateNameplateCandidates` path, and buckets into auto-confirm (≥ 0.90), review band (0.70-0.90), or unmatched (< 0.70). Writes batched via `UPDATE … FROM (VALUES …)` chunks per page so the Supabase Management API rate limit holds. `WHERE registry_match_method IS NULL` keeps re-runs cheap — already-classified rows skip.
+- **`src/lib/registry/backfill.ts`** — pure-function helpers (`scoreRowAgainstRegistry`, `extractListingManufacturer`) extracted from the script for unit testing.
+- **`src/test/vision-analysis-isolation.test.ts`** — codifies the domain-isolation invariant in CI via `grep`. Asserts no imports from `@/lib/registry`, `@/app/actions`, or `@/lib/snap-list` inside `src/lib/vision-analysis/`.
+- **`src/test/registry-vision-callback.test.ts`** — 9 tests covering the callback factory: empty input, no hits, the centrifuge-with-Baldor case (Sharples wins), motor-only correctness (Baldor wins), model FK acceptance threshold, error survival, dedup across candidate searches.
+- **`src/test/vision-analysis-registry-integration.test.ts`** — 6 tests verifying the analyzer's contract: undefined callback preserves Cycle 60 behavior, high-confidence callback overrides manufacturer, low-confidence callback attaches the summary without overriding, null result preserves Claude output, throwing callback survives + appends to `errors[]`, callback receives candidates + equipmentType + model.
+- **`src/test/backfill-registry-matches.test.ts`** — 12 tests covering the row-scoring helpers: empty input, exact / alias / substring matches, equipment-type boost, tier classification thresholds, listing-manufacturer extraction (specifications JSONB preferred over specs).
+
+### Changed
+- **`src/types/ai-analysis.ts`** — `AIAnalysisResult` gains an optional `registryMatch?: RegistryMatchInfo | null` field surfaced from the analyze-image route response.
+- **`src/lib/snap-list/types.ts`** — `SnapListDraftFields` gains `manufacturerId` + `manufacturerModelId` so the FK pair persists on draft state and propagates into the published listing row.
+- **`src/app/actions/snap-list-draft.ts`** — `publishDraft` writes `manufacturer_id`, `manufacturer_model_id`, and `registry_match_method = 'user_confirmed'` on the new `listings` row when the draft carries a registry match.
+- **`src/app/(main)/sos/create/components/SOSCameraFirstFlow.tsx` + `SOSConfirmStep.tsx`** — registry FK threads through state from analysis result into `createSosRequest`. Dropped if the user edits the brand text away from the AI suggestion (so we never tag an SOS with a manufacturer the user no longer wants).
+
+### Backfill summary (production)
+- **Listings:** 15 auto-matched (≥ 0.90), 545 in review band (0.70-0.90), 2 unmatched (< 0.70), 43 skipped (no free-text manufacturer). Spot-check on 15 auto-matched rows: 100% precision (GEA, Sharples, Centrisys, Jaygo, Westfalia Separator).
+- **SOS Requests:** 8 auto-matched, 2 review-band, 6 unmatched (out of 16 total).
+- Free-text values left untouched. Safe to re-run after seed updates — `WHERE registry_match_method IS NULL` on listings, `manufacturer_id IS NULL` on SOS.
+
+### Architecture invariants (still enforced)
+- `grep -rnE "from ['\"]\@?/lib/registry" src/lib/vision-analysis/` returns empty (codified by `vision-analysis-isolation.test.ts`).
+- `grep -rnE "from ['\"]\@?/app/actions" src/lib/vision-analysis/` returns empty.
+- `grep -rnE "from ['\"]\@?/lib/snap-list" src/lib/vision-analysis/` returns empty.
+- Free-text fallback remains mandatory in both manual forms; the registry autocomplete is a helper, not a gate.
+
+---
+
 ## [4.32.0] — 2026-04-27 · Equipment Registry: seeding + autocomplete (Cycle 61a)
 
 ### Added

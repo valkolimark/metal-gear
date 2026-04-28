@@ -25,6 +25,16 @@ export type { ComparableListing }
 export function projectAnalysisToDraftFields(
   analysis: EquipmentAnalysisResult,
 ): SnapListDraftFields {
+  const reg = analysis.registryMatch
+  // Only persist the FK when the analyzer actually overrode the manufacturer
+  // (confidence >= 0.90 in analyze.ts). Below that threshold the FK is logged
+  // but not surfaced as a verified match — the listing detail page would
+  // otherwise render a "Verified manufacturer" tooltip on a low-confidence guess.
+  const manufacturerId =
+    reg && reg.confidence >= 0.9 ? reg.manufacturerId : null
+  const manufacturerModelId =
+    reg && reg.confidence >= 0.9 ? reg.manufacturerModelId : null
+
   return {
     title: analysis.identification.suggestedTitle,
     description: analysis.identification.suggestedDescription,
@@ -42,6 +52,8 @@ export function projectAnalysisToDraftFields(
     askingPrice: null,
     locationCity: null,
     locationState: null,
+    manufacturerId,
+    manufacturerModelId,
   }
 }
 

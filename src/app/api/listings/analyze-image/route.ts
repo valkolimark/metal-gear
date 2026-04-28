@@ -8,6 +8,7 @@ import {
   type AnalysisMode,
   type EquipmentAnalysisResult,
 } from "@/lib/vision-analysis"
+import { buildNameplateRegistryCallback } from "@/lib/registry/nameplate-callback"
 import { projectAnalysisToSosFields } from "@/lib/sos/vision-orchestrator"
 import { uploadToR2, deleteFromR2 } from "@/lib/r2"
 import { getR2Url } from "@/lib/r2"
@@ -172,6 +173,7 @@ function projectToAIAnalysisResult(
     lowConfidenceFields,
     analysisMode,
     wasReprompted: false,
+    registryMatch: result.registryMatch ?? null,
   }
 }
 
@@ -285,6 +287,7 @@ export async function POST(request: NextRequest) {
       taxonomyContext: EQUIPMENT_TAXONOMY,
       callerTag: `analyze-image:${mode}`,
       mode,
+      registryLookup: buildNameplateRegistryCallback(),
     })
 
     const aiResult = projectToAIAnalysisResult(

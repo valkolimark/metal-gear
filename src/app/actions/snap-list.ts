@@ -9,6 +9,7 @@ import { analyzeEquipmentImages } from "@/lib/vision-analysis"
 import {
   projectAnalysisToDraftFields,
 } from "@/lib/snap-list/orchestrator"
+import { buildNameplateRegistryCallback } from "@/lib/registry/nameplate-callback"
 import { EQUIPMENT_TAXONOMY } from "@/lib/constants/equipment-taxonomy"
 import { logSnapListEvent, logStageCompleted } from "@/lib/snap-list/events"
 import { getActiveCompanyId } from "./company-context"
@@ -94,6 +95,7 @@ async function runAnalysisPipeline(
       onStageComplete: (stage, ms) => {
         void logStageCompleted(draftId, ownerId, stage, ms)
       },
+      registryLookup: buildNameplateRegistryCallback(),
     })
 
     // Persist raw outputs + merged fields so the review screen can start

@@ -47,6 +47,33 @@ export interface ClarifyingQuestion {
   options: Array<{ value: string; label: string }>
 }
 
+export type RegistryLookupMethod = "exact" | "alias" | "fuzzy" | "none"
+
+/**
+ * Result of a registry lookup callback. The vision-analysis layer treats this
+ * as opaque data — domain isolation invariant: this lib does NOT import from
+ * `@/lib/registry/*` or `@/app/actions/*`.
+ */
+export interface RegistryLookupResult {
+  manufacturerId: string | null
+  manufacturerName: string | null
+  manufacturerModelId: string | null
+  manufacturerModelName: string | null
+  confidence: number
+  method: RegistryLookupMethod
+}
+
+/**
+ * Subset of RegistryLookupResult attached to EquipmentAnalysisResult. Carries
+ * the FK pair for orchestrators to persist alongside free-text values.
+ */
+export interface RegistryMatchSummary {
+  manufacturerId: string | null
+  manufacturerModelId: string | null
+  confidence: number
+  method: RegistryLookupMethod
+}
+
 export interface EquipmentAnalysisResult {
   identification: EquipmentIdentification
   specs: Record<string, string | number>
@@ -58,12 +85,21 @@ export interface EquipmentAnalysisResult {
   fraud: FraudSignals
   confidence: FieldConfidenceMap
   clarifyingQuestions: ClarifyingQuestion[]
-  /** Per-stage timings in ms. Keys may include: `ocr`, `web_detection`, `claude`, `merge`. */
+  /** Per-stage timings in ms. Keys may include: `ocr`, `web_detection`, `claude`, `merge`, `registry_lookup`. */
   stageTimings: Record<string, number>
   /** Tag passed by the caller for observability (e.g. "snap_list", "sos"). */
   callerTag?: string
   /** Non-fatal errors accumulated during analysis. Presence here means partial result. */
   errors: string[]
+  /**
+   * Result of the optional registry lookup callback. `null` when no callback
+   * was passed OR the callback returned no usable hit. When confidence is
+   * >= 0.90 the analyzer also overrides `identification.manufacturer` with
+   * the canonical registry name; below that threshold the FK pair is still
+   * exposed (so the orchestrator can log it) but the manufacturer string is
+   * left as Claude/OCR returned it.
+   */
+  registryMatch?: RegistryMatchSummary | null
   rawClaudeOutput?: string
   rawWebDetection?: unknown
   rawOCR?: unknown
@@ -107,6 +143,22 @@ export interface EquipmentAnalysisOptions {
    * `'snap-list'` preserves Cycle 58 behavior.
    */
   mode?: AnalysisMode
+  /**
+   * Optional registry lookup callback (Cycle 61b). When provided, the analyzer
+   * invokes it AFTER OCR + Claude identification with the deduplicated brand
+   * candidates plus the visually-identified equipment type. The callback runs
+   * registry search + nameplate disambiguation and returns a RegistryLookupResult.
+   *
+   * Domain isolation invariant: the vision-analysis layer NEVER imports from
+   * `@/lib/registry/*` or `@/app/actions/*`. The callback shape is the only
+   * coupling point — the caller wires the implementation.
+   */
+  registryLookup?: (input: {
+    candidates: string[]
+    equipmentType: string | null
+    /** Claude-extracted model string, if any. Lets the callback try to resolve a model FK after picking the manufacturer. */
+    model: string | null
+  }) => Promise<RegistryLookupResult | null>
 }
 
 export { OCRBlock }

@@ -35,6 +35,7 @@ import {
 import type {
   EquipmentAnalysisOptions,
   EquipmentAnalysisResult,
+  RegistryMatchSummary,
 } from "./types"
 
 const CLAUDE_MODEL = "claude-sonnet-4-20250514"
@@ -44,6 +45,121 @@ const CLAUDE_MODEL = "claude-sonnet-4-20250514"
 // side-of-machine warning sticker or a single-word brand decal as a
 // "nameplate" — confusing when the dealer didn't actually shoot the data tag.
 const MIN_NAMEPLATE_OCR_CHARS = 30
+
+// Threshold at which the registry lookup is confident enough to override the
+// Claude/OCR-derived manufacturer string with the canonical registry name.
+// Below this, the FK summary is still attached to the result (so orchestrators
+// can log it) but the free-text manufacturer is left untouched.
+const REGISTRY_OVERRIDE_THRESHOLD = 0.9
+
+// Max OCR brand candidates fed to the registry lookup. Most nameplates carry
+// 1–3 visible brand names (equipment OEM + motor + maybe a controller); 6 is
+// generous headroom without inflating the search fan-out.
+const MAX_BRAND_CANDIDATES = 6
+
+/**
+ * Heuristic brand-candidate extractor for the registry lookup.
+ *
+ * OCR blocks include short ALL-CAPS tokens that are very likely brand decals
+ * (BALDOR, ABB, WEG, SHARPLES, …). We collect those, plus the Claude-identified
+ * manufacturer, dedup case-insensitively, and hand the union to the registry.
+ *
+ * Conservative on purpose: we filter to tokens that look like brand strings
+ * (ASCII letters/digits/&/-, length 2–40, mostly letters) so we don't drown
+ * the registry search in serial numbers and dimensions.
+ */
+function gatherBrandCandidates(
+  claudeManufacturer: string | null,
+  ocrFullText: string,
+): string[] {
+  const seen = new Set<string>()
+  const out: string[] = []
+
+  const push = (raw: string | null | undefined) => {
+    if (!raw) return
+    const s = raw.trim()
+    if (!s) return
+    const key = s.toLowerCase()
+    if (seen.has(key)) return
+    seen.add(key)
+    out.push(s)
+  }
+
+  push(claudeManufacturer)
+
+  if (ocrFullText) {
+    // Token regex: words containing letters, possibly with digits, &, hyphen.
+    const tokens = ocrFullText.match(/[A-Za-z][A-Za-z0-9&\-]{1,39}/g) ?? []
+    for (const tok of tokens) {
+      // Skip very common OCR fragments that aren't brands.
+      const upper = tok.toUpperCase()
+      if (
+        upper.length < 2 ||
+        BRAND_NOISE_TOKENS.has(upper) ||
+        /^\d+$/.test(tok)
+      ) {
+        continue
+      }
+      // Heuristic: brand-like tokens are ALL-CAPS words from the nameplate
+      // graphic OR start with an uppercase letter. We bias toward ALL-CAPS
+      // because brand decals are almost always rendered that way.
+      const allCaps = tok === upper && /[A-Z]/.test(tok)
+      if (allCaps) push(tok)
+      if (out.length >= MAX_BRAND_CANDIDATES) break
+    }
+  }
+
+  return out.slice(0, MAX_BRAND_CANDIDATES)
+}
+
+const BRAND_NOISE_TOKENS: ReadonlySet<string> = new Set([
+  "MODEL",
+  "SERIAL",
+  "TYPE",
+  "MFG",
+  "MFD",
+  "DATE",
+  "WARNING",
+  "CAUTION",
+  "DANGER",
+  "NOTICE",
+  "VOLT",
+  "VOLTS",
+  "VOLTAGE",
+  "AMP",
+  "AMPS",
+  "WATT",
+  "WATTS",
+  "HP",
+  "RPM",
+  "HZ",
+  "KW",
+  "PHASE",
+  "PH",
+  "PSI",
+  "BAR",
+  "MAX",
+  "MIN",
+  "NO",
+  "PART",
+  "PARTS",
+  "MADE",
+  "USA",
+  "CHINA",
+  "GERMANY",
+  "JAPAN",
+  "ITALY",
+  "FRANCE",
+  "UK",
+  "EU",
+  "OEM",
+  "INC",
+  "LLC",
+  "LTD",
+  "CO",
+  "CORP",
+  "GMBH",
+])
 
 function pickNameplatePhoto(
   ocrResults: NameplateOCRResult[],
@@ -250,8 +366,56 @@ export async function analyzeEquipmentImages(
   const isSuspicious =
     merged.fraud.isSuspicious || stockPhotoMatches.length > 0
 
+  let identification = merged.identification
+  let registryMatch: RegistryMatchSummary | null = null
+
+  // ─── Registry lookup (Cycle 61b) ───────────────────────────────────────
+  // Opt-in: only runs when the caller passed a `registryLookup` callback.
+  // The callback may throw or reject — we catch and treat as a soft failure.
+  if (options.registryLookup) {
+    const registryStart = Date.now()
+    const candidates = gatherBrandCandidates(
+      identification.manufacturer,
+      nameplate.text,
+    )
+    if (candidates.length > 0) {
+      try {
+        const lookup = await options.registryLookup({
+          candidates,
+          equipmentType: identification.equipmentType,
+          model: identification.model,
+        })
+        if (lookup) {
+          registryMatch = {
+            manufacturerId: lookup.manufacturerId,
+            manufacturerModelId: lookup.manufacturerModelId,
+            confidence: lookup.confidence,
+            method: lookup.method,
+          }
+          // Override the free-text manufacturer with the canonical registry
+          // name only at high confidence (precision over recall — false
+          // positives undermine the "Verified manufacturer" trust signal).
+          if (
+            lookup.confidence >= REGISTRY_OVERRIDE_THRESHOLD &&
+            lookup.manufacturerName
+          ) {
+            identification = {
+              ...identification,
+              manufacturer: lookup.manufacturerName,
+              model: lookup.manufacturerModelName ?? identification.model,
+            }
+          }
+        }
+      } catch (err) {
+        console.error("[vision-analysis] registryLookup failed:", err)
+        errors.push("registry_lookup_failed")
+      }
+    }
+    reportStage("registry_lookup", Date.now() - registryStart)
+  }
+
   return {
-    identification: merged.identification,
+    identification,
     specs: merged.specs,
     condition: merged.condition,
     ocr: {
@@ -271,6 +435,7 @@ export async function analyzeEquipmentImages(
     stageTimings,
     callerTag: options.callerTag,
     errors,
+    registryMatch,
     rawClaudeOutput: claudeRes.raw || undefined,
     rawWebDetection: webDetection,
     rawOCR: ocrResults,
@@ -301,5 +466,6 @@ function emptyResult(
     stageTimings: {},
     callerTag: options.callerTag,
     errors,
+    registryMatch: null,
   }
 }

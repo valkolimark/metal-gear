@@ -41,4 +41,7 @@ export type {
   TaxonomyTier1Bucket,
   TaxonomyTier2Group,
   TaxonomySubcategory,
+  RegistryLookupResult,
+  RegistryLookupMethod,
+  RegistryMatchSummary,
 } from "./types"
