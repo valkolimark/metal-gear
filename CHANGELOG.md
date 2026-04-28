@@ -6,6 +6,56 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.36.0] — 2026-04-28 · Company multi-industry, profile/seller/admin industry audit, drop deprecated listings.industry (Cycle 65)
+
+### Added
+- **`company_profiles.industries TEXT[]`** column with GIN index `idx_company_profiles_industries_gin`. Backfilled from `company_profiles.industry` (legacy singleton, now deprecated).
+- **`MultiIndustryPicker` `unlimited` prop** — when `true`, removes the cap and shows an informational `{N} selected` counter instead of the gating "Maximum N" warning. Used only by company-level surfaces (broad reach claims). Listings stay capped at 5 (specific equipment fit).
+- **`scripts/migrate-companies-industries-array.ts`** — idempotent Supabase Management API migration with dry-run mode. Mirrors `scripts/migrate-listings-industries-array.ts` from Cycle 64.
+- **`scripts/drop-listings-industry-column.ts`** — destructive migration with pre-flight grep gate. Fails loud if any source file still references `listing.industry` singleton; idempotent (`DROP COLUMN IF EXISTS`); verifies row count unchanged.
+- **`getCompanyIndustries()` / `getPrimaryCompanyIndustry()`** in `src/types/company.ts` — read both shapes during the deprecation window.
+
+### Changed
+- **`/companies/new` + `/settings/company`** — single-select industry dropdown replaced with `<MultiIndustryPicker unlimited />`. Companies can now tag any number of industries served (e.g., a fabricator serving Oil & Gas + Petrochemical + Power Generation + Marine).
+- **`/companies/[slug]` public page** — renders full chip row of industries in the hero/metadata section. No truncation.
+- **OG image route (`/api/og?type=company`)** — accepts new `industries` query param (joined, max 4) for visual consistency. Layout unchanged.
+- **`Listing` type and DB types** — removed `industry` column references; `listings.industries: string[]` is the only shape.
+- **`listings.industry` column dropped** after pre-flight grep gate verified zero remaining references in source.
+- **`SearchFilters.industry: Industry`** replaced with `SearchFilters.industries?: Industry[]`. `useListings()` now filters via `.overlaps('industries', …)`.
+- **`getIndustries()` / `getPrimaryIndustry()` in `src/lib/listings/industries.ts`** — collapsed: legacy singleton fallback removed. Both helpers now read `row.industries` only.
+- **`/profile`** — divergent single-select Industry control replaced with `<MultiIndustryPicker />` (default cap 5). Hydrates from `profile.industry` as a 1-element array; saves write `industries[0]` back to the legacy column for back-compat with existing seller-page readers.
+- **`/sellers/[id]` + `/profile/[id]`** — industry display switched from single muted label to chip row. Reads `user_business_profiles.industries` (canonical array) first, falls back to `profile.industry` for legacy rows.
+- **`/admin/listings/[id]`** — Industry → Industries column; renders the array joined.
+- **CSV export (`exportListingsCSV`)** — Industry column → Industries (semicolon-separated array values).
+- **`/saved-searches`** — formatted filter description prefers `filters.industries` (CSV) over the legacy `filters.industry` singleton when both exist.
+
+### Audit results (Cycle 65)
+- **`/profile` industry editing:** divergent single-select editing `profiles.industry` was redundant with the multi-industry chip picker on the same page (`EquipmentInterestsEditor`, writing `user_business_profiles.industries`). Replaced the single-select with `<MultiIndustryPicker />` per the audit directive; the singleton column is mirrored as `industries[0]` on save so legacy display surfaces still resolve. Covered by `src/test/profile-industries-audit.test.tsx`.
+- **`/sellers/[id]` public seller page:** rendered `profile.industry` as a single label; updated to fetch `user_business_profiles.industries` and render a chip row, falling back to the singleton for legacy rows.
+- **`/profile/[id]` legacy public profile page:** same treatment as `/sellers/[id]`.
+- **Admin user detail (`/admin/users/[id]`):** confirmed industries surface absent (700-line file, zero industry references). Not added speculatively per the prompt's "fix what exists" directive — defer to a future cycle if support requests it.
+- **`get_for_you_feed` RPC:** verified — references `user_business_profiles.industries` (already array-shaped); does NOT reference `company_profiles.industry`. **No change needed.**
+
+### Migration
+- `company_profiles` rows: 6 backfilled (`industries[1] = industry`). Idempotent.
+- `listings.industry` column dropped after pre-flight grep verified zero references. 605 rows preserved.
+- GIN index `idx_company_profiles_industries_gin` created.
+
+### Deprecation
+- `CompanyProfile.industry: string | null` is deprecated this cycle. New code must use `CompanyProfile.industries: string[]`. Drop scheduled Cycle 66.
+- `profiles.industry` singleton is now write-mirrored from `industries[0]` and read with array-first fallback. Keeping it one more cycle for back-compat with any unseen consumers; column drop scheduled when the audit closes Cycle 66.
+
+### Tests
+- `src/test/companies-industries-migration.test.ts` — 9 cases for `getCompanyIndustries` / `getPrimaryCompanyIndustry`.
+- `src/components/forms/MultiIndustryPicker.test.tsx` — extended with 4 cases for `unlimited` mode (no cap, counter renders, default mode unchanged).
+- `src/test/profile-industries-audit.test.tsx` — 5 cases: hydration of singleton ↔ array, save round-trip back to singleton, default cap enforced.
+- `src/test/listings-industries-migration.test.ts` — legacy-fallback cases removed; shim now reads only the array.
+
+### Rationale
+Cycle 64 unified the listing surface; Cycle 65 finishes the company surface and closes the listings deprecation tail. The `unlimited` mode reflects that companies make broad reach claims (multi-vertical fabricators, MRO providers serving all process industries) while individual equipment listings make narrower, more specific industry-fit claims (capped at 5 in Cycle 64). The audit triangle (profile / seller / admin) catches drift across the read/write/moderate paths that always degrade independently when not explicitly checked. The pre-flight grep gate on the destructive migration is the same safety pattern Cycle 62's enum extension used — fail loud rather than silently corrupt.
+
+---
+
 ## [4.35.0] — 2026-04-28 · Listing taxonomy alignment, multi-industry tagging, SOS dashboard tabs (Cycle 64)
 
 ### Added

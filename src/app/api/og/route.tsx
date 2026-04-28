@@ -84,6 +84,7 @@ export async function GET(request: Request) {
     const location = searchParams.get('location') ?? ''
     const listingCount = searchParams.get('listings') ?? '0'
     const logo = searchParams.get('logo')
+    const industries = searchParams.get('industries') ?? ''
 
     return new ImageResponse(
       (
@@ -100,6 +101,11 @@ export async function GET(request: Request) {
           </div>
           {location && (
             <div style={{ fontSize: 24, color: MUTED, marginBottom: 8, display: 'flex' }}>{location}</div>
+          )}
+          {industries && (
+            <div style={{ fontSize: 20, color: MUTED, marginBottom: 8, display: 'flex', textAlign: 'center', maxWidth: 900 }}>
+              {industries}
+            </div>
           )}
           <div style={{ fontSize: 20, color: BLUE, marginTop: 8, display: 'flex' }}>
             {listingCount} active listings · Metal Gear

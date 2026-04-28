@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   const { data: recentListings } = await admin
     .from('listings')
-    .select('id, title, category, condition, price_cents, contact_for_price, description, location_city, location_state, specifications, industry, created_at')
+    .select('id, title, category, condition, price_cents, contact_for_price, description, location_city, location_state, specifications, industries, created_at')
     .eq('status', 'active')
     .eq('has_media', true)
     .gte('created_at', oneDayAgo.toISOString())

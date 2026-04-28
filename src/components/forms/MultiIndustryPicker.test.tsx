@@ -6,10 +6,12 @@ import { MultiIndustryPicker } from './MultiIndustryPicker'
 function Harness({
   initial = [],
   max,
+  unlimited,
   onChangeSpy,
 }: {
   initial?: string[]
   max?: number
+  unlimited?: boolean
   onChangeSpy?: (v: string[]) => void
 }) {
   const [value, setValue] = useState<string[]>(initial)
@@ -21,6 +23,7 @@ function Harness({
         onChangeSpy?.(next)
       }}
       max={max}
+      unlimited={unlimited}
     />
   )
 }
@@ -113,6 +116,32 @@ describe('MultiIndustryPicker', () => {
     const lastCall = spy.mock.calls[spy.mock.calls.length - 1][0] as string[]
     expect(lastCall).toHaveLength(1)
     expect(lastCall[0]).toMatch(/plastics/i)
+  })
+
+  describe('unlimited mode (companies)', () => {
+    it('does not enforce the cap when unlimited is true', () => {
+      // Pre-populate with the default cap (5) and confirm the combobox is still rendered
+      const initial = ['Mining', 'Plastics & Chemicals', 'Manufacturing', 'Oil & Gas', 'Petrochemical']
+      render(<Harness initial={initial} unlimited />)
+      expect(screen.getByRole('combobox')).toBeInTheDocument()
+      // The "Maximum N" copy must be absent
+      expect(screen.queryByText(/Maximum \d+ industries selected/i)).toBeNull()
+    })
+
+    it('renders an informational "{N} selected" counter', () => {
+      render(<Harness initial={['Mining', 'Plastics & Chemicals']} unlimited />)
+      expect(screen.getByText(/^2 selected$/)).toBeInTheDocument()
+    })
+
+    it('does not render the counter when no industries are selected', () => {
+      render(<Harness unlimited />)
+      expect(screen.queryByText(/selected$/i)).toBeNull()
+    })
+
+    it('default (capped) mode does not render the informational counter', () => {
+      render(<Harness initial={['Mining']} />)
+      expect(screen.queryByText(/^1 selected$/)).toBeNull()
+    })
   })
 
   it('"Other" option opens a free-text input that produces an other:<slug> value', () => {

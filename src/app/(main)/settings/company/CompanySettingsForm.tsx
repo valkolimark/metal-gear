@@ -3,13 +3,10 @@
 import { useState, useTransition } from 'react'
 import { updateCompany } from '@/app/actions/company'
 import { toast } from 'sonner'
-import type { CompanyWithMembers } from '@/types/company'
+import { getCompanyIndustries, type CompanyWithMembers } from '@/types/company'
+import { MultiIndustryPicker } from '@/components/forms/MultiIndustryPicker'
 import Link from 'next/link'
 
-const INDUSTRIES = [
-  'Oil & Gas', 'Petrochemical', 'Mining', 'Manufacturing',
-  'CNC Machining', 'Construction', 'Agriculture', 'Marine', 'Other',
-]
 const SIZES = ['1-10', '11-50', '51-200', '201-500', '500+']
 
 export function CompanySettingsForm({
@@ -24,7 +21,7 @@ export function CompanySettingsForm({
     name: company.name,
     tagline: company.tagline ?? '',
     description: company.description ?? '',
-    industry: company.industry ?? '',
+    industries: getCompanyIndustries(company),
     company_size: company.company_size ?? '',
     website: company.website ?? '',
     phone: company.phone ?? '',
@@ -38,10 +35,10 @@ export function CompanySettingsForm({
     startTransition(async () => {
       // Convert empty strings to null for nullable DB columns
       const payload = {
-        ...form,
+        name: form.name,
         tagline: form.tagline.trim() || null,
         description: form.description.trim() || null,
-        industry: form.industry || null,
+        industries: form.industries,
         company_size: form.company_size || null,
         website: form.website.trim() || null,
         phone: form.phone.trim() || null,
@@ -97,31 +94,27 @@ export function CompanySettingsForm({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Industry</label>
-            <select
-              value={form.industry}
-              onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
-              className="w-full h-10 px-3 rounded-lg border border-input bg-background
-                text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Select&hellip;</option>
-              {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-            </select>
-          </div>
-          <div className="space-y-1.5">
-            <label className="text-sm font-medium text-foreground">Company Size</label>
-            <select
-              value={form.company_size}
-              onChange={e => setForm(f => ({ ...f, company_size: e.target.value }))}
-              className="w-full h-10 px-3 rounded-lg border border-input bg-background
-                text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            >
-              <option value="">Employees&hellip;</option>
-              {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">Industries Served</label>
+          <MultiIndustryPicker
+            value={form.industries}
+            onChange={(next) => setForm(f => ({ ...f, industries: next }))}
+            unlimited
+            placeholder="Add every industry your company serves"
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-foreground">Company Size</label>
+          <select
+            value={form.company_size}
+            onChange={e => setForm(f => ({ ...f, company_size: e.target.value }))}
+            className="w-full h-10 px-3 rounded-lg border border-input bg-background
+              text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="">Employees&hellip;</option>
+            {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+          </select>
         </div>
 
         <div className="grid grid-cols-2 gap-3">

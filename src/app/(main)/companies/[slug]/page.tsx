@@ -12,6 +12,7 @@ import { JsonLd } from '@/components/json-ld'
 import { CompanyHero } from './components/company-hero'
 import { CompanyListings } from './components/company-listings'
 import { CompanyReputation } from './components/company-reputation'
+import { getCompanyIndustries } from '@/types/company'
 import type { Metadata } from 'next'
 
 const APP_URL = 'https://metal-gear-five.vercel.app'
@@ -27,9 +28,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   const listingCount = await getCompanyListingCount(company.id)
   const location = [company.city, company.state].filter(Boolean).join(', ')
+  const industries = getCompanyIndustries(company)
   const description = `Browse ${listingCount} active equipment listings from ${company.name}. ${location}.`
 
-  const ogUrl = `${APP_URL}/api/og?type=company&name=${encodeURIComponent(company.name)}&location=${encodeURIComponent(location)}&listings=${listingCount}${company.logo_url ? `&logo=${encodeURIComponent(company.logo_url)}` : ''}`
+  const industriesParam = industries.length > 0
+    ? `&industries=${encodeURIComponent(industries.slice(0, 4).join(' · '))}`
+    : ''
+  const ogUrl = `${APP_URL}/api/og?type=company&name=${encodeURIComponent(company.name)}&location=${encodeURIComponent(location)}&listings=${listingCount}${industriesParam}${company.logo_url ? `&logo=${encodeURIComponent(company.logo_url)}` : ''}`
 
   return {
     title: `${company.name} — Metal Gear`,
@@ -101,7 +106,16 @@ export default async function CompanyPublicPage({ params }: Props) {
     <div className="min-h-screen">
       <JsonLd data={localBusinessSchema} />
       <CompanyHero
-        company={company}
+        company={{
+          id: company.id,
+          name: company.name,
+          logo_url: company.logo_url,
+          banner_url: company.banner_url,
+          city: company.city,
+          state: company.state,
+          industries: getCompanyIndustries(company),
+          website: company.website,
+        }}
         listingCount={listingCount}
         memberCount={memberCount}
         memberSince={memberSince}

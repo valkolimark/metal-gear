@@ -104,7 +104,8 @@ export default function SavedSearchesPage() {
     const parts: string[] = []
     if (filters.q) parts.push(`"${filters.q}"`)
     if (filters.category) parts.push(filters.category)
-    if (filters.industry) parts.push(filters.industry)
+    if (filters.industries) parts.push(filters.industries.replace(/,/g, ', '))
+    else if (filters.industry) parts.push(filters.industry)
     if (filters.condition) parts.push(filters.condition.replace(/,/g, ', '))
     if (filters.priceMin) parts.push(`$${Number(filters.priceMin).toLocaleString()}+`)
     if (filters.priceMax) parts.push(`up to $${Number(filters.priceMax).toLocaleString()}`)

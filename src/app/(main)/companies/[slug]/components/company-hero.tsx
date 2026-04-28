@@ -15,7 +15,7 @@ interface CompanyHeroProps {
     banner_url: string | null
     city: string | null
     state: string | null
-    industry: string | null
+    industries: string[]
     website: string | null
   }
   listingCount: number
@@ -118,8 +118,19 @@ export function CompanyHero({
             <p className="text-sm text-muted-foreground">
               {company.city}
               {company.state ? `, ${company.state}` : ''}
-              {company.industry ? ` · ${company.industry}` : ''}
             </p>
+            {company.industries.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {company.industries.map((ind) => (
+                  <span
+                    key={ind}
+                    className="inline-flex items-center rounded-full border border-border bg-card px-2.5 py-0.5 font-body text-xs text-foreground"
+                  >
+                    {ind}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

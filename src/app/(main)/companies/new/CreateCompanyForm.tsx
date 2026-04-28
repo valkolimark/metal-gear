@@ -6,13 +6,8 @@ import { createCompany } from '@/app/actions/company'
 import { useAuthStore } from '@/stores/auth-store'
 import { toast } from 'sonner'
 import type { CompanyRole } from '@/types/company'
+import { MultiIndustryPicker } from '@/components/forms/MultiIndustryPicker'
 
-const INDUSTRIES = [
-  'Oil & Gas', 'Petrochemical', 'Mining', 'Manufacturing',
-  'CNC Machining', 'Food & Beverage', 'Pharmaceutical',
-  'Plastics & Chemicals', 'Dairy', 'Pulp & Paper',
-  'Power Generation', 'Construction', 'Agriculture', 'Marine', 'Other',
-]
 const SIZES = ['1-10', '11-50', '51-200', '201-500', '500+']
 
 export function CreateCompanyForm({
@@ -22,7 +17,7 @@ export function CreateCompanyForm({
 }: {
   userId: string
   isFirstCompany: boolean
-  prefill?: { name: string; industry: string; city: string; state: string; phone: string }
+  prefill?: { name: string; industries: string[]; city: string; state: string; phone: string }
 }) {
   const router = useRouter()
   const { setActiveCompany, setUserCompanies, userCompanies } = useAuthStore()
@@ -30,7 +25,7 @@ export function CreateCompanyForm({
 
   const [form, setForm] = useState({
     name: prefill?.name || '',
-    industry: prefill?.industry || '',
+    industries: prefill?.industries ?? [],
     company_size: '',
     website: '',
     phone: prefill?.phone || '',
@@ -46,7 +41,7 @@ export function CreateCompanyForm({
       // Convert empty strings to null for nullable DB columns
       const payload = {
         name: form.name.trim(),
-        industry: form.industry || undefined,
+        industries: form.industries,
         company_size: form.company_size || undefined,
         website: form.website.trim() || undefined,
         phone: form.phone.trim() || undefined,
@@ -83,31 +78,27 @@ export function CreateCompanyForm({
         />
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Industry</label>
-          <select
-            value={form.industry}
-            onChange={e => setForm(f => ({ ...f, industry: e.target.value }))}
-            className="w-full h-10 px-3 rounded-lg border border-input bg-background
-              text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Select&hellip;</option>
-            {INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-          </select>
-        </div>
-        <div className="space-y-1.5">
-          <label className="text-sm font-medium text-foreground">Company Size</label>
-          <select
-            value={form.company_size}
-            onChange={e => setForm(f => ({ ...f, company_size: e.target.value }))}
-            className="w-full h-10 px-3 rounded-lg border border-input bg-background
-              text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="">Employees&hellip;</option>
-            {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
-        </div>
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-foreground">Industries Served</label>
+        <MultiIndustryPicker
+          value={form.industries}
+          onChange={(next) => setForm(f => ({ ...f, industries: next }))}
+          unlimited
+          placeholder="Add every industry your company serves"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <label className="text-sm font-medium text-foreground">Company Size</label>
+        <select
+          value={form.company_size}
+          onChange={e => setForm(f => ({ ...f, company_size: e.target.value }))}
+          className="w-full h-10 px-3 rounded-lg border border-input bg-background
+            text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+        >
+          <option value="">Employees&hellip;</option>
+          {SIZES.map(s => <option key={s} value={s}>{s}</option>)}
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-3">

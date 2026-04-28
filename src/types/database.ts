@@ -472,6 +472,7 @@ export type Database = {
           created_by: string
           description: string | null
           id: string
+          industries: string[]
           industry: string | null
           is_suspended: boolean
           is_verified: boolean
@@ -498,6 +499,7 @@ export type Database = {
           created_by: string
           description?: string | null
           id?: string
+          industries?: string[]
           industry?: string | null
           is_suspended?: boolean
           is_verified?: boolean
@@ -524,6 +526,7 @@ export type Database = {
           created_by?: string
           description?: string | null
           id?: string
+          industries?: string[]
           industry?: string | null
           is_suspended?: boolean
           is_verified?: boolean
@@ -1656,7 +1659,6 @@ export type Database = {
           has_media: boolean
           id: string
           industries: string[]
-          industry: string | null
           is_featured: boolean
           listing_quality_score: number | null
           location_city: string
@@ -1707,7 +1709,6 @@ export type Database = {
           has_media?: boolean
           id?: string
           industries?: string[]
-          industry?: string | null
           is_featured?: boolean
           listing_quality_score?: number | null
           location_city?: string
@@ -1758,7 +1759,6 @@ export type Database = {
           has_media?: boolean
           id?: string
           industries?: string[]
-          industry?: string | null
           is_featured?: boolean
           listing_quality_score?: number | null
           location_city?: string

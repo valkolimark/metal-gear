@@ -274,9 +274,11 @@ export default function AdminListingDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="font-body text-xs text-muted-foreground">Industry</p>
+                  <p className="font-body text-xs text-muted-foreground">Industries</p>
                   <p className="mt-0.5 font-body text-sm text-foreground">
-                    {listing.industry?.replace(/_/g, ' ') || '--'}
+                    {Array.isArray(listing.industries) && listing.industries.length > 0
+                      ? listing.industries.map((s: string) => s.replace(/_/g, ' ')).join(', ')
+                      : '--'}
                   </p>
                 </div>
                 <div>

@@ -25,7 +25,7 @@ export type Favorite = Tables<'favorites'>
 
 export interface SearchFilters {
   category?: EquipmentCategory
-  industry?: Industry
+  industries?: Industry[]
   condition?: ListingCondition[]
   priceMin?: number
   priceMax?: number

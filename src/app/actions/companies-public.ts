@@ -8,7 +8,7 @@ export async function getPublicCompanyBySlug(slug: string) {
   const { data: company, error } = await supabase
     .from('company_profiles')
     .select(
-      `id, name, slug, logo_url, banner_url, industry, company_size,
+      `id, name, slug, logo_url, banner_url, industries, industry, company_size,
        website, city, state, created_at,
        company_memberships(
          user_id,

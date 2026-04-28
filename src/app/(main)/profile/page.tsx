@@ -9,13 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { MultiIndustryPicker } from '@/components/forms/MultiIndustryPicker'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { Switch } from '@/components/ui/switch'
@@ -30,7 +24,7 @@ import { VerificationStatusCard } from './components/verification-status-card'
 import { EquipmentInterestsEditor } from './components/equipment-interests-editor'
 import { getReferralData } from '@/app/actions/referrals'
 import { getSoundPrefs, saveSoundPrefs } from '@/hooks/use-notification-sound'
-import { INDUSTRIES, TIER_LABELS } from '@/lib/constants'
+import { TIER_LABELS } from '@/lib/constants'
 import type { Profile } from '@/types/users'
 import type { Tables } from '@/types/database'
 
@@ -122,13 +116,22 @@ export default function ProfilePage() {
   const [contactEmail, setContactEmail] = useState('')
   const [contactVisibility, setContactVisibility] = useState<'pro_plus' | 'public' | 'hidden'>('pro_plus')
   const [savingContact, setSavingContact] = useState(false)
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<{
+    full_name: string
+    display_name: string
+    company_name: string
+    bio: string
+    phone: string
+    industries: string[]
+    location_city: string
+    location_state: string
+  }>({
     full_name: '',
     display_name: '',
     company_name: '',
     bio: '',
     phone: '',
-    industry: '',
+    industries: [],
     location_city: 'Houston',
     location_state: 'TX',
   })
@@ -141,7 +144,7 @@ export default function ProfilePage() {
         company_name: profile.company_name || '',
         bio: profile.bio || '',
         phone: profile.phone || '',
-        industry: profile.industry || '',
+        industries: profile.industry ? [profile.industry] : [],
         location_city: profile.location_city || 'Houston',
         location_state: profile.location_state || 'TX',
       })
@@ -257,13 +260,16 @@ export default function ProfilePage() {
 
     setSaving(true)
     try {
+      // Mirror industries[0] to legacy profiles.industry singleton column.
+      // /sellers/[id] and /profile/[id] still read profile.industry until those
+      // surfaces are migrated to read user_business_profiles.industries.
       const result = await updateProfile({
         full_name: form.full_name,
         display_name: form.display_name || null,
         company_name: form.company_name || null,
         bio: form.bio || null,
         phone: form.phone || null,
-        industry: form.industry || null,
+        industry: form.industries[0] || null,
         location_city: form.location_city,
         location_state: form.location_state,
       })
@@ -427,23 +433,14 @@ export default function ProfilePage() {
               <Label htmlFor="industry" className="font-body">
                 Industry
               </Label>
-              <Select
-                value={form.industry}
-                onValueChange={(v) =>
-                  setForm((prev) => ({ ...prev, industry: v }))
+              <MultiIndustryPicker
+                id="industry"
+                value={form.industries}
+                onChange={(next) =>
+                  setForm((prev) => ({ ...prev, industries: next }))
                 }
-              >
-                <SelectTrigger className="font-body">
-                  <SelectValue placeholder="Select your industry" />
-                </SelectTrigger>
-                <SelectContent>
-                  {INDUSTRIES.map((ind) => (
-                    <SelectItem key={ind} value={ind} className="font-body">
-                      {ind}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Pick the industry that best describes you"
+              />
             </div>
 
             <div className="space-y-2">

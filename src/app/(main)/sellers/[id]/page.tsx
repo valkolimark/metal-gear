@@ -74,8 +74,8 @@ export default async function SellerStorefrontPage({
 
   if (!profile) notFound()
 
-  // Fetch storefront, stats, listings, reviews in parallel
-  const [storefrontRes, stats, listingsRes, reviewsData] = await Promise.all([
+  // Fetch storefront, stats, listings, reviews, business profile in parallel
+  const [storefrontRes, stats, listingsRes, reviewsData, bizProfileRes] = await Promise.all([
     getStorefront(id),
     getSellerStats(id),
     admin
@@ -86,7 +86,22 @@ export default async function SellerStorefrontPage({
       .eq('has_media', true)
       .order('created_at', { ascending: false }),
     getSellerReviews(id),
+    admin
+      .from('user_business_profiles')
+      .select('industries')
+      .eq('user_id', id)
+      .maybeSingle(),
   ])
+
+  // Industries: prefer canonical array from user_business_profiles, fall back
+  // to legacy profiles.industry singleton.
+  const sellerIndustries: string[] = (() => {
+    const arr = bizProfileRes.data?.industries
+    if (Array.isArray(arr) && arr.length > 0) {
+      return arr.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+    }
+    return profile.industry ? [profile.industry] : []
+  })()
 
   const storefront = storefrontRes.storefront
   const listings = listingsRes.data || []
@@ -213,10 +228,18 @@ export default async function SellerStorefrontPage({
                       .join(', ')}
                   </span>
                 )}
-                {profile.industry && (
-                  <span className="flex items-center gap-1 font-body text-sm text-muted-foreground">
+                {sellerIndustries.length > 0 && (
+                  <span className="flex flex-wrap items-center gap-1.5 font-body text-sm text-muted-foreground">
                     <Briefcase className="size-3.5" />
-                    {profile.industry}
+                    {sellerIndustries.map((ind, i) => (
+                      <Badge
+                        key={`${ind}-${i}`}
+                        variant="secondary"
+                        className="font-body text-xs"
+                      >
+                        {ind}
+                      </Badge>
+                    ))}
                   </span>
                 )}
                 <span className="flex items-center gap-1 font-body text-sm text-muted-foreground">

@@ -20,6 +20,10 @@ interface MultiIndustryPickerProps {
   value: string[]
   onChange: (next: string[]) => void
   max?: number
+  /** When true, removes the selection cap and replaces the gating
+   *  "Maximum N selected" copy with an informational "{N} selected" counter.
+   *  Used by company-level surfaces (broad reach claims). Listings stay capped. */
+  unlimited?: boolean
   disabled?: boolean
   id?: string
   /** Optional label rendered as a `<legend>`. Omit when the parent already
@@ -32,6 +36,7 @@ export function MultiIndustryPicker({
   value,
   onChange,
   max = 5,
+  unlimited = false,
   disabled = false,
   id,
   legend,
@@ -45,7 +50,7 @@ export function MultiIndustryPicker({
   const [showOtherInput, setShowOtherInput] = useState(false)
   const inputRef = useRef<HTMLInputElement | null>(null)
 
-  const atCap = value.length >= max
+  const atCap = unlimited ? false : value.length >= max
   const lc = query.toLowerCase()
 
   const remainingOptions = useMemo(() => {
@@ -198,6 +203,13 @@ export function MultiIndustryPicker({
           Maximum {max} industries selected.
         </p>
       )}
+
+      {/* Informational counter for unlimited mode (companies). Never gates. */}
+      {unlimited && value.length > 0 ? (
+        <p className="font-body text-xs text-muted-foreground">
+          {value.length} selected
+        </p>
+      ) : null}
 
       {/* Other free-text input */}
       {showOtherInput ? (

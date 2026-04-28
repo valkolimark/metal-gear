@@ -95,7 +95,7 @@ export async function getCompanyWithMembers(companyId: string): Promise<CompanyW
 
 export interface CreateCompanyInput {
   name: string
-  industry?: string
+  industries?: string[]
   company_size?: string
   website?: string
   phone?: string
@@ -133,9 +133,19 @@ export async function createCompany(
     slug = `${base}-${++attempt}`
   }
 
+  // Mirror industries[0] to legacy industry column for one cycle (drop in Cycle 66)
+  const industries = (input.industries ?? []).filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+  const insertPayload = {
+    ...input,
+    industries,
+    industry: industries[0] ?? null,
+    slug,
+    created_by: userId,
+  }
+
   const { data: company, error } = await supabase
     .from('company_profiles')
-    .insert({ ...input, slug, created_by: userId })
+    .insert(insertPayload)
     .select()
     .single()
 
@@ -195,9 +205,17 @@ export async function updateCompany(
     return { success: false, error: 'Insufficient permissions' }
   }
 
+  // Mirror industries[0] to legacy industry column for one cycle (drop in Cycle 66)
+  const updatePayload: Record<string, unknown> = { ...input }
+  if (Array.isArray(input.industries)) {
+    const industries = input.industries.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
+    updatePayload.industries = industries
+    updatePayload.industry = industries[0] ?? null
+  }
+
   const { error } = await supabase
     .from('company_profiles')
-    .update(input)
+    .update(updatePayload)
     .eq('id', companyId)
 
   if (error) return { success: false, error: error.message }

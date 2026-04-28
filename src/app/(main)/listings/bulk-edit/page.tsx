@@ -31,11 +31,7 @@ export default async function BulkEditPage() {
     const images = (l.listing_images ?? []).sort(
       (a: { position: number }, b: { position: number }) => a.position - b.position
     )
-    // Cycle 64: hydrate industries[] from either the new column or the legacy
-    // singleton, so freshly-migrated rows render identically.
-    const industries: string[] = Array.isArray(l.industries) && l.industries.length > 0
-      ? l.industries
-      : (typeof l.industry === 'string' && l.industry.trim().length > 0 ? [l.industry] : [])
+    const industries: string[] = Array.isArray(l.industries) ? l.industries : []
     return {
       id: l.id as string,
       title: l.title as string,

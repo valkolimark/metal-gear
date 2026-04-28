@@ -15,17 +15,16 @@ export default async function CreateCompanyPage() {
   const isFirstCompany = existingCompanies.length === 0
 
   // Pre-fill from onboarding data for first-time company creation
-  let prefill: { name: string; industry: string; city: string; state: string; phone: string } | undefined
+  let prefill: { name: string; industries: string[]; city: string; state: string; phone: string } | undefined
   if (isFirstCompany) {
     const admin = createAdminClient()
     const [{ data: profile }, { data: bizProfile }] = await Promise.all([
       admin.from('profiles').select('company_name, location_city, location_state, phone').eq('id', user.id).maybeSingle(),
       admin.from('user_business_profiles').select('industries').eq('user_id', user.id).maybeSingle(),
     ])
-    const firstIndustry = bizProfile?.industries?.[0] || ''
     prefill = {
       name: profile?.company_name || '',
-      industry: firstIndustry,
+      industries: bizProfile?.industries ?? [],
       city: profile?.location_city || '',
       state: profile?.location_state || '',
       phone: profile?.phone || '',

@@ -1056,7 +1056,7 @@ function SearchContent() {
                         {(() => {
                           const inds: string[] = Array.isArray((listing as { industries?: string[] }).industries)
                             ? (listing as { industries: string[] }).industries
-                            : (listing.industry ? [listing.industry] : [])
+                            : []
                           const visible = inds.slice(0, 2)
                           const overflow = inds.length - visible.length
                           return (

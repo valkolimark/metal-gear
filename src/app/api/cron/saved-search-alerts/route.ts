@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
 
   const { data: recentListings } = await admin
     .from('listings')
-    .select('id, title, price_cents, category, condition, industry, location_city, location_state, contact_for_price, created_at')
+    .select('id, title, price_cents, category, condition, industries, location_city, location_state, contact_for_price, created_at')
     .eq('status', 'active')
     .gte('created_at', oneDayAgo.toISOString())
 
@@ -70,12 +70,9 @@ export async function GET(req: NextRequest) {
         return []
       })()
       if (wantedIndustries.length > 0) {
-        const maybeIndustries = (listing as unknown as { industries?: unknown }).industries
-        const listingIndustries: string[] = Array.isArray(maybeIndustries)
-          ? (maybeIndustries as string[])
-          : listing.industry
-            ? [listing.industry]
-            : []
+        const listingIndustries: string[] = Array.isArray(listing.industries)
+          ? listing.industries
+          : []
         const overlaps = listingIndustries.some((x) => wantedIndustries.includes(x))
         if (!overlaps) return false
       }

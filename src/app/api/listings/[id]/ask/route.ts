@@ -150,7 +150,7 @@ EQUIPMENT CONTEXT:
 Title: ${listing.title}
 Price: ${price}
 Condition: ${listing.condition}
-Category: ${listing.category}${listing.industry ? ` > ${listing.industry}` : ''}
+Category: ${listing.category}${Array.isArray(listing.industries) && listing.industries.length > 0 ? ` > ${listing.industries.join(', ')}` : ''}
 Description: ${listing.description || 'No description provided'}
 Specs: ${listing.specifications ? JSON.stringify(listing.specifications) : 'None listed'}
 Location: ${listing.location_city}, ${listing.location_state}

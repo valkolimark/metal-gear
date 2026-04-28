@@ -382,18 +382,18 @@ export async function exportListingsCSV() {
 
   const { data } = await admin
     .from('listings')
-    .select('id, title, category, industry, condition, price_cents, status, location_city, location_state, views_count, favorites_count, created_at')
+    .select('id, title, category, industries, condition, price_cents, status, location_city, location_state, views_count, favorites_count, created_at')
     .order('created_at', { ascending: false })
     .limit(5000)
 
   if (!data || data.length === 0) return { csv: '' }
 
-  const headers = ['ID', 'Title', 'Category', 'Industry', 'Condition', 'Price', 'Status', 'City', 'State', 'Views', 'Favorites', 'Created']
+  const headers = ['ID', 'Title', 'Category', 'Industries', 'Condition', 'Price', 'Status', 'City', 'State', 'Views', 'Favorites', 'Created']
   const rows = data.map((l) => [
     l.id,
     `"${(l.title ?? '').replace(/"/g, '""')}"`,
     l.category,
-    l.industry ?? '',
+    Array.isArray(l.industries) ? l.industries.join('; ') : '',
     l.condition,
     l.price_cents ? (l.price_cents / 100).toFixed(2) : '0',
     l.status,

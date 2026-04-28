@@ -90,7 +90,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - **Seller contact info** — phone and contact email with tier-gated visibility (Pro+ only, Everyone, or Hidden); server-side rendered to prevent harvesting
 - **Mobile navigation** — Facebook-style fixed header, 5-tab bottom nav with raised SOS button, slide-in drawer with profile card, quick actions, and subscription upgrade CTA; Home tab navigates to browse/discovery feed
 - **Brand palette switcher** — Admin-controlled Ocean / Industrial theme; persisted in system_config; applies instantly platform-wide with no deploy
-- **Multi-company profiles** — `profiles` = human identity, `company_profiles` = B2B entity, `company_memberships` = junction; company switcher in header; all listings/subscriptions/storefronts scoped to active company
+- **Multi-company profiles** — `profiles` = human identity, `company_profiles` = B2B entity, `company_memberships` = junction; company switcher in header; all listings/subscriptions/storefronts scoped to active company. Company profiles can claim **any number of industries served** (broad reach claims like "Oil & Gas + Petrochemical + Power Generation + Marine" are common); the public `/companies/[slug]` page renders the full chip row in the hero. (Cycle 65.)
 - Mobile PWA with pull-to-refresh, swipe gestures, and bottom nav
 
 ---

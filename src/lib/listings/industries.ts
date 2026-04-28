@@ -1,28 +1,18 @@
 /**
- * Cycle 64 — read-side back-compat for listings.industry → listings.industries[].
- *
- * Until Cycle 65 drops the legacy `industry` column, every read site goes
- * through these helpers so the two shapes coexist. After the column drop,
- * `getIndustries()` collapses to `row.industries ?? []` and `getPrimaryIndustry()`
- * stays as a convenience accessor.
+ * Listings industries helpers. Cycle 65 dropped the legacy `industry` singleton
+ * column — `industries: string[]` is the only shape the helpers accept.
  */
 
 import { OTHER_INDUSTRY_PREFIX } from '@/lib/constants/onboarding'
 
 export interface IndustryShape {
   industries?: string[] | null
-  industry?: string | null
 }
 
 export function getIndustries(row: IndustryShape | null | undefined): string[] {
   if (!row) return []
-  if (Array.isArray(row.industries) && row.industries.length > 0) {
-    return row.industries.filter((s): s is string => typeof s === 'string' && s.length > 0)
-  }
-  if (typeof row.industry === 'string' && row.industry.trim().length > 0) {
-    return [row.industry]
-  }
-  return []
+  if (!Array.isArray(row.industries)) return []
+  return row.industries.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
 }
 
 export function getPrimaryIndustry(row: IndustryShape | null | undefined): string | null {

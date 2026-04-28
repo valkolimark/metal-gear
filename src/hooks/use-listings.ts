@@ -20,8 +20,8 @@ async function fetchListings(
   if (options.filters?.category) {
     query = query.eq('category', options.filters.category)
   }
-  if (options.filters?.industry) {
-    query = query.eq('industry', options.filters.industry)
+  if (options.filters?.industries && options.filters.industries.length > 0) {
+    query = query.overlaps('industries', options.filters.industries)
   }
   if (options.filters?.condition?.length) {
     query = query.in('condition', options.filters.condition)

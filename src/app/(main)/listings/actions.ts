@@ -85,12 +85,7 @@ export async function duplicateListing(listingId: string) {
       title: `${original.title} (Copy)`,
       description: original.description,
       category: original.category,
-      industry: original.industry,
-      industries: Array.isArray((original as { industries?: string[] }).industries)
-        ? (original as { industries: string[] }).industries
-        : original.industry
-          ? [original.industry]
-          : [],
+      industries: Array.isArray(original.industries) ? original.industries : [],
       condition: original.condition,
       price_cents: original.price_cents,
       negotiable: original.negotiable,

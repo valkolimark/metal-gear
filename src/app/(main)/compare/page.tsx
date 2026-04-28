@@ -108,7 +108,9 @@ function CompareContent() {
       case '_condition':
         return listing.condition.replace('_', ' ')
       case '_industry':
-        return listing.industry || '-'
+        return Array.isArray(listing.industries) && listing.industries.length > 0
+          ? listing.industries.join(', ')
+          : '-'
       case '_location':
         return `${listing.location_city}, ${listing.location_state}`
       case '_views':

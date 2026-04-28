@@ -16,26 +16,16 @@ describe('listings.industries shim', () => {
       ])
     })
 
-    it('falls back to legacy industry singleton when array is empty', () => {
-      expect(getIndustries({ industries: [], industry: 'Mining' })).toEqual(['Mining'])
-    })
-
-    it('falls back to legacy industry singleton when array is null', () => {
-      expect(getIndustries({ industries: null, industry: 'Oil & Gas' })).toEqual(['Oil & Gas'])
-    })
-
-    it('returns empty array for a row with neither field', () => {
+    it('returns an empty array for null/empty/missing industries', () => {
+      expect(getIndustries({ industries: [] })).toEqual([])
+      expect(getIndustries({ industries: null })).toEqual([])
       expect(getIndustries({})).toEqual([])
       expect(getIndustries(null)).toEqual([])
       expect(getIndustries(undefined)).toEqual([])
     })
 
-    it('strips empty strings out of industries[]', () => {
-      expect(getIndustries({ industries: ['', 'Plastics', ''] })).toEqual(['Plastics'])
-    })
-
-    it('skips legacy industry when only whitespace', () => {
-      expect(getIndustries({ industry: '   ' })).toEqual([])
+    it('strips empty / whitespace strings out of industries[]', () => {
+      expect(getIndustries({ industries: ['', 'Plastics', '   '] })).toEqual(['Plastics'])
     })
   })
 
@@ -44,12 +34,9 @@ describe('listings.industries shim', () => {
       expect(getPrimaryIndustry({ industries: ['A', 'B'] })).toBe('A')
     })
 
-    it('returns the legacy singleton when array is empty', () => {
-      expect(getPrimaryIndustry({ industries: [], industry: 'X' })).toBe('X')
-    })
-
     it('returns null when nothing is set', () => {
       expect(getPrimaryIndustry({})).toBeNull()
+      expect(getPrimaryIndustry({ industries: [] })).toBeNull()
     })
   })
 
