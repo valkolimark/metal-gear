@@ -3,11 +3,26 @@
 import { CheckCircle, Radio } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import Link from 'next/link'
+import { SuggestionFeedbackChip } from '@/components/feedback/SuggestionFeedbackChip'
+
+interface AnalysisFeedbackFields {
+  manufacturer: string | null
+  model: string | null
+  equipmentType: string | null
+  category: string | null
+  subcategory: string | null
+  registryManufacturerId?: string | null
+  registryManufacturerModelId?: string | null
+}
 
 interface SOSSentStepProps {
   vendorsNotified: number
   sosTitle?: string
   transportIncluded?: boolean
+  /** SOS row id — required for feedback chips. Null when not yet created. */
+  sosId?: string | null
+  /** AI-suggested fields, used to render feedback chips post-send. */
+  analysisFields?: AnalysisFeedbackFields | null
   onReset: () => void
 }
 
@@ -15,9 +30,18 @@ export function SOSSentStep({
   vendorsNotified,
   sosTitle,
   transportIncluded = false,
+  sosId = null,
+  analysisFields = null,
   onReset,
 }: SOSSentStepProps) {
   const haveCount = vendorsNotified > 0
+  const showFeedback =
+    sosId !== null &&
+    analysisFields !== null &&
+    (analysisFields.manufacturer ||
+      analysisFields.model ||
+      analysisFields.equipmentType ||
+      analysisFields.category)
 
   return (
     <div className="flex flex-col items-center justify-center py-12 text-center">
@@ -59,6 +83,73 @@ export function SOSSentStep({
         </div>
       )}
 
+      {showFeedback && sosId && analysisFields && (
+        <div className="mt-8 w-full max-w-md rounded-lg border border-border bg-card p-4 text-left">
+          <p className="font-body text-sm font-medium text-foreground">
+            How did we do on the auto-fill?
+          </p>
+          <p className="mt-1 font-body text-xs text-muted-foreground">
+            Quick feedback helps us tune the photo analysis. Skip if you&apos;re in a hurry.
+          </p>
+
+          <div className="mt-3 space-y-2.5">
+            {analysisFields.manufacturer && (
+              <FeedbackRow label="Manufacturer" value={analysisFields.manufacturer}>
+                <SuggestionFeedbackChip
+                  kind="registry"
+                  suggestedValue={analysisFields.manufacturer}
+                  currentValue={analysisFields.manufacturer}
+                  fieldName="manufacturer"
+                  surface="sos_analysis"
+                  sourceTable="sos_requests"
+                  sourceRowId={sosId}
+                  suggestedManufacturerId={analysisFields.registryManufacturerId}
+                />
+              </FeedbackRow>
+            )}
+            {analysisFields.model && (
+              <FeedbackRow label="Model" value={analysisFields.model}>
+                <SuggestionFeedbackChip
+                  kind="registry"
+                  suggestedValue={analysisFields.model}
+                  currentValue={analysisFields.model}
+                  fieldName="model"
+                  surface="sos_analysis"
+                  sourceTable="sos_requests"
+                  sourceRowId={sosId}
+                  suggestedManufacturerId={analysisFields.registryManufacturerId}
+                  suggestedModelId={analysisFields.registryManufacturerModelId}
+                />
+              </FeedbackRow>
+            )}
+            {analysisFields.equipmentType && (
+              <FeedbackRow label="Equipment type" value={analysisFields.equipmentType}>
+                <SuggestionFeedbackChip
+                  suggestedValue={analysisFields.equipmentType}
+                  currentValue={analysisFields.equipmentType}
+                  fieldName="equipment_type"
+                  surface="sos_analysis"
+                  sourceTable="sos_requests"
+                  sourceRowId={sosId}
+                />
+              </FeedbackRow>
+            )}
+            {analysisFields.category && (
+              <FeedbackRow label="Category" value={analysisFields.category}>
+                <SuggestionFeedbackChip
+                  suggestedValue={analysisFields.category}
+                  currentValue={analysisFields.category}
+                  fieldName="taxonomy_tier2"
+                  surface="sos_analysis"
+                  sourceTable="sos_requests"
+                  sourceRowId={sosId}
+                />
+              </FeedbackRow>
+            )}
+          </div>
+        </div>
+      )}
+
       <div className="mt-8 flex flex-col gap-3 sm:flex-row">
         <Button
           asChild
@@ -70,6 +161,26 @@ export function SOSSentStep({
           Send Another
         </Button>
       </div>
+    </div>
+  )
+}
+
+function FeedbackRow({
+  label,
+  value,
+  children,
+}: {
+  label: string
+  value: string
+  children: React.ReactNode
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border/40 pb-2 last:border-0 last:pb-0">
+      <div className="min-w-0 flex-1">
+        <span className="font-body text-xs text-muted-foreground">{label}: </span>
+        <span className="font-body text-sm font-medium text-foreground">{value}</span>
+      </div>
+      {children}
     </div>
   )
 }

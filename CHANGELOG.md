@@ -6,6 +6,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.34.0] — 2026-04-28 · User-facing AI feedback chips ("Was this right?") (Cycle 63)
+
+### Added
+- **`SuggestionFeedbackChip`** — `src/components/feedback/SuggestionFeedbackChip.tsx`. Small inline chip rendered next to AI-populated fields. Three states: 👍 Looks good · ✏️ Not quite · 🤷 Not sure. Append-only — every action writes a fresh row; latest-per-field wins on aggregation. Override detection: a post-action change to `currentValue` writes a follow-up `'overridden'` row. Hidden when `suggestedValue` is null.
+- **`ai_suggestion_feedback`** table — captures non-registry field feedback (title, equipment_type, condition, year, serial, taxonomy, specs). Manufacturer/model continue to write to Cycle 61's `registry_match_feedback`. RLS enabled (`feedback insert own`); admin reads via service role.
+- **`recordSuggestionFeedback()`** + **`recordRegistryFeedbackFromChip()`** — `src/app/actions/ai-feedback.ts`. Zod-validated, ownership-checked against `listing_drafts.owner_id` / `sos_requests.requester_id` / `listings.seller_id`. Fail-soft: returns `{ ok: false, error }` rather than throwing. Toast on error in the chip; never blocks the parent flow.
+- **Admin feedback breakdown** — added below `AccuracySampler` on `/admin/snap-list-metrics`. Aggregates accept/reject/overridden/unsure counts per field over the last 30 days. `getFeedbackBreakdown()` UNIONs the two tables, dedups latest-per-(user, source_table, source_row_id, field), and flags fields with >40% reject share + ≥5 events as "hot" for prompt iteration.
+
+### Surfaces wired
+- **Photo-to-Listing review** (`/listings/snap/review/[draftId]`) — chips on title, manufacturer (registry), model (registry), serial number, year, condition.
+- **SOS sent step** — chips on manufacturer (registry), model (registry), equipment type, taxonomy. Surfaced post-create on the success step where the new `sos_requests.id` is known. Optional copy: "How did we do on the auto-fill? Skip if you're in a hurry."
+
+### Deviation from prompt scope
+- **Manual-form photo helper not wired this cycle.** The manual listing form at `/listings/new` doesn't insert a `listings` row until the user saves, so there's no `source_row_id` to attach pre-publish feedback to (server action ownership check requires an existing row). Same constraint as the SOS Confirm step, which this cycle resolved by deferring chips to the post-create `SOSSentStep`. The manual-form helper needs either (a) a transient `listing_drafts`-equivalent for the manual flow or (b) saving the listing row before the helper runs — both out of scope here. Tracked as a follow-up; chip component, server action, RLS policy, and admin breakdown are all in place to slot it in once persistence is available.
+
+### Architecture invariants
+- Feedback is optional, append-only, never blocks save/publish.
+- Server actions fail soft — UI shows a toast on error.
+- Domain isolation: feedback writes happen in form components / server actions, never inside `src/lib/vision-analysis/`.
+- Copy rule preserved (Cycles 59–60): chip labels are neutral ("Was this right?", "Looks good", "Not quite", "Not sure") — no "AI" / "Smart" / "Magic" in user-facing strings.
+
+### Tests
+- `src/test/suggestion-feedback-action.test.ts` — 10 tests covering Zod validation, unauthenticated rejection, ownership checks across all three source tables, DB error fail-soft, and the registry-wrapper input mapping.
+
+### Rationale
+Builds the structured signal we need to iterate on prompt quality and registry coverage. High reject rates on a free-text field signal a prompt issue; high reject rates on a manufacturer hint signal an alias gap or tier misclassification. The data is the seed for a future automated training-loop cycle. No user-visible aggregation surfacing — internal signal only, to avoid gamification.
+
+---
+
 ## [4.33.0] — 2026-04-27 · AI cost & usage telemetry — internal observability (Cycle 62)
 
 ### Added

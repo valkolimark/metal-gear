@@ -172,6 +172,16 @@ export function SOSCameraFirstFlow({ onSkipToText }: SOSCameraFirstFlowProps) {
           vendorsNotified={state.vendorsNotified}
           sosTitle={state.sentTitle || undefined}
           transportIncluded={state.sentTransport}
+          sosId={state.sosId}
+          analysisFields={{
+            manufacturer: state.aiManufacturer || null,
+            model: state.aiModel || null,
+            equipmentType: state.aiEquipmentType || null,
+            category: state.aiTaxonomyTier2 || null,
+            subcategory: state.aiSubcategory || null,
+            registryManufacturerId: state.registryManufacturerId,
+            registryManufacturerModelId: state.registryManufacturerModelId,
+          }}
           onReset={() => setState({ ...initialState })}
         />
       )}

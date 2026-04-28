@@ -483,6 +483,15 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Vision integration (Cycle 61b):** `analyzeEquipmentImages()` accepts an optional `registryLookup` callback on `EquipmentAnalysisOptions`. All three callers — Photo-to-Listing's `src/app/actions/snap-list.ts`, SOS camera-first + manual-form Photo Helper via `/api/listings/analyze-image` — wire the callback via `buildNameplateRegistryCallback()` from `src/lib/registry/nameplate-callback.ts`. The vision-analysis layer never imports from `@/lib/registry/*`. CI test `src/test/vision-analysis-isolation.test.ts` codifies the grep. When confidence ≥ 0.90 the analyzer overrides `identification.manufacturer` with the canonical registry name and attaches `result.registryMatch` for the orchestrator to persist.
 - **Free-text-first principle:** the autocomplete is a helper, never a gate. Users can always submit free-text values for OEMs not in the registry.
 
+## AI Suggestion Feedback (Cycle 63)
+- **Tables:** `ai_suggestion_feedback` (non-registry fields) + Cycle 61's `registry_match_feedback` (manufacturer/model). Append-only. RLS allows owner inserts; admin reads via service role. No SELECT policy on the new table.
+- **Component:** `src/components/feedback/SuggestionFeedbackChip.tsx`. Three states (accepted / rejected / unsure). Renders only when `suggestedValue` is non-null. `kind="registry"` routes manufacturer/model writes through the registry-feedback wrapper.
+- **Server actions:** `src/app/actions/ai-feedback.ts` — `recordSuggestionFeedback()` and `recordRegistryFeedbackFromChip()`. Fail-soft: returns `{ ok: false, error }`, never throws. Ownership check uses `listing_drafts.owner_id`, `sos_requests.requester_id`, `listings.seller_id`.
+- **Aggregation rule:** latest row per `(user_id, source_table, source_row_id, field_name)` wins. Admin breakdown does this client-side via DESC sort + dedup.
+- **Surfaces:** Photo-to-Listing review (`/listings/snap/review/[draftId]`), SOS sent step (`SOSSentStep`, after `sos_requests.id` exists). Manual-form photo helper deferred — no persistent row exists pre-save.
+- **Admin view:** `/admin/snap-list-metrics` includes `FeedbackBreakdown` — last 30 days, accept/reject/overridden/unsure counts per field, hot-flag at >40% reject share with ≥5 events.
+- **Copy rule:** neutral chip labels ("Was this right?" / "Looks good" / "Not quite" / "Not sure"). No "AI" / "Smart" / "Magic". No public surfacing of aggregates — internal signal only.
+
 ## AI Cost & Usage Telemetry (Cycle 62)
 - **Ledger:** `ai_usage_events`. RLS on; admin-only reads via service-role client. No PII / prompt content / OCR text — token counts and metadata only.
 - **Surfaces enum** (12 first-class + `other` catch-all): `photo_to_listing_analysis`, `sos_analysis`, `listing_analyzer_helper`, `listing_freshness_cron`, `weekly_brief_cron`, `demand_insights_cron`, `ask_metal_gear`, `ai_search`, `dispute_mediation`, `churn_scoring_cron` (reserved — no AI call today), `registry_seeding`, `registry_disambiguation` (reserved — pure-function), `other`. New surface? Add to the CHECK constraint via Management API BEFORE shipping the surface.

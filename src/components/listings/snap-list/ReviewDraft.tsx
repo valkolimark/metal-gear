@@ -12,6 +12,7 @@ import { PriceSuggestionCard } from "./PriceSuggestionCard"
 import { PhotoCoachCard } from "./PhotoCoachCard"
 import { ClarifyingQuestion } from "./ClarifyingQuestion"
 import { SpecsEditor } from "./SpecsEditor"
+import { SuggestionFeedbackChip } from "@/components/feedback/SuggestionFeedbackChip"
 import {
   publishDraft,
   discardDraft,
@@ -162,6 +163,14 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
             placeholder="e.g. 2018 Caterpillar 336 Excavator"
             hint="Tap to edit title"
           />
+          <SuggestionFeedbackChip
+            suggestedValue={fields.title}
+            currentValue={fields.title}
+            fieldName="title"
+            surface="photo_to_listing"
+            sourceTable="listing_drafts"
+            sourceRowId={draft.id}
+          />
 
           {fields.tier1 && fields.tier2 && (
             <div className="rounded-md border bg-muted/30 px-3 py-2 text-xs">
@@ -184,44 +193,104 @@ export function ReviewDraft({ draft, currentUserId }: Props) {
           />
 
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
-            <InlineEditField
-              draftId={draft.id}
-              field="manufacturer"
-              label="Manufacturer"
-              value={fields.manufacturer}
-              confidence={conf.manufacturer ?? 0}
-            />
-            <InlineEditField
-              draftId={draft.id}
-              field="model"
-              label="Model"
-              value={fields.model}
-              confidence={conf.model ?? 0}
-            />
-            <InlineEditField
-              draftId={draft.id}
-              field="serialNumber"
-              label="Serial number"
-              value={fields.serialNumber}
-              confidence={conf.serial_number ?? 0}
-            />
-            <InlineEditField
-              draftId={draft.id}
-              field="year"
-              label="Year"
-              value={fields.year}
-              confidence={conf.year ?? 0}
-              variant="number"
-            />
-            <InlineEditField
-              draftId={draft.id}
-              field="condition"
-              label="Condition"
-              value={fields.condition}
-              confidence={conf.condition_estimate ?? 0}
-              variant="select"
-              options={CONDITION_OPTIONS}
-            />
+            <div>
+              <InlineEditField
+                draftId={draft.id}
+                field="manufacturer"
+                label="Manufacturer"
+                value={fields.manufacturer}
+                confidence={conf.manufacturer ?? 0}
+              />
+              <SuggestionFeedbackChip
+                kind="registry"
+                suggestedValue={fields.manufacturer}
+                currentValue={fields.manufacturer}
+                fieldName="manufacturer"
+                surface="photo_to_listing"
+                sourceTable="listing_drafts"
+                sourceRowId={draft.id}
+                suggestedManufacturerId={fields.manufacturerId}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <InlineEditField
+                draftId={draft.id}
+                field="model"
+                label="Model"
+                value={fields.model}
+                confidence={conf.model ?? 0}
+              />
+              <SuggestionFeedbackChip
+                kind="registry"
+                suggestedValue={fields.model}
+                currentValue={fields.model}
+                fieldName="model"
+                surface="photo_to_listing"
+                sourceTable="listing_drafts"
+                sourceRowId={draft.id}
+                suggestedManufacturerId={fields.manufacturerId}
+                suggestedModelId={fields.manufacturerModelId}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <InlineEditField
+                draftId={draft.id}
+                field="serialNumber"
+                label="Serial number"
+                value={fields.serialNumber}
+                confidence={conf.serial_number ?? 0}
+              />
+              <SuggestionFeedbackChip
+                suggestedValue={fields.serialNumber}
+                currentValue={fields.serialNumber}
+                fieldName="serial_number"
+                surface="photo_to_listing"
+                sourceTable="listing_drafts"
+                sourceRowId={draft.id}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <InlineEditField
+                draftId={draft.id}
+                field="year"
+                label="Year"
+                value={fields.year}
+                confidence={conf.year ?? 0}
+                variant="number"
+              />
+              <SuggestionFeedbackChip
+                suggestedValue={fields.year !== null ? String(fields.year) : null}
+                currentValue={fields.year !== null ? String(fields.year) : null}
+                fieldName="year"
+                surface="photo_to_listing"
+                sourceTable="listing_drafts"
+                sourceRowId={draft.id}
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <InlineEditField
+                draftId={draft.id}
+                field="condition"
+                label="Condition"
+                value={fields.condition}
+                confidence={conf.condition_estimate ?? 0}
+                variant="select"
+                options={CONDITION_OPTIONS}
+              />
+              <SuggestionFeedbackChip
+                suggestedValue={fields.condition}
+                currentValue={fields.condition}
+                fieldName="condition"
+                surface="photo_to_listing"
+                sourceTable="listing_drafts"
+                sourceRowId={draft.id}
+                className="mt-1"
+              />
+            </div>
             <InlineEditField
               draftId={draft.id}
               field="locationCity"

@@ -8,6 +8,8 @@ import {
 import { MetricCard } from "@/components/admin/snap-list-metrics/MetricCard"
 import { MetricsTrendChart } from "@/components/admin/snap-list-metrics/MetricsTrendChart"
 import { AccuracySampler } from "@/components/admin/snap-list-metrics/AccuracySampler"
+import { FeedbackBreakdown } from "./components/FeedbackBreakdown"
+import { getFeedbackBreakdown } from "./queries-feedback"
 
 export const dynamic = "force-dynamic"
 
@@ -21,10 +23,11 @@ export default async function SnapListMetricsPage() {
   const to = new Date()
   const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000)
 
-  const [metrics, drafts, aggregate] = await Promise.all([
+  const [metrics, drafts, aggregate, feedback] = await Promise.all([
     getSnapListMetrics({ from, to }),
     getAccuracySamplerDrafts(30),
     getAccuracyAggregate(),
+    getFeedbackBreakdown(30),
   ])
 
   return (
@@ -53,6 +56,8 @@ export default async function SnapListMetricsPage() {
       <MetricsTrendChart data={metrics.dailyTimeSeries} />
 
       <AccuracySampler drafts={drafts} aggregate={aggregate} />
+
+      <FeedbackBreakdown data={feedback} />
 
       <p className="text-xs text-muted-foreground">
         Looking for AI cost dollars? See{" "}
