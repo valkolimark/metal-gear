@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { HelpChatSchema } from '@/lib/security/validate'
 import { escapePostgrestValue } from '@/lib/security/sanitize'
+import { recordAiUsage } from '@/lib/telemetry/ai-usage'
 
 // Simple in-memory rate limiter
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -79,6 +80,7 @@ INSTRUCTIONS:
       { role: 'user' as const, content: message },
     ]
 
+    const streamStart = Date.now()
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 512,
@@ -98,7 +100,31 @@ INSTRUCTIONS:
             }
           }
           controller.close()
-        } catch {
+          try {
+            const final = await stream.finalMessage()
+            void recordAiUsage({
+              userId: null,
+              surface: 'other',
+              vendor: 'anthropic',
+              model: 'claude-sonnet-4-20250514',
+              inputTokens: final.usage?.input_tokens,
+              outputTokens: final.usage?.output_tokens,
+              latencyMs: Date.now() - streamStart,
+              success: true,
+            })
+          } catch {
+            // best-effort post-stream usage capture
+          }
+        } catch (err) {
+          void recordAiUsage({
+            userId: null,
+            surface: 'other',
+            vendor: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            latencyMs: Date.now() - streamStart,
+            success: false,
+            errorClass: err instanceof Error ? err.name || 'Error' : 'unknown',
+          })
           controller.close()
         }
       },

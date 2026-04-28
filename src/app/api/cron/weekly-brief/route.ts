@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
 import { sendEmail } from '@/lib/email'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -199,7 +200,14 @@ export async function GET(req: NextRequest) {
   // Generate AI brief
   let aiBrief: string
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: null,
+        surface: 'weekly_brief_cron',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1500,
       system: `You are the business intelligence analyst for Metal Gear, a B2B industrial equipment marketplace in Houston, TX. Write a concise weekly executive brief for the founders.
@@ -222,7 +230,12 @@ Return plain text formatted with markdown.`,
           content: `Weekly data for ${briefData.period.start} – ${briefData.period.end}:\n\n${JSON.stringify(briefData, null, 2)}`,
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     aiBrief = response.content[0].type === 'text' ? response.content[0].text : 'Failed to generate brief.'
   } catch (err) {

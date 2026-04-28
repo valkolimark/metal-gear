@@ -10,6 +10,7 @@ import {
 } from "@/lib/vision-analysis"
 import { buildNameplateRegistryCallback } from "@/lib/registry/nameplate-callback"
 import { projectAnalysisToSosFields } from "@/lib/sos/vision-orchestrator"
+import { recordAiUsage, type AiSurface } from "@/lib/telemetry/ai-usage"
 import { uploadToR2, deleteFromR2 } from "@/lib/r2"
 import { getR2Url } from "@/lib/r2"
 import type {
@@ -283,11 +284,33 @@ export async function POST(request: NextRequest) {
       tempKeys.push(key)
     }
 
+    const surface: AiSurface =
+      mode === "sos"
+        ? "sos_analysis"
+        : mode === "snap-list"
+          ? "photo_to_listing_analysis"
+          : "listing_analyzer_helper"
+
     const result = await analyzeEquipmentImages(photoUrls, {
       taxonomyContext: EQUIPMENT_TAXONOMY,
       callerTag: `analyze-image:${mode}`,
       mode,
       registryLookup: buildNameplateRegistryCallback(),
+      onUsageEvent: (event) => {
+        void recordAiUsage({
+          userId: user.id,
+          surface,
+          vendor: event.vendor,
+          model: event.model,
+          inputTokens: event.inputTokens,
+          outputTokens: event.outputTokens,
+          visionUnits: event.visionUnits,
+          visionFeature: event.visionFeature,
+          latencyMs: event.latencyMs,
+          success: event.success,
+          errorClass: event.errorClass,
+        })
+      },
     })
 
     const aiResult = projectToAIAnalysisResult(

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const runtime = 'nodejs'
 
@@ -133,7 +134,14 @@ async function generateReputationSummary(
   const reviewStats = `Total reviews: ${reviews.length}, Average rating: ${Math.round(avgRating * 10) / 10}/5, Completed sales: ${salesCount || 0}, Response time: ${responseTimeLabel}`
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: null,
+        surface: 'other',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 1000,
       system: `You are an industrial marketplace trust analyst. Summarize this seller's reputation based on their reviews. Be honest — if there are recurring complaints, mention them constructively. Buyers are making large B2B purchases ($10K–$500K+) and need accurate information to make decisions.
@@ -157,7 +165,12 @@ Return ONLY valid JSON matching this schema:
           content: `Seller stats: ${reviewStats}\n\nReviews:\n${reviewTexts || 'No review comments available — only ratings.'}`,
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)

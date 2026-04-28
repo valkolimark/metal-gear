@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const runtime = 'nodejs'
 
@@ -30,7 +31,14 @@ export async function POST(req: NextRequest) {
   const { subcategory, sosCount, unmatchedPct, sellerType } = await req.json()
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: user.id,
+        surface: 'other',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 600,
       system: `You are writing a cold outreach email to recruit equipment sellers for Metal Gear, a B2B industrial equipment marketplace based in Houston, TX. Write a compelling, professional email that highlights the specific demand signal.
@@ -48,7 +56,12 @@ Return ONLY valid JSON:
           content: `Write a recruitment email for a ${sellerType || 'dealer'} who sells ${subcategory}. We're seeing ${sosCount} requests for this equipment in the Gulf Coast region over the past 90 days, with ${unmatchedPct}% going unanswered. Metal Gear is a growing marketplace that connects industrial equipment buyers and sellers.`,
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)

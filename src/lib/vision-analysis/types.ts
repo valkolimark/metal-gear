@@ -128,6 +128,36 @@ export type TaxonomyTree = TaxonomyTier1Bucket[]
 
 export type AnalysisMode = "snap-list" | "sos" | "listing-helper"
 
+/**
+ * Vendor identifier for usage events emitted from this layer.
+ * Mirrors the `vendor` enum on the `ai_usage_events` ledger but is duplicated
+ * here on purpose — vision-analysis MUST NOT import from `@/lib/telemetry/*`.
+ */
+export type VisionUsageVendor = "anthropic" | "google_vision"
+
+/**
+ * Per-vendor usage event fired by the vision pipeline.
+ *
+ * Domain isolation: this lib emits the event, an orchestrator wires it to the
+ * ledger via `recordAiUsage()`. Same callback pattern as `registryLookup`.
+ */
+export interface VisionUsageEvent {
+  vendor: VisionUsageVendor
+  /** Free-text identifier (e.g. "claude-sonnet-4-20250514"). Anthropic only. */
+  model?: string
+  /** Anthropic only. */
+  inputTokens?: number
+  /** Anthropic only. */
+  outputTokens?: number
+  /** Google Vision only — count of feature units billed. */
+  visionUnits?: number
+  /** Google Vision only — which API feature was invoked. */
+  visionFeature?: "document_text_detection" | "web_detection"
+  latencyMs: number
+  success: boolean
+  errorClass?: string
+}
+
 export interface EquipmentAnalysisOptions {
   /** Domain-specific taxonomy passed in by the caller — keeps this lib pure. */
   taxonomyContext: TaxonomyTree
@@ -159,6 +189,19 @@ export interface EquipmentAnalysisOptions {
     /** Claude-extracted model string, if any. Lets the callback try to resolve a model FK after picking the manufacturer. */
     model: string | null
   }) => Promise<RegistryLookupResult | null>
+  /**
+   * Optional usage telemetry callback (Cycle 62). Fired once per vendor call
+   * (Anthropic, Google Vision OCR, Google Vision web-detection). The
+   * orchestrator wires this to `recordAiUsage()` with the surface determined
+   * by the caller (e.g. `photo_to_listing_analysis`, `sos_analysis`).
+   *
+   * Domain isolation invariant: vision-analysis MUST NOT import from
+   * `@/lib/telemetry/*`. The callback shape is the only coupling point.
+   *
+   * MUST NOT throw — callers wrap their own logger in try/catch (or rely on
+   * `recordAiUsage` which never throws).
+   */
+  onUsageEvent?: (event: VisionUsageEvent) => void
 }
 
 export { OCRBlock }

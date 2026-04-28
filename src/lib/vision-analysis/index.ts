@@ -44,4 +44,6 @@ export type {
   RegistryLookupResult,
   RegistryLookupMethod,
   RegistryMatchSummary,
+  VisionUsageEvent,
+  VisionUsageVendor,
 } from "./types"

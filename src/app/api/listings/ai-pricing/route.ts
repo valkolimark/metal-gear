@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const maxDuration = 30
 
@@ -208,15 +209,27 @@ export async function POST(request: NextRequest) {
           `Specs: ${Object.entries(listing.specs).map(([k, v]) => `${k}: ${v}`).join(', ')}`,
       ].filter(Boolean).join('\n')
 
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: PRICING_PROMPT,
-        messages: [{
-          role: 'user',
-          content: `Target equipment:\n${targetDetails}\n\nComparable listings (${comparables.length} found):\n${JSON.stringify(comparablesSummary, null, 2)}`,
-        }],
-      })
+      const response = await withAiUsageTracking(
+        {
+          userId: null,
+          surface: 'other',
+          vendor: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+        },
+        () => anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: PRICING_PROMPT,
+          messages: [{
+            role: 'user',
+            content: `Target equipment:\n${targetDetails}\n\nComparable listings (${comparables.length} found):\n${JSON.stringify(comparablesSummary, null, 2)}`,
+          }],
+        }),
+        (r) => ({
+          inputTokens: r.usage?.input_tokens,
+          outputTokens: r.usage?.output_tokens,
+        }),
+      )
 
       const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
       const cleaned = cleanJsonResponse(rawText)
@@ -256,15 +269,28 @@ export async function POST(request: NextRequest) {
         stats ? `  Avg days on market: ${stats.avgDaysOnMarket}` : '',
       ].filter(Boolean).join('\n')
 
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: COACHING_PROMPT(negotiation.side),
-        messages: [{
-          role: 'user',
-          content: `Analyze this deal and give me your recommendation:\n\n${context}`,
-        }],
-      })
+      const response = await withAiUsageTracking(
+        {
+          userId: null,
+          surface: 'other',
+          vendor: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          traceId: negotiation.listingId,
+        },
+        () => anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: COACHING_PROMPT(negotiation.side),
+          messages: [{
+            role: 'user',
+            content: `Analyze this deal and give me your recommendation:\n\n${context}`,
+          }],
+        }),
+        (r) => ({
+          inputTokens: r.usage?.input_tokens,
+          outputTokens: r.usage?.output_tokens,
+        }),
+      )
 
       const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
       const cleaned = cleanJsonResponse(rawText)

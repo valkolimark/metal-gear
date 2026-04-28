@@ -1,4 +1,5 @@
 #!/usr/bin/env tsx
+export {} // Mark as ES module so top-level identifiers don't collide with sibling scripts.
 /**
  * Migration: create increment_import_counter Postgres function
  *

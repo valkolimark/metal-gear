@@ -12,6 +12,7 @@ import {
 import { buildNameplateRegistryCallback } from "@/lib/registry/nameplate-callback"
 import { EQUIPMENT_TAXONOMY } from "@/lib/constants/equipment-taxonomy"
 import { logSnapListEvent, logStageCompleted } from "@/lib/snap-list/events"
+import { recordAiUsage } from "@/lib/telemetry/ai-usage"
 import { getActiveCompanyId } from "./company-context"
 import { createDraft } from "./snap-list-draft"
 import { checkSnapListQuota } from "./snap-list-usage"
@@ -96,6 +97,22 @@ async function runAnalysisPipeline(
         void logStageCompleted(draftId, ownerId, stage, ms)
       },
       registryLookup: buildNameplateRegistryCallback(),
+      onUsageEvent: (event) => {
+        void recordAiUsage({
+          userId: ownerId,
+          surface: "photo_to_listing_analysis",
+          vendor: event.vendor,
+          model: event.model,
+          inputTokens: event.inputTokens,
+          outputTokens: event.outputTokens,
+          visionUnits: event.visionUnits,
+          visionFeature: event.visionFeature,
+          latencyMs: event.latencyMs,
+          success: event.success,
+          errorClass: event.errorClass,
+          traceId: draftId,
+        })
+      },
     })
 
     // Persist raw outputs + merged fields so the review screen can start
@@ -146,6 +163,8 @@ async function runAnalysisPipeline(
       photoCount: photoUrls.length,
       hasNameplate: analysis.ocr.hasText,
       specs: analysis.specs,
+      ownerId,
+      draftId,
     })
     void logStageCompleted(draftId, ownerId, "coaching", Date.now() - coachStart)
 

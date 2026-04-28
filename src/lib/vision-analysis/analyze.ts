@@ -250,6 +250,7 @@ async function callClaude(
     mode: options.mode,
   })
 
+  const claudeStart = Date.now()
   try {
     const response = await client.messages.create({
       model: CLAUDE_MODEL,
@@ -271,15 +272,44 @@ async function callClaude(
       .map((c) => c.text)
       .join("\n")
 
+    safeEmitUsage(options, {
+      vendor: "anthropic",
+      model: CLAUDE_MODEL,
+      inputTokens: response.usage?.input_tokens,
+      outputTokens: response.usage?.output_tokens,
+      latencyMs: Date.now() - claudeStart,
+      success: true,
+    })
+
     const parsed = extractJSON(rawText) as ClaudeIdentificationOutput | null
     return { output: parsed, raw: rawText }
   } catch (err) {
     console.error("[vision-analysis] Claude call failed:", err)
+    safeEmitUsage(options, {
+      vendor: "anthropic",
+      model: CLAUDE_MODEL,
+      latencyMs: Date.now() - claudeStart,
+      success: false,
+      errorClass: err instanceof Error ? err.name || "Error" : "unknown",
+    })
     return {
       output: null,
       raw: "",
       error: err instanceof Error ? err.message : "claude_call_failed",
     }
+  }
+}
+
+function safeEmitUsage(
+  options: EquipmentAnalysisOptions,
+  event: import("./types").VisionUsageEvent,
+): void {
+  if (!options.onUsageEvent) return
+  try {
+    options.onUsageEvent(event)
+  } catch (err) {
+    // Telemetry is fire-and-forget — never let it break analysis.
+    console.error("[vision-analysis] onUsageEvent threw:", err)
   }
 }
 
@@ -310,8 +340,60 @@ export async function analyzeEquipmentImages(
   const webStart = Date.now()
 
   const [ocrSettled, webSettled] = await Promise.all([
-    Promise.allSettled(photoUrls.map((url) => detectNameplateText(url))),
-    Promise.allSettled([detectWebMatches(photoUrls[0])]),
+    Promise.allSettled(
+      photoUrls.map(async (url) => {
+        const callStart = Date.now()
+        try {
+          const result = await detectNameplateText(url)
+          safeEmitUsage(options, {
+            vendor: "google_vision",
+            visionFeature: "document_text_detection",
+            visionUnits: 1,
+            latencyMs: Date.now() - callStart,
+            success: !result.error,
+            errorClass: result.error,
+          })
+          return result
+        } catch (err) {
+          safeEmitUsage(options, {
+            vendor: "google_vision",
+            visionFeature: "document_text_detection",
+            visionUnits: 0,
+            latencyMs: Date.now() - callStart,
+            success: false,
+            errorClass: err instanceof Error ? err.name || "Error" : "unknown",
+          })
+          throw err
+        }
+      }),
+    ),
+    Promise.allSettled([
+      (async () => {
+        const callStart = Date.now()
+        try {
+          const result = await detectWebMatches(photoUrls[0])
+          safeEmitUsage(options, {
+            vendor: "google_vision",
+            visionFeature: "web_detection",
+            visionUnits: 1,
+            latencyMs: Date.now() - callStart,
+            success: !result.error,
+            errorClass: result.error,
+          })
+          return result
+        } catch (err) {
+          safeEmitUsage(options, {
+            vendor: "google_vision",
+            visionFeature: "web_detection",
+            visionUnits: 0,
+            latencyMs: Date.now() - callStart,
+            success: false,
+            errorClass: err instanceof Error ? err.name || "Error" : "unknown",
+          })
+          throw err
+        }
+      })(),
+    ]),
   ])
 
   const ocrResults: NameplateOCRResult[] = ocrSettled.map((r, i) => {

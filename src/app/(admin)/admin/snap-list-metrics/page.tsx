@@ -53,6 +53,14 @@ export default async function SnapListMetricsPage() {
       <MetricsTrendChart data={metrics.dailyTimeSeries} />
 
       <AccuracySampler drafts={drafts} aggregate={aggregate} />
+
+      <p className="text-xs text-muted-foreground">
+        Looking for AI cost dollars? See{" "}
+        <a href="/admin/ai-costs" className="font-medium underline">
+          AI Costs
+        </a>{" "}
+        for the platform-wide spend ledger.
+      </p>
     </div>
   )
 }

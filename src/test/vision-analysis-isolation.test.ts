@@ -37,4 +37,12 @@ describe("vision-analysis domain isolation", () => {
     ).trim()
     expect(out).toBe("")
   })
+
+  it("never imports from @/lib/telemetry (Cycle 62)", () => {
+    const out = execSync(
+      'grep -rnE "from [\\"\']\\@?/lib/telemetry" src/lib/vision-analysis/ || true',
+      { encoding: "utf-8" },
+    ).trim()
+    expect(out).toBe("")
+  })
 })

@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { unstable_cache } from 'next/cache'
 import { AISearchSchema } from '@/lib/security/validate'
 import { escapePostgrestValue } from '@/lib/security/sanitize'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const maxDuration = 30
 
@@ -138,12 +139,24 @@ async function callClaude(
   }
   messages.push({ role: 'user', content: query })
 
-  const response = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
-    max_tokens: 1024,
-    system: systemPrompt,
-    messages,
-  })
+  const response = await withAiUsageTracking(
+    {
+      userId: null,
+      surface: 'ai_search',
+      vendor: 'anthropic',
+      model: 'claude-sonnet-4-20250514',
+    },
+    () => anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1024,
+      system: systemPrompt,
+      messages,
+    }),
+    (r) => ({
+      inputTokens: r.usage?.input_tokens,
+      outputTokens: r.usage?.output_tokens,
+    }),
+  )
 
   const rawText =
     response.content[0].type === 'text' ? response.content[0].text : ''

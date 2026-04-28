@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import Anthropic from '@anthropic-ai/sdk'
 import { sendEmail } from '@/lib/email'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 const anthropic = new Anthropic()
 const CRON_SECRET = process.env.CRON_SECRET
@@ -88,11 +89,24 @@ Respond ONLY with a valid JSON object. No markdown, no preamble, no explanation 
   "description_tip": "One specific, actionable improvement for the description. Max 120 characters."
 }`
 
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 400,
-        messages: [{ role: 'user', content: prompt }],
-      })
+      const response = await withAiUsageTracking(
+        {
+          userId: listing.seller_id,
+          surface: 'listing_freshness_cron',
+          vendor: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          traceId: listing.id,
+        },
+        () => anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 400,
+          messages: [{ role: 'user', content: prompt }],
+        }),
+        (r) => ({
+          inputTokens: r.usage?.input_tokens,
+          outputTokens: r.usage?.output_tokens,
+        }),
+      )
 
       const text = response.content[0]?.type === 'text' ? response.content[0].text : ''
       let suggestion: {

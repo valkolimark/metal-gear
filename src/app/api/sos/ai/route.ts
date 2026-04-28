@@ -3,6 +3,7 @@ import { anthropic } from '@/lib/anthropic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { SOSAISchema } from '@/lib/security/validate'
 import { escapePostgrestValue } from '@/lib/security/sanitize'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const maxDuration = 30
 
@@ -108,15 +109,27 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Description is required' }, { status: 400 })
       }
 
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: CATEGORIZE_PROMPT,
-        messages: [{
-          role: 'user',
-          content: `Classify this equipment request:\n\n"${description}"`,
-        }],
-      })
+      const response = await withAiUsageTracking(
+        {
+          userId: null,
+          surface: 'sos_analysis',
+          vendor: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+        },
+        () => anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: CATEGORIZE_PROMPT,
+          messages: [{
+            role: 'user',
+            content: `Classify this equipment request:\n\n"${description}"`,
+          }],
+        }),
+        (r) => ({
+          inputTokens: r.usage?.input_tokens,
+          outputTokens: r.usage?.output_tokens,
+        }),
+      )
 
       const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
       const cleaned = cleanJsonResponse(rawText)
@@ -203,15 +216,28 @@ export async function POST(request: NextRequest) {
         ].filter(Boolean).join('\n')),
       ].filter(Boolean).join('\n')
 
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: RANK_PROMPT,
-        messages: [{
-          role: 'user',
-          content: `Rank these SOS responses:\n\n${context}`,
-        }],
-      })
+      const response = await withAiUsageTracking(
+        {
+          userId: null,
+          surface: 'sos_analysis',
+          vendor: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+          traceId: sosRequestId ?? null,
+        },
+        () => anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: RANK_PROMPT,
+          messages: [{
+            role: 'user',
+            content: `Rank these SOS responses:\n\n${context}`,
+          }],
+        }),
+        (r) => ({
+          inputTokens: r.usage?.input_tokens,
+          outputTokens: r.usage?.output_tokens,
+        }),
+      )
 
       const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
       const cleaned = cleanJsonResponse(rawText)
@@ -295,15 +321,27 @@ export async function POST(request: NextRequest) {
         `  Expired/Cancelled: ${(sosHistory || []).filter((s) => ['expired', 'cancelled'].includes(s.status || '')).length}`,
       ].filter(Boolean).join('\n')
 
-      const response = await anthropic.messages.create({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
-        system: DEMAND_PROMPT,
-        messages: [{
-          role: 'user',
-          content: `Analyze demand patterns for this equipment:\n\n${context}`,
-        }],
-      })
+      const response = await withAiUsageTracking(
+        {
+          userId: null,
+          surface: 'demand_insights_cron',
+          vendor: 'anthropic',
+          model: 'claude-sonnet-4-20250514',
+        },
+        () => anthropic.messages.create({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 1024,
+          system: DEMAND_PROMPT,
+          messages: [{
+            role: 'user',
+            content: `Analyze demand patterns for this equipment:\n\n${context}`,
+          }],
+        }),
+        (r) => ({
+          inputTokens: r.usage?.input_tokens,
+          outputTokens: r.usage?.output_tokens,
+        }),
+      )
 
       const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
       const cleaned = cleanJsonResponse(rawText)

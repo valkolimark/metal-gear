@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 interface DisputeSummary {
   summary: string
@@ -92,7 +93,15 @@ export async function generateDisputeSummary(disputeId: string) {
   }
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: user.id,
+        surface: 'dispute_mediation',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+        traceId: disputeId,
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       system: `You are a neutral dispute mediation analyst for Metal Gear, a B2B industrial equipment marketplace. Your job is to help admin reviewers understand disputes quickly and fairly.
@@ -122,7 +131,12 @@ Return ONLY valid JSON matching this schema:
           content: `Analyze this dispute:\n\n${JSON.stringify(context, null, 2)}`,
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)

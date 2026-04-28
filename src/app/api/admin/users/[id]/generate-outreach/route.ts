@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const runtime = 'nodejs'
 
@@ -69,7 +70,15 @@ export async function POST(
     : null
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: user.id,
+        surface: 'other',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+        traceId: userId,
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 800,
       system: `You are writing a retention email for Metal Gear, a B2B industrial equipment marketplace. The tone should be personal, warm, and direct — like a founder reaching out to a valued customer. Not corporate marketing speak.
@@ -100,7 +109,12 @@ Return ONLY valid JSON:
           }),
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const jsonMatch = text.match(/\{[\s\S]*\}/)

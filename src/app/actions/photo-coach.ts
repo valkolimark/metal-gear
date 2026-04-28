@@ -2,6 +2,7 @@
 
 import Anthropic from "@anthropic-ai/sdk"
 import { anthropic } from "@/lib/anthropic"
+import { recordAiUsage } from "@/lib/telemetry/ai-usage"
 import type { PhotoCoachOutput } from "@/lib/snap-list/types"
 
 const MODEL = "claude-sonnet-4-20250514"
@@ -12,6 +13,10 @@ export interface PhotoCoachInput {
   photoCount: number
   hasNameplate: boolean
   specs: Record<string, string | number>
+  /** Optional — wired by the snap-list pipeline so usage is attributed to the user. */
+  ownerId?: string
+  /** Optional — used as `trace_id` in the ledger so analyses can be costed end-to-end. */
+  draftId?: string
 }
 
 const SYSTEM_PROMPT = `You are a marketplace merchandising expert. Buyers of industrial equipment need specific visual evidence to decide whether to inquire. Given a piece of equipment and the photos the seller has already uploaded, name the 1–3 additional shots that would most increase buyer confidence and response rate.
@@ -43,12 +48,24 @@ export async function generatePhotoCoaching(
     "Return the JSON now.",
   ].join("\n")
 
+  const start = Date.now()
   try {
     const res = await anthropic.messages.create({
       model: MODEL,
       max_tokens: 600,
       system: SYSTEM_PROMPT,
       messages: [{ role: "user", content: userPrompt }],
+    })
+    void recordAiUsage({
+      userId: input.ownerId ?? null,
+      surface: "photo_to_listing_analysis",
+      vendor: "anthropic",
+      model: MODEL,
+      inputTokens: res.usage?.input_tokens,
+      outputTokens: res.usage?.output_tokens,
+      latencyMs: Date.now() - start,
+      success: true,
+      traceId: input.draftId ?? null,
     })
     const raw = res.content
       .filter((c): c is Anthropic.TextBlock => c.type === "text")
@@ -80,6 +97,16 @@ export async function generatePhotoCoaching(
     }
   } catch (err) {
     console.error("[photo-coach] generation failed:", err)
+    void recordAiUsage({
+      userId: input.ownerId ?? null,
+      surface: "photo_to_listing_analysis",
+      vendor: "anthropic",
+      model: MODEL,
+      latencyMs: Date.now() - start,
+      success: false,
+      errorClass: err instanceof Error ? err.name || "Error" : "unknown",
+      traceId: input.draftId ?? null,
+    })
     return null
   }
 }

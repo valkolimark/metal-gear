@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AIChatSchema } from '@/lib/security/validate'
+import { recordAiUsage } from '@/lib/telemetry/ai-usage'
 
 // Daily rate limiter per IP
 const rateLimitMap = new Map<string, { count: number; resetAt: number }>()
@@ -201,6 +202,8 @@ This will render as a clickable search button for the user.`
       { role: 'user' as const, content: question },
     ]
 
+    const askingUserId = request.headers.get('x-user-id')
+    const streamStart = Date.now()
     const stream = anthropic.messages.stream({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 768,
@@ -220,7 +223,33 @@ This will render as a clickable search button for the user.`
             }
           }
           controller.close()
-        } catch {
+          try {
+            const final = await stream.finalMessage()
+            void recordAiUsage({
+              userId: askingUserId,
+              surface: 'ask_metal_gear',
+              vendor: 'anthropic',
+              model: 'claude-sonnet-4-20250514',
+              inputTokens: final.usage?.input_tokens,
+              outputTokens: final.usage?.output_tokens,
+              latencyMs: Date.now() - streamStart,
+              success: true,
+              traceId: id,
+            })
+          } catch {
+            // best-effort post-stream usage capture
+          }
+        } catch (err) {
+          void recordAiUsage({
+            userId: askingUserId,
+            surface: 'ask_metal_gear',
+            vendor: 'anthropic',
+            model: 'claude-sonnet-4-20250514',
+            latencyMs: Date.now() - streamStart,
+            success: false,
+            errorClass: err instanceof Error ? err.name || 'Error' : 'unknown',
+            traceId: id,
+          })
           controller.close()
         }
       },

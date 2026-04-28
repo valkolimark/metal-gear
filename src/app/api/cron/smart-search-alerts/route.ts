@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
 import { sendEmail } from '@/lib/email'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -252,7 +253,14 @@ async function evaluateBatch(pairs: { listing: Record<string, unknown>; search: 
   })
 
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: null,
+        surface: 'other',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       system: `You are evaluating whether new industrial equipment listings are relevant enough to notify buyers who have saved specific searches.
@@ -269,7 +277,12 @@ The explanation should be 1 sentence max explaining WHY this listing matches (fo
           content: `Evaluate these ${items.length} listing-search pairs:\n\n${JSON.stringify(items, null, 2)}`,
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
 

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { anthropic } from '@/lib/anthropic'
+import { withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const runtime = 'nodejs'
 export const maxDuration = 120
@@ -71,7 +72,14 @@ export async function GET(req: NextRequest) {
   // AI analysis
   let aiAnalysis = null
   try {
-    const response = await anthropic.messages.create({
+    const response = await withAiUsageTracking(
+      {
+        userId: null,
+        surface: 'other',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+      },
+      () => anthropic.messages.create({
       model: 'claude-sonnet-4-20250514',
       max_tokens: 2000,
       system: `You are a business development analyst for a B2B industrial equipment marketplace based in Houston, TX (oil & gas, petrochemical, manufacturing).
@@ -93,7 +101,12 @@ Return ONLY a valid JSON array of objects.`,
           content: `Market gap data (last 90 days):\n\n${JSON.stringify(gaps, null, 2)}`,
         },
       ],
-    })
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const text = response.content[0].type === 'text' ? response.content[0].text : ''
     const jsonMatch = text.match(/\[[\s\S]*\]/)

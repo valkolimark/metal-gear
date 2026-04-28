@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { anthropic } from '@/lib/anthropic'
 import { AICopySchema } from '@/lib/security/validate'
+import { recordAiUsage, withAiUsageTracking } from '@/lib/telemetry/ai-usage'
 
 export const maxDuration = 30
 
@@ -116,6 +117,7 @@ export async function POST(request: NextRequest) {
       const systemPrompt = DESCRIPTION_PROMPT
       const userMessage = `Generate a professional listing description for this equipment:\n\n${context}`
 
+      const streamStart = Date.now()
       const stream = anthropic.messages.stream({
         model: 'claude-sonnet-4-20250514',
         max_tokens: 1024,
@@ -127,12 +129,40 @@ export async function POST(request: NextRequest) {
       return new Response(
         new ReadableStream({
           async start(controller) {
-            for await (const chunk of stream) {
-              if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-                controller.enqueue(new TextEncoder().encode(chunk.delta.text))
+            try {
+              for await (const chunk of stream) {
+                if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
+                  controller.enqueue(new TextEncoder().encode(chunk.delta.text))
+                }
               }
+              controller.close()
+              try {
+                const final = await stream.finalMessage()
+                void recordAiUsage({
+                  userId: null,
+                  surface: 'other',
+                  vendor: 'anthropic',
+                  model: 'claude-sonnet-4-20250514',
+                  inputTokens: final.usage?.input_tokens,
+                  outputTokens: final.usage?.output_tokens,
+                  latencyMs: Date.now() - streamStart,
+                  success: true,
+                })
+              } catch {
+                // post-stream usage capture is best-effort
+              }
+            } catch (err) {
+              void recordAiUsage({
+                userId: null,
+                surface: 'other',
+                vendor: 'anthropic',
+                model: 'claude-sonnet-4-20250514',
+                latencyMs: Date.now() - streamStart,
+                success: false,
+                errorClass: err instanceof Error ? err.name || 'Error' : 'unknown',
+              })
+              controller.error(err)
             }
-            controller.close()
           },
         }),
         { headers: { 'Content-Type': 'text/plain; charset=utf-8' } }
@@ -153,12 +183,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
-    const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 1024,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: userMessage }],
-    })
+    const response = await withAiUsageTracking(
+      {
+        userId: null,
+        surface: 'other',
+        vendor: 'anthropic',
+        model: 'claude-sonnet-4-20250514',
+      },
+      () => anthropic.messages.create({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMessage }],
+      }),
+      (r) => ({
+        inputTokens: r.usage?.input_tokens,
+        outputTokens: r.usage?.output_tokens,
+      }),
+    )
 
     const rawText = response.content[0].type === 'text' ? response.content[0].text : ''
     const cleaned = cleanJsonResponse(rawText)

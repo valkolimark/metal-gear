@@ -20,6 +20,7 @@ export default async function AdminLayout({
     { href: '/admin/financials', label: 'Financials', icon: 'dollar', permission: 'view_financials' as const },
     { href: '/admin/analytics', label: 'Analytics', icon: 'chart', permission: null },
     { href: '/admin/snap-list-metrics', label: 'Snap & List Metrics', icon: 'chart', permission: 'view_financials' as const },
+    { href: '/admin/ai-costs', label: 'AI Costs', icon: 'dollar', permission: 'view_financials' as const },
     { href: '/admin/settings', label: 'System Settings', icon: 'settings', permission: 'grant_roles' as const },
   ].filter((item) => !item.permission || hasPermission(role, item.permission))
 

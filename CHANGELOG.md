@@ -6,6 +6,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.33.0] — 2026-04-27 · AI cost & usage telemetry — internal observability (Cycle 62)
+
+### Added
+- **`ai_usage_events`** ledger — fires on every Anthropic and Google Vision call platform-wide. Captures `user_id`, `company_id`, `surface` (14 enum values: photo_to_listing_analysis, sos_analysis, listing_analyzer_helper, listing_freshness_cron, weekly_brief_cron, demand_insights_cron, ask_metal_gear, ai_search, dispute_mediation, churn_scoring_cron, registry_seeding, registry_disambiguation, plus `other` for surfaces not yet broken out), `vendor` (anthropic / google_vision / other), `model`, `input_tokens`, `output_tokens`, `vision_units`, `cost_cents` (NUMERIC(12,4) — token-derived estimate), `latency_ms`, `success`, `error_class`, `trace_id`. RLS enabled with no SELECT policy — admin reads go through the service-role client. Indexes on `occurred_at DESC`, `(user_id, occurred_at)`, `(surface, occurred_at)`, `(vendor, occurred_at)`.
+- **`recordAiUsage()` + `withAiUsageTracking()`** — `src/lib/telemetry/ai-usage.ts`. Fire-and-forget logger; **never throws** (covered by `src/test/ai-usage-logger.test.ts` across DB-error, sync-throw, async-reject, and extractor-throw paths). Wrapping helper measures latency, captures success/failure, derives cost cents from token counts, and re-throws the wrapped function's error unchanged. Same invariant as Cycle 58's `logSnapListEvent`.
+- **`src/lib/telemetry/cost-models.ts`** — pure-function cost estimators for Anthropic (Sonnet 4 / Opus 4 / Haiku 4.5, with tolerant model-string classification) and Google Vision (DOCUMENT_TEXT_DETECTION, WEB_DETECTION). Pricing table documented with vendor source URLs + as-of date (2026-04-25). Free tier is not subtracted; the dashboard footer discloses this.
+- **Vision-analysis `onUsageEvent` callback** — `EquipmentAnalysisOptions` gains `onUsageEvent?: (event: VisionUsageEvent) => void`. Fires once per vendor call (Claude, OCR per photo, web detection on the first photo). The pipeline never imports from `@/lib/telemetry/*`; the orchestrator wires the callback. Same architecture pattern as Cycle 61b's registry callback. Codified by `src/test/vision-analysis-isolation.test.ts` (now asserts no `@/lib/telemetry` imports too).
+- **`/admin/ai-costs`** — admin dashboard (RBAC: superadmin + analyst, matching `/admin/snap-list-metrics`). KPIs (7d, 30d, MoM, daily run-rate from trailing 12h × 2), daily cost chart stacked by vendor (Anthropic / Google Vision / Other), by-surface table (calls / total $ / mean $/call / p95 latency / success rate), top-20 users by 30d cost, anomaly callouts (any surface where 24h cost > 3× 30-day daily average AND > 5¢). Footer disclaimer that values are best-effort estimates. Cross-linked from `/admin/snap-list-metrics`.
+- **`scripts/migrate-ai-usage-events.ts`** — idempotent migration runner that creates the table + indexes + RLS via Supabase Management API. `verifyTable()` post-check fails loud on missing columns or absent RLS.
+
+### Instrumented surfaces (12 surface enums + `other` catch-all)
+- **`photo_to_listing_analysis`** — snap-list pipeline (vision-analysis emits Claude + GCV events; photo coach instruments separately).
+- **`sos_analysis`** — analyze-image route w/ `mode='sos'`; SOS AI route `categorize` + `rank_responses`.
+- **`listing_analyzer_helper`** — analyze-image route w/ `mode='listing-helper'`.
+- **`listing_freshness_cron`** — daily stale-listing AI suggestions.
+- **`weekly_brief_cron`** — Monday founder brief.
+- **`demand_insights_cron`** — SOS AI `predict_demand` (called via `/api/cron/demand-insights` internal fetch).
+- **`ask_metal_gear`** — listing detail Ask Metal Gear stream (post-stream usage capture via `stream.finalMessage()`).
+- **`ai_search`** — conversational search route (logs only on cache miss — `unstable_cache` wraps `callClaude`).
+- **`dispute_mediation`** — admin dispute summary generator.
+- **`other`** — ai-copy (description stream + title/quality), ai-pricing (×2), help/chat stream, reputation summary, admin churn outreach, admin market-gap recruitment outreach, smart-search-alerts cron, market-gaps cron.
+- **Reserved (no events yet logged):** `churn_scoring_cron` (heuristic-only, no Anthropic call), `registry_seeding` (one-time script — instrument-on-rerun), `registry_disambiguation` (pure-function CPU; no vendor call).
+
+### Architecture invariants
+- Telemetry never throws — wraps DB writes in try/catch and silently swallows. A logger failure cannot break a user-facing AI call.
+- No PII / prompt content / response content / photo URLs / OCR text in the ledger — token counts and metadata only.
+- Vision-analysis stays domain-isolated. `grep -rnE "from ['\"]@?/lib/telemetry" src/lib/vision-analysis/` returns empty (codified in `vision-analysis-isolation.test.ts`).
+- `surface` enum is exhaustive at the DB level via CHECK constraint. New AI surfaces require an enum extension via the Supabase Management API BEFORE shipping.
+
+### Tests
+- `src/test/ai-usage-logger.test.ts` — 10 tests, never-throws invariant across (a) DB returns error, (b) DB throws sync, (c) DB rejects async, (d) extractor throws, (e) cost derivation, (f) failed-call zero-cost, (g) wrapped-fn error rethrow.
+- `src/test/cost-models.test.ts` — 18 tests covering model classification + pricing math.
+- `src/test/vision-analysis-usage-events.test.ts` — 5 tests verifying analyzer emits one anthropic event, one OCR per photo, one web-detection event, with success/failure routing and a throwing callback that doesn't break analysis.
+- `src/test/vision-analysis-isolation.test.ts` — gains a fourth assertion for `@/lib/telemetry`.
+
+### Rationale
+Foundational observability for any future usage-based pricing decision. Cycle 58 added pilot instrumentation only for Snap & List events — no $ amounts, no cross-surface aggregation, no per-user cost view. This cycle builds 30+ days of cross-surface cost data without changing user-facing behavior. Admin-only by design — user-facing surfacing and any tier $ caps are deferred until the data justifies a product decision. The dashboard is for trend-spotting; authoritative billing comes from vendor consoles.
+
+---
+
 ## [4.32.1] — 2026-04-27 · Equipment Registry: nameplate disambiguation + backfill (Cycle 61b)
 
 ### Added
