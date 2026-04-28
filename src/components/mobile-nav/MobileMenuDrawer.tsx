@@ -7,7 +7,6 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   Package,
-  Heart,
   Receipt,
   Bell,
   Search,
@@ -27,6 +26,7 @@ import {
   X,
   MessageCircle,
   Shield,
+  Radar,
 } from 'lucide-react'
 import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { CompanySwitcher } from '@/components/company/CompanySwitcher'
@@ -208,7 +208,7 @@ export function MobileMenuDrawer({
         <div className="grid grid-cols-2 gap-2 px-4 py-3">
           {[
             { href: '/listings', label: 'My Listings', icon: Package },
-            { href: '/favorites', label: 'Saved', icon: Heart },
+            { href: '/radar', label: 'Radar', icon: Radar },
             { href: '/dashboard', label: 'Transactions', icon: Receipt },
             { href: '/dashboard', label: 'Notifications', icon: Bell, badge: unreadNotifications },
           ].map((tile) => (
@@ -233,7 +233,8 @@ export function MobileMenuDrawer({
           {/* Marketplace */}
           <NavGroupHeader>Marketplace</NavGroupHeader>
           <NavRow href="/search" icon={Search} label="Browse Equipment" />
-          <NavRow href="/listings/new" icon={Plus} label="Post a Listing" />
+          <NavRow href="/listings/new" icon={Plus} label="Create a Listing" />
+          <NavRow href="/radar" icon={Radar} label="Radar" />
           <NavRow href="/sos" icon={AlertTriangle} label="SOS Dashboard" />
           <NavRow
             href="/insights"

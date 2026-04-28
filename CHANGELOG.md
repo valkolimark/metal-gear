@@ -6,6 +6,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.36.1] — 2026-04-28 · Mobile menu: Radar tile + nav row, "Create a Listing" rename (Cycle 65 patch)
+
+### Changed
+- **`MobileMenuDrawer` Quick Action tile** "Saved" replaced with **Radar** (`/radar`, Lucide `Radar` icon). Cycle 40 unified saves under Radar; the mobile menu was the last surface still pointing at the legacy `/favorites` redirect.
+- **`MobileMenuDrawer` Marketplace nav group** now lists **Radar** between "Create a Listing" and "SOS Dashboard" so users have a discoverable second entry alongside the Quick Action tile.
+- **`MobileMenuDrawer` "Post a Listing"** renamed to **"Create a Listing"** for consistency with the desktop header CTA and `/listings/create` tile copy.
+
+---
+
 ## [4.36.0] — 2026-04-28 · Company multi-industry, profile/seller/admin industry audit, drop deprecated listings.industry (Cycle 65)
 
 ### Added
