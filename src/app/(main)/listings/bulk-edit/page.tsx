@@ -17,7 +17,7 @@ export default async function BulkEditPage() {
   const { data: listings } = await admin
     .from('listings')
     .select(
-      'id, title, price_cents, status, condition, category, location_city, location_state, quantity, sku, description, listing_images(url, position)'
+      'id, title, price_cents, status, condition, category, industry, industries, location_city, location_state, quantity, sku, description, listing_images(url, position)'
     )
     .eq('seller_id', user.id)
     .neq('status', 'removed')
@@ -31,6 +31,11 @@ export default async function BulkEditPage() {
     const images = (l.listing_images ?? []).sort(
       (a: { position: number }, b: { position: number }) => a.position - b.position
     )
+    // Cycle 64: hydrate industries[] from either the new column or the legacy
+    // singleton, so freshly-migrated rows render identically.
+    const industries: string[] = Array.isArray(l.industries) && l.industries.length > 0
+      ? l.industries
+      : (typeof l.industry === 'string' && l.industry.trim().length > 0 ? [l.industry] : [])
     return {
       id: l.id as string,
       title: l.title as string,
@@ -38,6 +43,7 @@ export default async function BulkEditPage() {
       status: l.status as string,
       condition: l.condition as string,
       category: l.category as string,
+      industries,
       location_city: l.location_city as string,
       location_state: l.location_state as string,
       quantity: l.quantity as number | null,

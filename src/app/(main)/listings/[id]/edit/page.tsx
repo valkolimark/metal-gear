@@ -21,10 +21,12 @@ import { createClient } from '@/lib/supabase/client'
 import { markFreshnessSuggestionActedOn } from '@/app/actions/freshness'
 import { useAuthStore } from '@/stores/auth-store'
 import {
-  EQUIPMENT_CATEGORIES,
   LISTING_CONDITIONS,
   LISTING_STATUSES,
 } from '@/lib/constants'
+import { searchTaxonomy, getTier2Label } from '@/lib/constants/equipment-taxonomy'
+import { MultiIndustryPicker } from '@/components/forms/MultiIndustryPicker'
+import { getIndustries } from '@/lib/listings/industries'
 import { saveConditionReport, getConditionReport, uploadConditionPhoto } from '@/app/actions/condition-reports'
 
 const GRADES = ['A', 'B', 'C', 'D', 'F'] as const
@@ -46,7 +48,7 @@ export default function EditListingPage() {
     title: '',
     description: '',
     category: '',
-    industry: '',
+    industries: [] as string[],
     condition: 'good',
     price_cents: '',
     negotiable: false,
@@ -55,6 +57,13 @@ export default function EditListingPage() {
     location_state: '',
     status: 'draft',
   })
+
+  // Category search-as-you-type (Cycle 64 — same pattern as SOS / new listing)
+  const [categorySearch, setCategorySearch] = useState('')
+  const categoryResults = (() => {
+    if (categorySearch.trim().length < 2) return []
+    return searchTaxonomy(categorySearch).slice(0, 8)
+  })()
 
   // Condition report state
   const [showConditionForm, setShowConditionForm] = useState(false)
@@ -97,7 +106,7 @@ export default function EditListingPage() {
         title: data.title,
         description: data.description || '',
         category: data.category,
-        industry: data.industry || '',
+        industries: getIndustries(data),
         condition: data.condition,
         price_cents: data.price_cents
           ? (data.price_cents / 100).toString()
@@ -194,7 +203,8 @@ export default function EditListingPage() {
           title: form.title,
           description: form.description,
           category: form.category,
-          industry: form.industry || null,
+          industries: form.industries,
+          industry: form.industries[0] ?? null,
           condition: form.condition,
           price_cents: form.price_cents
             ? Math.round(parseFloat(form.price_cents) * 100)
@@ -258,29 +268,70 @@ export default function EditListingPage() {
               <Label className="font-body">Description</Label>
               <Textarea name="description" value={form.description} onChange={handleChange} rows={5} className="font-body" />
             </div>
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="font-body">Category</Label>
-                <Select value={form.category} onValueChange={(v) => setForm((p) => ({ ...p, category: v }))}>
-                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {EQUIPMENT_CATEGORIES.map((c) => (
-                      <SelectItem key={c} value={c} className="font-body">{c}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label className="font-body">Condition</Label>
-                <Select value={form.condition} onValueChange={(v) => setForm((p) => ({ ...p, condition: v }))}>
-                  <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {LISTING_CONDITIONS.map((c) => (
-                      <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Category — tier-2 taxonomy search (Cycle 64) */}
+            <div className="space-y-2">
+              <Label className="font-body" htmlFor="category-search">Category</Label>
+              <Input
+                id="category-search"
+                type="text"
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                placeholder={
+                  form.category
+                    ? 'Search to change category…'
+                    : "e.g. 'extruder', 'centrifuge', 'CNC mill'"
+                }
+                className="font-body"
+              />
+              {categoryResults.length > 0 ? (
+                <ul role="listbox" className="max-h-56 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md">
+                  {categoryResults.map((r) => (
+                    <li key={`${r.tier2}-${r.subcategory.id}`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, category: r.tier2 }))
+                          setCategorySearch('')
+                        }}
+                        className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left font-body text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <span>{r.subcategory.label}</span>
+                        <span className="text-xs text-muted-foreground">{getTier2Label(r.tier2)}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {form.category ? (
+                <p className="font-body text-xs text-muted-foreground">
+                  Selected:{' '}
+                  <span className="font-medium text-foreground">
+                    {getTier2Label(form.category) || form.category}
+                  </span>
+                </p>
+              ) : null}
+            </div>
+
+            {/* Industries — multi-select (Cycle 64) */}
+            <div className="space-y-2">
+              <Label className="font-body">Industries</Label>
+              <MultiIndustryPicker
+                value={form.industries}
+                onChange={(next) => setForm((prev) => ({ ...prev, industries: next }))}
+                max={5}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="font-body">Condition</Label>
+              <Select value={form.condition} onValueChange={(v) => setForm((p) => ({ ...p, condition: v }))}>
+                <SelectTrigger className="font-body"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {LISTING_CONDITIONS.map((c) => (
+                    <SelectItem key={c.value} value={c.value} className="font-body">{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label className="font-body">Status</Label>

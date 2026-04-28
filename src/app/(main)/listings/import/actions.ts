@@ -157,6 +157,7 @@ export async function processCSVImport(
       location_city: row.city,
       location_state: row.state,
       industry: row.industry || null,
+      industries: row.industry ? [row.industry] : [],
       status: 'draft',
     })
 

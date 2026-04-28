@@ -9,15 +9,16 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 ## Features
 
 ### Marketplace
-- Create listings by uploading photos and filling in details on the multi-step manual form at `/listings/new` — drag-and-drop reorder, draft saves, and gallery detail pages.
+- Create listings by uploading photos and filling in details on the multi-step manual form at `/listings/new` — drag-and-drop reorder, draft saves, and gallery detail pages. Category is picked from a search-as-you-type tier-2 taxonomy (the same picker SOS uses), and equipment can now be tagged with up to 5 industries it serves (e.g., an extruder serving Plastics, Food & Beverage, and Pharma). (Cycle 64.)
 - An experimental **Photo-to-Listing** option is available at the top of the creation flow: upload photos and we'll draft the listing for you to review and edit. Free tier: 3 drafts/month; paid tiers: unlimited. Drafts surface a "Photo-to-Listing draft" badge on the published listing. When you review auto-suggested fields, you can quickly confirm or flag each one with a small chip — your feedback helps us tune accuracy over time. (Pilot — Cycle 58 / 59 / 63.)
 - Manufacturer and Model fields offer typeahead suggestions backed by the **Equipment Registry** — a curated, type-organized database of industrial OEMs across 14 categories (centrifuges, pumps, mixers, valves, motors, gearboxes, heat exchangers, dryers, compressors, conveyors, crushers/mills, extruders, filter presses, tanks/pressure vessels). Free-text entry is always available for OEMs not yet in the registry. Listings with a confirmed registry match show a "Verified manufacturer" badge on the detail page. (Cycle 61a.)
-- Full-text search with filters (category, condition, price range, location radius), sort options, and grid/list toggle
+- Full-text search with filters (category, condition, price range, location radius), multi-industry chip filter, sort options, and grid/list toggle
 - 3-tier equipment taxonomy: 4 Tier 1 buckets, 28 Tier 2 groups, ~252 subcategories with cross-referencing
 - Location-based discovery with Leaflet/OpenStreetMap, haversine distance sorting, and radius filters
 - Bulk CSV/Excel import with downloadable template and validation preview
 
 ### SOS Broadcast
+- The SOS dashboard at `/sos` is now tabbed: **My SOS Requests** (your own broadcasts) and **Active in Your Categories** (broadcasts from others matching your interests). Default tab is `mine` if you have any owned SOS, otherwise `feed`. URL hash deep-links work (`#mine` / `#feed`). The `My` tab shows a pulse dot when one of your SOS has new responses since last view. (Cycle 64.)
 - Urgent equipment need broadcasting with category, brand, model, urgency level, and media uploads
 - AI-powered Quick SOS: describe your problem in plain text, Claude extracts taxonomy, specs, and urgency
 - Intelligent responder routing via `find_sos_responders()` with cross-list expansion

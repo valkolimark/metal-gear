@@ -26,9 +26,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover'
-import { LISTING_CONDITIONS, EQUIPMENT_CATEGORIES } from '@/lib/constants'
+import { LISTING_CONDITIONS } from '@/lib/constants'
+import {
+  searchTaxonomy,
+  getTier2Label,
+} from '@/lib/constants/equipment-taxonomy'
 import { saveListingCell } from '@/app/actions/bulk-edit-cell'
 import { EditableCell, type SaveState } from './editable-cell'
+import { Badge } from '@/components/ui/badge'
+import { MultiIndustryPicker } from '@/components/forms/MultiIndustryPicker'
+import { industryDisplayLabel } from '@/lib/listings/industries'
 
 export interface ListingRow {
   id: string
@@ -37,6 +44,7 @@ export interface ListingRow {
   status: string
   condition: string
   category: string
+  industries: string[]
   location_city: string
   location_state: string
   quantity: number | null
@@ -82,7 +90,14 @@ export function BulkEditGrid({ initialRows, totalCount }: BulkEditGridProps) {
       if (q && !r.title.toLowerCase().includes(q)) return false
       if (filterStatus !== 'all' && r.status !== filterStatus) return false
       if (filterCondition !== 'all' && r.condition !== filterCondition) return false
-      if (filterCategory !== 'all' && r.category !== filterCategory) return false
+      if (filterCategory !== 'all') {
+        // Match either tier-2 id or legacy label
+        const matchesTier2 = r.category === filterCategory
+        const matchesLabel =
+          getTier2Label(r.category) === getTier2Label(filterCategory) &&
+          r.category.length > 0
+        if (!matchesTier2 && !matchesLabel) return false
+      }
       return true
     })
   }, [allRowIds, rows, search, filterStatus, filterCondition, filterCategory])
@@ -105,7 +120,11 @@ export function BulkEditGrid({ initialRows, totalCount }: BulkEditGridProps) {
   }, [])
 
   const handleCellSave = useCallback(
-    async (listingId: string, field: string, value: string | number | null) => {
+    async (
+      listingId: string,
+      field: string,
+      value: string | number | string[] | null
+    ) => {
       const key = `${listingId}.${field}`
 
       // Optimistic update
@@ -219,19 +238,10 @@ export function BulkEditGrid({ initialRows, totalCount }: BulkEditGridProps) {
             ))}
           </SelectContent>
         </Select>
-        <Select value={filterCategory} onValueChange={setFilterCategory}>
-          <SelectTrigger className="w-44 font-body text-sm">
-            <SelectValue placeholder="Category" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all" className="font-body">All Categories</SelectItem>
-            {EQUIPMENT_CATEGORIES.map((c) => (
-              <SelectItem key={c} value={c} className="font-body">
-                {c}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <CategoryFilterDropdown
+          value={filterCategory}
+          onChange={setFilterCategory}
+        />
         {hasFilters && (
           <button
             onClick={clearFilters}
@@ -268,6 +278,9 @@ export function BulkEditGrid({ initialRows, totalCount }: BulkEditGridProps) {
               </th>
               <th className="w-[220px] border-b border-r border-border px-2 py-2 text-left">
                 Category
+              </th>
+              <th className="w-[260px] border-b border-r border-border px-2 py-2 text-left">
+                Industries
               </th>
               <th className="w-[130px] border-b border-r border-border px-2 py-2 text-left">
                 City
@@ -370,16 +383,25 @@ export function BulkEditGrid({ initialRows, totalCount }: BulkEditGridProps) {
                     />
                   </td>
 
-                  {/* Category */}
+                  {/* Category — tier-2 taxonomy popover (Cycle 64) */}
                   <td className="w-[220px] p-0">
-                    <SelectCell
-                      id={id}
-                      field="category"
+                    <CategoryCell
+                      listingId={id}
                       value={row.category}
-                      options={EQUIPMENT_CATEGORIES.map((c) => ({ value: c, label: c }))}
                       saveState={saveStates[`${id}.category`] || 'idle'}
-                      error={errors[`${id}.category`]}
-                      onSave={handleSelectSave}
+                      errorMsg={errors[`${id}.category`]}
+                      onSave={(lid, value) => handleCellSave(lid, 'category', value)}
+                    />
+                  </td>
+
+                  {/* Industries — multi-select popover (Cycle 64) */}
+                  <td className="w-[260px] p-0">
+                    <IndustriesCell
+                      listingId={id}
+                      value={row.industries}
+                      saveState={saveStates[`${id}.industries`] || 'idle'}
+                      errorMsg={errors[`${id}.industries`]}
+                      onSave={(lid, value) => handleCellSave(lid, 'industries', value)}
                     />
                   </td>
 
@@ -515,6 +537,233 @@ function SelectCell({
           {saveState === 'saved' && <Check className="size-3.5 text-green-500" />}
           {saveState === 'error' && (
             <span title={error || 'Save failed'}>
+              <X className="size-3.5 text-destructive" />
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CategoryFilterDropdown({
+  value,
+  onChange,
+}: {
+  value: string
+  onChange: (next: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const results = (() => {
+    if (query.trim().length < 2) return []
+    return searchTaxonomy(query).slice(0, 8)
+  })()
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="flex h-9 w-44 items-center justify-between rounded-md border border-border bg-background px-3 font-body text-sm text-foreground hover:bg-accent"
+        >
+          <span className="truncate">
+            {value === 'all'
+              ? 'Category'
+              : getTier2Label(value) || value}
+          </span>
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-72 p-2">
+        <Input
+          autoFocus
+          placeholder="Search category…"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          className="font-body text-sm"
+        />
+        <div className="mt-2 max-h-56 overflow-y-auto">
+          <button
+            type="button"
+            onClick={() => {
+              onChange('all')
+              setOpen(false)
+              setQuery('')
+            }}
+            className="flex w-full items-center rounded-sm px-2 py-1.5 text-left font-body text-sm hover:bg-accent"
+          >
+            All Categories
+          </button>
+          {results.map((r) => (
+            <button
+              key={`${r.tier2}-${r.subcategory.id}`}
+              type="button"
+              onClick={() => {
+                onChange(r.tier2)
+                setOpen(false)
+                setQuery('')
+              }}
+              className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left font-body text-sm hover:bg-accent"
+            >
+              <span>{r.subcategory.label}</span>
+              <span className="text-xs text-muted-foreground">{getTier2Label(r.tier2)}</span>
+            </button>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+function CategoryCell({
+  listingId,
+  value,
+  saveState,
+  errorMsg,
+  onSave,
+}: {
+  listingId: string
+  value: string
+  saveState: SaveState
+  errorMsg?: string
+  onSave: (listingId: string, value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const [query, setQuery] = useState('')
+  const results = (() => {
+    if (query.trim().length < 2) return []
+    return searchTaxonomy(query).slice(0, 8)
+  })()
+  const display = getTier2Label(value) || value || '—'
+
+  return (
+    <div data-cell="category" className="relative h-14 border-r border-border">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex h-full w-full items-center px-2 text-left font-body text-sm text-foreground hover:bg-muted/50"
+          >
+            <span className="line-clamp-2">{display}</span>
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-80 p-2">
+          <Input
+            autoFocus
+            placeholder="Search category (e.g. extruder)…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="font-body text-sm"
+          />
+          <div className="mt-2 max-h-56 overflow-y-auto">
+            {results.length === 0 ? (
+              <p className="px-2 py-1 font-body text-xs text-muted-foreground">
+                Type at least 2 characters.
+              </p>
+            ) : (
+              results.map((r) => (
+                <button
+                  key={`${r.tier2}-${r.subcategory.id}`}
+                  type="button"
+                  onClick={() => {
+                    onSave(listingId, r.tier2)
+                    setOpen(false)
+                    setQuery('')
+                  }}
+                  className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left font-body text-sm hover:bg-accent"
+                >
+                  <span>{r.subcategory.label}</span>
+                  <span className="text-xs text-muted-foreground">{getTier2Label(r.tier2)}</span>
+                </button>
+              ))
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
+
+      {saveState !== 'idle' && (
+        <div className="absolute right-1 top-1 z-10">
+          {saveState === 'saving' && (
+            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+          )}
+          {saveState === 'saved' && <Check className="size-3.5 text-green-500" />}
+          {saveState === 'error' && (
+            <span title={errorMsg || 'Save failed'}>
+              <X className="size-3.5 text-destructive" />
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
+function IndustriesCell({
+  listingId,
+  value,
+  saveState,
+  errorMsg,
+  onSave,
+}: {
+  listingId: string
+  value: string[]
+  saveState: SaveState
+  errorMsg?: string
+  onSave: (listingId: string, value: string[]) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const visible = value.slice(0, 3)
+  const overflow = value.length - visible.length
+
+  return (
+    <div data-cell="industries" className="relative h-14 border-r border-border">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="flex h-full w-full items-center gap-1 px-2 text-left font-body text-sm hover:bg-muted/50"
+          >
+            {value.length === 0 ? (
+              <span className="text-muted-foreground">—</span>
+            ) : (
+              <>
+                <div className="flex flex-wrap gap-1">
+                  {visible.map((v) => (
+                    <Badge
+                      key={v}
+                      variant="secondary"
+                      className="font-body text-[10px]"
+                    >
+                      {industryDisplayLabel(v)}
+                    </Badge>
+                  ))}
+                  {overflow > 0 ? (
+                    <Badge variant="outline" className="font-body text-[10px]">
+                      +{overflow}
+                    </Badge>
+                  ) : null}
+                </div>
+              </>
+            )}
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-80 p-3">
+          <MultiIndustryPicker
+            value={value}
+            onChange={(next) => onSave(listingId, next)}
+            max={5}
+          />
+        </PopoverContent>
+      </Popover>
+
+      {saveState !== 'idle' && (
+        <div className="absolute right-1 top-1 z-10">
+          {saveState === 'saving' && (
+            <Loader2 className="size-3.5 animate-spin text-muted-foreground" />
+          )}
+          {saveState === 'saved' && <Check className="size-3.5 text-green-500" />}
+          {saveState === 'error' && (
+            <span title={errorMsg || 'Save failed'}>
               <X className="size-3.5 text-destructive" />
             </span>
           )}

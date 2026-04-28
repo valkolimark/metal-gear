@@ -126,6 +126,16 @@ export const ONBOARDING_INDUSTRIES = [
   'Other',
 ] as const
 
+// Cycle 64: canonical industry vocabulary shared by onboarding, listing form,
+// company profile, search filter. Re-exported as INDUSTRY_OPTIONS for clarity
+// at non-onboarding call sites (same array, do not duplicate).
+export const INDUSTRY_OPTIONS = ONBOARDING_INDUSTRIES
+
+// Free-text sentinel: `MultiIndustryPicker` writes `other:<slug>` for
+// industries the user types in. Pickers render the chip with the original
+// label; aggregation surfaces strip the prefix.
+export const OTHER_INDUSTRY_PREFIX = 'other:'
+
 export const OPERATOR_SUB_ROLES = [
   { id: 'plant_manager', label: 'Plant Manager' },
   { id: 'maintenance_manager', label: 'Maintenance Manager' },

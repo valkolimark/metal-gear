@@ -63,7 +63,22 @@ export async function GET(req: NextRequest) {
     const matches = recentListings.filter((listing) => {
       if (filters.category && listing.category !== filters.category) return false
       if (filters.condition && listing.condition !== filters.condition) return false
-      if (filters.industry && listing.industry !== filters.industry) return false
+      // Cycle 64: support new array filter `industries=a,b` and legacy `industry=a`.
+      const wantedIndustries: string[] = (() => {
+        if (filters.industries) return filters.industries.split(',').filter(Boolean)
+        if (filters.industry) return [filters.industry]
+        return []
+      })()
+      if (wantedIndustries.length > 0) {
+        const maybeIndustries = (listing as unknown as { industries?: unknown }).industries
+        const listingIndustries: string[] = Array.isArray(maybeIndustries)
+          ? (maybeIndustries as string[])
+          : listing.industry
+            ? [listing.industry]
+            : []
+        const overlaps = listingIndustries.some((x) => wantedIndustries.includes(x))
+        if (!overlaps) return false
+      }
       if (filters.minPrice && listing.price_cents && listing.price_cents < parseInt(filters.minPrice) * 100) return false
       if (filters.maxPrice && listing.price_cents && listing.price_cents > parseInt(filters.maxPrice) * 100) return false
       if (filters.query) {

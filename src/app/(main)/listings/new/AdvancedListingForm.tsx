@@ -31,12 +31,10 @@ import { createClient } from '@/lib/supabase/client'
 import { useAuthStore } from '@/stores/auth-store'
 import { checkListingLimit } from '@/app/actions/tier'
 import { createStreamDirectUpload } from '@/app/actions/stream'
-import {
-  EQUIPMENT_CATEGORIES,
-  INDUSTRIES,
-  LISTING_CONDITIONS,
-  TIER_LIMITS,
-} from '@/lib/constants'
+import { LISTING_CONDITIONS, TIER_LIMITS } from '@/lib/constants'
+import { searchTaxonomy, getTier2Label } from '@/lib/constants/equipment-taxonomy'
+import { MultiIndustryPicker } from '@/components/forms/MultiIndustryPicker'
+import { industryDisplayLabel } from '@/lib/listings/industries'
 import AIImageCapture from '@/components/listings/AIImageCapture'
 import { AIDescriptionGenerator } from '@/components/listings/AIDescriptionGenerator'
 import { AITitleOptimizer } from '@/components/listings/AITitleOptimizer'
@@ -54,8 +52,10 @@ const STEPS = ['Photo Assist', 'Details', 'Photos', 'Pricing', 'Review']
 interface ListingForm {
   title: string
   description: string
+  /** Tier-2 taxonomy id (Cycle 64). Falls back to legacy free-text label
+   *  for AI-pre-filled drafts that aren't in the taxonomy. */
   category: string
-  industry: string
+  industries: string[]
   condition: string
   price_cents: string
   negotiable: boolean
@@ -127,7 +127,7 @@ export default function AdvancedListingForm() {
     title: '',
     description: '',
     category: '',
-    industry: '',
+    industries: [],
     condition: 'good',
     price_cents: '',
     negotiable: false,
@@ -292,8 +292,13 @@ export default function AdvancedListingForm() {
     if (data.listing.condition) { updates.condition = data.listing.condition; filled.add('condition') }
     if (data.listing.suggestedDescription) { updates.description = data.listing.suggestedDescription; filled.add('description') }
 
-    // Map taxonomy to category (best-effort: use subcategory label as category)
-    if (data.taxonomy.subcategory) {
+    // Map taxonomy to category. Cycle 64: prefer the tier2 id directly so
+    // the listing aligns with the same vocabulary SOS / equipment interests
+    // use. Fall back to the subcategory string for older AI drafts.
+    if (data.taxonomy.tier2) {
+      updates.category = data.taxonomy.tier2
+      filled.add('category')
+    } else if (data.taxonomy.subcategory) {
       updates.category = data.taxonomy.subcategory.replace(/_/g, ' ')
       filled.add('category')
     }
@@ -312,6 +317,13 @@ export default function AdvancedListingForm() {
   function handleAISkip() {
     setStep(1) // advance to Details
   }
+
+  // Category search-as-you-type (Cycle 64 — same pattern as SOS)
+  const [categorySearch, setCategorySearch] = useState('')
+  const categoryResults = (() => {
+    if (categorySearch.trim().length < 2) return []
+    return searchTaxonomy(categorySearch).slice(0, 8)
+  })()
 
   // Validation
   function canProceed(): boolean {
@@ -351,7 +363,8 @@ export default function AdvancedListingForm() {
         title: form.title || 'Untitled Draft',
         description: form.description,
         category: form.category || 'Other',
-        industry: form.industry || null,
+        industries: form.industries,
+        industry: form.industries[0] ?? null,
         condition: form.condition,
         price_cents: form.price_cents ? Math.round(parseFloat(form.price_cents) * 100) : null,
         negotiable: form.negotiable,
@@ -408,7 +421,8 @@ export default function AdvancedListingForm() {
           title: form.title,
           description: form.description,
           category: form.category,
-          industry: form.industry || null,
+          industries: form.industries,
+          industry: form.industries[0] ?? null,
           condition: form.condition,
           price_cents: priceCents,
           negotiable: form.negotiable,
@@ -649,48 +663,71 @@ export default function AdvancedListingForm() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="space-y-2">
-                <Label className="font-body">Category *</Label>
-                <Select
-                  value={form.category}
-                  onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, category: v }))
-                  }
+            {/* Category — tier-2 taxonomy search (Cycle 64) */}
+            <div className="space-y-2">
+              <Label className="font-body" htmlFor="category-search">
+                Category *
+              </Label>
+              <Input
+                id="category-search"
+                type="text"
+                value={categorySearch}
+                onChange={(e) => setCategorySearch(e.target.value)}
+                placeholder={
+                  form.category
+                    ? 'Search to change category…'
+                    : "e.g. 'extruder', 'centrifuge', 'CNC mill'"
+                }
+                className="font-body"
+              />
+              {categoryResults.length > 0 ? (
+                <ul
+                  role="listbox"
+                  className="max-h-56 overflow-y-auto rounded-md border border-border bg-popover p-1 shadow-md"
                 >
-                  <SelectTrigger className="font-body">
-                    <SelectValue placeholder="Select category" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {EQUIPMENT_CATEGORIES.map((cat) => (
-                      <SelectItem key={cat} value={cat} className="font-body">
-                        {cat}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+                  {categoryResults.map((r) => (
+                    <li key={`${r.tier2}-${r.subcategory.id}`}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm((prev) => ({ ...prev, category: r.tier2 }))
+                          setCategorySearch('')
+                        }}
+                        className="flex w-full items-center justify-between rounded-sm px-2 py-1.5 text-left font-body text-sm text-foreground hover:bg-accent hover:text-accent-foreground"
+                      >
+                        <span>{r.subcategory.label}</span>
+                        <span className="text-xs text-muted-foreground">
+                          {getTier2Label(r.tier2)}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+              {form.category ? (
+                <p className="font-body text-xs text-muted-foreground">
+                  Selected:{' '}
+                  <span className="font-medium text-foreground">
+                    {getTier2Label(form.category)}
+                  </span>
+                </p>
+              ) : (
+                <p className="font-body text-xs text-muted-foreground">
+                  Don&rsquo;t see your equipment? Pick the closest match — we expand the list weekly.
+                </p>
+              )}
+            </div>
 
-              <div className="space-y-2">
-                <Label className="font-body">Industry</Label>
-                <Select
-                  value={form.industry}
-                  onValueChange={(v) =>
-                    setForm((prev) => ({ ...prev, industry: v }))
-                  }
-                >
-                  <SelectTrigger className="font-body">
-                    <SelectValue placeholder="Select industry" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {INDUSTRIES.map((ind) => (
-                      <SelectItem key={ind} value={ind} className="font-body">
-                        {ind}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+            {/* Industries — multi-select (Cycle 64) */}
+            <div className="space-y-2">
+              <Label className="font-body">Industries</Label>
+              <MultiIndustryPicker
+                value={form.industries}
+                onChange={(next) =>
+                  setForm((prev) => ({ ...prev, industries: next }))
+                }
+                max={5}
+              />
             </div>
 
             <div className="space-y-2">
@@ -1098,13 +1135,13 @@ export default function AdvancedListingForm() {
 
             <div className="flex flex-wrap gap-2">
               <Badge variant="outline" className="font-body">
-                {form.category}
+                {getTier2Label(form.category) || form.category}
               </Badge>
-              {form.industry && (
-                <Badge variant="outline" className="font-body">
-                  {form.industry}
+              {form.industries.map((v) => (
+                <Badge key={v} variant="outline" className="font-body">
+                  {industryDisplayLabel(v)}
                 </Badge>
-              )}
+              ))}
               <Badge variant="outline" className="font-body capitalize">
                 {form.condition.replace('_', ' ')}
               </Badge>

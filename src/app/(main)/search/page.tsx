@@ -53,11 +53,12 @@ import {
 } from '@/app/actions/search'
 import {
   EQUIPMENT_CATEGORIES,
-  INDUSTRIES,
   LISTING_CONDITIONS,
   SORT_OPTIONS,
   DEFAULT_LOCATION,
 } from '@/lib/constants'
+import { INDUSTRY_OPTIONS } from '@/lib/constants/onboarding'
+import { industryDisplayLabel } from '@/lib/listings/industries'
 import { getConditionReportsForListings } from '@/app/actions/condition-reports'
 import { toggleRadarListing } from '@/app/actions/radar'
 import { DynamicListingMap } from '@/components/map/dynamic-map'
@@ -214,7 +215,13 @@ function SearchContent() {
   // Read params from URL
   const query = searchParams.get('q') || ''
   const category = searchParams.get('category') || ''
-  const industry = searchParams.get('industry') || ''
+  // Cycle 64: industries is a comma-separated list. Legacy `industry`
+  // (singleton) param still parsed for back-compat with old links.
+  const industriesParam = searchParams.get('industries') || ''
+  const legacyIndustry = searchParams.get('industry') || ''
+  const industries: string[] = industriesParam
+    ? industriesParam.split(',').filter(Boolean)
+    : (legacyIndustry ? [legacyIndustry] : [])
   const condition = searchParams.get('condition') || ''
   const priceMin = searchParams.get('priceMin') || ''
   const priceMax = searchParams.get('priceMax') || ''
@@ -291,7 +298,7 @@ function SearchContent() {
     }
 
     if (category) q = q.eq('category', category)
-    if (industry) q = q.eq('industry', industry)
+    if (industries.length > 0) q = q.overlaps('industries', industries)
     if (condition) q = q.in('condition', condition.split(','))
     if (priceMin) q = q.gte('price_cents', parseInt(priceMin) * 100)
     if (priceMax) q = q.lte('price_cents', parseInt(priceMax) * 100)
@@ -411,7 +418,7 @@ function SearchContent() {
       }
     }
     setLoading(false)
-  }, [query, category, industry, condition, priceMin, priceMax, sortBy, page, radius])
+  }, [query, category, industriesParam, legacyIndustry, condition, priceMin, priceMax, sortBy, page, radius])
 
   useEffect(() => {
      
@@ -525,7 +532,7 @@ function SearchContent() {
   const totalPages = Math.ceil(totalCount / PAGE_SIZE)
   const activeFilterCount = [
     category,
-    industry,
+    industries.length > 0 ? '1' : '',
     condition,
     priceMin,
     priceMax,
@@ -607,35 +614,37 @@ function SearchContent() {
               </Select>
             </div>
 
-            {/* Industry */}
+            {/* Industries — chip multi-select (Cycle 64) */}
             <div className="space-y-2">
               <p className="font-body text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Industry
+                Industries
               </p>
-              <Select
-                value={industry}
-                onValueChange={(v) =>
-                  updateParams({ industry: v === 'all' ? '' : v })
-                }
-              >
-                <SelectTrigger className="font-body text-sm">
-                  <SelectValue placeholder="All industries" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="font-body">
-                    All industries
-                  </SelectItem>
-                  {INDUSTRIES.map((ind) => (
-                    <SelectItem
+              <div className="flex flex-wrap gap-1.5">
+                {INDUSTRY_OPTIONS.map((ind) => {
+                  const active = industries.includes(ind)
+                  return (
+                    <button
                       key={ind}
-                      value={ind}
-                      className="font-body text-sm"
+                      onClick={() => {
+                        const next = active
+                          ? industries.filter((x) => x !== ind)
+                          : [...industries, ind]
+                        updateParams({
+                          industries: next.join(','),
+                          industry: '',
+                        })
+                      }}
+                      className={`rounded-full px-3 py-1 font-body text-xs transition-colors ${
+                        active
+                          ? 'bg-primary text-white'
+                          : 'bg-surface text-muted-foreground hover:text-foreground'
+                      }`}
                     >
                       {ind}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
 
             {/* Condition */}
@@ -874,7 +883,7 @@ function SearchContent() {
         {/* Mobile filter sheet */}
         <MobileFilterSheet
           category={category}
-          industry={industry}
+          industry={industries[0] ?? ''}
           condition={condition}
           priceMin={priceMin}
           priceMax={priceMax}
@@ -1044,6 +1053,31 @@ function SearchContent() {
                         >
                           {listing.category}
                         </Badge>
+                        {(() => {
+                          const inds: string[] = Array.isArray((listing as { industries?: string[] }).industries)
+                            ? (listing as { industries: string[] }).industries
+                            : (listing.industry ? [listing.industry] : [])
+                          const visible = inds.slice(0, 2)
+                          const overflow = inds.length - visible.length
+                          return (
+                            <>
+                              {visible.map((v) => (
+                                <Badge
+                                  key={v}
+                                  variant="outline"
+                                  className="font-body text-[11px]"
+                                >
+                                  {industryDisplayLabel(v)}
+                                </Badge>
+                              ))}
+                              {overflow > 0 ? (
+                                <Badge variant="outline" className="font-body text-[11px]">
+                                  +{overflow}
+                                </Badge>
+                              ) : null}
+                            </>
+                          )
+                        })()}
                         <Badge
                           variant="outline"
                           className="font-body text-[11px] capitalize"
@@ -1276,7 +1310,7 @@ function SearchContent() {
               Current filters:{' '}
               {query && `"${query}"`}
               {category && ` ${category}`}
-              {industry && ` ${industry}`}
+              {industries.length > 0 && ` ${industries.map(industryDisplayLabel).join(', ')}`}
               {condition && ` ${condition}`}
               {priceMin && ` $${priceMin}+`}
               {priceMax && ` up to $${priceMax}`}

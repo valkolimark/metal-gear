@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "14.1"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       admin_audit_log: {
@@ -1227,114 +1252,6 @@ export type Database = {
           },
         ]
       }
-      listing_drafts: {
-        Row: {
-          analysis_stage: string | null
-          clarifying_questions: Json | null
-          claude_raw: Json | null
-          company_id: string | null
-          confidence_scores: Json
-          created_at: string
-          error_message: string | null
-          expires_at: string
-          fields: Json
-          id: string
-          internal_duplicate_listing_id: string | null
-          nameplate_photo_index: number | null
-          ocr_raw: Json | null
-          owner_id: string
-          photo_coach: Json | null
-          photo_urls: string[]
-          published_listing_id: string | null
-          status: string
-          stock_photo_matches: string[] | null
-          updated_at: string
-          web_detection_raw: Json | null
-        }
-        Insert: {
-          analysis_stage?: string | null
-          clarifying_questions?: Json | null
-          claude_raw?: Json | null
-          company_id?: string | null
-          confidence_scores?: Json
-          created_at?: string
-          error_message?: string | null
-          expires_at?: string
-          fields?: Json
-          id?: string
-          internal_duplicate_listing_id?: string | null
-          nameplate_photo_index?: number | null
-          ocr_raw?: Json | null
-          owner_id: string
-          photo_coach?: Json | null
-          photo_urls?: string[]
-          published_listing_id?: string | null
-          status?: string
-          stock_photo_matches?: string[] | null
-          updated_at?: string
-          web_detection_raw?: Json | null
-        }
-        Update: {
-          analysis_stage?: string | null
-          clarifying_questions?: Json | null
-          claude_raw?: Json | null
-          company_id?: string | null
-          confidence_scores?: Json
-          created_at?: string
-          error_message?: string | null
-          expires_at?: string
-          fields?: Json
-          id?: string
-          internal_duplicate_listing_id?: string | null
-          nameplate_photo_index?: number | null
-          ocr_raw?: Json | null
-          owner_id?: string
-          photo_coach?: Json | null
-          photo_urls?: string[]
-          published_listing_id?: string | null
-          status?: string
-          stock_photo_matches?: string[] | null
-          updated_at?: string
-          web_detection_raw?: Json | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "listing_drafts_company_id_fkey"
-            columns: ["company_id"]
-            isOneToOne: false
-            referencedRelation: "company_profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "listing_drafts_internal_duplicate_listing_id_fkey"
-            columns: ["internal_duplicate_listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "listing_drafts_internal_duplicate_listing_id_fkey"
-            columns: ["internal_duplicate_listing_id"]
-            isOneToOne: false
-            referencedRelation: "pricing_comparables"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "listing_drafts_published_listing_id_fkey"
-            columns: ["published_listing_id"]
-            isOneToOne: false
-            referencedRelation: "listings"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "listing_drafts_published_listing_id_fkey"
-            columns: ["published_listing_id"]
-            isOneToOne: false
-            referencedRelation: "pricing_comparables"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       listing_freshness_suggestions: {
         Row: {
           acted_on: boolean
@@ -1636,7 +1553,6 @@ export type Database = {
           ai_analyzed: boolean | null
           ai_assist_accepted: boolean | null
           ai_assist_used: boolean | null
-          ai_assisted: boolean
           ai_fraud_flagged: boolean | null
           ai_fraud_reason: string | null
           ai_price_accepted: boolean | null
@@ -1671,7 +1587,6 @@ export type Database = {
           refreshed_at: string | null
           seller_id: string
           sku: string | null
-          source_draft_id: string | null
           specifications: Json | null
           specs: Json | null
           status: string
@@ -1687,7 +1602,6 @@ export type Database = {
           ai_analyzed?: boolean | null
           ai_assist_accepted?: boolean | null
           ai_assist_used?: boolean | null
-          ai_assisted?: boolean
           ai_fraud_flagged?: boolean | null
           ai_fraud_reason?: string | null
           ai_price_accepted?: boolean | null
@@ -1722,7 +1636,6 @@ export type Database = {
           refreshed_at?: string | null
           seller_id: string
           sku?: string | null
-          source_draft_id?: string | null
           specifications?: Json | null
           specs?: Json | null
           status?: string
@@ -1738,7 +1651,6 @@ export type Database = {
           ai_analyzed?: boolean | null
           ai_assist_accepted?: boolean | null
           ai_assist_used?: boolean | null
-          ai_assisted?: boolean
           ai_fraud_flagged?: boolean | null
           ai_fraud_reason?: string | null
           ai_price_accepted?: boolean | null
@@ -1773,7 +1685,6 @@ export type Database = {
           refreshed_at?: string | null
           seller_id?: string
           sku?: string | null
-          source_draft_id?: string | null
           specifications?: Json | null
           specs?: Json | null
           status?: string
@@ -1795,13 +1706,6 @@ export type Database = {
             columns: ["seller_id"]
             isOneToOne: false
             referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "listings_source_draft_id_fkey"
-            columns: ["source_draft_id"]
-            isOneToOne: false
-            referencedRelation: "listing_drafts"
             referencedColumns: ["id"]
           },
         ]
@@ -2958,112 +2862,6 @@ export type Database = {
           },
         ]
       }
-      snap_list_accuracy_reviews: {
-        Row: {
-          ai_value: string | null
-          correct: boolean
-          created_at: string
-          draft_id: string
-          field_name: string
-          id: string
-          notes: string | null
-          reviewer_id: string
-        }
-        Insert: {
-          ai_value?: string | null
-          correct: boolean
-          created_at?: string
-          draft_id: string
-          field_name: string
-          id?: string
-          notes?: string | null
-          reviewer_id: string
-        }
-        Update: {
-          ai_value?: string | null
-          correct?: boolean
-          created_at?: string
-          draft_id?: string
-          field_name?: string
-          id?: string
-          notes?: string | null
-          reviewer_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "snap_list_accuracy_reviews_draft_id_fkey"
-            columns: ["draft_id"]
-            isOneToOne: false
-            referencedRelation: "listing_drafts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      snap_list_events: {
-        Row: {
-          created_at: string
-          draft_id: string | null
-          event_type: string
-          id: number
-          owner_id: string
-          payload: Json
-        }
-        Insert: {
-          created_at?: string
-          draft_id?: string | null
-          event_type: string
-          id?: number
-          owner_id: string
-          payload?: Json
-        }
-        Update: {
-          created_at?: string
-          draft_id?: string | null
-          event_type?: string
-          id?: number
-          owner_id?: string
-          payload?: Json
-        }
-        Relationships: [
-          {
-            foreignKeyName: "snap_list_events_draft_id_fkey"
-            columns: ["draft_id"]
-            isOneToOne: false
-            referencedRelation: "listing_drafts"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      snap_list_usage: {
-        Row: {
-          analysis_count: number
-          created_at: string
-          id: string
-          month_year: string
-          owner_id: string
-          publish_count: number
-          updated_at: string
-        }
-        Insert: {
-          analysis_count?: number
-          created_at?: string
-          id?: string
-          month_year: string
-          owner_id: string
-          publish_count?: number
-          updated_at?: string
-        }
-        Update: {
-          analysis_count?: number
-          created_at?: string
-          id?: string
-          month_year?: string
-          owner_id?: string
-          publish_count?: number
-          updated_at?: string
-        }
-        Relationships: []
-      }
       sos_notifications: {
         Row: {
           id: string
@@ -3841,7 +3639,6 @@ export type Database = {
       }
     }
     Functions: {
-      cleanup_expired_drafts: { Args: never; Returns: number }
       decrement_feed_hashtags: { Args: { tags: string[] }; Returns: undefined }
       decrement_post_comments: { Args: { p_post_id: string }; Returns: number }
       decrement_post_reactions: { Args: { p_post_id: string }; Returns: number }
@@ -4018,6 +3815,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {
       admin_role: ["superadmin", "moderator", "analyst"],

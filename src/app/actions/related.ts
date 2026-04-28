@@ -16,7 +16,7 @@ export async function getRelatedListings(listingId: string, limit = 6) {
   // Fetch the source listing
   const { data: source } = await admin
     .from('listings')
-    .select('id, category, industry, price_cents, title')
+    .select('id, category, industry, industries, price_cents, title')
     .eq('id', listingId)
     .single()
 
@@ -25,7 +25,7 @@ export async function getRelatedListings(listingId: string, limit = 6) {
   // Fetch candidate listings (same category or industry, active only)
   const { data: candidates } = await admin
     .from('listings')
-    .select('id, title, category, industry, price_cents, condition, location_city, location_state, views_count, favorites_count, contact_for_price, seller_id, created_at')
+    .select('id, title, category, industry, industries, price_cents, condition, location_city, location_state, views_count, favorites_count, contact_for_price, seller_id, created_at')
     .eq('status', 'active')
     .eq('has_media', true)
     .neq('id', listingId)
@@ -46,8 +46,21 @@ export async function getRelatedListings(listingId: string, limit = 6) {
     // Category match (40%)
     if (c.category === source.category) score += 40
 
-    // Industry match (20%)
-    if (source.industry && c.industry === source.industry) score += 20
+    // Industry match (20%) — Cycle 64: array overlap on industries[],
+    // falling back to legacy singleton when either side is unmigrated.
+    {
+      const srcIndustries: string[] =
+        Array.isArray((source as { industries?: string[] }).industries) && (source as { industries: string[] }).industries.length > 0
+          ? (source as { industries: string[] }).industries
+          : (source.industry ? [source.industry] : [])
+      const candidateIndustries: string[] =
+        Array.isArray((c as { industries?: string[] }).industries) && (c as { industries: string[] }).industries.length > 0
+          ? (c as { industries: string[] }).industries
+          : (c.industry ? [c.industry] : [])
+      if (srcIndustries.length > 0 && candidateIndustries.some((x) => srcIndustries.includes(x))) {
+        score += 20
+      }
+    }
 
     // Price similarity (20%) — within ±30% of source price
     if (source.price_cents && c.price_cents) {

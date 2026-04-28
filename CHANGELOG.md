@@ -6,6 +6,43 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.35.0] — 2026-04-28 · Listing taxonomy alignment, multi-industry tagging, SOS dashboard tabs (Cycle 64)
+
+### Added
+- **`MultiIndustryPicker`** — `src/components/forms/MultiIndustryPicker.tsx`. Controlled chip multi-select sourced from canonical `INDUSTRY_OPTIONS` (alias of `ONBOARDING_INDUSTRIES` in `src/lib/constants/onboarding.ts`). Supports `other:<slug>` sentinel for free-text additions, cap of 5 (configurable), full keyboard navigation (Backspace removes last chip when input is empty), and ARIA combobox semantics.
+- **`SosDashboardTabs`** — `src/app/(main)/sos/components/SosDashboardTabs.tsx`. Replaces the stacked SOS dashboard layout from Cycle 55 with shadcn `Tabs`. Hash-routed (`#mine` / `#feed`), count badges in labels, conditional default-to-`feed` when the user has zero owned SOS, pulse-dot decoration on the `My SOS Requests` tab when any owned SOS has new responses since last view (uses the same `mg-sos-last-viewed-{id}` localStorage key shipped in Cycle 55).
+- **`scripts/migrate-listings-industries-array.ts`** — idempotent Supabase Management API migration: adds `listings.industries TEXT[]` (NOT NULL, default `'{}'`), backfills from legacy `listings.industry`, creates `idx_listings_industries_gin`, and writes a deprecation comment on the legacy column. Supports `--dry-run`. Verifies post-run.
+- **`src/lib/listings/industries.ts`** — read-side shim exposing `getIndustries()`, `getPrimaryIndustry()`, `industryDisplayLabel()`, and `normalizeOtherIndustry()`. Used by display surfaces (listing detail, search cards, listing edit hydration, related-listings scoring) so legacy singleton rows and migrated array rows render identically during the deprecation window.
+- **`OTHER_INDUSTRY_PREFIX = 'other:'`** sentinel for free-text industries; humanised on render via `industryDisplayLabel()`.
+
+### Changed
+- **`/listings/new` + `/listings/[id]/edit` + `/listings/bulk-edit`** — Category dropdown replaced with the same tier-2 taxonomy picker SOS uses (`searchTaxonomy` from `@/lib/constants/equipment-taxonomy`). The legacy 22-item `EQUIPMENT_CATEGORIES` constant is no longer the listing-form category source. The AI Photo-to-Listing flow now writes the tier-2 id directly into `form.category` when available so listings align cleanly with `user_equipment_interests.tier2`, For You feed, and Snipe alerts.
+- **`/listings/new` + `/listings/[id]/edit` + `/listings/bulk-edit`** — Industry single-select replaced with `MultiIndustryPicker` (max 5). Equipment can be tagged with multiple verticals (e.g., extruder serving Plastics + Food & Beverage + Pharma).
+- **`listings.industry` column deprecated** in favour of `listings.industries TEXT[]`. The legacy column stays in place for one cycle as a read-only shim source — it is kept in sync (`industry = industries[0]`) on every write through the new form, edit, bulk-edit, and import paths. Drop scheduled in Cycle 65.
+- **Search Industries filter** (`/search`) — switched from single-value `<Select>` + `.eq('industry', x)` to a chip multi-select pill row + `.overlaps('industries', selected)`. URL param renamed to `industries=A,B`; legacy `industry=A` URLs continue to be honoured for one cycle for back-compat with bookmarks and saved searches.
+- **`/api/cron/saved-search-alerts`** — match logic updated to support both new `filters.industries` (CSV) and legacy `filters.industry` (singleton); listing-side overlap check reads `listing.industries` first, falling back to `listing.industry`.
+- **`/sos` page** — stacked sections replaced with tabs via the new `SosDashboardTabs` component. The page header (SOS-orange "Send SOS" button) stays above the tabs; the filter bar is passed through to the feed tab via the `filtersBar` prop.
+- **`saveListingCell`** — added `industries` to the field allowlist (validates as `string[]` with cap 5, accepts `other:<slug>` sentinels). Category validator relaxed to accept either tier-2 ids or legacy free-text labels (with a length cap) so existing rows continue to be editable while new rows steer toward tier-2 ids.
+- **`bulk-edit-grid`** — new Industries column with popover `MultiIndustryPicker` (chip stack with `+N` overflow when collapsed); Category cell converted to popover taxonomy search (replaces native `<select>`); category filter dropdown converted to popover taxonomy search (replaces 22-item `<Select>`). Per-cell save state UX from Cycle 45 preserved.
+- **Listing detail page** — industry badge replaced with chip row rendered via `getIndustries(listing)`; category badge passes through `getTier2Label()` so tier-2 ids show as human labels and legacy free-text rows render unchanged.
+- **Search result cards** — category and industry chip rendering: up to 2 industry chips with `+N` overflow (read via the new shim).
+
+### Migration
+- One-time idempotent Supabase migration: adds `industries TEXT[]` column, backfills from non-null `industry` values, creates `idx_listings_industries_gin`. Empty/null `industry` rows initialise to `'{}'`. Legacy `industry` column **not** dropped (deferred to Cycle 65).
+
+### Deprecation
+- `Listing.industry: string | null` (and any client code still reading it directly). New code MUST go through `getIndustries()` / `getPrimaryIndustry()` from `src/lib/listings/industries.ts`. Drop in Cycle 65.
+
+### Tests
+- `src/test/listings-industries-migration.test.ts` — 21 unit tests over the read shim (`getIndustries`, `getPrimaryIndustry`, `coerceIndustryArray`) and the `other:<slug>` normalisation helpers.
+- `src/components/forms/MultiIndustryPicker.test.tsx` — 10 RTL tests: empty state, dropdown visibility, chip add/remove (mouse + Backspace), cap enforcement, already-selected hiding, case-insensitive filter, Enter-to-add-first-match, "Other" → `other:<slug>` flow.
+- `src/test/sos-dashboard-tabs.test.tsx` — 7 RTL tests: default-tab logic (with and without owned SOS), `#feed` deep-link on mount, hash sync on tab change, pulse-dot rendering vs. read state, label counts.
+
+### Rationale
+The hardcoded 22-item category dropdown predated both the equipment registry (Cycle 61a) and the `user_equipment_interests.tier2` system. Listings could not match cleanly to user interests, the For You feed, or Snipe alerts because the keys lived in different namespaces. Aligning the listing form to the same picker SOS already uses closes that gap — submitting "extruder" finally surfaces the registry tier-2 entry. Multi-industry follows the same shape `user_business_profiles.industries` has used since onboarding shipped, so the platform's industry vocabulary is finally consistent end-to-end. SOS dashboard tabs are a pure UX win — the second section was below the fold on mobile, and tabs surface both with one tap while preserving Cycle 55's pulse-dot signal.
+
+---
+
 ## [4.34.0] — 2026-04-28 · User-facing AI feedback chips ("Was this right?") (Cycle 63)
 
 ### Added

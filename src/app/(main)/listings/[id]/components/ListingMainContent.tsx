@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/dialog'
 import { APP_URL } from '@/lib/constants'
 import { SnapListBadge } from '@/components/listings/snap-list/SnapListBadge'
+import { getTier2Label } from '@/lib/constants/equipment-taxonomy'
+import { getIndustries, industryDisplayLabel } from '@/lib/listings/industries'
 import type { Tables } from '@/types/database'
 
 type Listing = Tables<'listings'>
@@ -122,10 +124,14 @@ export function ListingMainContent({ listing, seller }: Props) {
 
         {/* Badges */}
         <div className="mt-3 flex flex-wrap gap-2">
-          <Badge variant="outline" className="font-body">{listing.category}</Badge>
-          {listing.industry && (
-            <Badge variant="outline" className="font-body">{listing.industry}</Badge>
-          )}
+          <Badge variant="outline" className="font-body">
+            {getTier2Label(listing.category) || listing.category}
+          </Badge>
+          {getIndustries(listing).map((v) => (
+            <Badge key={v} variant="outline" className="font-body">
+              {industryDisplayLabel(v)}
+            </Badge>
+          ))}
           <Badge variant="outline" className="font-body capitalize">{conditionLabel}</Badge>
           <Badge
             variant="outline"
