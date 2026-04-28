@@ -41,3 +41,7 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 supabase/.temp/
+
+# Equipment Registry seed (Cycle 61) — local snapshots & failed-chunk debug
+data/manufacturers/.seed-accumulator-snapshot.json
+data/manufacturers/.failed-chunk-*.md

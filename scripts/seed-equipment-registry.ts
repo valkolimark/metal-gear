@@ -214,9 +214,25 @@ interface MergedManufacturer {
 
 const accumulator = new Map<string, MergedManufacturer>()
 
+/**
+ * Clamp tier to the [1, 3] range. Some files (e.g. extruder) use "Tier 4-6"
+ * as category-bin section headers (food, wire, lab) rather than market-
+ * position tiers. The DB CHECK constraint allows only 1/2/3, so anything
+ * higher gets normalized to 3 (legacy/regional/specialty). Anything lower
+ * (0 or negative from a parse glitch) gets normalized to 3 as well —
+ * defensive default.
+ */
+function clampTier(t: unknown): 1 | 2 | 3 {
+  const n = typeof t === "number" ? t : Number(t)
+  if (n === 1 || n === 2 || n === 3) return n
+  return 3
+}
+
 function mergeIntoAccumulator(extracted: ExtractedManufacturer, sourceFile: string) {
   const slug = slugify(extracted.name)
   if (!slug) return
+
+  const incomingTier = clampTier(extracted.tier)
 
   let row = accumulator.get(slug)
   if (!row) {
@@ -225,7 +241,7 @@ function mergeIntoAccumulator(extracted: ExtractedManufacturer, sourceFile: stri
       name: extracted.name.trim(),
       country: extracted.country,
       // Lowest tier wins (tier 1 is most prominent).
-      tier: extracted.tier,
+      tier: incomingTier,
       equipmentCategories: new Set(),
       aliases: new Set(),
       parentName: extracted.parent_name,
@@ -235,7 +251,7 @@ function mergeIntoAccumulator(extracted: ExtractedManufacturer, sourceFile: stri
     }
     accumulator.set(slug, row)
   } else {
-    if (extracted.tier < row.tier) row.tier = extracted.tier
+    if (incomingTier < row.tier) row.tier = incomingTier
     if (!row.country && extracted.country) row.country = extracted.country
     if (!row.parentName && extracted.parent_name) row.parentName = extracted.parent_name
     if (!row.notes && extracted.notes) row.notes = extracted.notes
@@ -506,6 +522,25 @@ async function main() {
     }
     return
   }
+
+  // Dump accumulator to disk BEFORE DB writes. Protects against losing the
+  // ~90 min of extraction time if an upsert fails (constraint violation,
+  // network error, etc.). The file is gitignored.
+  const snapshotPath = path.join(MANUFACTURERS_DIR, ".seed-accumulator-snapshot.json")
+  const snapshot = Array.from(accumulator.values()).map(m => ({
+    slug: m.slug,
+    name: m.name,
+    country: m.country,
+    tier: m.tier,
+    equipmentCategories: Array.from(m.equipmentCategories),
+    aliases: Array.from(m.aliases),
+    parentName: m.parentName,
+    notes: m.notes,
+    sourceFile: m.sourceFile,
+    models: Array.from(m.models.values()),
+  }))
+  fs.writeFileSync(snapshotPath, JSON.stringify(snapshot, null, 2))
+  console.log(`Snapshot written: ${snapshotPath} (${(fs.statSync(snapshotPath).size / 1024 / 1024).toFixed(2)} MB)`)
 
   console.log()
   console.log("Pass 1: upserting manufacturers ...")
