@@ -79,7 +79,7 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Referral program with unique codes, 30-day tracking, and $10 reward
 
 ### Platform
-- Role-aware onboarding wizard with 3 archetypes (Operator, Trader, Service Provider), branching role-specific questions, multi-industry selection, equipment interest seeding, SOS opt-in, contact visibility; onboarding data carries over into profile and company creation
+- Role-aware onboarding wizard with 4 supported archetypes (Operator, Trader, Service Provider, Logistics); 2 enabled at launch (Operator, Service Provider); Trader and Logistics soft-disabled at signup but re-activatable from Admin Settings → Archetypes (Cycle 66). Branching role-specific questions, multi-industry selection, equipment interest seeding, SOS opt-in, contact visibility; onboarding data carries over into profile and company creation
 - Web Push notifications with category filters and per-category preferences
 - **Notification sounds** — standard metallic ping for messages, two-tone industrial alert for high-priority SOS/offers; sounds repeat up to 3× if unacknowledged; configurable in Profile → Notification Sounds
 - **Notification education modal** — branded opt-in flow explaining SOS alert value before browser permission prompt; persistent nudge in bell dropdown
@@ -248,7 +248,7 @@ src/
 │   ├── (main)/          # Protected routes (dashboard, search, listings, messages, etc.)
 │   ├── (admin)/         # Super admin dashboard with RBAC (superadmin, moderator, analyst)
 │   ├── (marketing)/     # Public pages (pricing, about, terms, privacy)
-│   ├── (onboarding)/    # 5-step role-aware onboarding wizard (3 archetypes)
+│   ├── (onboarding)/    # 5-step role-aware onboarding wizard (4 supported archetypes; 2 enabled at launch — Cycle 66)
 │   ├── api/             # Webhooks, crons, AI endpoints, OG images
 │   └── actions/         # Shared server actions (30+ files)
 ├── components/

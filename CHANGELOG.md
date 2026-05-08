@@ -6,6 +6,32 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.37.0] — 2026-05-08 · Archetype soft-disable: Trader & Logistics, admin re-activation surface, drift guards (Cycle 66)
+
+### Added
+- **`src/lib/archetypes.ts`** — Single source of truth for enabled-archetype state. Server-only helpers `getEnabledArchetypes()`, `isArchetypeEnabled()`, `getDisabledArchetypes()`. Cached read of `system_config.enabled_archetypes` (5-min `unstable_cache` + Next 16 `updateTag('enabled-archetypes-config')` on every admin write for read-your-own-writes semantics). Falls back to `ARCHETYPE_DEFAULT_ENABLED` (`['operator', 'service_provider']`) when config is missing or invalid; resilient to malformed JSON and unknown archetype strings.
+- **`scripts/check-archetype-references.mjs`** — CI grep gate. Fails the build if `'trader'` or `'logistics'` archetype string literals appear outside an explicit allowlist of files (helper, constants, archetype-specific server actions/UI, admin actions, archetype panel, equipment-taxonomy ROLES list, dev seed scripts). Wired into `npm run lint` via the new `check:archetypes` script.
+- **`/admin/settings` → Archetypes panel** (`EnabledArchetypesPanel.tsx`). Superadmin + manage_subscriptions permission. Checkbox list of all four archetypes; prevents disabling the last enabled archetype (UI tooltip + server-side Zod `min(1)`). Toggle invalidates the helper's cache and takes effect on the next onboarding session.
+- **Admin actions** `getEnabledArchetypesConfig()` and `updateEnabledArchetypesConfig({ enabled })` in `src/app/(admin)/admin/actions.ts`. Same audit-trail pattern as `updateCreditSystemConfig`. Zod-validated; rejects empty arrays and unknown archetype strings; `logAdminAction('update_enabled_archetypes', 'system', 'enabled_archetypes', { enabled })`.
+- **Re-activation Runbook** in `CLAUDE.md` Onboarding section — exact steps for re-enabling a soft-disabled archetype, including audit, smoke-test authoring, and copy restoration.
+- **Tests:** `src/test/archetypes-helper.test.ts` (10 cases — defaults, JSON-string parsing, invalid-value filtering, empty fallback, `isArchetypeEnabled`, `getDisabledArchetypes`); `src/test/admin-enabled-archetypes.test.ts` (7 cases — read returns current state, write persists + revalidates cache, audit-log row created, empty array rejected, unknown archetype rejected, upsert errors surface as `{ success: false, error }`).
+
+### Changed
+- **`/onboarding`** — page is now a Server Component (`page.tsx`) that fetches `getEnabledArchetypes()` and renders `OnboardingClient.tsx` with the filtered list. Step 1 only displays archetypes in the enabled set. Trader and Logistics no longer render as choices for new signups.
+- **`submitOnboarding` server action** rejects archetype values not in the enabled set with `'Selected archetype is not currently available.'`. Defense-in-depth against direct POST.
+- **`src/lib/constants/onboarding.ts`** — comment block above the `Archetype` union noting filtering is now config-driven via `src/lib/archetypes.ts`. Constants array unchanged (all four archetypes preserved for type completeness, exhaustive switch coverage, and re-activation).
+- **`README.md`** — fixed pre-existing drift ("3 archetypes" → "4 supported, 2 enabled at launch") at line ~82 and the directory tree comment.
+- **`package.json`** — `lint` script now chains `check:archetypes`; new `check:archetypes` script runs `node scripts/check-archetype-references.mjs`.
+
+### Migration
+- `system_config` row inserted: `key='enabled_archetypes'`, `value='["operator", "service_provider"]'::jsonb`. Idempotent (`ON CONFLICT (key) DO NOTHING`). Verified via Supabase Management API. Production archetype distribution at migration time: 1 operator, 3 service_provider, 2 trader, 0 logistics.
+- No schema changes. No changes to `user_business_profiles`. Existing trader rows untouched and continue to function exactly as today.
+
+### Rationale
+Pivoting to a lighter launch posture: two enabled archetypes (Operator/Plant Manager, Service Provider) focus polish on the asset-owner ecosystem. Trader and Logistics are soft-disabled — code paths preserved, signup blocked at the onboarding surface, existing users grandfathered with zero behavior change. Re-activation is a single admin toggle, not a code change. The grep gate prevents future cycles from silently coupling new code to disabled archetype string literals during dormancy.
+
+---
+
 ## [4.36.1] — 2026-04-28 · Mobile menu: Radar tile + nav row, "Create a Listing" rename (Cycle 65 patch)
 
 ### Changed

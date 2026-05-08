@@ -40,10 +40,11 @@ import {
 import { getWeeklyBriefs, getCreditSystemConfig, updateCreditSystemConfig } from '../actions'
 import { getPlatformPalette } from '@/app/actions/palette'
 import { BrandPaletteSelector } from '@/components/admin/BrandPaletteSelector'
+import { EnabledArchetypesPanel } from './components/EnabledArchetypesPanel'
 
 // ─── Types ──────────────────────────────────────────────────────────
 
-type Tab = 'config' | 'admins' | 'pricing' | 'credits' | 'integrations' | 'data' | 'audit' | 'briefs'
+type Tab = 'config' | 'admins' | 'pricing' | 'credits' | 'archetypes' | 'integrations' | 'data' | 'audit' | 'briefs'
 
 interface ConfigItem {
   key: string
@@ -97,6 +98,7 @@ const TABS: { key: Tab; label: string }[] = [
   { key: 'admins', label: 'Admin Users' },
   { key: 'pricing', label: 'Pricing' },
   { key: 'credits', label: 'Contact Credits' },
+  { key: 'archetypes', label: 'Archetypes' },
   { key: 'integrations', label: 'Integrations' },
   { key: 'data', label: 'Data Management' },
   { key: 'audit', label: 'Audit Log' },
@@ -161,6 +163,7 @@ export default function AdminSettingsPage() {
       {activeTab === 'admins' && <AdminUsersSection />}
       {activeTab === 'pricing' && <PricingSection />}
       {activeTab === 'credits' && <CreditSettingsSection />}
+      {activeTab === 'archetypes' && <EnabledArchetypesPanel />}
       {activeTab === 'integrations' && <IntegrationsSection />}
       {activeTab === 'data' && <DataManagementSection />}
       {activeTab === 'audit' && <AuditLogSection />}

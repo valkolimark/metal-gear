@@ -377,9 +377,11 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - `src/app/(admin)/admin/actions.ts` — Admin-specific actions (users, listings, moderation, churn, market gaps, weekly briefs)
 - `src/app/actions/admin-delete-account.ts` — Superadmin account deletion (soft/hard) + reactivation
 
-## Onboarding (Cycle 23)
-- **Flow:** 5-step role-aware wizard at `/onboarding` (route group `(onboarding)`)
-- **Archetypes:** `operator` (plant/facility), `trader` (dealer/reseller), `service_provider` (rigging/machining/etc.), `logistics` (fleet/driver — blocked from listing tools)
+## Onboarding (Cycle 23, soft-disable Cycle 66)
+- **Flow:** 5-step role-aware wizard at `/onboarding` (route group `(onboarding)`). The page is now a Server Component (`page.tsx`) that fetches `getEnabledArchetypes()` and renders `OnboardingClient.tsx` with the filtered list as a prop.
+- **Archetypes:** `operator` (plant/facility), `trader` (dealer/reseller), `service_provider` (rigging/machining/etc.), `logistics` (fleet/driver — blocked from listing tools). **Two enabled by default at launch** (`operator`, `service_provider`); **`trader` and `logistics` are soft-disabled** (Cycle 66) via `system_config.enabled_archetypes`. Existing trader/logistics users are grandfathered with zero behavior change. See `src/lib/archetypes.ts` for the helper and the **Re-activation Runbook** below.
+- **Soft-disable model (Cycle 66):** `src/lib/archetypes.ts` is the single source of truth. `getEnabledArchetypes()` is a `unstable_cache`-wrapped read of `system_config.enabled_archetypes` keyed on cache tag `enabled-archetypes-config` (5-min revalidate, plus explicit Next 16 `updateTag('enabled-archetypes-config')` on every admin write for read-your-own-writes semantics). `ARCHETYPE_DEFAULT_ENABLED = ['operator', 'service_provider']` is the fallback for fresh environments. The constants array in `src/lib/constants/onboarding.ts` keeps all four archetypes for type completeness; filtering is render-time only. `submitOnboarding` in `src/app/actions/onboarding.ts` rejects archetypes not in the enabled set as defense-in-depth against direct POSTs. **`scripts/check-archetype-references.mjs`** is a CI grep gate (wired into `npm run lint`) that fails the build if `'trader'` or `'logistics'` string literals appear outside the explicit allowlist (helper, constants, archetype-specific server actions/UI, admin re-activation panel, equipment-taxonomy ROLES list, dev seed scripts). Route any new archetype branching through `isArchetypeEnabled()`.
+- **Admin re-activation:** `/admin/settings` → **Archetypes** tab renders `EnabledArchetypesPanel.tsx` (superadmin + manage_subscriptions permission, mirrors the credit-config pattern). Toggling persists to `system_config.enabled_archetypes`, audit-logs via `logAdminAction('update_enabled_archetypes', ...)`, and `updateTag('enabled-archetypes-config')` so the next onboarding session picks up the change. UI prevents un-checking the last enabled archetype; server action also rejects empty arrays via Zod (`z.array(z.enum(ALL_ARCHETYPES)).min(1)`).
 - **Archetype lock:** `user_business_profiles.archetype_locked` boolean; set on onboarding completion or migration confirmation; `mg_archetype` cookie drives middleware gate
 - **Logistics columns:** `logistics_type` (fleet/individual), `fleet_size`, `equipment_capabilities[]`, `dot_mc_number`, `logistics_coverage` on `user_business_profiles`
 - **SOS transport:** `sos_requests.transport_needed` boolean; routes to logistics users when true
@@ -391,6 +393,22 @@ All database operations MUST use server actions with `createAdminClient()`. Clie
 - **Post-onboarding redirect:** `window.location.href = '/dashboard'` (full page load so middleware re-evaluates; routes to `/companies/new` if no company yet)
 - **Data carryover:** Onboarding saves to `profiles` (name, company, city, state, phone, contact_visibility) and `user_business_profiles` (industries, archetype, etc.); `/companies/new` page reads these to prefill the company creation form
 - **Constants:** `src/lib/constants/onboarding.ts` — `OnboardingFormData`, archetype options, industry list, role-specific option arrays
+
+### Re-activation Runbook (Disabled Archetypes)
+
+To re-enable a soft-disabled archetype:
+
+1. Audit cycles since disable: list every cycle that touched `user_business_profiles`, `submitOnboarding`, dashboard widgets, profile edit, SOS routing, or archetype-keyed branching. Confirm the disabled archetype's flows still match current schema and conventions.
+2. Run `npm run check:archetypes` and confirm clean. (Should always be clean — the gate runs in CI.)
+3. Smoke-test the disabled archetype's flows manually:
+   - Sign up fresh as the archetype (toggle enabled in admin first)
+   - Complete onboarding end-to-end
+   - Verify dashboard, profile, SOS, listings (if applicable)
+   - Verify any archetype-specific middleware behavior
+4. Author smoke-test suite under `src/test/archetype-{name}-flows.test.ts` covering the above. Land it in the re-activation cycle.
+5. Toggle on in Admin Settings → Archetypes.
+6. Update README and marketing copy to reflect newly available archetype.
+7. Announce.
 
 ## Seller Contact Info (Cycle 22, updated Cycle 24)
 - **DB columns:** `profiles.contact_email` (TEXT), `profiles.contact_visibility` (TEXT, default `pro_plus`, check: `public`/`pro_plus`/`hidden`)

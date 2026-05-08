@@ -3,6 +3,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireAdmin, type AdminRole } from '@/lib/admin/permissions'
 import type { Json } from '@/types/database'
+import { updateTag } from 'next/cache'
+import { z } from 'zod'
+import { ALL_ARCHETYPES, ARCHETYPE_DEFAULT_ENABLED, ENABLED_ARCHETYPES_CACHE_TAG, type Archetype } from '@/lib/archetypes'
 
 // ─── Audit Logging ──────────────────────────────────────────────────
 
@@ -1278,6 +1281,96 @@ export async function updateCreditSystemConfig(
       key,
       { value }
     )
+
+    return { success: true }
+  } catch (err) {
+    if (err && typeof err === 'object' && 'digest' in err) throw err
+    return { success: false, error: err instanceof Error ? err.message : 'Unknown error' }
+  }
+}
+
+// ─── Cycle 66: Enabled Archetypes Config ────────────────────
+
+const EnabledArchetypesInputSchema = z.object({
+  enabled: z
+    .array(z.enum(ALL_ARCHETYPES))
+    .min(1, 'At least one archetype must remain enabled'),
+})
+
+export async function getEnabledArchetypesConfig(): Promise<{
+  enabled: Archetype[]
+  all: typeof ALL_ARCHETYPES
+}> {
+  await requireAdmin()
+  const admin = createAdminClient()
+
+  const { data } = await admin
+    .from('system_config')
+    .select('value')
+    .eq('key', 'enabled_archetypes')
+    .maybeSingle()
+
+  let enabled: Archetype[] = ARCHETYPE_DEFAULT_ENABLED
+  if (data?.value) {
+    let parsed: unknown = data.value
+    if (typeof parsed === 'string') {
+      try {
+        parsed = JSON.parse(parsed)
+      } catch {
+        parsed = null
+      }
+    }
+    if (Array.isArray(parsed)) {
+      const valid = parsed.filter(
+        (v): v is Archetype =>
+          typeof v === 'string' && (ALL_ARCHETYPES as readonly string[]).includes(v),
+      )
+      if (valid.length > 0) enabled = valid
+    }
+  }
+
+  return { enabled, all: ALL_ARCHETYPES }
+}
+
+export async function updateEnabledArchetypesConfig(input: {
+  enabled: string[]
+}): Promise<{ success: boolean; error?: string }> {
+  try {
+    const { profile: adminProfile } = await requireAdmin('manage_subscriptions')
+
+    const parsed = EnabledArchetypesInputSchema.safeParse(input)
+    if (!parsed.success) {
+      return {
+        success: false,
+        error: parsed.error.issues[0]?.message ?? 'Invalid archetype list',
+      }
+    }
+
+    const admin = createAdminClient()
+
+    const { error } = await admin
+      .from('system_config')
+      .upsert(
+        {
+          key: 'enabled_archetypes',
+          value: JSON.stringify(parsed.data.enabled),
+          updated_by: adminProfile.id,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'key' },
+      )
+
+    if (error) return { success: false, error: error.message }
+
+    await logAdminAction(
+      adminProfile.id,
+      'update_enabled_archetypes',
+      'system',
+      'enabled_archetypes',
+      { enabled: parsed.data.enabled },
+    )
+
+    updateTag(ENABLED_ARCHETYPES_CACHE_TAG)
 
     return { success: true }
   } catch (err) {

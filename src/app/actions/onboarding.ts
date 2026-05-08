@@ -357,6 +357,7 @@ export async function checkEnhancedOnboardingStatus() {
 
 import type { OnboardingFormData } from '@/lib/constants/onboarding'
 import { getTier1ForTier2 } from '@/lib/constants/equipment-taxonomy'
+import { getEnabledArchetypes, type Archetype } from '@/lib/archetypes'
 
 export async function getOnboardingPrefill() {
   const supabase = await createClient()
@@ -389,6 +390,14 @@ export async function submitOnboarding(data: OnboardingFormData) {
   if (!user) return { error: 'Not authenticated' }
 
   if (!data.archetype) return { error: 'Archetype is required' }
+
+  // Cycle 66 — defense-in-depth: reject archetypes disabled at the
+  // onboarding surface even if a direct POST bypasses the UI filter.
+  const enabledArchetypes = await getEnabledArchetypes()
+  if (!enabledArchetypes.includes(data.archetype as Archetype)) {
+    return { error: 'Selected archetype is not currently available.' }
+  }
+
   if (data.industries.length === 0) return { error: 'At least one industry is required' }
   if (!data.company_name.trim()) return { error: 'Company name is required' }
   if (!data.city.trim() || !data.state.trim()) return { error: 'City and state are required' }

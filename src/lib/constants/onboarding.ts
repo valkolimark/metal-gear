@@ -46,6 +46,12 @@ export interface EnhancedOnboardingData {
 
 // ─── Cycle 23: Role-Aware Onboarding ────────────────────────────────
 
+// Cycle 66 — Trader and Logistics are soft-disabled at the onboarding
+// surface. The full union stays here so existing rows still type-check and
+// archetype-keyed branching remains exhaustive. Filtering of which archetypes
+// new users see is config-driven via `getEnabledArchetypes()` in
+// `src/lib/archetypes.ts` (`system_config.enabled_archetypes`); admins toggle
+// availability from Admin Settings → Archetypes.
 export type Archetype = 'operator' | 'trader' | 'service_provider' | 'logistics'
 
 export interface OnboardingFormData {
