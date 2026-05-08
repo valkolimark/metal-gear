@@ -416,6 +416,30 @@ html[data-palette="ocean"]:not(.dark) .sos-pulse {
   animation: sos-pulse-ocean-light 2.5s ease-in-out infinite !important;
 }
 
+/* ================================================================
+   CINEMATIC LANDING — keyframes scoped to data-section="landing"
+   so they don't pollute the rest of the app. (Cycle 67)
+   ================================================================ */
+@keyframes mg-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+
+@keyframes mg-sos-pulse {
+  0%   { transform: translate(-50%, -50%) scale(0.4); opacity: 0.9; }
+  100% { transform: translate(-50%, -50%) scale(1.6); opacity: 0; }
+}
+
+[data-section="landing"] .mg-anim-pulse {
+  animation: mg-pulse 2s ease-in-out infinite;
+}
+[data-section="landing"] .mg-anim-pulse-fast {
+  animation: mg-pulse 1.4s ease-in-out infinite;
+}
+[data-section="landing"] .mg-anim-sos-pulse {
+  animation: mg-sos-pulse 2.4s ease-out infinite;
+}
+
 /* Scrollbar styling */
 .dark ::-webkit-scrollbar {
   width: 8px;

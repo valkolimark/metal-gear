@@ -6,6 +6,26 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.38.0] — 2026-05-08 · Cinematic landing: SOS-first hero, verified-rebuilder narrative (Cycle 67)
+
+### Added
+- **`src/components/landing/`** — full-bleed cinematic landing surface. Files: `LandingDesktop.tsx`, `LandingMobile.tsx`, `shared.tsx` (Spec/StencilLabel/TickerRow/FeaturedShopCard/SectionHead/StatsStrip/AudienceChip/LandingNav/LandingFooter/CautionStripe/MonoLink), `icons.tsx` (SirenIcon/CornerBrackets/HamburgerIcon — hand-rolled SVGs not from lucide-react), `data.ts` (design fallback fixtures), `types.ts`.
+- **`src/app/actions/landing.ts`** — server data layer: `getLandingNetworkSummary()` (verified rebuilder count, active listings, distinct states), `getLandingFeaturedShops(limit)` (ranks `company_profiles` by active-listing count, deterministic gradient palette), `getLandingTicker(limit)` (interleaves recent SOS + listings into the live network feed), `getLandingStats(summary)`. Falls back to design fixtures only when a table is genuinely empty (preview deploys / fresh dev DBs).
+- **JetBrains Mono** added via `next/font/google` for stencil labels, kickers, ticker timestamps, and spec callouts. Manrope upgraded to include weight 800 for the 92px display headlines.
+- **`/landing/hero-rotor.webp`** — full-bleed industrial-rotor hero photo (294 KB) shipped to `public/`. Replace with a properly licensed equivalent before final launch.
+- **Cinematic palette CSS variables** (`--mg-accent`, `--mg-accent-rgb`, `--mg-warm-1/2/3`, `--mg-font-display/body/mono`) scoped to the homepage wrapper via inline style on `<div data-section="landing">`. Keyframes (`mg-pulse`, `mg-sos-pulse`) scoped to `[data-section="landing"]` in `globals.css`.
+
+### Changed
+- **`src/app/page.tsx`** — replaced the marketplace homepage with the cinematic landing. Brand pivot: positions Metal Gear as the trust layer for verified industrial rebuilders, with the 24/7 SOS lifeline as the headline value prop. Real DB-backed numbers in the "NETWORK ONLINE" pill, featured rebuilder cards, and stats strip; static narrative content (`$184M traded`, `< 4 hrs avg response`) deliberately omitted until the underlying metrics are real.
+- **Removed from homepage** (preserved on other surfaces): `MarketingHeader`, `Footer`, `WelcomeBackStrip`, `ProblemDiagnoser`, `EQUIPMENT_CATEGORIES` browse grid, light-mode features section, testimonials grid, "Featured Equipment" listings strip.
+- **Mobile + desktop layouts** are separate components (`LandingMobile.tsx` / `LandingDesktop.tsx`) per the design handoff's recommendation, gated by `md:hidden` / `hidden md:block`. Each is hand-tuned, not a single responsive component.
+- **Featured rebuilder cards** link to `/companies/[slug]`. Empty-state stats (`Jobs: 0`) render as `—` rather than `0` to avoid misleading first impressions on companies that haven't yet posted listings.
+
+### Rationale
+Landing sells SOS-first ("when the line goes down at 3 AM, you don't need a directory") rather than a generic equipment marketplace. Reframes the brand around the verified-rebuilder trust narrative that's been emerging across the product (SOS dashboard, response routing, urgency tiers). The marketplace functionality the previous homepage emphasized is still the engine — it's just no longer the headline.
+
+---
+
 ## [4.37.0] — 2026-05-08 · Archetype soft-disable: Trader & Logistics, admin re-activation surface, drift guards (Cycle 66)
 
 ### Added

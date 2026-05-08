@@ -3,7 +3,7 @@ import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getMessages } from 'next-intl/server'
 import { ThemeProvider } from 'next-themes'
 import { cookies } from 'next/headers'
-import { chakraPetch, manrope } from '@/styles/fonts'
+import { chakraPetch, jetbrainsMono, manrope } from '@/styles/fonts'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { Toaster } from '@/components/ui/sonner'
 import { AuthProvider } from '@/components/providers/auth-provider'
@@ -87,7 +87,7 @@ export default async function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192.svg" />
       </head>
       <body
-        className={`${chakraPetch.variable} ${manrope.variable} font-body antialiased overflow-x-hidden`}
+        className={`${chakraPetch.variable} ${manrope.variable} ${jetbrainsMono.variable} font-body antialiased overflow-x-hidden`}
       >
         <a
           href="#main-content"

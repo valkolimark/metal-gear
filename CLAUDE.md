@@ -3,6 +3,17 @@
 ## Project Overview
 Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oil & gas, petrochemical, mining, manufacturing, and CNC machining.
 
+## Cinematic Landing (Cycle 67)
+- **Surface:** `src/app/page.tsx` is a Server Component that mounts `LandingDesktop` (`hidden md:block`) and `LandingMobile` (`md:hidden`) under `<div data-section="landing">`. Both layouts are hand-tuned per the design handoff — not a single responsive component.
+- **Components:** `src/components/landing/` — `LandingDesktop.tsx`, `LandingMobile.tsx`, `shared.tsx` (primitives), `icons.tsx` (hand-rolled SVGs), `data.ts` (design fallbacks), `types.ts`.
+- **Server data:** `src/app/actions/landing.ts` — `getLandingNetworkSummary`, `getLandingFeaturedShops`, `getLandingTicker`, `getLandingStats`. Real DB rows wherever available (`company_profiles`, `listings`, `sos_requests`); falls back to design fixtures only when a table is genuinely empty.
+- **Palette tokens:** cinematic blue (`--mg-accent: #3B9EFF`, `--mg-accent-rgb: 59, 158, 255`, `--mg-warm-1: #0B1A2E`, `--mg-warm-2: #163763`, `--mg-warm-3: #1F5BB8`) live as inline style on the homepage wrapper. Children read `var(--mg-accent)` and `rgb(var(--mg-accent-rgb) / <alpha>)`. `--mg-font-display` / `--mg-font-body` map to Manrope, `--mg-font-mono` to JetBrains Mono.
+- **Fonts:** Manrope (weights 300–800) + JetBrains Mono (weights 500–700) + Chakra Petch (existing display family for the rest of the app) all wired via `next/font/google` in `src/styles/fonts.ts`. CSS variables `--font-manrope`, `--font-jetbrains-mono`, `--font-chakra-petch` exposed on `<body>`.
+- **Hero photo:** `/landing/hero-rotor.webp` (294 KB). Replace with a properly licensed equivalent before final launch.
+- **Brand framing:** SOS-first ("Find the shop you can trust" / "When the line goes down at 3 AM"), positions Metal Gear as the trust layer for verified industrial rebuilders. Marketplace functionality is still the engine; just no longer the headline. Keep "rebuilders" as a marketing-only label that resolves to `company_profiles` until a verified-rebuilder concept is added.
+- **Stats discipline:** only show numbers backed by real DB queries. Do not re-introduce `$184M traded` / `< 4 hrs avg response` / `4,287 verified rebuilders` literal copy until those metrics are real.
+- **Animations:** `mg-pulse` and `mg-sos-pulse` keyframes scoped to `[data-section="landing"]` in `globals.css` to keep landing motion out of the rest of the app.
+
 ## Tech Stack
 - **Framework:** Next.js 15 (App Router, RSC, TypeScript)
 - **Database/Auth:** Supabase (PostgreSQL, Auth, Realtime)
