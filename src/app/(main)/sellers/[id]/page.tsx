@@ -160,28 +160,109 @@ export default async function SellerStorefrontPage({
       />
 
       <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {/* Banner + Avatar */}
+        {/* Cover grid — design-handoff_inner_pages/sellers/SellersShared.jsx */}
         <div className="relative">
-          <div className="overflow-hidden rounded-xl border border-border">
-            {storefront?.banner_url ? (
-              <img
-                src={storefront.banner_url}
-                alt={`${name}'s storefront banner`}
-                className="h-48 w-full object-cover sm:h-56 lg:h-64"
-              />
-            ) : (
+          <div
+            className="relative grid overflow-hidden rounded-2xl"
+            style={{
+              height: 280,
+              gridTemplateColumns: '2fr 1fr 1fr',
+              gridTemplateRows: '1fr 1fr',
+              gap: 4,
+              background: '#0A1628',
+            }}
+          >
+            {/* Large left tile */}
+            <div
+              className="relative overflow-hidden"
+              style={{
+                gridRow: '1 / span 2',
+                background: storefront?.banner_url
+                  ? '#0A1628'
+                  : 'linear-gradient(135deg, #1E3A8A 0%, #1877F2 60%, #3D9BD6 100%)',
+              }}
+            >
+              {storefront?.banner_url ? (
+                <img
+                  src={storefront.banner_url}
+                  alt={`${name}'s storefront banner`}
+                  className="absolute inset-0 size-full object-cover"
+                />
+              ) : (
+                <>
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, transparent 60%)',
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0"
+                    style={{
+                      backgroundImage:
+                        'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px)',
+                    }}
+                  />
+                </>
+              )}
+              {/* Cover chips */}
+              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 flex-wrap">
+                <span
+                  className="text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center"
+                  style={{
+                    background: 'rgba(255,255,255,0.16)',
+                    color: '#fff',
+                    borderRadius: 4,
+                    letterSpacing: '0.10em',
+                    fontFamily: 'var(--font-jetbrains-mono), monospace',
+                    backdropFilter: 'blur(8px)',
+                  }}
+                >
+                  INDIVIDUAL · STOREFRONT
+                </span>
+                {profile.is_verified_dealer && (
+                  <span
+                    className="text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center gap-1"
+                    style={{
+                      background: 'rgba(34,197,94,0.20)',
+                      color: '#86EFAC',
+                      borderRadius: 4,
+                      letterSpacing: '0.10em',
+                      fontFamily: 'var(--font-jetbrains-mono), monospace',
+                      backdropFilter: 'blur(8px)',
+                    }}
+                  >
+                    VERIFIED DEALER
+                  </span>
+                )}
+              </div>
+            </div>
+            {/* Three gradient tiles on the right */}
+            {[
+              'linear-gradient(135deg, #155E75 0%, #0EA5E9 100%)',
+              'linear-gradient(135deg, #831843 0%, #DB2777 100%)',
+              'linear-gradient(135deg, #1F2937 0%, #4B5563 100%)',
+            ].map((bg, i) => (
               <div
-                className="h-48 w-full sm:h-56 lg:h-64"
-                style={{
-                  background: `linear-gradient(135deg, ${storefront?.theme_color || 'var(--primary)'}22 0%, var(--background) 100%)`,
-                }}
-              />
-            )}
+                key={i}
+                className="relative overflow-hidden"
+                style={{ background: bg }}
+              >
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    backgroundImage:
+                      'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 16px)',
+                  }}
+                />
+              </div>
+            ))}
           </div>
 
-          {/* Avatar overlay — outside overflow-hidden so it isn't clipped */}
+          {/* Avatar overlay */}
           <div className="absolute -bottom-12 left-6">
-            <Avatar className="size-24 border-4 border-background">
+            <Avatar className="size-24 border-4 border-background shadow-[0_8px_24px_rgba(11,37,69,0.18)]">
               <AvatarImage
                 src={profile.avatar_url || undefined}
                 crossOrigin="anonymous"
