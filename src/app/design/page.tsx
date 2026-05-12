@@ -2,6 +2,39 @@ import Link from 'next/link'
 
 const previews = [
   {
+    page: 'Feed',
+    description:
+      'Personalized social feed with active-SOS row, composer, post cards, and right-rail discovery. Modern soft-card desktop direction + industrial mobile cut.',
+    variants: [
+      { label: 'Desktop · Modern feed', href: '/design/feed?variant=desktop' },
+      { label: 'Mobile · Industrial feed', href: '/design/feed?variant=mobile' },
+    ],
+  },
+  {
+    page: 'SOS Dashboard',
+    description:
+      'Live SOS requests across the network. Console (table + KPIs + map for dispatchers), Cards (visual grid for responders), and a mobile-first card list.',
+    variants: [
+      { label: 'Desktop · Console (table)', href: '/design/sos?variant=desktop-console' },
+      { label: 'Desktop · Cards (grid)', href: '/design/sos?variant=desktop-cards' },
+      { label: 'Mobile · Card list', href: '/design/sos?variant=mobile' },
+    ],
+  },
+  {
+    page: 'My Listings',
+    description:
+      'Seller inventory management with KPI strip, filter chips, and three-view switcher (List rows / 4-up grid / spreadsheet table) + bulk-select action bar.',
+    variants: [
+      { label: 'Desktop · Switch view inside', href: '/design/my-listings' },
+    ],
+  },
+  {
+    page: 'Browse Equipment',
+    description:
+      'Marketplace browse with list + sticky map split. Hover a card to highlight its pin; toggle the map off for a wider list.',
+    variants: [{ label: 'Desktop · Browse', href: '/design/browse' }],
+  },
+  {
     page: 'Sellers (Storefront)',
     description:
       'Seller storefront with cover grid, identity row, trust strip, and tabbed sections (Storefront / Listings / Services / Reviews / About / Locations). Toggles between Company and Person views.',
