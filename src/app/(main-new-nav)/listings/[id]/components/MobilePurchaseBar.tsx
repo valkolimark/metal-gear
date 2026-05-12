@@ -13,7 +13,7 @@ import {
 } from '@/components/ui/sheet'
 import { ListingPurchasePanel } from './ListingPurchasePanel'
 import { AnonInteractionGate } from '@/components/AnonInteractionGate'
-import { startConversation } from '@/app/(main)/messages/actions'
+import { startConversation } from '@/app/(main-new-nav)/messages/actions'
 import { toggleRadarListing } from '@/app/actions/radar'
 import type { Tables } from '@/types/database'
 import type { User } from '@supabase/supabase-js'

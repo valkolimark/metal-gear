@@ -6,6 +6,67 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.43.0] — 2026-05-12 · Nav: three-state theme toggle restored + dashboard cluster rollout (Cycle 72)
+
+### Fixed
+- **Defensive regression coverage for the new top bar.** New Vitest tests pin: (a) `AppHeaderNotificationsBell` always renders its button (icon visible regardless of count), badge is conditional, "99+" cap kicks in past 99, SOS variant renders the hand-rolled `SirenIcon`; (b) `AppHeaderAvatarMenu` renders the avatar trigger with initials fallback when `avatarUrl` is null, and the opened dropdown surfaces Appearance + Profile / Settings / Help / Sign out (and Admin only when `isAdmin = true`). Audit of the Cycle 71 implementation found the icon-rendering pattern was already structurally correct; tests lock the behavior so a future "hide on zero count" refactor cannot recur silently.
+
+### Added
+- **Three-state theme toggle in the new nav.** Restored to feature-parity with the legacy `Header` chrome. The existing `<ThemeToggle />` at `src/components/ui/theme-toggle.tsx` is **reused unchanged** — the new nav imports it directly. Placement:
+  - **Desktop:** inside `AppHeaderAvatarMenu`'s dropdown, under a "Appearance" `<DropdownMenuLabel>`, in a click-stop-propagation `<div>` so cycling the theme keeps the menu open.
+  - **Mobile:** inside `AppMobileNavDrawer`'s footer, in an "Appearance" row above the "Send SOS" pill.
+- Single `next-themes` provider in the root layout serves both new- and legacy-nav surfaces — toggling theme on `/feed` immediately applies on `/sellers/[id]`, `/profile`, etc.
+
+### Changed
+- **Dashboard cluster rolled out to `(main-new-nav)`.** Migrated via `git mv` (history preserved): `/sos` (incl. `/sos/[id]`, `/sos/create`, `/sos/my-requests`, `/sos/components`), `/messages`, `/listings` (incl. `/listings/[id]`, `/listings/[id]/edit`, `/listings/bulk-edit`, `/listings/create`, `/listings/import`, `/listings/new`, `/listings/snap*`), `/search`. URLs unchanged (Next.js route groups are transparent). All four routes now render `<AppShellDashboard>` chrome (top bar + sidebar + mobile bottom nav). Page content untouched: Cycle 64 tabbed SOS IA (`#mine`/`#feed`), Cycle 68 KPI strips + soft-card shadow + sticky save bars, Cycle 68 search hover-lift, Cycle 34 bulk import flow, Cycle 58 Snap & List flow — all preserved as-is.
+- **Cross-route imports updated.** Six files held `@/app/(main)/{sos,messages,listings,search}/...` import paths that broke after the move:
+  - `src/app/actions/messaging.ts`
+  - `src/app/(main-new-nav)/listings/[id]/components/MobilePurchaseBar.tsx`
+  - `src/app/(main-new-nav)/listings/[id]/components/ListingPurchasePanel.tsx`
+  - `src/test/sos-dashboard-tabs.test.tsx`
+  - `src/test/listings-actions.test.ts`
+  - `src/components/listings/AIImageCapture.tsx`
+  All rewritten to `@/app/(main-new-nav)/...`.
+- **`docs/navigation-system.md` updated.** §1.1 (desktop top bar) and §1.4 (mobile drawer) now mention the Appearance sub-section / row. New §1.5 documents the theme system integration (`next-themes`, single provider, three states, SOS-orange preservation). New §11.1 holds the live rollout-status table — update it every cycle that moves routes.
+
+### Rollout status
+
+| Surface | Status | Cycle |
+|---|---|---|
+| `/feed` | New nav | 71 |
+| `/sos`, `/sos/[id]`, `/sos/create`, `/sos/my-requests` | New nav | 72 |
+| `/messages` | New nav | 72 |
+| `/listings`, `/listings/[id]`, `/listings/bulk-edit`, `/listings/create`, `/listings/import`, `/listings/new`, `/listings/snap*` | New nav | 72 |
+| `/search` | New nav | 72 |
+| `/sellers/[id]` | Legacy chrome | Cycle 73 |
+| `/companies/[slug]` | Legacy chrome | Cycle 73 |
+| `/profile`, `/profile/[id]` | Legacy chrome | Cycle 73 |
+| `/dashboard`, `/radar`, `/credits`, `/notifications`, etc. | Legacy chrome | Cycle 73/74 |
+| `/settings/*` | Legacy chrome | Cycle 74 |
+| `/admin/*` | Scoped CSS — separate convention | Cycle 74 scope check |
+| Marketing / landing | Cycle 67 `LandingNav` (unchanged) | Cycle 75 |
+
+### Tests
+- `src/test/components/layout/AppHeaderNotificationsBell.test.tsx` — 5 cases (bell always visible, badge conditional, "99+" cap, SOS uses SirenIcon, combined uses Bell).
+- `src/test/components/layout/AppHeaderAvatarMenu.test.tsx` — 4 cases (avatar trigger with initials fallback, dropdown exposes Appearance + nav items, Admin shown for admins, Admin hidden for non-admins).
+- Existing `src/test/nav-route-isolation.test.ts` continues to enforce: `(main)` group must NOT import `AppShell*`, and only one production `/feed/page.tsx` exists. With this cycle's moves, the same invariants now implicitly cover `/sos`, `/messages`, `/listings`, `/search`.
+- Full suite: 412 tests pass (was 403).
+
+### Migration
+- No DB changes.
+- File moves only (via `git mv`).
+- No new env vars, no new dependencies.
+
+### Rationale
+Two regression-class fixes that should have been part of Cycle 71's spec but were missed: the theme toggle was omitted from Cycle 71's avatar-dropdown contract (Profile / Settings / Help / Sign out only), and the bell-rendering guarantee was implicit rather than codified. Both are fixed pre-rollout so the dashboard cluster doesn't inherit either gap. The cluster rollout itself is purely mechanical — file moves only, no content changes — and validates that the Cycle 71 `(main-new-nav)` group convention scales beyond the `/feed` reference.
+
+### Deferred to subsequent cycles
+- **Cycle 73:** storefront/profile cluster rollout — `/sellers/[id]`, `/companies/[slug]`, `/profile`, `/profile/[id]`. Likely introduces `(main-new-nav-fullbleed)` group with its own layout using `<AppShellFullBleed>` (top bar only, no sidebar — preserves cover-grid heroes).
+- **Cycle 74:** settings + admin cluster rollout (or admin stays scoped if `[data-section="admin"]` boundary requires its own approach).
+- **Cycle 75:** marketing/landing nav refresh.
+
+---
+
 ## [4.42.0] — 2026-05-12 · Navigation system: canonical specification + `/feed` reference implementation (Cycle 71)
 
 ### Added

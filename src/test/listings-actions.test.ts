@@ -16,7 +16,7 @@ vi.mock('@/lib/supabase/admin', () => ({
 }))
 
 const { updateListingStatus, duplicateListing } = await import(
-  '@/app/(main)/listings/actions'
+  '@/app/(main-new-nav)/listings/actions'
 )
 
 describe('Listing actions', () => {

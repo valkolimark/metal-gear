@@ -12,7 +12,7 @@ vi.mock('@/components/notification-education-modal', () => ({
   }),
 }))
 
-import { SosDashboardTabs } from '@/app/(main)/sos/components/SosDashboardTabs'
+import { SosDashboardTabs } from '@/app/(main-new-nav)/sos/components/SosDashboardTabs'
 
 const NOW = new Date('2026-04-28T12:00:00Z').getTime()
 

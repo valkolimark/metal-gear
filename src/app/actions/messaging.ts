@@ -229,7 +229,7 @@ export async function sendMessageWithAttachment(conversationId: string, content:
   if (!user) return { error: 'Not authenticated' }
 
   // Import sendMessage dynamically to avoid circular deps
-  const { sendMessage } = await import('@/app/(main)/messages/actions')
+  const { sendMessage } = await import('@/app/(main-new-nav)/messages/actions')
 
   // Send the text message first
   const messageContent = content.trim() || '📎 Attachment'

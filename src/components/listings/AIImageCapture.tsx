@@ -10,7 +10,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { validateImageQuality, type ImageQualityResult } from '@/lib/ai/image-quality'
 import type { AIAnalysisResult } from '@/types/ai-analysis'
-import { uploadListingImageAction } from '@/app/(main)/listings/new/actions'
+import { uploadListingImageAction } from '@/app/(main-new-nav)/listings/new/actions'
 
 interface AIImageCaptureProps {
   onComplete: (data: AIAnalysisResult, preloadedImages?: string[]) => void

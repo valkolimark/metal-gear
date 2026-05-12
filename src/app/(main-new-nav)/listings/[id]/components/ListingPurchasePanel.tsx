@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/dialog'
 import { AnonInteractionGate } from '@/components/AnonInteractionGate'
 import { CompanyAvatar } from '@/components/company/CompanyAvatar'
-import { startConversation } from '@/app/(main)/messages/actions'
+import { startConversation } from '@/app/(main-new-nav)/messages/actions'
 import { makeOffer } from '@/app/actions/offers'
 import { revealContactInfo } from '@/app/actions/credits'
 import { toggleRadarListing } from '@/app/actions/radar'
