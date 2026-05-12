@@ -12,7 +12,7 @@ import {
 } from '@/components/profile-shared'
 import { MapPin, Briefcase, Calendar, Building2 } from 'lucide-react'
 import ProfileEditor from './components/ProfileEditor'
-import { SellerRecentReviews } from '@/app/(main)/sellers/[id]/components/SellerRecentReviews'
+import { SellerRecentReviews } from '@/app/(main-new-nav-fullbleed)/sellers/[id]/components/SellerRecentReviews'
 import { getViewerProfilePageData } from './data'
 
 const VALID_TABS = ['about', 'listings', 'posts', 'reviews', 'sos'] as const

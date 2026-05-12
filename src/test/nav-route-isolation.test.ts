@@ -5,6 +5,7 @@ import { join, resolve } from 'node:path'
 const PROJECT_ROOT = resolve(__dirname, '../..')
 const MAIN_DIR = join(PROJECT_ROOT, 'src/app/(main)')
 const NEW_NAV_DIR = join(PROJECT_ROOT, 'src/app/(main-new-nav)')
+const FULL_BLEED_DIR = join(PROJECT_ROOT, 'src/app/(main-new-nav-fullbleed)')
 
 function walk(dir: string, files: string[] = []): string[] {
   for (const name of readdirSync(dir)) {
@@ -43,5 +44,28 @@ describe('Cycle 71 — nav route-group isolation', () => {
     )
     expect(productionFeedPages.length).toBe(1)
     expect(productionFeedPages[0]).toMatch(/\(main-new-nav\)/)
+  })
+})
+
+describe('Cycle 73 — storefront cluster route-group isolation', () => {
+  it('the new (main-new-nav-fullbleed) group has a layout.tsx that mounts AppShellFullBleed', () => {
+    const path = join(FULL_BLEED_DIR, 'layout.tsx')
+    const layout = readFileSync(path, 'utf8')
+    expect(layout).toMatch(/AppShellFullBleed/)
+  })
+
+  it.each([
+    ['sellers/[id]', /\(main-new-nav-fullbleed\)/],
+    ['companies/[slug]', /\(main-new-nav-fullbleed\)/],
+    ['profile', /\(main-new-nav-fullbleed\)/],
+    ['profile/[id]', /\(main-new-nav-fullbleed\)/],
+  ])('only one production /%s/page.tsx exists, in (main-new-nav-fullbleed)', (route, groupRegex) => {
+    const allPages: string[] = []
+    walk(join(PROJECT_ROOT, 'src/app'), allPages)
+    const matches = allPages.filter(
+      (f) => f.endsWith(`/${route}/page.tsx`) && !f.includes('/design/'),
+    )
+    expect(matches.length).toBe(1)
+    expect(matches[0]).toMatch(groupRegex)
   })
 })
