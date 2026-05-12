@@ -31,6 +31,14 @@ Houston, TX industrial equipment marketplace. Buy/sell heavy machinery across oi
 - **Fonts:** Chakra Petch (display/headings) + Manrope (body) via `next/font/google`
 - **Components:** 15 shadcn/ui components installed (button, input, card, dialog, dropdown-menu, avatar, badge, separator, skeleton, sonner, tooltip, label, select, switch, sheet)
 
+## Cycle 68 conventions (chrome tokens)
+- **Soft-card shadow token** (canonical surface treatment from Cycle 68 forward): no border, `rounded-2xl`, layered drop-shadow `0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)`. Lives on the shared `<Card>` primitive in `src/components/ui/card.tsx` — every consumer inherits automatically. Surfaces using inline shadow (feed components, design-preview, future profile-shared components) must use this exact string. Do not redefine.
+- **Cover-grid pattern** (sellers, companies, profile): 280px tall, `grid-template-columns: 2fr 1fr 1fr`, `grid-template-rows: 1fr 1fr`, `gap: 4px`, background `#0A1628` (intentional in both light + dark mode — not a theme variable). Large left tile spans `1 / span 2`. Mobile (<768px) collapses to a single banner photo (drops the 3 small tiles — they don't read at that size).
+- **Cover-chip palette** (overlay chips on cover grids): JetBrains Mono, 10px, uppercase, `letter-spacing: 0.10em`. Two variants — `category` (white text on translucent black, e.g. "COMPANY · STOREFRONT", "INDIVIDUAL · STOREFRONT", "MEMBER · YOUR PROFILE") and `verified` (emerald text on emerald-tinted translucent, e.g. "VERIFIED SELLER", "VERIFIED DEALER", "ID + INSURANCE VERIFIED").
+- **KPI tile spec** (listing dashboard, SOS dashboard, future profile/sellers strips): `rounded-xl bg-card px-4 py-2.5`; label is 11px uppercase muted; value is 22–28px Manrope display. Optional sub-pill below the value (em-dash `—` when the underlying metric isn't yet wired). Never render `0` in place of an unknown stat — render `—`.
+- **Sticky save bar spec** (settings forms): navy background `#0A1628`, orange `#FF6B2B` action pill, fixed-bottom or sticky positioning with shadow lifting it above the form content. Used in `/settings/company` and any future settings surface with destructive-or-batch save semantics.
+- **Design-preview route convention:** `/design/*` (top-level under `src/app/design/`, NOT under `(main)`) is the internal-only reference surface. All design-preview pages set `noindex,nofollow`. Components live under `src/components/design-preview/` with per-surface mock fixtures (`*-data.ts`). Production code must NEVER import from `src/components/design-preview/` — these are visual references, not production primitives.
+
 ## Testing
 - **Unit tests:** Vitest + React Testing Library (`npm test`)
 - **E2E tests:** Playwright (`npm run test:e2e`)

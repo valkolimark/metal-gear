@@ -6,6 +6,50 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.39.0] — 2026-05-11 · Inner-pages + core-pages design-handoff migration: soft-card Card primitive, cover-grid heroes, KPI strips (Cycle 68)
+
+### Added
+- **`src/components/ui/card.tsx`** — soft-card chrome on the shared `<Card>` primitive (no border, `rounded-2xl`, layered drop-shadow `0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)`). Propagates everywhere `<Card>` is used. **Soft-card shadow token is a load-bearing convention from this cycle forward.**
+- **`/listings`** — 4-tile KPI strip (Active / Drafts / Sold / Total) above the filter toolbar, 22px Manrope display heading "My Listings · N total".
+- **`/sos`** — 4-tile KPI strip with colored sub-pills (Open in network, My active, Avg response, Win rate). **Avg response and Win rate render `—` placeholders** — real metric queries are deferred. Counts (Open in network, My active) use real `myRequests` / `broadcastRequests` state. Hero gets the orange icon badge + larger display heading.
+- **`/sellers/[id]`** — 4-tile cover grid (banner photo fills the large left tile when uploaded; gradient placeholder tiles fill the rest). Overlay chips: "INDIVIDUAL · STOREFRONT" + "VERIFIED DEALER" (gated on `profile.is_verified_dealer`). Avatar gets a soft 24px drop shadow.
+- **`/companies/[slug]`** — same 4-tile cover-grid treatment with chips "COMPANY · STOREFRONT" + "VERIFIED SELLER". Stats bar rebuilt as a 4-column soft-shadow Trust Strip (Rating / Listings / Team / On platform) with 22px display values.
+- **`/profile`** — full-bleed cover hero above the form: navy → blue gradient with radial light + 45° pinstripe texture, "MEMBER · YOUR PROFILE" chip, identity row lifts 12px over the cover.
+- **`/settings/company`** — page header with breadcrumb ("Settings / Company") and 22px Manrope display title. Form split into 4 sectioned soft-shadow cards (Identity / Capabilities & industries / Service area / Contact), each with an orange-tinted icon badge. Sticky bottom save bar — navy background `#0A1628` with orange dot indicator and orange `#FF6B2B` "Save changes" pill, shadowed to lift above the form. Field labels switched to 11.5px bold with optional 10.5px hint line.
+
+### Changed
+- **`/feed` — FeedActiveSOSRow** rebuilt: horizontal scroller replaced with an orange-gradient "Got an urgent need?" CTA banner above a 2-col tile grid of active SOS in the viewer's categories. Each tile shows urgency dot, time, equipment category, company, and Respond/View CTA.
+- **`/feed` — FeedComposer, FeedPost, RightSOSWidget, RightDiscoveryWidget**: dropped hairline borders for the layered soft drop-shadow + `rounded-2xl`. Right-rail widget headings bumped to bold Manrope display at 14.5px with tight tracking.
+- **`/messages`** — shell gets `rounded-2xl` + soft shadow (no hairline border). Conversation list header bumped to 22px Manrope display with an "Inbox" mono pill next to it. **Open-thread panel (composer, attachment cards, smart-reply chips, RFQ counter highlight card) NOT migrated this cycle.**
+- **`/search`** — result Card hover effect upgraded to a lift-shadow.
+- **Sweep:** removed `border border-border` from `<Card>` usages so they inherit the new chrome on: `/boost`, `/dashboard` (page + loading + team-activity-widget + trusted-vendors-widget + new-listings-snipe-feed), `/insights`, `/inventory` (loading), `/listings/[id]/edit`, `/listings/[id]` (loading), `/notifications`, `/profile/[id]`, `/profile` (loading), `/radar` (RadarPageClient + `/radar/[id]`), `/schedule`, `/transactions` (page + `/transactions/[id]`).
+
+### Known unshipped (deferred)
+- **Create-listings flows** intentionally NOT migrated this cycle: `/listings/new`, `/listings/create`, `/listings/snap`, `/listings/import`, `/listings/bulk-edit`. `border border-border` Card classes are preserved on these surfaces.
+- **`/search` NL chip parse strip** — punted. Requires new query-parsing logic; the existing search isn't wired to a natural-language layer yet.
+- **`/sos` real KPI queries** — Avg response time and Win rate render `—` placeholders until the underlying metrics are computed.
+- **`/sellers/[id]` and `/companies/[slug]` cover-grid real photos** — currently gradient placeholders for the three small tiles. Banner photo (when set) fills the large left tile.
+- **`/sellers/[id]` trust strip** — only the cover grid migrated this cycle; the 5-stat trust strip from the design preview is deferred.
+- **`/profile` trust strip + tabbed IA** — only the cover hero migrated this cycle; the tabbed information architecture and 5-stat strip are deferred.
+- **`/profile/[id]` (public other-user profile)** — bespoke restyle deferred.
+- **`/messages` open-thread panel** + RFQ counter highlight card — deferred.
+- **`/radar` structural redesign** — skipped per operator instruction.
+- **Mobile-specific layouts** from the `Mobile*` design-preview components — deferred (responsive Tailwind handles current mobile rendering; bespoke mobile cuts come in subsequent cycles).
+
+### Rationale
+Cycle 68 migrated the **visual chrome layer** for the inner-pages and core-pages design handoffs while explicitly deferring the underlying information-architecture rewrites for several surfaces (sellers, profile, messages thread panel, SOS console table view, search NL parser). The soft-card shadow token introduced this cycle is now the canonical surface treatment across the app. Six commits in `c75a741 → b1beb74`, 33 unique files, +872 / −257 lines.
+
+### Documentation drift
+This entry is a **post-hoc backfill written during Cycle 69** after the operator discovered `CHANGELOG.md` was not updated at the close of Cycle 68. Contents are derived from `git diff c75a741^..b1beb74` and the individual commit messages on `main`. Discrepancies surfaced during the audit:
+
+- **Design-preview infrastructure** (`src/components/design-preview/` and `src/app/design/`) is NOT part of the Cycle 68 commit range. It shipped in 8 separate commits between Cycle 67 and Cycle 68 (`e29fdb5` → `4807e31`) — preparatory work that informed Cycle 68's chrome migration but landed under its own commits. Not double-documented here.
+- **Design-preview routes** live at `src/app/design/` (top-level, `noindex,nofollow`), not `src/app/(main)/design/` as some session notes / Cycle 69 prompt verification expected.
+- **`/sellers/[id]` trust strip rebuild** was anticipated in the session note but did NOT ship in Cycle 68 — only the cover grid did. Trust strip is now a Cycle 69 deliverable.
+
+If any discrepancy is found between this entry and what's actually in the codebase, **the codebase is canonical** — file a follow-up correction.
+
+---
+
 ## [4.38.0] — 2026-05-08 · Cinematic landing: SOS-first hero, verified-rebuilder narrative (Cycle 67)
 
 ### Added
