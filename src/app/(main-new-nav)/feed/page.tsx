@@ -17,7 +17,6 @@ import {
 import { getFeedPosts } from '@/app/actions/feed-posts'
 import { getActiveTier } from '@/app/actions/tier'
 import { getRadarPostIds } from '@/app/actions/radar'
-import { getUserCompanies } from '@/app/actions/company'
 import { FeedForYou } from './components/feed-for-you'
 import { FeedSosSection } from './components/feed-sos-section'
 import { FeedPriceDrops } from './components/feed-price-drops'
@@ -25,7 +24,6 @@ import { FeedSavedSearchSection } from './components/feed-saved-search-section'
 import { FeedDemandSignals } from './components/feed-demand-signals'
 import { FeedGeneral } from './components/feed-general'
 import { FeedPageClient } from './FeedPageClient'
-import { FeedLeftSidebar } from './components/FeedLeftSidebar'
 import { FeedActiveSOSRow } from './components/FeedActiveSOSRow'
 import { FeedRightSidebar } from './components/FeedRightSidebar'
 import { FeedSOSBanner } from '@/components/feed/FeedSOSBanner'
@@ -47,7 +45,8 @@ export default async function FeedPage() {
   const cookieStore = await cookies()
   const activeCompanyId = cookieStore.get('active_company_id')?.value ?? null
 
-  // Parallel fetch: social posts + discovery data + user profile + company + sidebar data
+  // Parallel fetch: social posts + discovery data + user profile + company + right-rail data.
+  // Left sidebar data (unread counts, user companies) is now fetched by AppShellDashboard.
   const [
     initialPostsResult,
     forYou,
@@ -59,8 +58,6 @@ export default async function FeedPage() {
     profileResult,
     companyResult,
     sosAlerts,
-    userCompanies,
-    unreadResult,
     radarPostIds,
   ] = await Promise.all([
     getFeedPosts(user.id, { filter: 'all', limit: 10 }),
@@ -83,23 +80,6 @@ export default async function FeedPage() {
           .single()
       : Promise.resolve({ data: null }),
     getFeedSOSAlerts(user.id),
-    getUserCompanies(user.id),
-    // Unread messages count
-    (async () => {
-      const { data: userConvs } = await admin
-        .from('conversations')
-        .select('id')
-        .or(`buyer_id.eq.${user.id},seller_id.eq.${user.id}`)
-      const convIds = (userConvs ?? []).map((c: { id: string }) => c.id)
-      if (convIds.length === 0) return 0
-      const { count } = await admin
-        .from('messages')
-        .select('id', { count: 'exact', head: true })
-        .in('conversation_id', convIds)
-        .neq('sender_id', user.id)
-        .is('read_at', null)
-      return count ?? 0
-    })(),
     getRadarPostIds(user.id),
   ])
 
@@ -157,40 +137,12 @@ export default async function FeedPage() {
     )
   }
 
-  // Prepare active company data for sidebar
-  const activeCompanyData = companyResult.data
-    ? {
-        id: companyResult.data.id,
-        name: companyResult.data.name,
-        slug: companyResult.data.slug,
-        logo_url: companyResult.data.logo_url,
-      }
-    : null
-
-  // Map userCompanies to sidebar format
-  const sidebarCompanies = userCompanies.map((c) => ({
-    id: c.id,
-    name: c.name,
-    slug: c.slug,
-    logo_url: c.logo_url,
-  }))
-
   return (
-    <div className="flex min-h-screen w-full overflow-x-hidden">
-      {/* Left sidebar — desktop xl only */}
-      <FeedLeftSidebar
-        profile={profileResult.data}
-        activeCompany={activeCompanyData}
-        userCompanies={sidebarCompanies}
-        unreadCount={unreadResult}
-        userId={user.id}
-        className="hidden xl:flex"
-      />
-
-      {/* Center + Right wrapper */}
-      <div className="flex min-w-0 flex-1 justify-center gap-6 px-4 py-4 xl:pl-0">
+    <div className="flex w-full overflow-x-hidden">
+      {/* Center + Right wrapper — left sidebar is provided by AppShellDashboard (Cycle 71) */}
+      <div className="flex min-w-0 flex-1 justify-center gap-6 px-4 py-4">
         {/* Center column */}
-        <main className="w-full max-w-[680px] min-w-0 overflow-hidden">
+        <div className="w-full min-w-0 max-w-[680px] overflow-hidden">
           {/* SOS banner — mobile only, dismissible */}
           <FeedSOSBanner />
 
@@ -216,7 +168,7 @@ export default async function FeedPage() {
             discoveryBlocks={discoveryBlocks}
             radarPostIds={radarPostIds}
           />
-        </main>
+        </div>
 
         {/* Right sidebar — lg and up */}
         <FeedRightSidebar

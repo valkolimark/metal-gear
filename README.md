@@ -8,6 +8,9 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 
 ## Features
 
+### Navigation (Cycle 71)
+- Metal Gear's app navigation uses a top bar + contextual sidebar on dashboard surfaces (`/feed`, `/sos`, `/messages`, `/listings`, `/search`, `/dashboard`, `/radar`) and a top-bar-only full-bleed layout on storefront/profile surfaces (`/sellers/[id]`, `/companies/[slug]`, `/profile`, `/profile/[id]`). Mobile users navigate via a 5-item bottom nav (Feed · Browse · **SOS** · Messages · Profile) with a prominent orange center action for emergency SOS posting. Currently shipped on `/feed`; rolling out to additional surfaces in Cycles 72–75. The canonical spec lives at [`docs/navigation-system.md`](docs/navigation-system.md).
+
 ### Marketplace
 - Create listings by uploading photos and filling in details on the multi-step manual form at `/listings/new` — drag-and-drop reorder, draft saves, and gallery detail pages. Category is picked from a search-as-you-type tier-2 taxonomy (the same picker SOS uses), and equipment can now be tagged with up to 5 industries it serves (e.g., an extruder serving Plastics, Food & Beverage, and Pharma). (Cycle 64.)
 - An experimental **Photo-to-Listing** option is available at the top of the creation flow: upload photos and we'll draft the listing for you to review and edit. Free tier: 3 drafts/month; paid tiers: unlimited. Drafts surface a "Photo-to-Listing draft" badge on the published listing. When you review auto-suggested fields, you can quickly confirm or flag each one with a small chip — your feedback helps us tune accuracy over time. (Pilot — Cycle 58 / 59 / 63.)

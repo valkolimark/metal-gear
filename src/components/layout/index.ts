@@ -1,0 +1,20 @@
+// Cycle 71 — canonical navigation primitives.
+// See docs/navigation-system.md for the spec.
+
+export { AppShellDashboard } from './AppShellDashboard'
+export { AppShellFullBleed } from './AppShellFullBleed'
+export { AppHeader } from './AppHeader'
+export { AppHeaderSearch } from './AppHeaderSearch'
+export { AppHeaderNotificationsBell } from './AppHeaderNotificationsBell'
+export { AppHeaderAvatarMenu } from './AppHeaderAvatarMenu'
+export { AppSidebar } from './AppSidebar'
+export { AppSidebarItem } from './AppSidebarItem'
+export { AppSidebarCompanyList } from './AppSidebarCompanyList'
+export { AppSidebarToggle } from './AppSidebarToggle'
+export { AppMobileTopBar } from './AppMobileTopBar'
+export { AppMobileBottomNav } from './AppMobileBottomNav'
+export { AppMobileBottomNavItem } from './AppMobileBottomNavItem'
+export { AppMobileNavDrawer } from './AppMobileNavDrawer'
+export { BrandMark } from './BrandMark'
+export { SidebarStatePreloader } from './SidebarStatePreloader'
+export { isItemActive, selectActiveSidebarHref } from './active-path'

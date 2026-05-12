@@ -6,6 +6,53 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.42.0] — 2026-05-12 · Navigation system: canonical specification + `/feed` reference implementation (Cycle 71)
+
+### Added
+- **`docs/navigation-system.md`** — canonical navigation spec covering desktop top-bar + sidebar IA, mobile top-bar + bottom-nav + drawer IA, surface taxonomy (Dashboard / Storefront / Settings), breakpoint matrix, accessibility requirements, interaction with existing layout patterns (Cycle 68 sticky save bars, Cycle 69 `ProfileTabsNav`, Cycle 68 cover-grid heroes), performance budget, and telemetry attributes. Source of truth for Cycles 72–75 rollout.
+- **`src/components/layout/` (16 new files)** — primitives implementing the spec. Composers: `AppShellDashboard` (top bar + sidebar + content + mobile bottom nav), `AppShellFullBleed` (top bar only — built but not yet mounted; Cycle 73 will wire it up). Header: `AppHeader` (server), `AppHeaderSearch` (client, `Cmd+K`/`Ctrl+K`), `AppHeaderNotificationsBell` (client, three modes: `sos`/`messages`/`combined`), `AppHeaderAvatarMenu`. Sidebar: `AppSidebar`, `AppSidebarItem`, `AppSidebarCompanyList`, `AppSidebarToggle` (uses `useSyncExternalStore` to sync localStorage). Mobile: `AppMobileTopBar`, `AppMobileBottomNav`, `AppMobileBottomNavItem`, `AppMobileNavDrawer` (focus-trapped, Esc-to-close, body-scroll lock). Shared: `BrandMark`, `SidebarStatePreloader` (inline `<script>` for SSR-safe sidebar state), `active-path.ts` (pure helpers for active-state detection with query-param + prefix edge cases). `app-shell.css` holds the sidebar width/collapse rules — keyed off `:root[data-sidebar-collapsed]` so first paint is correct without React state.
+- **`src/lib/layout/nav-data.ts`** — `getNavContext()`. Single batched server call returning user context, badge counts (`unreadMessages`, `activeSosInCategories`, `creditsBalance`), and company memberships. Fail-open per-query: a failing badge query returns `0` (logged via `console.warn`, silenced under test or `phase-production-build`) rather than blocking nav render.
+- **Route group `src/app/(main-new-nav)/`** — parallel layout group hosting routes migrated to the new nav. Currently contains only `/feed`. Cycles 72–75 move additional routes into this group; once empty, the old `(main)` group will be deleted.
+- **5 new test files / 26 new tests** — `src/test/active-path.test.ts` (12 tests, query-param + prefix matching), `src/test/nav-data-fail-open.test.ts` (4 tests, badge fail-open behavior), `src/test/app-sidebar-toggle.test.tsx` (3 tests, localStorage round-trip), `src/test/app-mobile-nav-drawer.test.tsx` (4 tests, body-scroll lock, Esc, focus return), `src/test/nav-route-isolation.test.ts` (3 tests, guards against `AppShell*` leaking into `(main)` group + only-one-`/feed`-page-exists invariant). Total 403 tests pass (was 377).
+- **`src/test/mocks/server-only.ts`** + vitest alias — stubs the `server-only` package so vitest-under-jsdom can import server modules. Pattern reused for any future server-only modules tested directly.
+
+### Changed
+- **`/feed`** — moved with `git mv` from `src/app/(main)/feed/` to `src/app/(main-new-nav)/feed/`. Wrapped in `AppShellDashboard`. Page content (FeedActiveSOSRow, FeedComposer, post cards, `FeedRightSidebar`, FeedSOSBanner — Cycle 68) preserved unchanged. The page's own left rail (`FeedLeftSidebar`) was removed because `AppSidebar` now provides equivalent functionality. The duplicate `<main>` was demoted to `<div>` to keep one `<main id="main-content">` landmark per page. `getUserCompanies` + unread-message subquery dropped from the page since `AppShellDashboard` now handles them via `getNavContext()`.
+- **`src/app/(main-new-nav)/layout.tsx`** — new group layout. Mirrors `(main)/layout.tsx`'s side context (CompanyContextProvider, ArchetypeMigrationBanner, HelpButton, NotificationEducationTrigger, ImportProgressBannerClient) but delegates nav chrome to `AppShellDashboard`. Legacy `Header` / `DesktopNav` / `MobileNavClient` are NOT mounted in this group.
+- **`vitest.config.ts`** — added `server-only` → `src/test/mocks/server-only.ts` alias.
+
+### Unchanged on purpose
+- **Every other route still uses the legacy chrome.** `/sos`, `/listings`, `/messages`, `/sellers/[id]`, `/companies/[slug]`, `/profile`, `/search`, all `/settings/*`, all `/admin/*` continue to render through `src/components/layout/{header,desktop-nav,mobile-drawer,mobile-nav}.tsx` via `(main)/layout.tsx`. Visual chrome on these surfaces is unchanged.
+- **`LandingNav` (Cycle 67)** — untouched. Marketing/landing routes remain unaffected.
+
+### Architecture decisions
+- **Top bar everywhere, sidebar on dashboard surfaces only.** Storefront / profile / settings / admin surfaces get full-bleed layout so Cycle 68/69 cover-grid heroes have full-viewport real estate.
+- **Mobile bottom nav with prominent SOS middle action.** 5-item grid (`Feed · Browse · SOS · Messages · Profile`) places SOS in a 48px `#FF6B2B` circle as the visual differentiator for field-side SOS posting from a yard or plant.
+- **Sidebar state persistence via `localStorage` + inline preloader script.** `SidebarStatePreloader` stamps `data-sidebar-collapsed` onto `<html>` synchronously before paint; CSS rules in `app-shell.css` key off it. Eliminates flash-of-expanded-sidebar. Same shape as `next-themes`.
+- **`useSyncExternalStore`-based toggle.** Avoids the React 19 `react-hooks/set-state-in-effect` lint and keeps SSR/CSR snapshots aligned.
+- **Single batched `getNavContext()` call.** Nav data fetched once per shell render and threaded to all nav components via the `ctx` prop. Prevents triple-query waste.
+- **Surgical rollout via route-group split.** New nav is introduced in a parallel `(main-new-nav)` group rather than modifying the existing `(main)` layout. Eliminates the all-or-nothing risk of a single big-bang nav swap.
+
+### Telemetry
+- `data-nav-event` attributes wired on all nav primitives. Conventional values: `primary:feed`, `primary:browse`, `primary:sos`, `primary:messages`, `primary:my-listings`, `primary:saved`, `primary:credits`, `primary:settings`, `mobile-bottom:{feed,browse,sos,messages,profile}`, `drawer:opened`, `drawer:closed`, `bell:{sos,messages,combined}`, `search:opened`, `search:submitted`, `avatar:opened`, `footer:sos-send`, `brand:click`. Existing analytics pipeline collects these.
+
+### Migration
+- No DB changes this cycle.
+- File move: `src/app/(main)/feed/` → `src/app/(main-new-nav)/feed/` (via `git mv` — exactly one `/feed/page.tsx` exists in `src/app`, codified by `nav-route-isolation` test).
+- New route group: `src/app/(main-new-nav)/layout.tsx`.
+
+### Deferred to subsequent cycles
+- **Cycle 72** — Roll out new nav to dashboard surfaces: `/sos`, `/messages`, `/listings`, `/search`, `/dashboard`, `/radar`. Move each to `(main-new-nav)`; continue with `AppShellDashboard`.
+- **Cycle 73** — Roll out to storefront/profile: `/sellers/[id]`, `/companies/[slug]`, `/profile`, `/profile/[id]`. Likely introduces `(main-new-nav-fullbleed)` sibling group. Uses `AppShellFullBleed`.
+- **Cycle 74** — Roll out to `/settings/*` and `/admin/*`. Settings has its own internal nav (consider sidebar-collapsed-default); admin has scoped CSS — careful coexistence check.
+- **Cycle 75** — Refresh `LandingNav` (Cycle 67) to match the authenticated nav visual language.
+- **Future** — Real-time badge updates via SSE/realtime, search autocomplete/typeahead, drawer swipe-to-close gesture, page-level keyboard shortcut override registry.
+
+### Rationale
+Navigation has the highest blast radius of any change in Metal Gear — every authenticated page renders it. Shipping a global header/sidebar overhaul in a single cycle would risk breaking 30+ routes simultaneously. This cycle de-risks rollout by (a) committing the spec as a document so future cycles have a single source of truth, (b) building all primitives so rollout cycles are pure mounting work, and (c) limiting production exposure to one route (`/feed`) so visual regressions can be caught and corrected before propagating. Mirrors the design-handoff preview-routes-first approach used in Cycles 67–68.
+
+---
+
 ## [4.41.0] — 2026-05-12 · Services + Team modules on Sellers / Companies storefronts; per-member team opt-in; taxonomy-backed services with free-text fallback (Cycle 70)
 
 ### Added

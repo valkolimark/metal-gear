@@ -1,0 +1,48 @@
+/* Cycle 71 — App shell sidebar collapse + scroll shadow tokens.
+ *
+ * The sidebar width and label visibility are pure CSS, keyed off the
+ * data-sidebar-collapsed attribute on <html> (set synchronously by
+ * SidebarStatePreloader BEFORE first paint to avoid the expand-then-collapse
+ * flash) plus the data-nav-state attribute on the [data-sidebar] element.
+ */
+
+.app-sidebar {
+  width: 240px;
+  transition: width 160ms ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-sidebar {
+    transition: none;
+  }
+}
+
+:root[data-sidebar-collapsed='true'] .app-sidebar,
+.app-sidebar[data-nav-state='collapsed'] {
+  width: 64px;
+}
+
+/* Hide labels & company role chips when collapsed */
+:root[data-sidebar-collapsed='true'] .app-sidebar [data-sidebar-label],
+.app-sidebar[data-nav-state='collapsed'] [data-sidebar-label] {
+  display: none;
+}
+
+/* Below the md breakpoint the sidebar is hidden entirely. */
+@media (max-width: 767px) {
+  .app-sidebar {
+    display: none !important;
+  }
+}
+
+/* Top-bar scroll shadow — Cycle 68 soft-card token. Toggled via
+ * data-scrolled by a tiny IntersectionObserver in the header (deferred to
+ * a future cycle). For Cycle 71 we keep the rule wired up but ship without
+ * the JS observer — bottom border alone reads correctly on the existing
+ * Cycle 68 chrome.
+ */
+header[data-nav-shell][data-scrolled='true'] {
+  box-shadow:
+    0 1px 2px rgba(11, 37, 69, 0.04),
+    0 4px 12px rgba(11, 37, 69, 0.05);
+}
