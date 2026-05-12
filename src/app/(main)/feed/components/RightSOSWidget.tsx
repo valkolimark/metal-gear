@@ -40,12 +40,19 @@ function urgencyLabel(urgency: string | null) {
   return { text: 'NORMAL', color: 'text-blue-500' }
 }
 
+const CARD_SHADOW = '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)'
+
 export function RightSOSWidget({ sosAlerts }: RightSOSWidgetProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div
+      className="rounded-2xl bg-card p-4"
+      style={{ boxShadow: CARD_SHADOW }}
+    >
       <div className="flex items-center gap-2 mb-3">
         <Siren className="size-4 text-[#FF6B2B]" />
-        <h3 className="font-display text-sm font-semibold text-foreground">SOS Alerts</h3>
+        <h3 className="font-display text-[14.5px] font-bold text-foreground tracking-tight">
+          SOS Alerts
+        </h3>
         {sosAlerts.length > 0 && (
           <span className="ml-auto flex items-center justify-center rounded-full bg-[#FF6B2B]/15 text-[#FF6B2B] text-[10px] font-bold px-1.5 py-0.5 min-w-[20px]">
             {sosAlerts.length}

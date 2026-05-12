@@ -311,7 +311,12 @@ export function FeedComposer({
   const canPost = (content.trim().length > 0 || media.some((m) => m.status === 'ready' || m.status === 'processing')) && content.length <= MAX_CHARS && !isUploading && !isSubmitting
 
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div
+      className="rounded-2xl bg-card p-4"
+      style={{
+        boxShadow: '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)',
+      }}
+    >
       <div className="flex gap-3">
         <Avatar className="size-10 shrink-0">
           {activeCompanyLogo ? (

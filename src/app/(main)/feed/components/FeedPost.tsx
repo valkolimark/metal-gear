@@ -271,7 +271,13 @@ export function FeedPost({ post, currentUserId, activeCompany, onDeleted, onEdit
     : `Comment${commentsCount > 0 ? ` (${commentsCount})` : ''}`
 
   return (
-    <div id={`post-${post.id}`} className="overflow-hidden rounded-xl border border-border bg-card hover:bg-muted/30 transition-colors">
+    <div
+      id={`post-${post.id}`}
+      className="overflow-hidden rounded-2xl bg-card hover:bg-muted/30 transition-colors"
+      style={{
+        boxShadow: '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)',
+      }}
+    >
       {/* Header */}
       <div className="flex items-start justify-between p-4 pb-0">
         <div className="flex items-center gap-3">

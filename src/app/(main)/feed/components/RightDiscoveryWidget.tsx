@@ -23,12 +23,17 @@ function formatPrice(cents: number | null, contactForPrice: boolean | null) {
   return '$' + (cents / 100).toLocaleString('en-US', { maximumFractionDigits: 0 })
 }
 
+const CARD_SHADOW = '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)'
+
 export function RightDiscoveryWidget({ listings }: RightDiscoveryWidgetProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4">
+    <div
+      className="rounded-2xl bg-card p-4"
+      style={{ boxShadow: CARD_SHADOW }}
+    >
       <div className="flex items-center gap-2 mb-3">
         <Zap className="size-4 text-primary" />
-        <h3 className="font-display text-sm font-semibold text-foreground">
+        <h3 className="font-display text-[14.5px] font-bold text-foreground tracking-tight">
           Recently Listed For You
         </h3>
       </div>
