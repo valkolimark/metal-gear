@@ -6,6 +6,76 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.44.0] — 2026-05-12 · Nav: storefront cluster rollout on the full-bleed shell (Cycle 73)
+
+### Changed
+- **Storefront cluster routes** migrated to the new layout system on the full-bleed shell:
+  - `/sellers/[id]` moved from `src/app/(main)/sellers/[id]/` to `src/app/(main-new-nav-fullbleed)/sellers/[id]/`
+  - `/companies/[slug]` moved from `src/app/(main)/companies/[slug]/` to `src/app/(main-new-nav-fullbleed)/companies/[slug]/`
+  - `/profile` (incl. all of `/profile/components`, `/profile/actions.ts`, `/profile/data.ts`, `/profile/loading.tsx`) moved from `src/app/(main)/profile/` to `src/app/(main-new-nav-fullbleed)/profile/`
+  - `/profile/[id]` moved from `src/app/(main)/profile/[id]/` to `src/app/(main-new-nav-fullbleed)/profile/[id]/`
+- All four URLs unchanged — route groups are transparent in Next.js. Verified via `next build`.
+- All four routes now render `<AppShellFullBleed>` chrome: top bar (with three-state theme toggle, Cmd+K search, SOS / messages bells, avatar menu) + mobile bottom nav. **No sidebar** — gives Cycle 68 cover-grid heroes full-viewport visual real estate.
+- Page content unchanged: Cycle 68 cover grids, Cycle 69 trust strip + tab IA + 6-tab Sellers / 5-tab Profile IA, Cycle 70 Services + Team modules — all preserved.
+- `(main)/companies/new/` (the company-creation onboarding step) intentionally stays in `(main)` — unrelated to public storefront, still uses legacy chrome until a later cycle.
+
+### Added
+- **`src/app/(main-new-nav-fullbleed)/`** — new sibling route group. Layout mirrors `(main-new-nav)/layout.tsx` exactly except for the shell — `<AppShellFullBleed>` (built in Cycle 71, finally mounted this cycle) instead of `<AppShellDashboard>`. Threads `CompanyContextProvider`, `ArchetypeMigrationBanner`, `HelpButton`, `NotificationEducationTrigger`, `ImportProgressBannerClient` so storefronts don't silently lose global affordances.
+- **`docs/navigation-system.md` §11.1** — rollout-status table extended with a `Shell` column (Dashboard vs Full-bleed). The Cycle 71 follow-up navy palette (`b0f643d`) is documented as inherited by both shells.
+- **`CLAUDE.md` first-class invariant** — "No new Postgres RPCs for read paths." Promoted from a per-cycle prompt §2 (recurring since Cycle 69) to a canonical Critical Pattern entry, alongside "All DB ops via server actions" and "All media through `src/lib/media.ts`." Write-path mutations (e.g. `increment_post_reactions`) remain exempt — the rule applies to read paths only.
+- **`src/test/nav-route-isolation.test.ts`** — 5 new assertions: (a) `(main-new-nav-fullbleed)/layout.tsx` imports `AppShellFullBleed`; (b/c/d/e) exactly one production `/sellers/[id]/page.tsx`, `/companies/[slug]/page.tsx`, `/profile/page.tsx`, `/profile/[id]/page.tsx` exists in `src/app`, each under `(main-new-nav-fullbleed)`. Total: 8 assertions in the file.
+
+### Architecture decision — sibling route groups, not conditional dispatch
+Each shell variant gets its own route group. Shell choice is file-system-explicit (visible from folder path), with no metadata-passing or conditional rendering inside the layout component. This scales: Cycle 74 may add a third group (settings) without touching either existing group. The pattern beats conditional dispatch because (a) the layout decision is co-located with the route, (b) shell forks are obvious in `find` output, (c) the layout file itself is short and pure.
+
+### Architecture decision — top bar palette is shared
+`<AppHeader>` has zero variant-conditional palette logic. The Cycle 71 follow-up navy palette (`b0f643d`) sits inline on the header element and is inherited by both `<AppShellDashboard>` and `<AppShellFullBleed>`. Visual parity between `/feed` and `/sellers/[id]` above the fold is the canary. If a future cycle introduces a variant-specific top-bar style, it must do so via a dedicated style block — not by branching the palette.
+
+### Architecture decision — SidebarStatePreloader scope
+`<SidebarStatePreloader>` is mounted inside `<AppShellDashboard>` (where the sidebar lives), not in either route-group `layout.tsx`. The full-bleed layout intentionally omits it: there is no sidebar to apply state to on a full-bleed page, and `localStorage["mg.sidebar.collapsed"]` persists across navigation regardless. When the user returns to a dashboard route, that shell's preloader re-stamps `:root`.
+
+### Rollout status (per `docs/navigation-system.md` §11.1)
+
+| Surface | Status | Cycle | Shell |
+|---|---|---|---|
+| `/feed` | New nav | 71 | Dashboard |
+| `/sos` (+ child routes) | New nav | 72 | Dashboard |
+| `/messages` (+ child routes) | New nav | 72 | Dashboard |
+| `/listings` (+ all child routes incl. snap/import/bulk-edit) | New nav | 72 | Dashboard |
+| `/search` | New nav | 72 | Dashboard |
+| `/sellers/[id]` | New nav | 73 | Full-bleed |
+| `/companies/[slug]` | New nav | 73 | Full-bleed |
+| `/profile` | New nav | 73 | Full-bleed |
+| `/profile/[id]` | New nav | 73 | Full-bleed |
+| `/settings/*` | Old chrome | Cycle 74 | — |
+| `/admin/*` | Scoped CSS — separate convention | Cycle 74 (scope check) | — |
+| `/dashboard`, `/radar`, other secondary surfaces | Old chrome | Cycle 74 or later | — |
+| `/companies/new` | Old chrome | TBD | — |
+| Marketing / landing | Cycle 67 `LandingNav` — unchanged | Cycle 75 | — |
+
+### Deferred to subsequent cycles
+- **Cycle 74:** settings cluster rollout — `/settings/*`. Admin (`/admin/*`) has its own `[data-section="admin"]` scoped CSS — verify whether it needs a third sibling group or stays in its existing `(admin)` group entirely.
+- **Cycle 75:** marketing/landing nav refresh — modernize `LandingNav` from Cycle 67.
+- **TBD:** `/dashboard`, `/radar`, `/companies/new`, `/credits`, `/notifications`, `/favorites` redirects, `/saved-searches`, `/transactions/*`. Operator to assign.
+- **Future:** when all routes have migrated, delete the `(main)` group, the legacy `Header` / `DesktopNav` / `MobileNavClient` / `mobile-drawer` components.
+
+### Migration
+- No DB changes.
+- 17 file renames via `git mv` (git history preserved); 1 cross-route import fixed in `profile/page.tsx` (`SellerRecentReviews` path).
+- 1 new `layout.tsx` file (`(main-new-nav-fullbleed)/layout.tsx`).
+- 1 test file extended (`nav-route-isolation.test.ts` — 3 → 8 assertions).
+- `docs/navigation-system.md` §11.1 extended with `Shell` column; CLAUDE.md Navigation section + Critical Pattern updated.
+
+### Rationale
+Storefront pages have visual identities anchored by Cycle 68 cover-grid heroes and Cycle 69 rich tabbed IA that demand full-viewport visual real estate. A persistent sidebar would compete with the brand work these pages do — particularly the seller storefront, which is the primary trust surface for a B2B marketplace. The full-bleed shell preserves the storefront-as-trust-builder model while still providing global navigation via the top bar and mobile bottom nav. Sibling route groups make the shell choice file-system-explicit, which scales across the remaining rollout cycles without coupling shell logic into the layout components themselves.
+
+### Tests
+- All 417 unit tests pass (8 in `nav-route-isolation.test.ts`, including 5 new Cycle 73 assertions).
+- `next build` succeeds with no duplicate-route errors; all four storefront paths resolve.
+- `npm run lint` clean (0 errors, 62 pre-existing warnings); `npm run check:archetypes` passes.
+
+---
+
 ## [4.43.0] — 2026-05-12 · Nav: three-state theme toggle restored + dashboard cluster rollout (Cycle 72)
 
 ### Fixed

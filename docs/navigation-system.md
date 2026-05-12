@@ -304,21 +304,28 @@ After Cycle 75, the legacy `Header` / `DesktopNav` / `MobileNavClient` / `mobile
 
 Update this table at the end of every cycle that moves routes.
 
-| Surface | Status | Cycle |
-|---|---|---|
-| `/feed` | New nav | 71 |
-| `/sos` (+ `/sos/[id]`, `/sos/create`, `/sos/my-requests`) | New nav | 72 |
-| `/messages` (+ child routes) | New nav | 72 |
-| `/listings` (+ `/listings/[id]`, `/listings/[id]/edit`, `/listings/bulk-edit`, `/listings/create`, `/listings/import`, `/listings/new`, `/listings/snap*`) | New nav | 72 |
-| `/search` | New nav | 72 |
-| `/sellers/[id]` | Old chrome | Cycle 73 |
-| `/companies/[slug]` | Old chrome | Cycle 73 |
-| `/profile` | Old chrome | Cycle 73 |
-| `/profile/[id]` | Old chrome | Cycle 73 |
-| `/settings/*` | Old chrome | Cycle 74 |
-| `/admin/*` | Scoped CSS — separate convention | Cycle 74 (scope check) |
-| `/dashboard`, `/radar`, other secondary dashboard surfaces | Old chrome | Cycle 73 or 74 |
-| Marketing / landing | Cycle 67 `LandingNav` — unchanged | Cycle 75 |
+| Surface | Status | Cycle | Shell |
+|---|---|---|---|
+| `/feed` | New nav | 71 | Dashboard |
+| `/sos` (+ `/sos/[id]`, `/sos/create`, `/sos/my-requests`) | New nav | 72 | Dashboard |
+| `/messages` (+ child routes) | New nav | 72 | Dashboard |
+| `/listings` (+ `/listings/[id]`, `/listings/[id]/edit`, `/listings/bulk-edit`, `/listings/create`, `/listings/import`, `/listings/new`, `/listings/snap*`) | New nav | 72 | Dashboard |
+| `/search` | New nav | 72 | Dashboard |
+| `/sellers/[id]` | New nav | 73 | Full-bleed |
+| `/companies/[slug]` | New nav | 73 | Full-bleed |
+| `/profile` | New nav | 73 | Full-bleed |
+| `/profile/[id]` | New nav | 73 | Full-bleed |
+| `/settings/*` | Old chrome | Cycle 74 | — |
+| `/admin/*` | Scoped CSS — separate convention | Cycle 74 (scope check) | — |
+| `/dashboard`, `/radar`, other secondary dashboard surfaces | Old chrome | Cycle 74 or later | — |
+| Marketing / landing | Cycle 67 `LandingNav` — unchanged | Cycle 75 | — |
+
+The `Shell` column distinguishes the two sibling route-group layouts:
+
+- **Dashboard** — `src/app/(main-new-nav)/layout.tsx` wraps in `<AppShellDashboard>` (top bar + sidebar + mobile bottom nav).
+- **Full-bleed** — `src/app/(main-new-nav-fullbleed)/layout.tsx` wraps in `<AppShellFullBleed>` (top bar + mobile bottom nav, no sidebar). Reserved for surfaces with bespoke heroes (Cycle 68 cover-grid 4-tile pattern) that want full-viewport visual real estate.
+
+Both shells use the same `<AppHeader>` instance. The Cycle 71 follow-up `b0f643d` palette correction lives in `AppHeader` and is inherited by both. Visual parity between `/feed` and `/sellers/[id]` is the canary — they must look identical above the fold.
 
 ---
 
