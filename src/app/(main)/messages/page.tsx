@@ -422,10 +422,26 @@ function MessagesContent() {
           }`}
         >
           <div className="border-b border-border p-4">
-            <div className="flex items-center justify-between">
-              <h1 className="font-display text-lg font-bold text-foreground">
+            <div className="flex items-center gap-2">
+              <h1
+                className="font-display text-[22px] font-bold text-foreground"
+                style={{ letterSpacing: '-0.015em' }}
+              >
                 Messages
               </h1>
+              <span
+                className="text-[10.5px] font-bold uppercase px-1.5 h-[18px] inline-flex items-center"
+                style={{
+                  background: 'rgba(255,107,43,0.10)',
+                  color: '#FF6B2B',
+                  borderRadius: 4,
+                  letterSpacing: '0.06em',
+                  fontFamily: 'var(--font-jetbrains-mono), monospace',
+                }}
+              >
+                Inbox
+              </span>
+              <div className="ml-auto"></div>
               <Button
                 variant="ghost"
                 size="icon"

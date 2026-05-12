@@ -56,19 +56,111 @@ export function CompanyHero({
     }
   }
 
+  // 4-tile cover grid — design-handoff_inner_pages/sellers/SellersShared.jsx.
+  // Banner photo gets the large left tile when available; the other three
+  // tiles use industrial gradient placeholders so the storefront never
+  // shows a single flat banner.
+  const tileGradients = [
+    'linear-gradient(135deg, #1E3A8A 0%, #1877F2 60%, #3D9BD6 100%)',
+    'linear-gradient(135deg, #155E75 0%, #0EA5E9 100%)',
+    'linear-gradient(135deg, #831843 0%, #DB2777 100%)',
+    'linear-gradient(135deg, #1F2937 0%, #4B5563 100%)',
+  ]
+
   return (
     <div className="relative">
-      {/* Banner */}
-      <div className="relative h-48 overflow-hidden bg-gradient-to-r from-primary to-primary/70 md:h-64">
-        {company.banner_url && (
-          <Image
-            src={company.banner_url}
-            alt={`${company.name} banner`}
-            fill
-            className="object-cover"
-            unoptimized
-          />
-        )}
+      {/* Cover grid */}
+      <div
+        className="relative grid"
+        style={{
+          height: 280,
+          gridTemplateColumns: '2fr 1fr 1fr',
+          gridTemplateRows: '1fr 1fr',
+          gap: 4,
+          background: '#0A1628',
+        }}
+      >
+        {/* Large left tile — banner photo if uploaded, otherwise gradient */}
+        <div
+          className="relative overflow-hidden"
+          style={{
+            gridRow: '1 / span 2',
+            background: company.banner_url ? '#0A1628' : tileGradients[0],
+          }}
+        >
+          {company.banner_url && (
+            <Image
+              src={company.banner_url}
+              alt={`${company.name} banner`}
+              fill
+              className="object-cover"
+              unoptimized
+            />
+          )}
+          {!company.banner_url && (
+            <>
+              <div
+                className="absolute inset-0"
+                style={{
+                  background:
+                    'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, transparent 60%)',
+                }}
+              />
+              <div
+                className="absolute inset-0"
+                style={{
+                  backgroundImage:
+                    'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px)',
+                }}
+              />
+            </>
+          )}
+          {/* Cover chips */}
+          <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 flex-wrap">
+            <span
+              className="text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center"
+              style={{
+                background: 'rgba(255,255,255,0.16)',
+                color: '#fff',
+                borderRadius: 4,
+                letterSpacing: '0.10em',
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              COMPANY · STOREFRONT
+            </span>
+            <span
+              className="text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center gap-1"
+              style={{
+                background: 'rgba(34,197,94,0.20)',
+                color: '#86EFAC',
+                borderRadius: 4,
+                letterSpacing: '0.10em',
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                backdropFilter: 'blur(8px)',
+              }}
+            >
+              VERIFIED SELLER
+            </span>
+          </div>
+        </div>
+        {/* Three small gradient tiles on the right */}
+        {tileGradients.slice(1, 4).map((bg, i) => (
+          <div
+            key={i}
+            className="relative overflow-hidden"
+            style={{ background: bg }}
+          >
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 16px)',
+              }}
+            />
+          </div>
+        ))}
       </div>
 
       {/* Company identity row */}

@@ -301,12 +301,52 @@ export default function ProfilePage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+      {/* Cover hero — design-handoff_inner_pages/profile/ProfileShared.jsx */}
+      <div
+        className="relative -mx-4 sm:-mx-6 lg:-mx-8 overflow-hidden"
+        style={{
+          height: 200,
+          background: 'linear-gradient(135deg, #0B2545 0%, #1E3A8A 50%, #3D9BD6 100%)',
+        }}
+      >
+        <div
+          className="absolute inset-0"
+          style={{
+            background:
+              'radial-gradient(circle at 30% 25%, rgba(255,255,255,0.16) 0%, transparent 60%)',
+          }}
+        />
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px)',
+          }}
+        />
+        <span
+          className="absolute top-4 left-4 text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center"
+          style={{
+            background: 'rgba(255,255,255,0.16)',
+            color: '#fff',
+            borderRadius: 4,
+            letterSpacing: '0.10em',
+            fontFamily: 'var(--font-jetbrains-mono), monospace',
+            backdropFilter: 'blur(8px)',
+          }}
+        >
+          MEMBER · YOUR PROFILE
+        </span>
+      </div>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between -mt-12">
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">
+          <h1
+            className="font-display text-[28px] font-bold text-foreground tracking-tight"
+            style={{ letterSpacing: '-0.02em' }}
+          >
             Profile
           </h1>
-          <p className="mt-1 font-body text-muted-foreground">
+          <p className="mt-1 font-body text-[13.5px] text-muted-foreground">
             Manage your account settings and public profile
           </p>
         </div>
