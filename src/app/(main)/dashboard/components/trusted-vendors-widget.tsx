@@ -37,7 +37,7 @@ export function TrustedVendorsWidget({
   }
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardHeader className="flex flex-row items-center gap-2">
         <Handshake className="size-5 text-primary" />
         <CardTitle className="flex-1 font-display text-lg">

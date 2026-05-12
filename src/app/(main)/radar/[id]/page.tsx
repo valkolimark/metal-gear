@@ -140,7 +140,7 @@ export default async function RadarListPage({
 
       {/* Items */}
       {(items ?? []).length === 0 ? (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="flex flex-col items-center gap-4 py-16">
             <FolderOpen className="size-12 text-muted-foreground" />
             <p className="font-display text-lg font-semibold text-foreground">

@@ -86,7 +86,7 @@ export default async function PublicProfilePage({
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       {/* Profile Header */}
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardContent className="flex flex-col items-center gap-6 p-6 sm:flex-row sm:items-start">
           <Avatar className="size-24">
             <AvatarImage
@@ -186,7 +186,7 @@ export default async function PublicProfilePage({
 
       {/* Bio */}
       {profile.bio && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">About</CardTitle>
           </CardHeader>
@@ -200,7 +200,7 @@ export default async function PublicProfilePage({
 
       {/* Reviews */}
       {reviewsData.totalReviews > 0 && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Star className="size-5 fill-yellow-400 text-yellow-400" />
@@ -310,7 +310,7 @@ export default async function PublicProfilePage({
       )}
 
       {/* Active Listings */}
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle className="font-display text-lg">
             Active Listings ({listings?.length ?? 0})

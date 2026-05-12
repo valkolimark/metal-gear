@@ -35,7 +35,7 @@ export default function ListingDetailLoading() {
           </div>
 
           {/* Specs table */}
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <Skeleton className="h-5 w-28" />
             </CardHeader>
@@ -52,7 +52,7 @@ export default function ListingDetailLoading() {
 
         {/* Right sidebar */}
         <div className="space-y-4">
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardContent className="space-y-4 p-5">
               <Skeleton className="h-8 w-32" />
               <Skeleton className="h-10 w-full rounded-lg" />

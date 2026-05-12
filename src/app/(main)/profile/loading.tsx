@@ -7,7 +7,7 @@ export default function ProfileLoading() {
       <Skeleton className="h-9 w-32" />
 
       {/* Avatar */}
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardHeader>
           <Skeleton className="h-5 w-24" />
         </CardHeader>
@@ -18,7 +18,7 @@ export default function ProfileLoading() {
       </Card>
 
       {/* Form fields */}
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardHeader>
           <Skeleton className="h-5 w-36" />
         </CardHeader>

@@ -175,7 +175,7 @@ export default function InsightsPage() {
       {tab === 'market' && (
         <div className="space-y-6">
           {/* Average Price by Category */}
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <DollarSign className="size-5 text-primary" />
@@ -199,7 +199,7 @@ export default function InsightsPage() {
           </Card>
 
           {/* Listing Volume Trends */}
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <TrendingUp className="size-5 text-primary" />
@@ -216,7 +216,7 @@ export default function InsightsPage() {
           </Card>
 
           {/* Demand Heatmap */}
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <Flame className="size-5 text-primary" />
@@ -247,7 +247,7 @@ export default function InsightsPage() {
               </div>
 
               {/* Conversion Funnel */}
-              <Card className="border-border bg-card">
+              <Card className="bg-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display text-lg">
                     <Activity className="size-5 text-primary" />
@@ -260,7 +260,7 @@ export default function InsightsPage() {
               </Card>
 
               {/* Revenue by Month */}
-              <Card className="border-border bg-card">
+              <Card className="bg-card">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2 font-display text-lg">
                     <DollarSign className="size-5 text-primary" />
@@ -279,7 +279,7 @@ export default function InsightsPage() {
               </Card>
             </>
           ) : (
-            <Card className="border-border bg-card">
+            <Card className="bg-card">
               <CardContent className="flex flex-col items-center gap-4 py-12">
                 <TrendingUp className="size-12 text-muted-foreground" />
                 <p className="font-body text-sm text-muted-foreground">
@@ -293,7 +293,7 @@ export default function InsightsPage() {
 
       {tab === 'compare' && (
         <div className="space-y-6">
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <Activity className="size-5 text-primary" />
@@ -663,7 +663,7 @@ function KPICard({
   value: string
 }) {
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardContent className="flex items-center gap-3 p-4">
         <div className="flex size-10 items-center justify-center rounded-lg bg-primary/20">
           <Icon className="size-5 text-primary" />

@@ -449,7 +449,7 @@ function EmptyTab({
   actionHref: string
 }) {
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardContent className="flex flex-col items-center gap-4 py-16">
         <Icon className="size-12 text-muted-foreground" />
         <p className="font-display text-lg font-semibold text-foreground">{title}</p>

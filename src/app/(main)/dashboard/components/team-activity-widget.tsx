@@ -39,7 +39,7 @@ export function TeamActivityWidget({
   if (members.length === 0) return null
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardHeader className="flex flex-row items-center gap-2">
         <Users className="size-5 text-primary" />
         <CardTitle className="flex-1 font-display text-lg">Your Team</CardTitle>

@@ -304,7 +304,7 @@ export default function TransactionDetailPage() {
 
       {/* Status Timeline */}
       {!isCancelled && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               {STATUS_STEPS.map((step, i) => {
@@ -349,7 +349,7 @@ export default function TransactionDetailPage() {
       )}
 
       {/* Listing Info */}
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardContent className="flex gap-4 p-4">
           <div className="size-20 shrink-0 overflow-hidden rounded-lg bg-surface">
             {image ? (
@@ -427,7 +427,7 @@ export default function TransactionDetailPage() {
 
       {/* Tracking Info */}
       {(tx.tracking_number || tx.status === 'paid') && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Truck className="size-5" />
@@ -464,7 +464,7 @@ export default function TransactionDetailPage() {
 
       {/* Actions */}
       {!isCancelled && !isDisputed && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="p-4">
             <div className="flex flex-wrap gap-2">
               {isBuyer && tx.status === 'initiated' && !showPaymentForm && (
@@ -598,7 +598,7 @@ export default function TransactionDetailPage() {
 
       {/* Dispute Timeline */}
       {disputes.length > 0 && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <ShieldCheck className="size-5" />
@@ -725,7 +725,7 @@ export default function TransactionDetailPage() {
 
       {/* Reviews Section */}
       {tx.status === 'completed' && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <span className="text-yellow-400">&#9733;</span>
@@ -867,7 +867,7 @@ function PartyCard({
   isYou: boolean
 }) {
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardContent className="flex items-center gap-3 p-4">
         <Avatar className="size-10">
           <AvatarImage src={party?.avatar_url || undefined} />

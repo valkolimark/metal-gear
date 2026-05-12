@@ -805,7 +805,7 @@ function CollapsibleWidget({
   }
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardHeader
         className="flex cursor-pointer flex-row items-center gap-2"
         onClick={toggle}

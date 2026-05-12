@@ -157,7 +157,7 @@ export default function SchedulePage() {
       </div>
 
       {/* Availability Settings */}
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 font-display text-lg">
             <Clock className="size-5 text-primary" />
@@ -253,7 +253,7 @@ export default function SchedulePage() {
 
       {/* Incoming Requests (as seller) */}
       {sellerRequests.length > 0 && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Eye className="size-5 text-primary" />
@@ -354,7 +354,7 @@ export default function SchedulePage() {
 
       {/* My Requests (as buyer) */}
       {buyerRequests.length > 0 && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <MapPin className="size-5 text-primary" />
@@ -438,7 +438,7 @@ export default function SchedulePage() {
       )}
 
       {sellerRequests.length === 0 && buyerRequests.length === 0 && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="flex flex-col items-center gap-3 py-12">
             <CalendarDays className="size-10 text-muted-foreground" />
             <p className="font-display text-lg font-semibold text-foreground">

@@ -52,7 +52,7 @@ export default function DashboardLoading() {
             ))}
           </CardContent>
         </Card>
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <Skeleton className="h-5 w-24" />
           </CardHeader>

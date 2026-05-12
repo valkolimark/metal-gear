@@ -216,15 +216,24 @@ export default function ListingsPage() {
     setQrDialogOpen(true)
   }
 
+  // KPI counts computed from the loaded listings — refreshes whenever
+  // listings state changes (after create / archive / mark sold / etc.)
+  const kpiCounts = {
+    active: listings.filter((l) => l.status === 'active').length,
+    drafts: listings.filter((l) => l.status === 'draft').length,
+    sold: listings.filter((l) => l.status === 'sold').length,
+    total: listings.length,
+  }
+
   return (
     <div className="mx-auto w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="font-display text-3xl font-bold text-foreground">
+          <h1 className="font-display text-[28px] font-bold text-foreground tracking-tight">
             My Listings
           </h1>
-          <p className="mt-1 font-body text-muted-foreground">
-            Manage your equipment listings
+          <p className="mt-1 font-body text-[13.5px] text-muted-foreground">
+            Manage your equipment inventory · {kpiCounts.total} total
           </p>
         </div>
         <Button asChild className="font-body">
@@ -234,6 +243,40 @@ export default function ListingsPage() {
           </Link>
         </Button>
       </div>
+
+      {/* KPI strip — design-handoff_core/my_listings/ListingsShared.jsx */}
+      {!loading && listings.length > 0 && (
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { label: 'Active', value: kpiCounts.active },
+            { label: 'Drafts', value: kpiCounts.drafts },
+            { label: 'Sold', value: kpiCounts.sold },
+            { label: 'Total', value: kpiCounts.total },
+          ].map((k) => (
+            <div
+              key={k.label}
+              className="rounded-xl bg-card px-4 py-2.5"
+              style={{
+                boxShadow:
+                  '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)',
+              }}
+            >
+              <div
+                className="font-body text-[11px] font-semibold uppercase text-muted-foreground"
+                style={{ letterSpacing: '0.05em' }}
+              >
+                {k.label}
+              </div>
+              <div
+                className="mt-0.5 font-display text-[20px] font-bold text-foreground"
+                style={{ letterSpacing: '-0.02em' }}
+              >
+                {k.value}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {filterNoMedia && (
         <div className="flex items-center gap-3 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3">
@@ -326,7 +369,7 @@ export default function ListingsPage() {
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
       ) : listings.length === 0 ? (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="flex flex-col items-center gap-4 py-16">
             <p className="font-display text-lg font-semibold text-foreground">
               No listings yet

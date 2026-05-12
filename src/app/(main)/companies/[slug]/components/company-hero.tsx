@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import Image from 'next/image'
-import { Star, Package, Users, Calendar, Heart } from 'lucide-react'
+import { Heart } from 'lucide-react'
 import { addTrustedVendor, removeTrustedVendor } from '@/app/actions/trusted-vendors'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
@@ -134,44 +134,115 @@ export function CompanyHero({
           </div>
         </div>
 
-        {/* Stats bar */}
-        <div className="flex flex-wrap gap-6 border-t border-border py-4">
-          <div className="flex items-center gap-1.5 text-sm">
-            <Package className="size-4 text-muted-foreground" />
-            <span className="font-semibold">{listingCount}</span>
-            <span className="text-muted-foreground">active listings</span>
-          </div>
+        {/* Trust strip — design-handoff_inner_pages/profile/ProfileShared.jsx */}
+        <div
+          className="mt-4 grid overflow-hidden rounded-2xl bg-card"
+          style={{
+            gridTemplateColumns:
+              avgRating != null && totalReviews != null && totalReviews > 0
+                ? 'repeat(4, 1fr)'
+                : 'repeat(3, 1fr)',
+            boxShadow:
+              '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)',
+          }}
+        >
           {avgRating != null && totalReviews != null && totalReviews > 0 && (
-            <div className="flex items-center gap-1.5 text-sm">
-              <Star className="size-4 fill-yellow-400 text-yellow-400" />
-              <span className="font-semibold">{avgRating.toFixed(1)}</span>
-              <span className="text-muted-foreground">
-                ({totalReviews} {totalReviews === 1 ? 'review' : 'reviews'})
+            <div
+              className="flex flex-col px-5 py-3.5"
+              style={{ borderRight: '1px solid var(--border)' }}
+            >
+              <span
+                className="font-body text-[10.5px] font-bold uppercase text-muted-foreground"
+                style={{ letterSpacing: '0.10em' }}
+              >
+                Rating
+              </span>
+              <span
+                className="font-display text-[22px] font-bold leading-none"
+                style={{ color: '#FF6B2B', letterSpacing: '-0.01em' }}
+              >
+                {avgRating.toFixed(1)}★
+              </span>
+              <span className="font-body text-[11px] text-muted-foreground mt-1">
+                {totalReviews} {totalReviews === 1 ? 'review' : 'reviews'}
               </span>
             </div>
           )}
-          <div className="flex items-center gap-1.5 text-sm">
-            <Users className="size-4 text-muted-foreground" />
-            <span className="font-semibold">{memberCount}</span>
-            <span className="text-muted-foreground">
+          <div
+            className="flex flex-col px-5 py-3.5"
+            style={{ borderRight: '1px solid var(--border)' }}
+          >
+            <span
+              className="font-body text-[10.5px] font-bold uppercase text-muted-foreground"
+              style={{ letterSpacing: '0.10em' }}
+            >
+              Listings
+            </span>
+            <span
+              className="font-display text-[22px] font-bold leading-none text-foreground"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              {listingCount}
+            </span>
+            <span className="font-body text-[11px] text-muted-foreground mt-1">
+              Active
+            </span>
+          </div>
+          <div
+            className="flex flex-col px-5 py-3.5"
+            style={{ borderRight: '1px solid var(--border)' }}
+          >
+            <span
+              className="font-body text-[10.5px] font-bold uppercase text-muted-foreground"
+              style={{ letterSpacing: '0.10em' }}
+            >
+              Team
+            </span>
+            <span
+              className="font-display text-[22px] font-bold leading-none text-foreground"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              {memberCount}
+            </span>
+            <span className="font-body text-[11px] text-muted-foreground mt-1">
               {memberCount === 1 ? 'member' : 'members'}
             </span>
           </div>
-          <div className="flex items-center gap-1.5 text-sm">
-            <Calendar className="size-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Member since {memberSince}</span>
+          <div className="flex flex-col px-5 py-3.5">
+            <span
+              className="font-body text-[10.5px] font-bold uppercase text-muted-foreground"
+              style={{ letterSpacing: '0.10em' }}
+            >
+              On platform
+            </span>
+            <span
+              className="font-display text-[22px] font-bold leading-none text-foreground"
+              style={{ letterSpacing: '-0.01em' }}
+            >
+              {new Date().getFullYear() - memberSince}
+              <span className="text-[14px] ml-1">yrs</span>
+            </span>
+            <span className="font-body text-[11px] text-muted-foreground mt-1">
+              since {memberSince}
+            </span>
           </div>
-          {company.website && (
+        </div>
+        {company.website && (
+          <div className="mt-3 pb-4">
             <a
-              href={company.website.startsWith('http') ? company.website : `https://${company.website}`}
+              href={
+                company.website.startsWith('http')
+                  ? company.website
+                  : `https://${company.website}`
+              }
               target="_blank"
               rel="noopener noreferrer"
-              className="text-sm text-primary hover:underline"
+              className="font-body text-sm text-primary hover:underline"
             >
               {company.website.replace(/^https?:\/\//, '')}
             </a>
-          )}
-        </div>
+          </div>
+        )}
       </div>
     </div>
   )

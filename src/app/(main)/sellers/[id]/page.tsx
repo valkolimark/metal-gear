@@ -284,7 +284,7 @@ export default async function SellerStorefrontPage({
 
         {/* Bio */}
         {profile.bio && (
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="font-display text-lg">About</CardTitle>
             </CardHeader>
@@ -298,7 +298,7 @@ export default async function SellerStorefrontPage({
 
         {/* Featured Listings */}
         {featuredListings.length > 0 && (
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="font-display text-lg">
                 Featured Listings
@@ -321,7 +321,7 @@ export default async function SellerStorefrontPage({
 
         {/* Reviews */}
         {reviewsData.totalReviews > 0 && (
-          <Card className="border-border bg-card">
+          <Card className="bg-card">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display text-lg">
                 <Star className="size-5 fill-yellow-400 text-yellow-400" />
@@ -420,7 +420,7 @@ export default async function SellerStorefrontPage({
         )}
 
         {/* All Listings */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
               All Listings ({listings.length})
@@ -457,7 +457,7 @@ function StatBox({
   value: number | string
 }) {
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardContent className="flex flex-col items-center gap-1 p-4">
         <Icon className="size-5 text-primary" />
         <p className="font-display text-xl font-bold text-foreground">

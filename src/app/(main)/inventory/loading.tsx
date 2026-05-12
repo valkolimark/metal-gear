@@ -16,7 +16,7 @@ export default function InventoryLoading() {
         <Skeleton className="h-10 w-32" />
         <Skeleton className="h-10 w-40" />
       </div>
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <div className="space-y-1 p-4">
           {Array.from({ length: 8 }).map((_, i) => (
             <Skeleton key={i} className="h-12 w-full" />

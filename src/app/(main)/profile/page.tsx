@@ -315,7 +315,7 @@ export default function ProfilePage() {
 
       <form onSubmit={handleSave} className="space-y-6">
         {/* Avatar Section */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">Avatar</CardTitle>
           </CardHeader>
@@ -363,7 +363,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Personal Info */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
               Personal Information
@@ -461,7 +461,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Location */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">Location</CardTitle>
           </CardHeader>
@@ -499,7 +499,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Contact Information */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
               Contact Information
@@ -617,7 +617,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Subscription Info */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">
               Subscription
@@ -663,7 +663,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Notification Preferences */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Bell className="size-5" />
@@ -756,7 +756,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Sound Preferences */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Bell className="size-5" />
@@ -804,7 +804,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Equipment Interests */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <div className="flex items-start justify-between gap-3">
               <CardTitle className="flex items-center gap-2 font-display text-lg">
@@ -825,7 +825,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Storefront Editor */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Store className="size-5" />
@@ -1018,7 +1018,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Referral Program */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Users className="size-5" />
@@ -1120,7 +1120,7 @@ export default function ProfilePage() {
         </Card>
 
         {/* Verification & Trust */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Shield className="size-5" />

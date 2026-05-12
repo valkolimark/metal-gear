@@ -138,7 +138,7 @@ export default function BoostStorePage() {
 
       {/* Active Boosts */}
       {activeBoosts.length > 0 && (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader className="pb-3">
             <CardTitle className="font-display text-base">Your Active Boosts</CardTitle>
           </CardHeader>
@@ -222,7 +222,7 @@ export default function BoostStorePage() {
         </div>
 
         {/* Product Detail */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-display text-lg">
               <Icon className="size-5 text-primary" />

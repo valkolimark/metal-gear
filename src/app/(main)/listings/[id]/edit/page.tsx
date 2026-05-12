@@ -255,7 +255,7 @@ export default function EditListingPage() {
       </div>
 
       <form onSubmit={handleSave} className="space-y-6">
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">Details</CardTitle>
           </CardHeader>
@@ -347,7 +347,7 @@ export default function EditListingPage() {
           </CardContent>
         </Card>
 
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <CardTitle className="font-display text-lg">Pricing</CardTitle>
           </CardHeader>
@@ -377,7 +377,7 @@ export default function EditListingPage() {
         </Card>
 
         {/* Condition Report */}
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardHeader>
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2 font-display text-lg">

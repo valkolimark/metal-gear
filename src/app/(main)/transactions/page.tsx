@@ -80,7 +80,7 @@ export default function TransactionsPage() {
           <Loader2 className="size-8 animate-spin text-primary" />
         </div>
       ) : transactions.length === 0 ? (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="flex flex-col items-center gap-4 py-12">
             <Package className="size-12 text-muted-foreground" />
             <p className="font-body text-sm text-muted-foreground">

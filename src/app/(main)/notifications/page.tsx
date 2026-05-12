@@ -229,7 +229,7 @@ export default function NotificationsPage() {
 
       {/* Notification List */}
       {filtered.length === 0 ? (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Bell className="size-12 text-muted-foreground/30" />
             <p className="font-display text-lg font-semibold text-foreground">
@@ -243,7 +243,7 @@ export default function NotificationsPage() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="border-border bg-card">
+        <Card className="bg-card">
           <CardContent className="divide-y divide-border p-0">
             {filtered.map((notification) => {
               const Icon = NOTIFICATION_ICONS[notification.type] || Bell

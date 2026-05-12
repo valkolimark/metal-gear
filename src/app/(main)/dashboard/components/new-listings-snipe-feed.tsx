@@ -28,7 +28,7 @@ export function NewListingsSnipeFeed({
 }) {
   if (listings.length === 0) {
     return (
-      <Card className="border-border bg-card">
+      <Card className="bg-card">
         <CardHeader className="flex flex-row items-center gap-2">
           <Bell className="size-5 text-primary" />
           <CardTitle className="flex-1 font-display text-lg">
@@ -57,7 +57,7 @@ export function NewListingsSnipeFeed({
   }
 
   return (
-    <Card className="border-border bg-card">
+    <Card className="bg-card">
       <CardHeader className="flex flex-row items-center gap-2">
         <Bell className="size-5 text-primary" />
         <div className="flex-1">

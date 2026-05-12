@@ -408,7 +408,13 @@ function MessagesContent() {
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 overflow-hidden px-4 py-4 sm:px-6 lg:px-8">
-      <div className="flex w-full overflow-hidden rounded-xl border border-border bg-card">
+      <div
+        className="flex w-full overflow-hidden rounded-2xl bg-card"
+        style={{
+          boxShadow:
+            '0 1px 2px rgba(11,37,69,0.04), 0 4px 12px rgba(11,37,69,0.05)',
+        }}
+      >
         {/* Conversation list */}
         <div
           className={`w-full shrink-0 border-r border-border sm:w-80 ${
