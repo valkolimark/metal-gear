@@ -2,6 +2,19 @@ import Link from 'next/link'
 
 const previews = [
   {
+    page: 'Search',
+    description:
+      'Cross-type search with NL chip parser, segment tabs, 3-way view switcher (List / Grid / Map).',
+    variants: [
+      { label: 'Desktop · Entry', href: '/design/search?variant=entry' },
+      { label: 'Desktop · Results (List)', href: '/design/search?variant=results-list' },
+      { label: 'Desktop · Results (Grid)', href: '/design/search?variant=results-grid' },
+      { label: 'Desktop · Results (Map)', href: '/design/search?variant=results-map' },
+      { label: 'Mobile · Entry', href: '/design/search?variant=mobile-entry' },
+      { label: 'Mobile · Results', href: '/design/search?variant=mobile-results' },
+    ],
+  },
+  {
     page: 'Profile',
     description: 'Person + company profiles, own + visiting POV, trust strip, tabs.',
     variants: [
