@@ -6,8 +6,11 @@ function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
+      // Soft-card chrome from the design handoff: rounded-2xl, no hairline
+      // border, layered drop-shadow. Same tokens used directly in the new
+      // /feed and /settings/company migrations.
       className={cn(
-        "bg-card text-card-foreground flex flex-col gap-6 rounded-xl border py-6 shadow-sm",
+        "bg-card text-card-foreground flex flex-col gap-6 rounded-2xl py-6 shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]",
         className
       )}
       {...props}
