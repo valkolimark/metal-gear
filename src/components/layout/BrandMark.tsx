@@ -28,15 +28,15 @@ export function BrandMark({
       aria-label="Metal Gear home"
     >
       <span
-        className="flex items-center justify-center rounded-md bg-[#0A1628] font-display text-[13px] font-bold tracking-[0.08em] text-white"
+        className="flex items-center justify-center rounded-md bg-[#1877F2] font-display text-[13px] font-bold tracking-[0.08em] text-white"
         style={{ width: dim, height: dim }}
         aria-hidden="true"
       >
         MG
       </span>
       {variant === 'wordmark' && (
-        <span className="hidden font-display text-lg font-bold leading-none text-foreground sm:inline">
-          Metal <span className="text-primary">Gear</span>
+        <span className="hidden font-display text-lg font-bold leading-none text-white sm:inline">
+          Metal <span className="text-[#3D9BD6]">Gear</span>
         </span>
       )}
     </Link>

@@ -39,13 +39,13 @@ export function AppHeaderAvatarMenu({ user, size = 'md' }: AppHeaderAvatarMenuPr
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="flex shrink-0 items-center justify-center rounded-full focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex shrink-0 items-center justify-center rounded-full ring-2 ring-white/10 hover:ring-white/30 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D9BD6]/70"
           aria-label="Open account menu"
           data-nav-event="avatar:opened"
         >
           <Avatar className={dim}>
             <AvatarImage src={user.avatarUrl ?? undefined} crossOrigin="anonymous" alt="" />
-            <AvatarFallback className="bg-primary/20 font-body text-xs text-primary">
+            <AvatarFallback className="bg-[#3D9BD6] font-body text-xs font-semibold text-white">
               {user.initials}
             </AvatarFallback>
           </Avatar>

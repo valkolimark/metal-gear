@@ -27,17 +27,19 @@ export function AppMobileTopBar({ ctx }: AppMobileTopBarProps) {
           onClick={() => setDrawerOpen(true)}
           aria-label="Open menu"
           data-nav-event="drawer:opened"
-          className="-ml-1 flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="-ml-1 flex items-center rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D9BD6]/60"
         >
           <BrandMark href="/feed" size="sm" variant="mark" />
         </button>
-        <span className="ml-1 font-display text-sm font-bold text-foreground">Metal Gear</span>
+        <span className="ml-1 font-display text-sm font-bold text-white">
+          Metal <span className="text-[#3D9BD6]">Gear</span>
+        </span>
         <div className="flex-1" />
         <Link
           href="/search"
           aria-label="Search"
           data-nav-event="search:opened"
-          className="flex size-9 items-center justify-center rounded-md text-foreground/80 hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="flex size-9 items-center justify-center rounded-full bg-white/[0.08] text-white/85 hover:bg-white/[0.16] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D9BD6]/60"
         >
           <Search className="size-5" />
         </Link>

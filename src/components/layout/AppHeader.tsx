@@ -15,8 +15,9 @@ export function AppHeader({ variant, ctx }: AppHeaderProps) {
   return (
     <header
       role="banner"
-      className="sticky top-0 z-50 w-full border-b border-border/50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80"
+      className="app-header sticky top-0 z-50 w-full border-b border-white/5"
       data-nav-shell={variant}
+      style={{ background: '#0B2545', color: '#E8EEF5' }}
     >
       {/* Desktop layout */}
       <div className="hidden h-14 items-center gap-3 px-4 md:flex">
@@ -26,12 +27,12 @@ export function AppHeader({ variant, ctx }: AppHeaderProps) {
         <Link
           href="/credits"
           data-nav-event="primary:credits"
-          className="hidden items-center gap-1 rounded-full border border-border bg-muted/40 px-3 py-1 font-mono text-[11px] text-foreground/80 hover:bg-muted lg:inline-flex"
+          className="hidden items-center gap-1 rounded-full border border-white/10 bg-white/[0.06] px-3 py-1 font-mono text-[11px] text-white/80 hover:bg-white/[0.12] lg:inline-flex"
           aria-label={`${ctx.badges.creditsBalance} credits`}
           title={`${ctx.badges.creditsBalance} contact credits`}
         >
           <span className="tabular-nums">{ctx.badges.creditsBalance}</span>
-          <span className="text-muted-foreground">credits</span>
+          <span className="text-white/55">credits</span>
         </Link>
         <AppHeaderNotificationsBell type="sos" count={ctx.badges.activeSosInCategories} />
         <AppHeaderNotificationsBell type="messages" count={ctx.badges.unreadMessages} />

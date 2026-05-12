@@ -51,7 +51,7 @@ export function AppHeaderNotificationsBell({ type, count }: AppHeaderNotificatio
       <DropdownMenuTrigger asChild>
         <button
           type="button"
-          className="relative flex size-9 items-center justify-center rounded-md text-foreground/80 hover:bg-muted/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+          className="app-header-icon-btn relative flex size-9 items-center justify-center rounded-full bg-white/[0.08] text-white/85 hover:bg-white/[0.16] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#3D9BD6]/60"
           aria-label={meta.label(count)}
           data-nav-event={`bell:${type}`}
         >

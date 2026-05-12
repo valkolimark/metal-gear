@@ -41,7 +41,7 @@ export function AppHeaderSearch() {
       <div className="relative w-full">
         <Search
           aria-hidden="true"
-          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+          className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-white/55"
         />
         <input
           ref={inputRef}
@@ -56,7 +56,7 @@ export function AppHeaderSearch() {
             }
           }}
           placeholder="Search equipment, companies, SOS… (⌘K)"
-          className="h-9 w-full rounded-lg border border-transparent bg-muted/50 pl-9 pr-3 text-sm focus:border-border focus:bg-background focus:outline-none focus:ring-2 focus:ring-ring"
+          className="h-9 w-full rounded-full border border-white/10 bg-white/[0.08] pl-9 pr-3 text-sm text-white placeholder:text-white/55 focus:border-white/30 focus:bg-white/[0.12] focus:outline-none focus:ring-2 focus:ring-[#3D9BD6]/60"
           aria-label="Search Metal Gear"
         />
       </div>

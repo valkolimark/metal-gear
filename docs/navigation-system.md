@@ -12,14 +12,15 @@ Status: Cycle 71 (shipped on `/feed` only). Other routes remain on the legacy ch
 
 **Top bar** (every authenticated page, fixed top, 56px height):
 
+- **Palette is theme-invariant.** Background navy `#0B2545`, foreground `#E8EEF5`. Icon-button chrome `rgba(255,255,255,0.08)` (hover `0.16`). Brand-mark "MG" square `#1877F2` blue. The brand wordmark renders "Metal" in white + "Gear" in `#3D9BD6` cyan-blue. Focus rings tint `#3D9BD6/60`. This mirrors the cover-grid pattern (Cycle 68) and the design preview at `/design/feed` — light/dark mode does not invert the bar.
 - Brand mark `MG` (wordmark for primary surfaces, mark-only for compact) → `/feed`
-- Global search field, center-left, with `Cmd+K` / `Ctrl+K` hotkey to focus
+- Global search field, center-left, with `Cmd+K` / `Ctrl+K` hotkey to focus. Pill-shaped, translucent on the navy bar.
 - Right cluster (right-aligned):
   - SOS bell with count badge (active SOS in user's tier-2 equipment categories, last 24h)
   - Messages bell with count badge (unread conversations across all buyer/seller threads)
   - Credits balance (small mono pill, e.g. "127 credits"); links to `/credits`
   - Avatar dropdown (Profile / Settings / Help / Sign out)
-- Drop-shadow appears when page content scrolls beneath (uses Cycle 68 soft-card shadow token)
+- Drop-shadow appears when page content scrolls beneath (uses Cycle 68 soft-card shadow token).
 
 **Left sidebar** (DASHBOARD surfaces only — see §1.3 surface taxonomy):
 
