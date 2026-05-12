@@ -7,7 +7,6 @@ import {
   Briefcase,
   Calendar,
   BadgeCheck,
-  Package,
   MessageSquare,
   ChevronRight,
   Share2,
@@ -23,6 +22,7 @@ import {
   CoverGrid,
   ActivityFeed,
   ListingsGridModule,
+  ServicesModule,
   type CoverChip,
   type ProfileTabSpec,
 } from '@/components/profile-shared'
@@ -30,6 +30,8 @@ import { FollowButton } from '@/components/profile-shared/FollowButton'
 import { ReputationSummary } from '@/components/reputation-summary'
 import { SellerRecentReviews } from './components/SellerRecentReviews'
 import { getSellerPageData, type SellerPageReview } from './data'
+import { getServicesForSeller } from '@/lib/profile/services'
+import type { ServiceCardData } from '@/lib/profile/services'
 import type {
   ActivityEntry,
 } from '@/components/profile-shared/types'
@@ -106,6 +108,12 @@ export default async function SellerStorefrontPage({
   const data = await getSellerPageData(id, user?.id ?? null)
   if (!data) notFound()
 
+  // Services live on the seller profile only (not company-aggregated here).
+  const servicesResult = await getServicesForSeller(id, null)
+  const servicesPreview = servicesResult.services.slice(0, 4)
+  const servicesAll = servicesResult.services
+  const servicesTotal = servicesResult.totalCount
+
   const {
     profile,
     storefront,
@@ -150,11 +158,14 @@ export default async function SellerStorefrontPage({
   const tabs: ProfileTabSpec[] = [
     { id: 'storefront', label: 'Storefront' },
     { id: 'listings', label: 'Listings', count: totalListingsCount },
-    // Services + Locations are placeholder tabs — surfaces still TBD
-    // (Cycle 70). Disabling keeps the IA visible without surfacing fake counts.
-    { id: 'services', label: 'Services', disabled: true },
+    {
+      id: 'services',
+      label: 'Services',
+      count: servicesTotal > 0 ? servicesTotal : undefined,
+    },
     { id: 'reviews', label: 'Reviews', count: reviewsTotal },
     { id: 'about', label: 'About' },
+    // Locations still deferred (post-Cycle 70).
     { id: 'locations', label: 'Locations', disabled: true },
   ]
 
@@ -350,6 +361,8 @@ export default async function SellerStorefrontPage({
             ratingDistribution={ratingDistribution}
             activity={activity}
             legacyStats={legacyStats}
+            servicesPreview={servicesPreview}
+            servicesTotal={servicesTotal}
           />
         )}
 
@@ -360,6 +373,16 @@ export default async function SellerStorefrontPage({
             listings={listings}
             columns={4}
             emptyState="No active listings yet."
+          />
+        )}
+
+        {tab === 'services' && (
+          <ServicesModule
+            services={servicesAll}
+            totalCount={servicesTotal}
+            variant="full"
+            requestQuoteHrefPrefix={`/messages?recipient=${id}`}
+            showEmptyState={viewerIsOwner}
           />
         )}
 
@@ -383,9 +406,7 @@ export default async function SellerStorefrontPage({
           />
         )}
 
-        {(tab === 'services' || tab === 'locations') && (
-          <PlaceholderTab tab={tab} />
-        )}
+        {tab === 'locations' && <PlaceholderTab tab="locations" />}
       </div>
     </>
   )
@@ -404,6 +425,8 @@ function StorefrontTabContent({
   ratingDistribution,
   activity,
   legacyStats,
+  servicesPreview,
+  servicesTotal,
 }: {
   sellerId: string
   profileBio: string | null
@@ -417,6 +440,8 @@ function StorefrontTabContent({
   ratingDistribution: Record<number, number>
   activity: ActivityEntry[]
   legacyStats: Awaited<ReturnType<typeof getSellerStats>>
+  servicesPreview: ServiceCardData[]
+  servicesTotal: number
 }) {
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
@@ -478,6 +503,18 @@ function StorefrontTabContent({
             columns={4}
             seeAllHref={`/sellers/${sellerId}?tab=listings`}
             totalCount={totalListingsCount}
+          />
+        )}
+
+        {/* Services preview — first 4 + "See all (N)" links to Services tab */}
+        {servicesPreview.length > 0 && (
+          <ServicesModule
+            title="Services offered"
+            services={servicesPreview}
+            totalCount={servicesTotal}
+            variant="preview"
+            seeAllHref={`/sellers/${sellerId}?tab=services`}
+            requestQuoteHrefPrefix={`/messages?recipient=${sellerId}`}
           />
         )}
 
@@ -635,16 +672,11 @@ function Field({
   )
 }
 
-function PlaceholderTab({ tab }: { tab: 'services' | 'locations' }) {
-  const meta: Record<'services' | 'locations', { title: string; copy: string; icon: React.ReactNode }> = {
-    services: {
-      title: 'Services',
-      copy: 'Rebuilding, machining, transport, and rigging services will live here. Coming in Cycle 70.',
-      icon: <Package className="size-5" />,
-    },
+function PlaceholderTab({ tab }: { tab: 'locations' }) {
+  const meta: Record<'locations', { title: string; copy: string; icon: React.ReactNode }> = {
     locations: {
       title: 'Locations',
-      copy: 'Yards, branches, and service areas will live here. Coming in Cycle 70.',
+      copy: 'Yards, branches, and service areas will live here. Coming after Cycle 70.',
       icon: <MapPin className="size-5" />,
     },
   }

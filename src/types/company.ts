@@ -56,5 +56,7 @@ export interface CompanyWithMembers extends CompanyProfile {
     full_name: string | null
     avatar_url: string | null
     email: string | null
+    /** Cycle 70 — opt-in for showing on /companies/[slug] public team page. */
+    is_public_on_profile: boolean
   }>
 }

@@ -71,6 +71,7 @@ export async function getCompanyWithMembers(companyId: string): Promise<CompanyW
       user_id,
       role,
       joined_at,
+      is_public_on_profile,
       profiles ( full_name, avatar_url, email )
     `)
     .eq('company_id', companyId)
@@ -87,6 +88,7 @@ export async function getCompanyWithMembers(companyId: string): Promise<CompanyW
       full_name: (m.profiles as Record<string, unknown> | null)?.full_name as string | null ?? null,
       avatar_url: (m.profiles as Record<string, unknown> | null)?.avatar_url as string | null ?? null,
       email: (m.profiles as Record<string, unknown> | null)?.email as string | null ?? null,
+      is_public_on_profile: Boolean(m.is_public_on_profile),
     })),
   }
 }

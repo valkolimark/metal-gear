@@ -515,6 +515,7 @@ export type Database = {
           id: string
           invited_by: string | null
           is_active: boolean
+          is_public_on_profile: boolean
           joined_at: string
           role: Database["public"]["Enums"]["company_role"]
           user_id: string
@@ -524,6 +525,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           is_active?: boolean
+          is_public_on_profile?: boolean
           joined_at?: string
           role?: Database["public"]["Enums"]["company_role"]
           user_id: string
@@ -533,6 +535,7 @@ export type Database = {
           id?: string
           invited_by?: string | null
           is_active?: boolean
+          is_public_on_profile?: boolean
           joined_at?: string
           role?: Database["public"]["Enums"]["company_role"]
           user_id?: string
@@ -3124,6 +3127,124 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      seller_services: {
+        Row: {
+          created_at: string
+          custom_category: string | null
+          custom_label: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          price_from_usd: number | null
+          seller_company_id: string | null
+          seller_profile_id: string | null
+          sla_max_days: number | null
+          sla_min_days: number | null
+          sort_order: number
+          taxonomy_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          custom_category?: string | null
+          custom_label?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          price_from_usd?: number | null
+          seller_company_id?: string | null
+          seller_profile_id?: string | null
+          sla_max_days?: number | null
+          sla_min_days?: number | null
+          sort_order?: number
+          taxonomy_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          custom_category?: string | null
+          custom_label?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          price_from_usd?: number | null
+          seller_company_id?: string | null
+          seller_profile_id?: string | null
+          sla_max_days?: number | null
+          sla_min_days?: number | null
+          sort_order?: number
+          taxonomy_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_services_seller_company_id_fkey"
+            columns: ["seller_company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_services_seller_profile_id_fkey"
+            columns: ["seller_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_services_taxonomy_id_fkey"
+            columns: ["taxonomy_id"]
+            isOneToOne: false
+            referencedRelation: "seller_services_taxonomy"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      seller_services_taxonomy: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          id: string
+          is_active: boolean
+          label: string
+          slug: string
+          sort_order: number
+          typical_price_from_usd: number | null
+          typical_sla_max_days: number | null
+          typical_sla_min_days: number | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label: string
+          slug: string
+          sort_order?: number
+          typical_price_from_usd?: number | null
+          typical_sla_max_days?: number | null
+          typical_sla_min_days?: number | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          label?: string
+          slug?: string
+          sort_order?: number
+          typical_price_from_usd?: number | null
+          typical_sla_max_days?: number | null
+          typical_sla_min_days?: number | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       seller_followers: {
         Row: {

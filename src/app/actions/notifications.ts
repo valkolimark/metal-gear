@@ -29,6 +29,7 @@ export type NotificationType =
   | 'post_mention'
   | 'import_complete'
   | 'import_failed'
+  | 'team_visibility_request'
 
 export async function getNotifications(limit = 20, offset = 0) {
   const supabase = await createClient()

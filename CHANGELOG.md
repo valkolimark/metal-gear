@@ -6,6 +6,66 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.41.0] — 2026-05-12 · Services + Team modules on Sellers / Companies storefronts; per-member team opt-in; taxonomy-backed services with free-text fallback (Cycle 70)
+
+### Added
+- **`seller_services_taxonomy`** — curated reference table seeded with **41 starter services** across 8 categories (centrifuge services, pump services, gearbox/drivetrain, field service, inspection & testing, fabrication, rigging & logistics, other). Trigram GIN index on `label` for fuzzy typeahead; public-read RLS; admin-only writes (no INSERT/UPDATE/DELETE policy for non-admin). Includes `typical_sla_*` and `typical_price_from_usd` guideline columns derived from the `/design/sellers` preview (decanter rebuild $28k / 5–10d, bowl reconditioning $12k / 3–5d, gearbox service $8.4k / 2–5d, field service $1.85k / same-day).
+- **`seller_services`** — per-seller service rows. XOR target check (`seller_profile_id` OR `seller_company_id`, never both), XOR label check (`taxonomy_id` OR `custom_label`, never both, custom must be ≥1 char trimmed), SLA range sanity check, price-non-negative check, soft-delete via `is_active`, `sort_order`. Full owner-scoped RLS: public-read of active rows + owner-scoped select/insert/update/delete (scoped to `authenticated` to side-step a pre-existing `company_memberships` recursion bug under anon).
+- **`company_memberships.is_public_on_profile`** — new column, defaults `FALSE` for ALL existing rows (verified post-migration: 9 total, 0 opted-in). Per-member opt-in for the public Team module. Partial index on opted-in members. Public-read RLS policy `memberships_select_public_optin` added, filtered to opted-in members only — verified by anon-role PostgREST query (returns `[]` until first opt-in).
+- **`src/components/profile-shared/ServicesModule.tsx`** + **`ServiceCard.tsx`** + **`TeamModule.tsx`** — reusable Cycle 68-shadow modules. ServicesModule: 4-up grid (collapses 2-up tablet, 1-up mobile), `preview`/`full` variant, soft-card chrome, lock icon + tooltip on pricing-gated cards, "Quote on request" when no price set, optional `requestQuoteHref` CTA. TeamModule: 5-up grid (3-up tablet, 2-up mobile), avatar + name + role label, links to `/sellers/[id]`, defaults to plain "{N} members" subtitle (never leaks private count unless opt-in `showPrivateCountHint` is set).
+- **`src/lib/profile/services.ts`** — `getServicesForSeller(profileId, companyId, limit?)` applies the pricing-gate at the read layer: Free-tier sellers have `priceFromUsd` forced to `null` and `isPricingGated: true`; paid tiers retain the configured price (or null for "Quote on request"). For companies, tier is resolved via the company owner's subscription.
+- **`src/lib/profile/services-format.ts`** — pure `formatPriceFrom` and `formatSla` helpers (extracted from `services.ts` so they're importable into client components without pulling in `import 'server-only'`).
+- **`src/lib/profile/services-taxonomy.ts`** — `searchServicesTaxonomy(query, limit)` trigram-fuzzy match with `escapePostgrestValue` input sanitation; empty query returns first 20 by sort_order. `getTaxonomyById(id)` for action-side validation.
+- **`src/lib/profile/team.ts`** — `getPublicTeamForCompany(companyId)` returns opted-in members + counts; `getMembershipsForVisibility(userId)` for the per-member self-service settings surface. Profile join hinted via `profiles:profiles!user_id` to disambiguate `company_memberships.user_id` from `company_memberships.invited_by`.
+- **`/sellers/[id]` Services tab** — was a "Coming soon" placeholder in Cycle 69; now renders configured services with the full `ServicesModule`. Storefront tab also previews first 4 services when ≥1 configured with a "See all (N)" link to the full tab. Owner viewer sees an empty-state CTA pointing at `/settings/services`.
+- **`/companies/[slug]`** — Services and Team modules added below existing Cycle 68 sections. Render conditionally (empty modules don't render at all). Pricing-gate flows through identically.
+- **`/settings/services` edit surface** — sectioned soft-card UI with taxonomy typeahead + free-text fallback + SLA min/max + price + description + reorder (up/down arrows; drag-reorder deferred to future cycle). Free-tier sellers see a top-of-page upgrade banner. Sticky navy save bar with SOS-orange action pill matches the Cycle 68 settings pattern. Scope routing via `?scope=profile|company`; defaults to company when the user has an active company, profile otherwise.
+- **`/settings/team-visibility` self-service surface** — lists every active membership the caller has with a Switch toggling `is_public_on_profile`. Optimistic UI with rollback on action failure. Member-controlled only; admins cannot toggle for others.
+- **Server actions** — `createService`, `updateService` (delta patch w/ SLA range cross-check + XOR enforcement), `deleteService` (soft-delete), `reorderServices` (batched, validates every id belongs to the target). `toggleMembershipPublicVisibility` (member-self only, slug-keyed revalidation), `requestMembershipPublicVisibility` (admin nudge → fires `team_visibility_request` notification, does NOT change visibility).
+- **`team_visibility_request` notification type** — added to the `NotificationType` union; payload carries `membership_id`, `company_id`, `requested_by` for deep-linking back to `/settings/team-visibility`.
+- **Admin nudge UI on `/settings/company/members`** — per non-public member, a "Request public visibility" link (SOS orange). Clicking fires the nudge action and switches to "Requested ✓". Self-rows get a "Make private/public" deep link to `/settings/team-visibility` instead. Each row's status badge now shows "Public on team page" (emerald + Eye icon) vs "Private" (EyeOff icon).
+- **Tests** — `src/test/services-module.test.tsx` (16 assertions over `ServiceCard` + `ServicesModule` render rules), `src/test/team-module.test.tsx` (5 assertions over `TeamModule` empty/single/private-count cases), `src/test/services-actions.test.ts` (11 Zod schema-boundary tests), `src/test/team-visibility-actions.test.ts` (5 Zod schema-boundary tests). 377 tests total pass.
+
+### Changed
+- **`src/components/profile-shared/index.ts`** — exports the three new components alongside the Cycle 69 set.
+- **`src/types/database.ts`** — extended manually for the three new schema changes (will be regenerated next time a fresh Management-API session generates types). Two new table type defs (`seller_services`, `seller_services_taxonomy`) and the new column on `company_memberships`.
+- **`src/types/company.ts`** + **`getCompanyWithMembers`** — `CompanyWithMembers.members[]` now includes `is_public_on_profile: boolean`; the action joins the column.
+- **`src/app/(main)/sellers/[id]/page.tsx`** — Services tab now functional. Locations placeholder retained; `Package` import removed (was unused after the services-tab swap).
+
+### Pricing & gating
+- **Free-tier sellers**: service name + SLA visible publicly; price hidden behind lock icon + "Pricing on Pro+" pill + native title-tooltip. SLA renders for free tier — only price is gated. The edit surface still accepts a price input (stored in `price_from_usd`); it just doesn't render publicly until upgrade.
+- **Paid tiers** (pro/business/enterprise + legacy `premium`/`boost`): "From $X" or "Quote on request" depending on whether price is set.
+- Tier-gate is **applied at the read layer** (`getServicesForSeller`), not at creation. Discovery gate, not creation gate (matches Cycle 68 working-principles).
+- Services count is **unlimited** on every tier. The gate is on display, not on data volume.
+
+### Privacy
+- Team module is **opt-in only**. `is_public_on_profile` defaults to `FALSE` for ALL existing memberships at migration time, including owners — verified post-migration (0 of 9 memberships are public at launch; sellers/companies will see empty team modules until members opt in).
+- Private member count is never exposed publicly. The "5 of 12 (others private)" hint is admin-opt-in via `showPrivateCountHint` prop; default UI shows plain "{N} members".
+- Admin nudge sends a notification — the admin cannot toggle for the member. The notification deep-links to `/settings/team-visibility`.
+
+### Migration
+- `scripts/migrate-create-seller-services-taxonomy.ts` — creates table, indexes, RLS, updated_at trigger, seeds 41 rows via `ON CONFLICT (slug) DO NOTHING` (idempotent). Trigger reuses existing `public.handle_updated_at()` (no `moddatetime` dependency — that extension isn't installed).
+- `scripts/migrate-create-seller-services.ts` — creates table with four CHECK constraints, five indexes (two partial on (profile,sort) and (company,sort), taxonomy lookup, trigram on `custom_label`), five RLS policies. Includes a post-create step that re-scopes owner policies to `TO authenticated` to side-step the pre-existing `company_memberships_read_by_company_member` recursion under anon role.
+- `scripts/migrate-add-membership-public-toggle.ts` — adds `is_public_on_profile` BOOLEAN NOT NULL DEFAULT FALSE, partial index on opted-in rows, column comment, additive public-read RLS. Pre-flight prints the existing policy set; post-flight verifies the column shape + counts public opt-ins.
+- All three idempotent — re-running produces no errors and no duplicate rows.
+
+### Discovered / Notes
+- **Pre-existing RLS bug surfaced**: `company_memberships_read_by_company_member` has an EXISTS subquery that recursively reads `company_memberships`, which causes Postgres error 42P17 ("infinite recursion in policy") when an anon-role PostgREST query traverses it. Our owner policies on `seller_services` originally did the same EXISTS pattern; this triggered the recursion when anon hit `/rest/v1/seller_services`. Mitigation: scope owner-side policies to `TO authenticated` so anon evaluates only `seller_services_select_active_public`. The underlying bug in `company_memberships` is **untouched and pre-existing** — it doesn't affect our Cycle 70 surfaces because `getServicesForSeller` / `getPublicTeamForCompany` use `createAdminClient()` which bypasses RLS entirely. Flagging for a future cleanup cycle to refactor that policy into a SECURITY DEFINER function (the standard fix).
+- **No new Postgres RPCs introduced** — continues Cycle 69's TS-first deviation. All reads computed in TypeScript.
+- **No client-side Supabase calls introduced.** No new media paths outside `src/lib/media.ts`.
+- **Disabled-archetype impact** (Cycle 66): operator + service_provider users can view AND configure services. Trader/logistics grandfathered users can too — services aren't archetype-gated, only tier-gated.
+
+### Rationale
+Services and Team finish the next-most-visible modules from the Cycle 69 design previews. Sellers (individuals) get Services only; Companies (entities) get both. Services use the same hybrid taxonomy + free-text pattern as the Equipment Registry (Cycle 61a) — curated data quality with long-tail flexibility. Pricing is gated at Pro+ to create a tangible upgrade hook on the most-visited surfaces; SLA stays free across all tiers because it's operational info buyers need to qualify, not lead-gen leverage. Team visibility is opt-in (not admin-controlled, not auto-show) because industrial B2B has legitimate reasons to keep individual staff names off public pages (poaching risk, security clearances, contractor-vs-employee distinctions); per-member self-service is the privacy-respecting middle path. The Companies-page IA migration to tabbed nav is **explicitly deferred** to keep this cycle scoped — Services and Team go in below existing Cycle 68 sections rather than triggering a full IA rewrite.
+
+### Deferred to subsequent cycles
+- **Cycle 71:** `/profile/[id]` visiting-POV bespoke restyle (mirrors `/sellers/[id]`); `/companies/[slug]` tabbed IA migration matching the Sellers pattern; fix the `company_memberships` recursive-policy antipattern.
+- **Cycle 72+:** Locations module + `seller_locations` table; Certifications module + `user_certifications` table; Photos strip on `/profile`; service-area map render; drag-to-reorder services on the edit surface.
+- **Cycle 73+:** Messages thread chrome + RFQ counter card; SOS console table view + real KPI queries; Search NL parser + multi-segment results.
+- **Cycle 74+:** Feed three-column architecture; Mobile-specific layouts from `Mobile*` design previews.
+
+---
+
 ## [4.40.0] — 2026-05-12 · Profile + Sellers IA migration: tabbed navigation, 5-stat trust strip, real cover-grid photos, follow/unfollow (Cycle 69)
 
 ### Added

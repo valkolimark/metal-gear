@@ -3,6 +3,9 @@ export { ProfileTabsNav } from './ProfileTabsNav'
 export { CoverGrid } from './CoverGrid'
 export { ActivityFeed } from './ActivityFeed'
 export { ListingsGridModule } from './ListingsGridModule'
+export { ServicesModule } from './ServicesModule'
+export { ServiceCard } from './ServiceCard'
+export { TeamModule } from './TeamModule'
 export type {
   TrustMetrics,
   ActivityEntry,

@@ -13,6 +13,9 @@ import { CompanyHero } from './components/company-hero'
 import { CompanyListings } from './components/company-listings'
 import { CompanyReputation } from './components/company-reputation'
 import { getCompanyIndustries } from '@/types/company'
+import { ServicesModule, TeamModule } from '@/components/profile-shared'
+import { getServicesForSeller } from '@/lib/profile/services'
+import { getPublicTeamForCompany } from '@/lib/profile/team'
 import type { Metadata } from 'next'
 
 const APP_URL = 'https://metal-gear-five.vercel.app'
@@ -67,11 +70,13 @@ export default async function CompanyPublicPage({ params }: Props) {
   const activeCompanyId = cookieStore.get('active_company_id')?.value ?? null
   const isOwnCompany = activeCompanyId === company.id
 
-  const [listings, listingCount, reputationStats, favorited] = await Promise.all([
+  const [listings, listingCount, reputationStats, favorited, servicesResult, teamResult] = await Promise.all([
     getCompanyActiveListings(company.id),
     getCompanyListingCount(company.id),
     getCompanyReputationStats(company.id),
     userId ? isCompanyFavorited(userId, company.id) : Promise.resolve(false),
+    getServicesForSeller(null, company.id),
+    getPublicTeamForCompany(company.id),
   ])
 
   const memberCount = company.company_memberships?.length ?? 0
@@ -133,6 +138,21 @@ export default async function CompanyPublicPage({ params }: Props) {
           companyName={company.name}
           companyId={company.id}
         />
+        {servicesResult.services.length > 0 && (
+          <ServicesModule
+            services={servicesResult.services}
+            totalCount={servicesResult.totalCount}
+            variant="full"
+            title="Services"
+          />
+        )}
+        {teamResult.members.length > 0 && (
+          <TeamModule
+            members={teamResult.members}
+            totalPublicCount={teamResult.totalPublicCount}
+            totalAllCount={teamResult.totalAllCount}
+          />
+        )}
       </div>
     </div>
   )
