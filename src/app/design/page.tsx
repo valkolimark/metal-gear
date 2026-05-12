@@ -2,6 +2,17 @@ import Link from 'next/link'
 
 const previews = [
   {
+    page: 'Sellers (Storefront)',
+    description:
+      'Seller storefront with cover grid, identity row, trust strip, and tabbed sections (Storefront / Listings / Services / Reviews / About / Locations). Toggles between Company and Person views.',
+    variants: [
+      { label: 'Desktop · Company', href: '/design/sellers?variant=desktop-company' },
+      { label: 'Desktop · Person', href: '/design/sellers?variant=desktop-person' },
+      { label: 'Mobile · Company', href: '/design/sellers?variant=mobile-company' },
+      { label: 'Mobile · Person', href: '/design/sellers?variant=mobile-person' },
+    ],
+  },
+  {
     page: 'Messages',
     description:
       'Messenger-style inbox with marketplace context (listing/SOS attachments, RFQ quote flow, smart replies).',
