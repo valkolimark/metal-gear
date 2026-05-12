@@ -8,6 +8,7 @@ import {
   MobileSearchEntry,
   MobileSearchResults,
 } from '@/components/design-preview/search/MobileSearch'
+import { MobileFrame } from '@/components/design-preview/_shared/MobileFrame'
 
 type Variant =
   | 'entry'
@@ -135,40 +136,3 @@ function VariantSwitcher({ active }: { active: Variant }) {
   )
 }
 
-function MobileFrame({ children }: { children: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        justifyContent: 'center',
-        padding: '32px 16px 64px',
-        background: '#F4F6FA',
-        minHeight: 'calc(100vh - 48px)',
-      }}
-    >
-      <div
-        style={{
-          width: 390,
-          height: 844,
-          background: '#000',
-          borderRadius: 48,
-          padding: 8,
-          boxShadow: '0 24px 60px rgba(11,37,69,0.18)',
-        }}
-      >
-        <div
-          style={{
-            width: '100%',
-            height: '100%',
-            background: '#F0F2F5',
-            borderRadius: 40,
-            overflow: 'hidden',
-            position: 'relative',
-          }}
-        >
-          {children}
-        </div>
-      </div>
-    </div>
-  )
-}

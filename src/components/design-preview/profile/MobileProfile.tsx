@@ -63,7 +63,7 @@ function MobileProfileShell({
       <div style={{ height: 8 }} />
       <div
         className="flex items-center gap-2 px-3 py-2 absolute"
-        style={{ top: 8, left: 0, right: 0, zIndex: 10 }}
+        style={{ top: 48, left: 0, right: 0, zIndex: 10 }}
       >
         <button
           type="button"

@@ -440,6 +440,19 @@ html[data-palette="ocean"]:not(.dark) .sos-pulse {
   animation: mg-sos-pulse 2.4s ease-out infinite;
 }
 
+/* ================================================================
+   DESIGN PREVIEW — scoped helpers for the /design routes.
+   Hide every inner scrollbar (vertical phone scroll + horizontal
+   chip/segment/company rails) so the previews don't show competing
+   bars. Page-level scroll on the outermost <html> stays untouched.
+   ================================================================ */
+[data-section="design-preview"] ::-webkit-scrollbar {
+  display: none;
+}
+[data-section="design-preview"] * {
+  scrollbar-width: none;
+}
+
 /* Scrollbar styling */
 .dark ::-webkit-scrollbar {
   width: 8px;

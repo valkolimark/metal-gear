@@ -244,7 +244,11 @@ export function MobileSearchResults() {
   return (
     <div
       className="flex flex-col h-full"
-      style={{ background: '#F4F6FA', fontFamily: 'var(--mg-font-body)' }}
+      style={{
+        background: '#F4F6FA',
+        fontFamily: 'var(--mg-font-body)',
+        paddingTop: 44,
+      }}
     >
       <header
         className="px-4 pt-2 pb-2 shrink-0 gap-2"
