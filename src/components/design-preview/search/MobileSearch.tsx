@@ -330,7 +330,7 @@ export function MobileSearchResults() {
               key={s.key}
               type="button"
               onClick={() => setActive(s.key)}
-              className="relative flex items-center gap-1.5 h-10 px-3 text-[12px] font-semibold whitespace-nowrap"
+              className="relative flex items-center gap-1.5 h-10 px-3 text-[12px] font-semibold whitespace-nowrap shrink-0"
               style={{ color: isActive ? '#0A1628' : '#5A6B82' }}
             >
               {s.label}
@@ -357,7 +357,7 @@ export function MobileSearchResults() {
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3">
+      <div className="flex-1 overflow-y-auto px-3 py-3 flex flex-col gap-3 [&>*]:shrink-0">
         <div className="flex items-center gap-1.5 px-1">
           <SparkleIcon size={11} style={{ color: '#FF6B2B' }} />
           <span
@@ -494,7 +494,7 @@ function MobileTopResult({ l }: { l: SearchListing }) {
   const c = COND[l.condition]
   return (
     <div
-      className="flex gap-3 p-3 relative overflow-hidden"
+      className="flex gap-3 p-3 relative overflow-hidden shrink-0"
       style={{ background: '#fff', borderRadius: 14, border: '1.5px solid #FF6B2B' }}
     >
       <div
@@ -550,7 +550,10 @@ function MobileTopResult({ l }: { l: SearchListing }) {
 function MobileListingRow({ l }: { l: SearchListing }) {
   const c = COND[l.condition]
   return (
-    <div className="flex gap-3 p-3" style={{ background: '#fff', borderRadius: 12 }}>
+    <div
+      className="flex gap-3 p-3 shrink-0"
+      style={{ background: '#fff', borderRadius: 12 }}
+    >
       <PhotoTile bg={l.bg} hasMedia={true} size={64} radius={8} />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-1 mb-0.5 flex-wrap">
@@ -605,7 +608,7 @@ function MobileSOSRow({ s }: { s: SearchSOS }) {
   const urg = M_URGENCY[s.urgency]
   return (
     <div
-      className="flex items-center gap-2.5 p-3"
+      className="flex items-center gap-2.5 p-3 shrink-0"
       style={{
         background: '#fff',
         borderRadius: 12,
@@ -750,7 +753,7 @@ function MobileListingGridCard({ l }: { l: SearchListing }) {
   const c = COND[l.condition]
   return (
     <div
-      className="flex flex-col"
+      className="flex flex-col shrink-0"
       style={{ background: '#fff', borderRadius: 12, overflow: 'hidden' }}
     >
       <div className="relative" style={{ height: 100, background: PHOTO_BG[l.bg] }}>
@@ -813,7 +816,7 @@ function MobileMapPanel() {
   const rows = SEARCH_LISTINGS.slice(0, 6)
   return (
     <div
-      className="relative overflow-hidden"
+      className="relative overflow-hidden shrink-0"
       style={{
         background: 'linear-gradient(135deg, #E8F0FA 0%, #F0F4FA 100%)',
         borderRadius: 12,

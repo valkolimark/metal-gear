@@ -23,16 +23,18 @@ export function NLChip({ chip, onRemove }: { chip: NLChipData; onRemove: () => v
   const s = palette[chip.kind] || palette.term
   return (
     <span
-      className="inline-flex items-center gap-1.5 h-7 pl-2 pr-1 text-[12px] font-semibold"
+      className="inline-flex items-center gap-1.5 h-7 pl-2 pr-1 text-[12px] font-semibold shrink-0"
       style={{ background: s.bg, color: s.fg, borderRadius: 999 }}
     >
       <span
-        className="text-[9px] font-bold"
+        className="text-[9px] font-bold whitespace-nowrap"
         style={{ fontFamily: 'var(--mg-font-mono)', opacity: 0.65, letterSpacing: '0.06em' }}
       >
         {s.kind}
       </span>
-      <span style={{ letterSpacing: '-0.005em' }}>{chip.label}</span>
+      <span className="whitespace-nowrap" style={{ letterSpacing: '-0.005em' }}>
+        {chip.label}
+      </span>
       <button
         type="button"
         onClick={onRemove}
