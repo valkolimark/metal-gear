@@ -6,6 +6,63 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.45.0] — 2026-05-12 · Mechanical rollout sweep: dashboard secondaries + settings cluster (Cycle 74)
+
+### Changed
+- **Dashboard secondary surfaces** migrated to `(main-new-nav)` / Dashboard shell:
+  - `/dashboard` (incl. `components/` subfolder, `loading.tsx`, `page.tsx`) moved from `src/app/(main)/dashboard/` to `src/app/(main-new-nav)/dashboard/`
+  - `/radar` (incl. `/radar/[id]`, `RadarPageClient.tsx`, `loading.tsx`) moved from `src/app/(main)/radar/` to `src/app/(main-new-nav)/radar/`
+  - `/credits`, `/notifications`, `/favorites`, `/saved-searches`, `/transactions` (incl. `/transactions/[id]`) — same move pattern
+- **Settings cluster** migrated to `(main-new-nav-fullbleed)` / Full-bleed shell:
+  - `/settings/company` (incl. `CompanySettingsForm.tsx`, `members/` subfolder with `MembersList.tsx`, `invite-form.tsx`, `pending-invites.tsx`) moved from `src/app/(main)/settings/company/` to `src/app/(main-new-nav-fullbleed)/settings/company/`
+  - `/settings/services` (Cycle 70) and `/settings/team-visibility` (Cycle 70) moved with same pattern
+- All URLs unchanged — route groups are transparent in Next.js.
+- Page content unchanged. Cycle 68 sectioned soft-card chrome, Cycle 70 services + team-visibility UIs, Cycle 70 admin nudge UI on `/settings/company/members`, Cycle 68 sticky save bar — all preserved.
+
+### Architecture decision — settings uses the full-bleed shell, not Dashboard
+Settings owns its own page-level left-rail nav per `/design/settings?variant=desktop-preview` (planned Cycle 75 component). Adding the global `<AppSidebar>` from the Dashboard shell would create two competing left rails — at 1280–1440px viewports there isn't horizontal room. The full-bleed shell (top bar + mobile bottom nav, no global sidebar) leaves the page free to provide its own settings nav. Same architectural pattern as storefronts (cover-grid heroes need full-viewport width; sidebar would compete).
+
+### Added
+- **`src/test/nav-route-isolation.test.ts` extended** — 9 new assertions for Cycle 74:
+  - Each of `/dashboard`, `/radar`, `/credits`, `/notifications`, `/favorites`, `/saved-searches`, `/transactions` resolves only under `(main-new-nav)` (7 parameterised `it.each` cases).
+  - Every `/settings/*` production page resolves under `(main-new-nav-fullbleed)`.
+  - The legacy `(main)` group contains no `page.tsx` for the Cycle-74-migrated routes.
+- **`docs/navigation-system.md` §11.1** — rollout-status table updated; new post-Cycle-74 paragraph documents the legacy-group near-empty state and the architectural rationale for settings on the full-bleed shell.
+
+### What this cycle did NOT do (intentional deferrals)
+- **No new components.** No buyer-preview rail (profile-health scorer, checklist, storefront preview card, activity feed) on `/settings/company` despite the design showing one. Cycle 75 feature.
+- **No `/companies/new` move.** Onboarding flow needs its own scoping. Cycle 75.
+- **No `/admin/*` move.** Admin scope check stays deferred. Cycle 75.
+- **No TBD-route moves.** The legacy `(main)` group still contains 8 routes the prompt did not explicitly scope: `/boost`, `/checkout`, `/collections`, `/compare`, `/insights`, `/inventory`, `/invite/[token]`, `/schedule`. These are flagged in `docs/navigation-system.md` §11.1 for Cycle 75 operator decision.
+- **No `LandingNav` (Cycle 67) refresh.** Cycle 75.
+- **No legacy component deletion.** `Header`, `DesktopNav`, `MobileNavClient`, `mobile-drawer` remain in `src/components/layout/` (and `src/components/mobile-nav/`) even though they're no longer mounted by any Cycle-71–74-migrated route. Cycle 75 deletes after final rollout.
+
+### Migration
+- No DB changes.
+- 35 file renames via `git mv` (git history preserved across both commits): 24 in Sub-step A, 11 in Sub-step B.
+- 1 test file extended (`nav-route-isolation.test.ts` — 8 → 17 assertions).
+- `docs/navigation-system.md` §11.1 extended; `CLAUDE.md` Navigation section updated.
+
+### Tests
+- `nav-route-isolation.test.ts` — 17 assertions total (8 from Cycles 71/73 + 9 new from Cycle 74).
+- Full suite: 426 tests pass (was 417 pre-cycle).
+- `npm run typecheck` clean (`.next/types/validator.ts` cache regenerates cleanly after rm).
+- `npm run lint` — 0 errors, 62 pre-existing warnings unchanged.
+
+### Deferred to Cycle 75
+- Buyer-preview rail feature on `/settings/company` (`<ProfileHealthScorer>`, `<ProfileHealthChecklist>`, `<StorefrontPreviewCard>`, activity-feed wiring).
+- Settings-internal left-rail nav as a page-level component (matches `/design/settings?variant=desktop-preview`).
+- `/companies/new` rollout decision.
+- Admin scope check + potential `/admin/*` migration.
+- TBD-route disposition: `/boost`, `/checkout`, `/collections`, `/compare`, `/insights`, `/inventory`, `/invite/[token]`, `/schedule`.
+- `LandingNav` Cycle 67 → modern refresh.
+- Legacy component deletion sweep (`Header`, `DesktopNav`, `MobileNavClient`, `mobile-drawer`).
+
+### Rationale
+Pure rollout cycle by design. Cycles 71–73 established the route-group pattern and shell variants; this cycle applies them to all remaining authenticated surfaces explicitly in scope. No new components, no new features. The legacy `(main)` group's footprint is now small enough for Cycle 75 to clean up.
+
+---
+
 ## [4.44.0] — 2026-05-12 · Nav: storefront cluster rollout on the full-bleed shell (Cycle 73)
 
 ### Changed

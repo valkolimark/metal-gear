@@ -69,3 +69,46 @@ describe('Cycle 73 — storefront cluster route-group isolation', () => {
     expect(matches[0]).toMatch(groupRegex)
   })
 })
+
+describe('Cycle 74 — dashboard secondaries + settings route-group isolation', () => {
+  it.each([
+    ['dashboard', /\(main-new-nav\)/],
+    ['radar', /\(main-new-nav\)/],
+    ['credits', /\(main-new-nav\)/],
+    ['notifications', /\(main-new-nav\)/],
+    ['favorites', /\(main-new-nav\)/],
+    ['saved-searches', /\(main-new-nav\)/],
+    ['transactions', /\(main-new-nav\)/],
+  ])('only one production /%s/page.tsx exists, in (main-new-nav)', (route, groupRegex) => {
+    const allPages: string[] = []
+    walk(join(PROJECT_ROOT, 'src/app'), allPages)
+    const matches = allPages.filter(
+      (f) => f.endsWith(`/${route}/page.tsx`) && !f.includes('/design/'),
+    )
+    expect(matches.length).toBe(1)
+    expect(matches[0]).toMatch(groupRegex)
+  })
+
+  it('every /settings/* production page lives under (main-new-nav-fullbleed)', () => {
+    const allPages: string[] = []
+    walk(join(PROJECT_ROOT, 'src/app'), allPages)
+    const settingsPages = allPages.filter(
+      (f) => /\/settings\/.+\/page\.tsx$/.test(f) && !f.includes('/design/'),
+    )
+    expect(settingsPages.length).toBeGreaterThan(0)
+    for (const path of settingsPages) {
+      expect(path).toMatch(/\(main-new-nav-fullbleed\)/)
+    }
+  })
+
+  it('the legacy (main) group contains no migrated routes from Cycle 74', () => {
+    const allPages: string[] = []
+    walk(MAIN_DIR, allPages)
+    const offenders = allPages.filter((f) =>
+      /\/(dashboard|radar|credits|notifications|favorites|saved-searches|transactions|settings)\/[^/]*page\.tsx$/.test(
+        f,
+      ),
+    )
+    expect(offenders).toEqual([])
+  })
+})

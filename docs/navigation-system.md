@@ -315,17 +315,29 @@ Update this table at the end of every cycle that moves routes.
 | `/companies/[slug]` | New nav | 73 | Full-bleed |
 | `/profile` | New nav | 73 | Full-bleed |
 | `/profile/[id]` | New nav | 73 | Full-bleed |
-| `/settings/*` | Old chrome | Cycle 74 | — |
-| `/admin/*` | Scoped CSS — separate convention | Cycle 74 (scope check) | — |
-| `/dashboard`, `/radar`, other secondary dashboard surfaces | Old chrome | Cycle 74 or later | — |
+| `/dashboard` | New nav | 74 | Dashboard |
+| `/radar` (+ `/radar/[id]`) | New nav | 74 | Dashboard |
+| `/credits` | New nav | 74 | Dashboard |
+| `/notifications` | New nav | 74 | Dashboard |
+| `/favorites` | New nav | 74 | Dashboard |
+| `/saved-searches` | New nav | 74 | Dashboard |
+| `/transactions` (+ `/transactions/[id]`) | New nav | 74 | Dashboard |
+| `/settings/*` (incl. `/settings/company`, `/settings/services`, `/settings/team-visibility`) | New nav | 74 | Full-bleed |
+| `/companies/new` | Legacy chrome | Cycle 75 | — |
+| `/admin/*` | Scoped CSS — separate convention | Cycle 75 (scope check) | — |
+| TBDs under `(main)` (`/boost`, `/checkout`, `/collections`, `/compare`, `/insights`, `/inventory`, `/invite/[token]`, `/schedule`) | Legacy chrome | Cycle 75 — operator decision | — |
 | Marketing / landing | Cycle 67 `LandingNav` — unchanged | Cycle 75 | — |
 
 The `Shell` column distinguishes the two sibling route-group layouts:
 
 - **Dashboard** — `src/app/(main-new-nav)/layout.tsx` wraps in `<AppShellDashboard>` (top bar + sidebar + mobile bottom nav).
-- **Full-bleed** — `src/app/(main-new-nav-fullbleed)/layout.tsx` wraps in `<AppShellFullBleed>` (top bar + mobile bottom nav, no sidebar). Reserved for surfaces with bespoke heroes (Cycle 68 cover-grid 4-tile pattern) that want full-viewport visual real estate.
+- **Full-bleed** — `src/app/(main-new-nav-fullbleed)/layout.tsx` wraps in `<AppShellFullBleed>` (top bar + mobile bottom nav, no sidebar). Reserved for surfaces with bespoke heroes (Cycle 68 cover-grid 4-tile pattern) that want full-viewport visual real estate, and for surfaces that own their own internal left-rail nav (`/settings/*`).
 
 Both shells use the same `<AppHeader>` instance. The Cycle 71 follow-up `b0f643d` palette correction lives in `AppHeader` and is inherited by both. Visual parity between `/feed` and `/sellers/[id]` is the canary — they must look identical above the fold.
+
+**Post-Cycle-74:** the legacy `(main)` group contains only `/companies/new`, `layout.tsx`, and the 8 TBD routes flagged above. The legacy `Header`, `DesktopNav`, `MobileNavClient`, and `mobile-drawer` components are no longer rendered on any cycle-71-through-74 migrated route. Cycle 75 finishes the rollout (`/companies/new`, the TBD routes, admin scope check, marketing/landing refresh) and deletes the legacy components.
+
+**Why settings uses the full-bleed shell, not Dashboard (Cycle 74 decision):** the settings page provides its own page-level left-rail nav per `/design/settings?variant=desktop-preview`. The global `<AppSidebar>` from the Dashboard shell would create two competing left rails — at 1280–1440px viewports there isn't horizontal room. The full-bleed shell (top bar + mobile bottom nav, no global sidebar) leaves the page free to introduce its own settings nav as a page-level component (planned for Cycle 75) without architectural conflict.
 
 ---
 
