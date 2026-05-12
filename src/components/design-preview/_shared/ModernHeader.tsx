@@ -28,7 +28,7 @@ const navItems: Array<{
   { key: 'Companies', icon: UsersIcon },
 ]
 
-export function ModernHeader() {
+export function ModernHeader({ showSearchInline = true }: { showSearchInline?: boolean } = {}) {
   const navy = '#0B2545'
   const fg = '#E8EEF5'
   const [active, setActive] = useState<NavKey>('Feed')
@@ -51,24 +51,26 @@ export function ModernHeader() {
         >
           MG
         </div>
-        <div className="relative max-w-[280px] w-full hidden md:block">
-          <SearchIcon
-            size={15}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2"
-            style={{ opacity: 0.55 }}
-          />
-          <input
-            type="search"
-            placeholder="Search"
-            className="w-full h-9 pl-10 pr-3 text-[13.5px] outline-none placeholder:opacity-55"
-            style={{
-              background: 'rgba(255,255,255,0.08)',
-              color: fg,
-              border: 'none',
-              borderRadius: 999,
-            }}
-          />
-        </div>
+        {showSearchInline && (
+          <div className="relative max-w-[280px] w-full hidden md:block">
+            <SearchIcon
+              size={15}
+              className="absolute left-3.5 top-1/2 -translate-y-1/2"
+              style={{ opacity: 0.55 }}
+            />
+            <input
+              type="search"
+              placeholder="Search"
+              className="w-full h-9 pl-10 pr-3 text-[13.5px] outline-none placeholder:opacity-55"
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                color: fg,
+                border: 'none',
+                borderRadius: 999,
+              }}
+            />
+          </div>
+        )}
       </div>
       <nav className="hidden lg:flex items-center justify-center">
         {navItems.map((item) => {

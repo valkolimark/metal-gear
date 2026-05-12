@@ -2,6 +2,16 @@ import Link from 'next/link'
 
 const previews = [
   {
+    page: 'Settings · Company',
+    description:
+      'Sidebar nav + sectioned form with live buyer-preview rail. Mobile is a sectioned accordion with sticky save bar.',
+    variants: [
+      { label: 'Desktop · With buyer preview', href: '/design/settings?variant=desktop-preview' },
+      { label: 'Desktop · Wide (no preview)', href: '/design/settings?variant=desktop-wide' },
+      { label: 'Mobile · Accordion sections', href: '/design/settings?variant=mobile' },
+    ],
+  },
+  {
     page: 'Search',
     description:
       'Cross-type search with NL chip parser, segment tabs, 3-way view switcher (List / Grid / Map).',
