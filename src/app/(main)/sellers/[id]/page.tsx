@@ -7,21 +7,51 @@ import {
   Briefcase,
   Calendar,
   BadgeCheck,
-  Star,
   Package,
   MessageSquare,
-  ShoppingCart,
-  Clock,
+  ChevronRight,
+  Share2,
 } from 'lucide-react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getStorefront, getSellerStats } from '@/app/actions/storefront'
-import { getSellerReviews } from '@/app/actions/reputation'
-import { ReputationSummary } from '@/components/reputation-summary'
+import { createClient } from '@/lib/supabase/server'
 import { APP_URL } from '@/lib/constants'
+import {
+  TrustStripCard,
+  ProfileTabsNav,
+  CoverGrid,
+  ActivityFeed,
+  ListingsGridModule,
+  type CoverChip,
+  type ProfileTabSpec,
+} from '@/components/profile-shared'
+import { FollowButton } from '@/components/profile-shared/FollowButton'
+import { ReputationSummary } from '@/components/reputation-summary'
+import { SellerRecentReviews } from './components/SellerRecentReviews'
+import { getSellerPageData, type SellerPageReview } from './data'
+import type {
+  ActivityEntry,
+} from '@/components/profile-shared/types'
+import type { ListingsGridModuleListing } from '@/components/profile-shared/ListingsGridModule'
+import type { getSellerStats } from '@/app/actions/storefront'
+
+const VALID_TABS = [
+  'storefront',
+  'listings',
+  'services',
+  'reviews',
+  'about',
+  'locations',
+] as const
+type TabId = (typeof VALID_TABS)[number]
+const DEFAULT_TAB: TabId = 'storefront'
+
+function normalizeTab(raw: string | undefined): TabId {
+  return (VALID_TABS as readonly string[]).includes(raw ?? '')
+    ? (raw as TabId)
+    : DEFAULT_TAB
+}
 
 export async function generateMetadata({
   params,
@@ -40,15 +70,14 @@ export async function generateMetadata({
 
   const name = profile.display_name || profile.full_name || 'Seller'
   const company = profile.company_name ? ` — ${profile.company_name}` : ''
-  const description = profile.bio?.slice(0, 160) ||
+  const description =
+    profile.bio?.slice(0, 160) ||
     `View ${name}'s storefront on Metal Gear — industrial equipment marketplace.`
 
   return {
     title: `${name}${company} | Metal Gear`,
     description,
-    alternates: {
-      canonical: `${APP_URL}/sellers/${id}`,
-    },
+    alternates: { canonical: `${APP_URL}/sellers/${id}` },
     openGraph: {
       title: `${name}${company}`,
       description,
@@ -60,74 +89,75 @@ export async function generateMetadata({
 
 export default async function SellerStorefrontPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<{ tab?: string }>
 }) {
   const { id } = await params
-  const admin = createAdminClient()
+  const { tab: rawTab } = await searchParams
+  const tab = normalizeTab(rawTab)
 
-  const { data: profile } = await admin
-    .from('profiles')
-    .select('*')
-    .eq('id', id)
-    .single()
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
-  if (!profile) notFound()
+  const data = await getSellerPageData(id, user?.id ?? null)
+  if (!data) notFound()
 
-  // Fetch storefront, stats, listings, reviews, business profile in parallel
-  const [storefrontRes, stats, listingsRes, reviewsData, bizProfileRes] = await Promise.all([
-    getStorefront(id),
-    getSellerStats(id),
-    admin
-      .from('listings')
-      .select('id, title, category, price_cents, contact_for_price, condition, views_count, favorites_count, created_at, listing_images(url, position)')
-      .eq('seller_id', id)
-      .eq('status', 'active')
-      .eq('has_media', true)
-      .order('created_at', { ascending: false }),
-    getSellerReviews(id),
-    admin
-      .from('user_business_profiles')
-      .select('industries')
-      .eq('user_id', id)
-      .maybeSingle(),
-  ])
+  const {
+    profile,
+    storefront,
+    industries,
+    coverPhotos,
+    trustMetrics,
+    listings,
+    featuredListings,
+    moreListings,
+    totalListingsCount,
+    reviewsRecent,
+    reviewsTotal,
+    reviewsAverage,
+    ratingDistribution,
+    activity,
+    legacyStats,
+    viewerIsOwner,
+    viewerIsFollowing,
+  } = data
 
-  // Industries: prefer canonical array from user_business_profiles, fall back
-  // to legacy profiles.industry singleton.
-  const sellerIndustries: string[] = (() => {
-    const arr = bizProfileRes.data?.industries
-    if (Array.isArray(arr) && arr.length > 0) {
-      return arr.filter((s): s is string => typeof s === 'string' && s.trim().length > 0)
-    }
-    return profile.industry ? [profile.industry] : []
-  })()
-
-  const storefront = storefrontRes.storefront
-  const listings = listingsRes.data || []
-
-  // Get featured listings
-  const featuredIds = storefront?.featured_listing_ids || []
-  const featuredListings = listings.filter((l) => featuredIds.includes(l.id))
-  const regularListings = listings.filter((l) => !featuredIds.includes(l.id))
-
+  const name = profile.display_name || profile.full_name || 'Seller'
+  const company = profile.company_name
   const initials =
     profile.full_name
       ?.split(' ')
-      .map((n: string) => n[0])
+      .map((n) => n[0])
       .join('')
       .toUpperCase()
       .slice(0, 2) || 'MG'
-
   const memberSince = new Date(profile.created_at).toLocaleDateString('en-US', {
     month: 'long',
     year: 'numeric',
   })
 
-  const name = profile.display_name || profile.full_name || 'Seller'
-  const company = profile.company_name
+  const chips: CoverChip[] = [
+    { label: 'INDIVIDUAL · STOREFRONT', variant: 'category' },
+    ...(profile.is_verified_dealer
+      ? [{ label: 'VERIFIED DEALER', variant: 'verified' as const }]
+      : []),
+  ]
 
-  // JSON-LD Organization schema
+  const tabs: ProfileTabSpec[] = [
+    { id: 'storefront', label: 'Storefront' },
+    { id: 'listings', label: 'Listings', count: totalListingsCount },
+    // Services + Locations are placeholder tabs — surfaces still TBD
+    // (Cycle 70). Disabling keeps the IA visible without surfacing fake counts.
+    { id: 'services', label: 'Services', disabled: true },
+    { id: 'reviews', label: 'Reviews', count: reviewsTotal },
+    { id: 'about', label: 'About' },
+    { id: 'locations', label: 'Locations', disabled: true },
+  ]
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'Organization',
@@ -141,12 +171,12 @@ export default async function SellerStorefrontPage({
       addressRegion: profile.location_state || 'TX',
       addressCountry: 'US',
     },
-    ...(reviewsData.totalReviews > 0
+    ...(reviewsTotal > 0
       ? {
           aggregateRating: {
             '@type': 'AggregateRating',
-            ratingValue: reviewsData.averageRating,
-            reviewCount: reviewsData.totalReviews,
+            ratingValue: reviewsAverage,
+            reviewCount: reviewsTotal,
           },
         }
       : {}),
@@ -159,108 +189,38 @@ export default async function SellerStorefrontPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
 
-      <div className="mx-auto w-full max-w-5xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
-        {/* Cover grid — design-handoff_inner_pages/sellers/SellersShared.jsx */}
-        <div className="relative">
-          <div
-            className="relative grid overflow-hidden rounded-2xl"
-            style={{
-              height: 280,
-              gridTemplateColumns: '2fr 1fr 1fr',
-              gridTemplateRows: '1fr 1fr',
-              gap: 4,
-              background: '#0A1628',
-            }}
-          >
-            {/* Large left tile */}
-            <div
-              className="relative overflow-hidden"
-              style={{
-                gridRow: '1 / span 2',
-                background: storefront?.banner_url
-                  ? '#0A1628'
-                  : 'linear-gradient(135deg, #1E3A8A 0%, #1877F2 60%, #3D9BD6 100%)',
-              }}
-            >
-              {storefront?.banner_url ? (
-                <img
-                  src={storefront.banner_url}
-                  alt={`${name}'s storefront banner`}
-                  className="absolute inset-0 size-full object-cover"
-                />
-              ) : (
-                <>
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      background:
-                        'radial-gradient(circle at 30% 30%, rgba(255,255,255,0.18) 0%, transparent 60%)',
-                    }}
-                  />
-                  <div
-                    className="absolute inset-0"
-                    style={{
-                      backgroundImage:
-                        'repeating-linear-gradient(45deg, rgba(255,255,255,0.04) 0 1px, transparent 1px 24px)',
-                    }}
-                  />
-                </>
-              )}
-              {/* Cover chips */}
-              <div className="absolute top-4 left-4 inline-flex items-center gap-1.5 flex-wrap">
-                <span
-                  className="text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center"
-                  style={{
-                    background: 'rgba(255,255,255,0.16)',
-                    color: '#fff',
-                    borderRadius: 4,
-                    letterSpacing: '0.10em',
-                    fontFamily: 'var(--font-jetbrains-mono), monospace',
-                    backdropFilter: 'blur(8px)',
-                  }}
-                >
-                  INDIVIDUAL · STOREFRONT
-                </span>
-                {profile.is_verified_dealer && (
-                  <span
-                    className="text-[10px] font-bold uppercase px-2 h-[22px] inline-flex items-center gap-1"
-                    style={{
-                      background: 'rgba(34,197,94,0.20)',
-                      color: '#86EFAC',
-                      borderRadius: 4,
-                      letterSpacing: '0.10em',
-                      fontFamily: 'var(--font-jetbrains-mono), monospace',
-                      backdropFilter: 'blur(8px)',
-                    }}
-                  >
-                    VERIFIED DEALER
-                  </span>
-                )}
-              </div>
-            </div>
-            {/* Three gradient tiles on the right */}
-            {[
-              'linear-gradient(135deg, #155E75 0%, #0EA5E9 100%)',
-              'linear-gradient(135deg, #831843 0%, #DB2777 100%)',
-              'linear-gradient(135deg, #1F2937 0%, #4B5563 100%)',
-            ].map((bg, i) => (
-              <div
-                key={i}
-                className="relative overflow-hidden"
-                style={{ background: bg }}
+      <div className="mx-auto w-full max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+        {/* Breadcrumb */}
+        <nav
+          aria-label="Breadcrumb"
+          className="hidden items-center gap-1.5 text-[12px] text-muted-foreground md:flex"
+        >
+          <Link href="/search" className="font-semibold hover:text-foreground">
+            Sellers
+          </Link>
+          {industries[0] && (
+            <>
+              <ChevronRight className="size-3" />
+              <Link
+                href={`/search?industries=${encodeURIComponent(industries[0])}`}
+                className="font-semibold hover:text-foreground"
               >
-                <div
-                  className="absolute inset-0"
-                  style={{
-                    backgroundImage:
-                      'repeating-linear-gradient(135deg, rgba(255,255,255,0.05) 0 1px, transparent 1px 16px)',
-                  }}
-                />
-              </div>
-            ))}
-          </div>
+                {industries[0]}
+              </Link>
+            </>
+          )}
+          <ChevronRight className="size-3" />
+          <span className="font-bold text-foreground">{name}</span>
+        </nav>
 
-          {/* Avatar overlay */}
+        {/* Cover grid */}
+        <div className="relative">
+          <CoverGrid
+            bannerUrl={storefront?.banner_url ?? null}
+            photoUrls={coverPhotos}
+            chips={chips}
+            alt={`${name} storefront cover`}
+          />
           <div className="absolute -bottom-12 left-6">
             <Avatar className="size-24 border-4 border-background shadow-[0_8px_24px_rgba(11,37,69,0.18)]">
               <AvatarImage
@@ -274,348 +234,431 @@ export default async function SellerStorefrontPage({
           </div>
         </div>
 
-        {/* Profile Info */}
-        <div className="pt-14">
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-2">
-                <h1 className="font-display text-3xl font-bold text-foreground">
-                  {name}
-                </h1>
-                {profile.is_verified_dealer && (
-                  <BadgeCheck className="size-6 text-secondary" />
-                )}
-              </div>
-
-              {storefront?.tagline && (
-                <p className="mt-1 font-body text-lg text-muted-foreground">
-                  {storefront.tagline}
-                </p>
+        {/* Identity row */}
+        <div className="flex flex-col gap-4 pt-14 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2">
+              <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+                {name}
+              </h1>
+              {profile.is_verified_dealer && (
+                <BadgeCheck className="size-6 text-secondary" />
               )}
-
-              {company && (
-                <p className="mt-2 flex items-center gap-1.5 font-body text-muted-foreground">
-                  <Building2 className="size-4" />
-                  {company}
-                </p>
-              )}
-
-              <div className="mt-3 flex flex-wrap items-center gap-3">
-                {(profile.location_city || profile.location_state) && (
-                  <span className="flex items-center gap-1 font-body text-sm text-muted-foreground">
-                    <MapPin className="size-3.5" />
-                    {[profile.location_city, profile.location_state]
-                      .filter(Boolean)
-                      .join(', ')}
-                  </span>
-                )}
-                {sellerIndustries.length > 0 && (
-                  <span className="flex flex-wrap items-center gap-1.5 font-body text-sm text-muted-foreground">
-                    <Briefcase className="size-3.5" />
-                    {sellerIndustries.map((ind, i) => (
-                      <Badge
-                        key={`${ind}-${i}`}
-                        variant="secondary"
-                        className="font-body text-xs"
-                      >
-                        {ind}
-                      </Badge>
-                    ))}
-                  </span>
-                )}
-                <span className="flex items-center gap-1 font-body text-sm text-muted-foreground">
-                  <Calendar className="size-3.5" />
-                  Member since {memberSince}
-                </span>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
-                {profile.is_verified_dealer && (
-                  <Badge className="bg-secondary/20 font-body text-xs text-secondary">
-                    Verified Dealer
-                  </Badge>
-                )}
-                {reviewsData.totalReviews > 0 && (
-                  <Badge variant="outline" className="font-body text-xs">
-                    <Star className="mr-1 size-3 fill-yellow-400 text-yellow-400" />
-                    {reviewsData.averageRating} ({reviewsData.totalReviews})
-                  </Badge>
-                )}
-              </div>
             </div>
-          </div>
-        </div>
-
-        {/* Stats Bar */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          <StatBox icon={Package} label="Listings" value={stats.totalListings} />
-          <StatBox
-            icon={Star}
-            label="Avg Rating"
-            value={stats.avgRating > 0 ? stats.avgRating.toString() : 'N/A'}
-          />
-          <StatBox
-            icon={MessageSquare}
-            label="Reviews"
-            value={stats.totalReviews}
-          />
-          <StatBox icon={Clock} label="Response" value={stats.avgResponseTime} />
-          <StatBox icon={ShoppingCart} label="Sales" value={stats.totalSales} />
-        </div>
-
-        {/* Bio */}
-        {profile.bio && (
-          <Card className="bg-card">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">About</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="whitespace-pre-wrap font-body text-sm leading-relaxed text-muted-foreground">
-                {profile.bio}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Featured Listings */}
-        {featuredListings.length > 0 && (
-          <Card className="bg-card">
-            <CardHeader>
-              <CardTitle className="font-display text-lg">
-                Featured Listings
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {featuredListings.map((listing) => (
-                  <ListingCard key={listing.id} listing={listing} featured />
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* AI Reputation Summary */}
-        {reviewsData.totalReviews > 0 && (
-          <ReputationSummary sellerId={id} />
-        )}
-
-        {/* Reviews */}
-        {reviewsData.totalReviews > 0 && (
-          <Card className="bg-card">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 font-display text-lg">
-                <Star className="size-5 fill-yellow-400 text-yellow-400" />
-                Reviews ({reviewsData.totalReviews})
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center gap-3">
-                <span className="font-display text-3xl font-bold text-foreground">
-                  {reviewsData.averageRating}
-                </span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star
-                      key={star}
-                      className={`size-5 ${
-                        star <= Math.round(reviewsData.averageRating)
-                          ? 'fill-yellow-400 text-yellow-400'
-                          : 'text-muted-foreground'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-              <Separator />
-              <div className="space-y-4">
-                {reviewsData.reviews.slice(0, 5).map(
-                  (review: {
-                    id: string
-                    rating: number
-                    comment: string | null
-                    created_at: string
-                    reviewer: {
-                      full_name: string
-                      display_name: string | null
-                      avatar_url: string | null
-                    } | null
-                  }) => (
-                    <div key={review.id} className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <Avatar className="size-8">
-                          <AvatarImage
-                            src={review.reviewer?.avatar_url || undefined}
-                            crossOrigin="anonymous"
-                          />
-                          <AvatarFallback className="bg-primary/20 font-body text-xs text-primary">
-                            {(
-                              review.reviewer?.display_name ||
-                              review.reviewer?.full_name ||
-                              '?'
-                            )
-                              .split(' ')
-                              .map((n: string) => n[0])
-                              .join('')
-                              .toUpperCase()
-                              .slice(0, 2)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <p className="font-body text-sm font-medium text-foreground">
-                            {review.reviewer?.display_name ||
-                              review.reviewer?.full_name ||
-                              'Anonymous'}
-                          </p>
-                          <div className="flex items-center gap-1">
-                            {[1, 2, 3, 4, 5].map((star) => (
-                              <Star
-                                key={star}
-                                className={`size-3 ${
-                                  star <= review.rating
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-muted-foreground'
-                                }`}
-                              />
-                            ))}
-                            <span className="ml-1 font-body text-[10px] text-muted-foreground">
-                              {new Date(review.created_at).toLocaleDateString(
-                                'en-US',
-                                { month: 'short', day: 'numeric', year: 'numeric' }
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                      {review.comment && (
-                        <p className="font-body text-sm text-muted-foreground">
-                          {review.comment}
-                        </p>
-                      )}
-                    </div>
-                  )
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* All Listings */}
-        <Card className="bg-card">
-          <CardHeader>
-            <CardTitle className="font-display text-lg">
-              All Listings ({listings.length})
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {regularListings.length > 0 || featuredListings.length > 0 ? (
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {(featuredListings.length > 0 ? regularListings : listings).map(
-                  (listing) => (
-                    <ListingCard key={listing.id} listing={listing} />
-                  )
-                )}
-              </div>
-            ) : (
-              <p className="py-8 text-center font-body text-sm text-muted-foreground">
-                No active listings yet.
+            {storefront?.tagline && (
+              <p className="mt-1 font-body text-lg text-muted-foreground">
+                {storefront.tagline}
               </p>
             )}
-          </CardContent>
-        </Card>
+            {company && (
+              <p className="mt-2 flex items-center gap-1.5 font-body text-muted-foreground">
+                <Building2 className="size-4" />
+                {company}
+              </p>
+            )}
+            <div className="mt-3 flex flex-wrap items-center gap-3">
+              {(profile.location_city || profile.location_state) && (
+                <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                  <MapPin className="size-3.5" />
+                  {[profile.location_city, profile.location_state]
+                    .filter(Boolean)
+                    .join(', ')}
+                </span>
+              )}
+              {industries.length > 0 && (
+                <span className="flex flex-wrap items-center gap-1.5 text-sm text-muted-foreground">
+                  <Briefcase className="size-3.5" />
+                  {industries.slice(0, 3).map((ind, i) => (
+                    <Badge
+                      key={`${ind}-${i}`}
+                      variant="secondary"
+                      className="text-xs"
+                    >
+                      {ind}
+                    </Badge>
+                  ))}
+                </span>
+              )}
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Calendar className="size-3.5" />
+                Member since {memberSince}
+              </span>
+            </div>
+          </div>
+
+          {!viewerIsOwner && (
+            <div className="flex shrink-0 items-center gap-2 pb-3">
+              <FollowButton
+                sellerProfileId={profile.id}
+                initialFollowing={viewerIsFollowing}
+              />
+              <Link
+                href={`/messages?recipient=${profile.id}`}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-background px-4 text-[13px] font-bold text-foreground hover:bg-muted"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                <MessageSquare className="size-4" />
+                Message
+              </Link>
+              <Link
+                href={`/sos/create?seller=${profile.id}`}
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-[#FF6B2B] px-4 text-[13px] font-bold text-white hover:bg-[#E6541F]"
+              >
+                Send SOS
+              </Link>
+            </div>
+          )}
+          {viewerIsOwner && (
+            <div className="flex shrink-0 items-center gap-2 pb-3">
+              <Link
+                href="/profile"
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-background px-4 text-[13px] font-bold text-foreground hover:bg-muted"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                Edit storefront
+              </Link>
+              <button
+                type="button"
+                className="inline-flex h-10 items-center gap-1.5 rounded-full bg-background px-4 text-[13px] font-bold text-foreground hover:bg-muted"
+                style={{ border: '1px solid var(--border)' }}
+              >
+                <Share2 className="size-4" />
+                Share
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Trust strip */}
+        <TrustStripCard metrics={trustMetrics} variant="seller" />
+
+        {/* Tab nav */}
+        <ProfileTabsNav tabs={tabs} defaultTab={DEFAULT_TAB} />
+
+        {/* Tab content */}
+        {tab === 'storefront' && (
+          <StorefrontTabContent
+            sellerId={id}
+            profileBio={profile.bio}
+            industries={industries}
+            featuredListings={featuredListings}
+            moreListings={moreListings}
+            totalListingsCount={totalListingsCount}
+            reviewsRecent={reviewsRecent}
+            reviewsTotal={reviewsTotal}
+            reviewsAverage={reviewsAverage}
+            ratingDistribution={ratingDistribution}
+            activity={activity}
+            legacyStats={legacyStats}
+          />
+        )}
+
+        {tab === 'listings' && (
+          <ListingsGridModule
+            title="All listings"
+            subtitle={`${totalListingsCount} active`}
+            listings={listings}
+            columns={4}
+            emptyState="No active listings yet."
+          />
+        )}
+
+        {tab === 'reviews' && (
+          <SellerRecentReviews
+            reviews={reviewsRecent}
+            total={reviewsTotal}
+            average={reviewsAverage}
+            distribution={ratingDistribution}
+          />
+        )}
+
+        {tab === 'about' && (
+          <AboutTabContent
+            bio={profile.bio}
+            industries={industries}
+            company={company}
+            memberSince={memberSince}
+            locationCity={profile.location_city}
+            locationState={profile.location_state}
+          />
+        )}
+
+        {(tab === 'services' || tab === 'locations') && (
+          <PlaceholderTab tab={tab} />
+        )}
       </div>
     </>
   )
 }
 
-function StatBox({
-  icon: Icon,
-  label,
-  value,
+function StorefrontTabContent({
+  sellerId,
+  profileBio,
+  industries,
+  featuredListings,
+  moreListings,
+  totalListingsCount,
+  reviewsRecent,
+  reviewsTotal,
+  reviewsAverage,
+  ratingDistribution,
+  activity,
+  legacyStats,
 }: {
-  icon: React.ElementType
-  label: string
-  value: number | string
+  sellerId: string
+  profileBio: string | null
+  industries: string[]
+  featuredListings: ListingsGridModuleListing[]
+  moreListings: ListingsGridModuleListing[]
+  totalListingsCount: number
+  reviewsRecent: SellerPageReview[]
+  reviewsTotal: number
+  reviewsAverage: number
+  ratingDistribution: Record<number, number>
+  activity: ActivityEntry[]
+  legacyStats: Awaited<ReturnType<typeof getSellerStats>>
 }) {
   return (
-    <Card className="bg-card">
-      <CardContent className="flex flex-col items-center gap-1 p-4">
-        <Icon className="size-5 text-primary" />
-        <p className="font-display text-xl font-bold text-foreground">
-          {typeof value === 'number' ? value.toLocaleString() : value}
-        </p>
-        <p className="font-body text-[10px] text-muted-foreground">{label}</p>
-      </CardContent>
-    </Card>
-  )
-}
-
-function ListingCard({
-  listing,
-  featured,
-}: {
-  listing: {
-    id: string
-    title: string
-    category: string
-    price_cents: number | null
-    contact_for_price: boolean
-    condition: string
-    views_count: number
-    favorites_count: number
-    listing_images: { url: string; position: number }[] | null
-  }
-  featured?: boolean
-}) {
-  const image = listing.listing_images
-    ?.sort((a, b) => a.position - b.position)[0]?.url
-
-  return (
-    <Link
-      href={`/listings/${listing.id}`}
-      className={`group overflow-hidden rounded-lg border transition-colors hover:border-primary/50 ${
-        featured ? 'border-primary/30 bg-primary/5' : 'border-border bg-surface'
-      }`}
-    >
-      <div className="aspect-[16/10] w-full overflow-hidden bg-card">
-        {image ? (
-          <img
-            src={image}
-            alt={listing.title}
-            className="h-full w-full object-cover transition-transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center">
-            <Package className="size-8 text-muted-foreground/40" />
+    <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+      <div className="space-y-5">
+        {/* About card */}
+        <section className="rounded-2xl bg-card p-5 shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]">
+          <div className="flex items-center justify-between">
+            <h3 className="font-display text-[15px] font-bold tracking-tight text-foreground">
+              About this seller
+            </h3>
           </div>
+          {profileBio ? (
+            <p className="mt-3 text-[13.5px] leading-relaxed text-foreground/90">
+              {profileBio}
+            </p>
+          ) : (
+            <p className="mt-3 text-sm text-muted-foreground">
+              This seller hasn&apos;t added a bio yet.
+            </p>
+          )}
+          {industries.length > 0 && (
+            <div className="mt-4">
+              <div
+                className="mb-1.5 text-[10.5px] font-bold uppercase tracking-[0.10em] text-muted-foreground"
+                style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}
+              >
+                Industries served
+              </div>
+              <div className="flex flex-wrap gap-1.5">
+                {industries.map((ind, i) => (
+                  <Badge key={`${ind}-${i}`} variant="secondary" className="text-xs">
+                    {ind}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        {/* Featured listings */}
+        {featuredListings.length > 0 && (
+          <ListingsGridModule
+            title="Featured listings"
+            subtitle={`${featuredListings.length} of ${totalListingsCount}`}
+            listings={featuredListings}
+            columns={3}
+            showFeaturedBadge
+            seeAllHref={`/sellers/${sellerId}?tab=listings`}
+            totalCount={totalListingsCount}
+          />
         )}
-      </div>
-      <div className="p-3">
-        <p className="truncate font-body text-sm font-medium text-foreground">
-          {listing.title}
-        </p>
-        <p className="mt-0.5 font-body text-[10px] text-muted-foreground">
-          {listing.category} &middot; {listing.condition.replace('_', ' ')}
-        </p>
-        <div className="mt-2 flex items-center justify-between">
-          <span className="font-display text-sm font-bold text-primary">
-            {listing.contact_for_price
-              ? 'Contact'
-              : listing.price_cents
-                ? `$${(listing.price_cents / 100).toLocaleString()}`
-                : 'Free'}
-          </span>
-          <span className="flex items-center gap-2 font-body text-[10px] text-muted-foreground">
-            <span>{listing.views_count} views</span>
-            <span>{listing.favorites_count} favs</span>
-          </span>
-        </div>
-        {featured && (
-          <Badge className="mt-2 bg-primary/20 font-body text-[10px] text-primary">
-            Featured
-          </Badge>
+
+        {/* More from this seller */}
+        {moreListings.length > 0 && (
+          <ListingsGridModule
+            title="More from this seller"
+            subtitle={`${moreListings.length} shown`}
+            listings={moreListings.slice(0, 8)}
+            columns={4}
+            seeAllHref={`/sellers/${sellerId}?tab=listings`}
+            totalCount={totalListingsCount}
+          />
         )}
+
+        {/* AI reputation summary (if reviews exist) */}
+        {reviewsTotal > 0 && <ReputationSummary sellerId={sellerId} />}
+
+        {/* Recent reviews */}
+        <SellerRecentReviews
+          reviews={reviewsRecent}
+          total={reviewsTotal}
+          average={reviewsAverage}
+          distribution={ratingDistribution}
+          seeAllHref={`/sellers/${sellerId}?tab=reviews`}
+        />
       </div>
-    </Link>
+
+      <aside className="space-y-4">
+        {/* SOS-orange emergency card */}
+        <section className="overflow-hidden rounded-2xl bg-card shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]">
+          <div
+            className="px-4 py-4"
+            style={{
+              background: 'linear-gradient(135deg, #FF6B2B 0%, #FB923C 100%)',
+              color: '#fff',
+            }}
+          >
+            <div
+              className="text-[10.5px] font-bold uppercase"
+              style={{
+                letterSpacing: '0.10em',
+                fontFamily: 'var(--font-jetbrains-mono), monospace',
+                color: 'rgba(255,255,255,0.85)',
+              }}
+            >
+              EMERGENCY?
+            </div>
+            <div className="mt-0.5 font-display text-[16px] font-bold">
+              Send an SOS request
+            </div>
+            <div className="mt-1 text-[11.5px] leading-snug text-white/90">
+              Responses tracked, response time {legacyStats.avgResponseTime ?? '—'}.
+            </div>
+            <Link
+              href={`/sos/create?seller=${sellerId}`}
+              className="mt-3 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-[#0A1628] text-[12.5px] font-bold text-white"
+            >
+              Open SOS form
+            </Link>
+          </div>
+        </section>
+
+        {/* Recent activity */}
+        <section className="rounded-2xl bg-card shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]">
+          <header className="border-b border-border px-5 py-4">
+            <h3 className="font-display text-[15px] font-bold tracking-tight text-foreground">
+              Recent activity
+            </h3>
+          </header>
+          <div className="px-5 py-3">
+            <ActivityFeed entries={activity} />
+          </div>
+        </section>
+
+        {/* Certifications placeholder — defer to Cycle 70 */}
+        <section className="rounded-2xl bg-card p-5 shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]">
+          <h3 className="font-display text-[15px] font-bold tracking-tight text-foreground">
+            Certifications
+          </h3>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Coming soon — verified business credentials and compliance badges.
+          </p>
+        </section>
+      </aside>
+    </div>
   )
 }
+
+function AboutTabContent({
+  bio,
+  industries,
+  company,
+  memberSince,
+  locationCity,
+  locationState,
+}: {
+  bio: string | null
+  industries: string[]
+  company: string | null
+  memberSince: string
+  locationCity: string | null
+  locationState: string | null
+}) {
+  return (
+    <section className="rounded-2xl bg-card p-6 shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]">
+      <h3 className="font-display text-[18px] font-bold tracking-tight text-foreground">
+        About
+      </h3>
+      <div className="mt-4 space-y-4">
+        {bio ? (
+          <p className="text-[14px] leading-relaxed text-foreground/90">{bio}</p>
+        ) : (
+          <p className="text-sm text-muted-foreground">No bio yet.</p>
+        )}
+        <div className="grid gap-4 sm:grid-cols-2">
+          {company && (
+            <Field icon={<Building2 className="size-4" />} label="Company">
+              {company}
+            </Field>
+          )}
+          {(locationCity || locationState) && (
+            <Field icon={<MapPin className="size-4" />} label="Location">
+              {[locationCity, locationState].filter(Boolean).join(', ')}
+            </Field>
+          )}
+          <Field icon={<Calendar className="size-4" />} label="Member since">
+            {memberSince}
+          </Field>
+          {industries.length > 0 && (
+            <Field icon={<Briefcase className="size-4" />} label="Industries">
+              <span className="flex flex-wrap gap-1.5">
+                {industries.map((ind, i) => (
+                  <Badge key={`${ind}-${i}`} variant="secondary" className="text-xs">
+                    {ind}
+                  </Badge>
+                ))}
+              </span>
+            </Field>
+          )}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function Field({
+  icon,
+  label,
+  children,
+}: {
+  icon: React.ReactNode
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <div
+        className="mb-1.5 inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.08em] text-muted-foreground"
+        style={{ fontFamily: 'var(--font-jetbrains-mono), monospace' }}
+      >
+        {icon}
+        {label}
+      </div>
+      <div className="text-sm text-foreground">{children}</div>
+    </div>
+  )
+}
+
+function PlaceholderTab({ tab }: { tab: 'services' | 'locations' }) {
+  const meta: Record<'services' | 'locations', { title: string; copy: string; icon: React.ReactNode }> = {
+    services: {
+      title: 'Services',
+      copy: 'Rebuilding, machining, transport, and rigging services will live here. Coming in Cycle 70.',
+      icon: <Package className="size-5" />,
+    },
+    locations: {
+      title: 'Locations',
+      copy: 'Yards, branches, and service areas will live here. Coming in Cycle 70.',
+      icon: <MapPin className="size-5" />,
+    },
+  }
+  const { title, copy, icon } = meta[tab]
+  return (
+    <section className="rounded-2xl bg-card p-8 text-center shadow-[0_1px_2px_rgba(11,37,69,0.04),0_4px_12px_rgba(11,37,69,0.05)]">
+      <div className="mx-auto inline-flex size-10 items-center justify-center rounded-full bg-muted">
+        {icon}
+      </div>
+      <h3 className="mt-3 font-display text-[16px] font-bold text-foreground">
+        {title}
+      </h3>
+      <p className="mt-2 text-sm text-muted-foreground">{copy}</p>
+    </section>
+  )
+}
+

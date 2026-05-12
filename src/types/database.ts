@@ -58,6 +58,107 @@ export type Database = {
           },
         ]
       }
+      ai_suggestion_feedback: {
+        Row: {
+          created_at: string
+          field_name: string
+          id: number
+          source_row_id: string
+          source_table: string
+          suggested_value: string | null
+          surface: string
+          user_action: string
+          user_id: string | null
+          user_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          field_name: string
+          id?: number
+          source_row_id: string
+          source_table: string
+          suggested_value?: string | null
+          surface: string
+          user_action: string
+          user_id?: string | null
+          user_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          field_name?: string
+          id?: number
+          source_row_id?: string
+          source_table?: string
+          suggested_value?: string | null
+          surface?: string
+          user_action?: string
+          user_id?: string | null
+          user_value?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage_events: {
+        Row: {
+          company_id: string | null
+          cost_cents: number
+          error_class: string | null
+          id: number
+          input_tokens: number | null
+          latency_ms: number | null
+          model: string | null
+          occurred_at: string
+          output_tokens: number | null
+          success: boolean
+          surface: string
+          trace_id: string | null
+          user_id: string | null
+          vendor: string
+          vision_units: number | null
+        }
+        Insert: {
+          company_id?: string | null
+          cost_cents?: number
+          error_class?: string | null
+          id?: number
+          input_tokens?: number | null
+          latency_ms?: number | null
+          model?: string | null
+          occurred_at?: string
+          output_tokens?: number | null
+          success?: boolean
+          surface: string
+          trace_id?: string | null
+          user_id?: string | null
+          vendor: string
+          vision_units?: number | null
+        }
+        Update: {
+          company_id?: string | null
+          cost_cents?: number
+          error_class?: string | null
+          id?: number
+          input_tokens?: number | null
+          latency_ms?: number | null
+          model?: string | null
+          occurred_at?: string
+          output_tokens?: number | null
+          success?: boolean
+          surface?: string
+          trace_id?: string | null
+          user_id?: string | null
+          vendor?: string
+          vision_units?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_events_company_id_fkey"
+            columns: ["company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       boost_purchases: {
         Row: {
           admin_override: boolean | null
@@ -1665,12 +1766,16 @@ export type Database = {
           location_lat: number
           location_lng: number
           location_state: string
+          manufacturer_id: string | null
+          manufacturer_model_id: string | null
           negotiable: boolean
           pinned_category: string | null
           pinned_position: number | null
           price_cents: number | null
           quantity: number | null
           refreshed_at: string | null
+          registry_match_confidence: number | null
+          registry_match_method: string | null
           seller_id: string
           sku: string | null
           source_draft_id: string | null
@@ -1715,12 +1820,16 @@ export type Database = {
           location_lat?: number
           location_lng?: number
           location_state?: string
+          manufacturer_id?: string | null
+          manufacturer_model_id?: string | null
           negotiable?: boolean
           pinned_category?: string | null
           pinned_position?: number | null
           price_cents?: number | null
           quantity?: number | null
           refreshed_at?: string | null
+          registry_match_confidence?: number | null
+          registry_match_method?: string | null
           seller_id: string
           sku?: string | null
           source_draft_id?: string | null
@@ -1765,12 +1874,16 @@ export type Database = {
           location_lat?: number
           location_lng?: number
           location_state?: string
+          manufacturer_id?: string | null
+          manufacturer_model_id?: string | null
           negotiable?: boolean
           pinned_category?: string | null
           pinned_position?: number | null
           price_cents?: number | null
           quantity?: number | null
           refreshed_at?: string | null
+          registry_match_confidence?: number | null
+          registry_match_method?: string | null
           seller_id?: string
           sku?: string | null
           source_draft_id?: string | null
@@ -1791,6 +1904,20 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "listings_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "listings_manufacturer_model_id_fkey"
+            columns: ["manufacturer_model_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturer_models"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "listings_seller_id_fkey"
             columns: ["seller_id"]
             isOneToOne: false
@@ -1802,6 +1929,106 @@ export type Database = {
             columns: ["source_draft_id"]
             isOneToOne: false
             referencedRelation: "listing_drafts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manufacturer_models: {
+        Row: {
+          created_at: string
+          equipment_type: string | null
+          id: string
+          manufacturer_id: string
+          name: string
+          notes: string | null
+          series: string | null
+          slug: string
+          source_file: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          equipment_type?: string | null
+          id?: string
+          manufacturer_id: string
+          name: string
+          notes?: string | null
+          series?: string | null
+          slug: string
+          source_file: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          equipment_type?: string | null
+          id?: string
+          manufacturer_id?: string
+          name?: string
+          notes?: string | null
+          series?: string | null
+          slug?: string
+          source_file?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturer_models_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      manufacturers: {
+        Row: {
+          aliases: string[]
+          country: string | null
+          created_at: string
+          equipment_categories: string[]
+          id: string
+          name: string
+          notes: string | null
+          parent_manufacturer_id: string | null
+          slug: string
+          source_file: string
+          tier: number
+          updated_at: string
+        }
+        Insert: {
+          aliases?: string[]
+          country?: string | null
+          created_at?: string
+          equipment_categories?: string[]
+          id?: string
+          name: string
+          notes?: string | null
+          parent_manufacturer_id?: string | null
+          slug: string
+          source_file: string
+          tier: number
+          updated_at?: string
+        }
+        Update: {
+          aliases?: string[]
+          country?: string | null
+          created_at?: string
+          equipment_categories?: string[]
+          id?: string
+          name?: string
+          notes?: string | null
+          parent_manufacturer_id?: string | null
+          slug?: string
+          source_file?: string
+          tier?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "manufacturers_parent_manufacturer_id_fkey"
+            columns: ["parent_manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturers"
             referencedColumns: ["id"]
           },
         ]
@@ -2517,6 +2744,57 @@ export type Database = {
           },
         ]
       }
+      registry_match_feedback: {
+        Row: {
+          created_at: string
+          id: number
+          source_row_id: string
+          source_table: string
+          suggested_manufacturer_id: string | null
+          suggested_model_id: string | null
+          user_action: string
+          user_id: string | null
+          user_text_value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: number
+          source_row_id: string
+          source_table: string
+          suggested_manufacturer_id?: string | null
+          suggested_model_id?: string | null
+          user_action: string
+          user_id?: string | null
+          user_text_value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: number
+          source_row_id?: string
+          source_table?: string
+          suggested_manufacturer_id?: string | null
+          suggested_model_id?: string | null
+          user_action?: string
+          user_id?: string | null
+          user_text_value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "registry_match_feedback_suggested_manufacturer_id_fkey"
+            columns: ["suggested_manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "registry_match_feedback_suggested_model_id_fkey"
+            columns: ["suggested_model_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturer_models"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reply_templates: {
         Row: {
           body: string
@@ -2847,6 +3125,52 @@ export type Database = {
           },
         ]
       }
+      seller_followers: {
+        Row: {
+          created_at: string
+          follower_id: string
+          id: string
+          seller_company_id: string | null
+          seller_profile_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          follower_id: string
+          id?: string
+          seller_company_id?: string | null
+          seller_profile_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          follower_id?: string
+          id?: string
+          seller_company_id?: string | null
+          seller_profile_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "seller_followers_follower_id_fkey"
+            columns: ["follower_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_followers_seller_company_id_fkey"
+            columns: ["seller_company_id"]
+            isOneToOne: false
+            referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "seller_followers_seller_profile_id_fkey"
+            columns: ["seller_profile_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       seller_storefronts: {
         Row: {
           banner_url: string | null
@@ -3116,6 +3440,8 @@ export type Database = {
           location_lat: number | null
           location_lng: number | null
           location_state: string | null
+          manufacturer_id: string | null
+          manufacturer_model_id: string | null
           max_distance_miles: number | null
           model: string | null
           notes: string | null
@@ -3145,6 +3471,8 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           location_state?: string | null
+          manufacturer_id?: string | null
+          manufacturer_model_id?: string | null
           max_distance_miles?: number | null
           model?: string | null
           notes?: string | null
@@ -3174,6 +3502,8 @@ export type Database = {
           location_lat?: number | null
           location_lng?: number | null
           location_state?: string | null
+          manufacturer_id?: string | null
+          manufacturer_model_id?: string | null
           max_distance_miles?: number | null
           model?: string | null
           notes?: string | null
@@ -3193,6 +3523,20 @@ export type Database = {
             columns: ["company_id"]
             isOneToOne: false
             referencedRelation: "company_profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sos_requests_manufacturer_id_fkey"
+            columns: ["manufacturer_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sos_requests_manufacturer_model_id_fkey"
+            columns: ["manufacturer_model_id"]
+            isOneToOne: false
+            referencedRelation: "manufacturer_models"
             referencedColumns: ["id"]
           },
         ]

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Design handoff reference JSX — read-only design assets that mirror
+    // the /design preview surfaces. Not part of the production bundle.
+    "design_handoff_core/**",
+    "design_handoff_inner_pages/**",
   ]),
 ]);
 

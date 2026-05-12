@@ -73,12 +73,13 @@ Industrial equipment marketplace built for Houston, TX and beyond. Buy, sell, an
 - Related listings carousel with smart similarity scoring
 
 ### Business Tools
-- Seller storefronts with customizable banner, tagline, and featured listings
+- Seller storefronts with tabbed information architecture (Storefront / Listings / Services / Reviews / About / Locations), 5-stat trust strip (rating, response time, transactions, followers, member since), real-photo cover grids pulled from the seller's most-active listings, and follow/unfollow. Customizable banner, tagline, and featured listings carry over from prior cycles. (Cycle 69.)
 - Inventory management with quantity, SKU, warehouse location, and bulk actions
 - Radar (formerly Collections) — save and organize equipment into radar lists with public/private visibility and shareable URLs
 - Referral program with unique codes, 30-day tracking, and $10 reward
 
 ### Platform
+- Profile pages now follow the same tabbed information architecture as seller storefronts (About / My listings / Posts / Reviews / SOS history) with a 5-stat trust strip and a synthesized recent-activity timeline. The "Edit cover" CTA on your own profile lets you swap the banner image directly. (Cycle 69.)
 - Role-aware onboarding wizard with 4 supported archetypes (Operator, Trader, Service Provider, Logistics); 2 enabled at launch (Operator, Service Provider); Trader and Logistics soft-disabled at signup but re-activatable from Admin Settings → Archetypes (Cycle 66). Branching role-specific questions, multi-industry selection, equipment interest seeding, SOS opt-in, contact visibility; onboarding data carries over into profile and company creation
 - Web Push notifications with category filters and per-category preferences
 - **Notification sounds** — standard metallic ping for messages, two-tone industrial alert for high-priority SOS/offers; sounds repeat up to 3× if unacknowledged; configurable in Profile → Notification Sounds

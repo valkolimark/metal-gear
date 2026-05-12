@@ -6,6 +6,46 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions map to 
 
 ---
 
+## [4.40.0] — 2026-05-12 · Profile + Sellers IA migration: tabbed navigation, 5-stat trust strip, real cover-grid photos, follow/unfollow (Cycle 69)
+
+### Added
+- **`src/components/profile-shared/`** — reusable building blocks for profile + seller surfaces. `TrustStripCard` (5-stat soft-card grid with em-dash for null metrics), `ProfileTabsNav` (sticky tab nav with count badges, URL `?tab=` routing, keyboard arrows), `CoverGrid` (4-tile hero, real-photo support, mobile collapse to single banner), `ActivityFeed` (typed timeline with humanized time-ago), `ListingsGridModule` (reusable N-up listings preview), `FollowButton` (optimistic follow/unfollow).
+- **`src/lib/profile/`** — server-side helpers. `trust-metrics.ts` (`getSellerTrustMetrics`) computes the 5-stat canonical trust object via batched parallel queries; NULL-safe across rating, transactions, SOS responses, response time, response rate, follower count, on-platform. `cover-photos.ts` (`getCoverPhotosForSeller`) pulls top photos from most-recently-active listings, dedup'd across listings. `activity.ts` (`getActivityFeed`) synthesizes activity entries from listings/reviews/transactions/SOS responses (NOT from the noisy `user_activity` view-tracking table).
+- **`src/app/actions/follow-seller.ts`** — `toggleFollow()` (Zod-validated, target-exclusivity-checked, self-follow rejection, idempotent re-toggle) and `isFollowing()` (viewer state lookup).
+- **`seller_followers` table** with `follower_id` + (`seller_profile_id` XOR `seller_company_id`) target-exclusivity CHECK, `no_self` follow CHECK, four indexes (two partial unique on follower+target, two for reverse lookup), RLS policies: `select_public`, `insert_self`, `delete_self`. Migration script `scripts/migrate-create-seller-followers.ts` (idempotent, supports `--dry-run`).
+- **`src/app/(main)/sellers/[id]/data.ts`** — batched server fetcher (`getSellerPageData`) returning profile, storefront, listings (split into featured + more), reviews, trust metrics, cover photos, activity, follow state in a single `Promise.all`.
+- **`src/app/(main)/profile/data.ts`** — equivalent batched fetcher for `/profile` (own view).
+- **`src/app/(main)/sellers/[id]/components/SellerRecentReviews.tsx`** — recent-reviews module with star-rating distribution bars, reused on both `/sellers/[id]` (Storefront tab + Reviews tab) and `/profile` (Reviews tab).
+
+### Changed
+- **`/sellers/[id]` — full IA rewrite.** Tabbed navigation (Storefront / Listings / Services [disabled, Cycle 70] / Reviews / About / Locations [disabled, Cycle 70]). Cover grid now pulls **real photos** from the seller's most-recently-active listings; gradient placeholders only when no media exists. Breadcrumb row above cover. Identity row gets Message + Send SOS + Follow CTA cluster (or Edit storefront when viewing your own). Storefront tab houses: About card (with industries-served chip row), Featured listings (3-col), More from this seller (4-col, up to 8), AI Reputation Summary, Recent reviews with rating breakdown. Right sidebar (lg+): SOS-orange emergency card, Recent activity (live), Certifications placeholder. Reviews tab dedicated. About tab dedicated.
+- **`/profile` (own variant) — full IA rewrite.** Cover hero with editable "Edit cover" CTA. Identity row. 5-stat trust strip (rating / transactions / SOS responses / response time / on-platform). Tabbed navigation: About (default) / My listings (count) / Posts [disabled, Cycle 70] / Reviews (count) / SOS history (count). About tab content: Recent activity card → Certifications placeholder → existing `ProfileEditor` (the 1200-line settings form, lightly restructured). My listings tab: 6-up `ListingsGridModule`. Reviews tab: `SellerRecentReviews`. SOS history tab: filtered `ActivityFeed` of `sos_responded` + `transaction_completed` entries.
+- **`src/app/(main)/profile/page.tsx`** — converted from a 1247-line client component to a Server Component. The original form now lives in `src/app/(main)/profile/components/ProfileEditor.tsx` (still `'use client'`, renamed default export from `ProfilePage` to `ProfileEditor`, import path adjustments for relative paths). The hardcoded cover hero + page-title block was deleted (the new shell renders cover + title).
+- **`src/types/database.ts`** — regenerated via Supabase Management API to include the new `seller_followers` table (+4 rows in the new table definition).
+- **`eslint.config.mjs`** — `design_handoff_core/**` and `design_handoff_inner_pages/**` added to global ignores. These are read-only design reference JSX assets (shipped by the operator outside any cycle's commits) that mirror `/design/*` preview surfaces; they're not part of the production bundle and have no eslint config of their own.
+- **`scripts/check-archetype-references.mjs`** — `src/components/design-preview/sellers/SellersShared.tsx` and `sellers-data.ts` added to ALLOWLIST (the design preview's "Person / Company / Logistics / Trader" kind-switcher legitimately references the disabled archetype labels for design fidelity, not production behavior).
+
+### Migration
+- `seller_followers` table created (idempotent — `IF NOT EXISTS` everywhere). Verified post-migration: 5 columns (id, follower_id, seller_profile_id, seller_company_id, created_at), 3 RLS policies. Running the migration twice is a confirmed no-op.
+- No destructive changes. No data backfills. No legacy column drops.
+
+### Deferred to subsequent cycles
+- **Cycle 70:** `services` table + Services tab content + Services preview module on Sellers; `seller_locations` table + Locations tab + Service area map render; Team module on company storefronts; `/profile/[id]` (visiting-other-user POV) bespoke restyle to match `/sellers/[id]`; Photos strip on profile; `user_certifications` table + Certifications grid (currently a "Coming soon" card on both surfaces); Posts tab on profile (needs feed-post-by-user surface).
+- **Cycle 71+:** Messages thread chrome + RFQ counter; SOS console table view + real KPI queries; Search NL parser + multi-segment results; Feed three-column architecture; Mobile-specific layouts ported from `Mobile*` design-preview components.
+
+### Tests
+- **`src/test/profile-shared.test.tsx`** (13 cases) — TrustStripCard em-dash rendering for null metrics, populated-seller stat formatting, profile-own variant swap (SOS responses replaces Followers); CoverGrid real-photo rendering, gradient fallback, fewer-than-3 photo handling, editable variant, verified chip palette; ActivityFeed empty state, time-ago humanization; ProfileTabsNav tab list with counts, default-selected state when no `?tab=`, disabled-tab rendering.
+- **`src/test/follow-seller-validation.test.ts`** (5 cases) — toggleFollow Zod input guards: rejects neither-target, both-targets, unauthenticated viewer, self-follow, and malformed UUIDs.
+
+### Rationale
+Cycle 68 installed the visual chrome layer; this cycle installs the information-architecture layer for the two most-viewed surfaces (sellers and profile). The cycle ships the full tab IA, the 5-stat trust strip backed by computed metrics, real-photo cover grids, follow/unfollow, and a synthesized activity timeline. Sub-modules requiring new schema (services, locations, team, certifications) are deferred to Cycle 70 rather than fabricated with mock data — the placeholder "Coming soon" cards keep the tab IA intact without misleading buyers.
+
+**Architectural deviation from the cycle prompt:** the prompt specified a `get_seller_trust_metrics()` Postgres RPC. The codebase pattern is TypeScript-side aggregation via batched admin queries (canonical example: `getSellerStats` in `src/app/actions/storefront.ts`). To stay consistent with that pattern — and to keep the formula colocated with the consumer types rather than split across SQL + TS — trust metrics are computed in `src/lib/profile/trust-metrics.ts` as a single server-only helper. Single-source-of-truth is preserved; the implementation layer is just different. (The prompt's "codebase is canonical" rule supports this choice.)
+
+Brand-new sellers and profiles render em-dashes (`—`) instead of zeros across the trust strip — "0 reviews" reads as "bad seller" but "—" reads as "new." Followers can legitimately render `0` (no misleading implication).
+
+---
+
 ## [4.39.0] — 2026-05-11 · Inner-pages + core-pages design-handoff migration: soft-card Card primitive, cover-grid heroes, KPI strips (Cycle 68)
 
 ### Added

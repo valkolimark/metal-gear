@@ -48,6 +48,9 @@ const ALLOWLIST = new Set([
   // Tests covering the helper / admin actions need to assert on disabled archetype behavior.
   'src/test/archetypes-helper.test.ts',
   'src/test/admin-enabled-archetypes.test.ts',
+  // Design preview surfaces — visual references for design handoff, not in production routes.
+  'src/components/design-preview/sellers/SellersShared.tsx',
+  'src/components/design-preview/sellers/sellers-data.ts',
 ])
 
 const SKIP_DIRS = new Set([
