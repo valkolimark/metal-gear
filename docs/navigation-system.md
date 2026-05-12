@@ -19,7 +19,7 @@ Status: Cycle 71 (shipped on `/feed` only). Other routes remain on the legacy ch
   - SOS bell with count badge (active SOS in user's tier-2 equipment categories, last 24h)
   - Messages bell with count badge (unread conversations across all buyer/seller threads)
   - Credits balance (small mono pill, e.g. "127 credits"); links to `/credits`
-  - Avatar dropdown (Profile / Settings / Help / Sign out)
+  - Avatar dropdown (Profile / Settings / Help / Sign out, plus an **"Appearance" sub-section** containing the three-state theme toggle — see §1.4)
 - Drop-shadow appears when page content scrolls beneath (uses Cycle 68 soft-card shadow token).
 
 **Left sidebar** (DASHBOARD surfaces only — see §1.3 surface taxonomy):
@@ -89,9 +89,24 @@ This taxonomy is enforced by the route's layout file. It is NOT a user preferenc
 
 - Opens from left when brand mark is tapped
 - Full-height overlay with backdrop dim
-- Contains everything in the desktop sidebar (primary nav stack, "Your companies", Send SOS footer, Settings link)
+- Contains everything in the desktop sidebar (primary nav stack, "Your companies", Send SOS footer, Settings link), plus an **"Appearance" row** with the three-state theme toggle (placed above the Send SOS footer — see §1.4)
 - Dismiss: tap backdrop, swipe left, tap close button, or press Esc
 - Locks body scroll while open
+
+---
+
+### 1.5 — Theme system integration
+
+The nav consumes the existing `next-themes` provider configured at the root layout. The `<ThemeToggle />` component lives at `src/components/ui/theme-toggle.tsx` and is reused unchanged from the legacy nav — no fork. Three states: `system` (Auto), `light`, `dark`. Default is `system`. Manual override persists across sessions via `next-themes`'s built-in localStorage mechanism.
+
+Placement:
+
+- **Desktop:** inside `<AppHeaderAvatarMenu>`'s dropdown, under an "Appearance" `<DropdownMenuLabel>`, in a `<div>` that stops click propagation (so the dropdown stays open while the user cycles theme states).
+- **Mobile:** inside `<AppMobileNavDrawer>`'s footer block, in an "Appearance" row above the "Send SOS" button.
+
+Theme changes propagate through the entire app via the single root `<ThemeProvider>` — toggling on a new-nav surface immediately applies on every legacy-nav surface, and vice versa. There is exactly one `next-themes` provider for the entire authenticated app.
+
+SOS orange `#FF6B2B` is preserved across all three theme states — it's a hard-coded brand token, not a theme variable.
 
 ---
 
@@ -284,6 +299,26 @@ Each rollout cycle should:
 3. Manually canary-check at least 5 routes from other clusters to confirm their old chrome is unchanged.
 
 After Cycle 75, the legacy `Header` / `DesktopNav` / `MobileNavClient` / `mobile-drawer` components and the old `(main)` group can be deleted.
+
+### 11.1 — Rollout status
+
+Update this table at the end of every cycle that moves routes.
+
+| Surface | Status | Cycle |
+|---|---|---|
+| `/feed` | New nav | 71 |
+| `/sos` (+ `/sos/[id]`, `/sos/create`, `/sos/my-requests`) | New nav | 72 |
+| `/messages` (+ child routes) | New nav | 72 |
+| `/listings` (+ `/listings/[id]`, `/listings/[id]/edit`, `/listings/bulk-edit`, `/listings/create`, `/listings/import`, `/listings/new`, `/listings/snap*`) | New nav | 72 |
+| `/search` | New nav | 72 |
+| `/sellers/[id]` | Old chrome | Cycle 73 |
+| `/companies/[slug]` | Old chrome | Cycle 73 |
+| `/profile` | Old chrome | Cycle 73 |
+| `/profile/[id]` | Old chrome | Cycle 73 |
+| `/settings/*` | Old chrome | Cycle 74 |
+| `/admin/*` | Scoped CSS — separate convention | Cycle 74 (scope check) |
+| `/dashboard`, `/radar`, other secondary dashboard surfaces | Old chrome | Cycle 73 or 74 |
+| Marketing / landing | Cycle 67 `LandingNav` — unchanged | Cycle 75 |
 
 ---
 

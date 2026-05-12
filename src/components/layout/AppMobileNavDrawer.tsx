@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useRef } from 'react'
 import { Home, Package, MessageSquare, LayoutList, Bookmark, Coins, Settings, X } from 'lucide-react'
 import { SirenIcon } from '@/components/landing/icons'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { cn } from '@/lib/utils'
 import type { NavCompanyMembership } from '@/lib/layout/nav-data'
 
@@ -154,6 +155,12 @@ export function AppMobileNavDrawer({ open, onClose, badges, companies }: AppMobi
         </nav>
 
         <div className="shrink-0 space-y-2 border-t border-border/50 p-3">
+          <div className="flex items-center justify-between rounded-lg px-2 py-1.5">
+            <span className="font-body text-[11px] uppercase tracking-wide text-muted-foreground">
+              Appearance
+            </span>
+            <ThemeToggle />
+          </div>
           <Link
             href="/sos/create"
             onClick={onClose}

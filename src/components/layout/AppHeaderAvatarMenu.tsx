@@ -7,10 +7,12 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { ThemeToggle } from '@/components/ui/theme-toggle'
 import { useAuthStore } from '@/stores/auth-store'
 
 interface AppHeaderAvatarMenuProps {
@@ -51,9 +53,21 @@ export function AppHeaderAvatarMenu({ user, size = 'md' }: AppHeaderAvatarMenuPr
           </Avatar>
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-52">
+      <DropdownMenuContent align="end" className="w-56">
         <div className="px-2 py-1.5">
           <p className="truncate font-body text-sm font-medium">{user.displayName}</p>
+        </div>
+        <DropdownMenuSeparator />
+        <DropdownMenuLabel className="px-2 py-1 text-[11px] font-normal uppercase tracking-wide text-muted-foreground">
+          Appearance
+        </DropdownMenuLabel>
+        <div
+          className="flex items-center justify-between gap-2 px-2 pb-2"
+          data-nav-event="theme-toggle-container"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <span className="font-body text-xs text-muted-foreground">Theme</span>
+          <ThemeToggle />
         </div>
         <DropdownMenuSeparator />
         <DropdownMenuItem asChild>
