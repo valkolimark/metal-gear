@@ -16,13 +16,19 @@ export default async function CompanySettingsPage() {
   if (!company) redirect('/companies/new')
 
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4 space-y-8">
+    <div className="max-w-2xl mx-auto py-8 px-4 space-y-6">
       <div>
-        <h1 className="text-xl font-bold text-foreground font-['Chakra_Petch']">
-          Company Settings
+        <div className="flex items-center gap-1.5 text-[11.5px] mb-1 text-muted-foreground">
+          <span>Settings</span>
+          <span>/</span>
+          <span className="font-bold text-foreground">Company</span>
+        </div>
+        <h1 className="font-display text-[22px] font-bold leading-tight tracking-tight text-foreground">
+          Company profile
         </h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage your company profile — visible to all buyers on Metal Gear.
+        <p className="text-[12.5px] mt-0.5 text-muted-foreground">
+          How <span className="font-bold text-foreground">{company.name}</span> appears
+          across Metal Gear · public to all buyers
         </p>
       </div>
       <CompanySettingsForm company={company} userId={user.id} />
