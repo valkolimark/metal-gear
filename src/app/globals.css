@@ -453,6 +453,19 @@ html[data-palette="ocean"]:not(.dark) .sos-pulse {
   scrollbar-width: none;
 }
 
+@keyframes mg-design-typing-dot {
+  0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+  30% { opacity: 1; transform: translateY(-2px); }
+}
+[data-section="design-preview"] .mg-typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: #94A3B8;
+  animation: mg-design-typing-dot 1.2s ease-in-out infinite;
+}
+
 /* Scrollbar styling */
 .dark ::-webkit-scrollbar {
   width: 8px;

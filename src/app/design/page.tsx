@@ -2,6 +2,17 @@ import Link from 'next/link'
 
 const previews = [
   {
+    page: 'Messages',
+    description:
+      'Messenger-style inbox with marketplace context (listing/SOS attachments, RFQ quote flow, smart replies).',
+    variants: [
+      { label: 'Desktop · Inbox + thread', href: '/design/messages?variant=desktop' },
+      { label: 'Mobile · Inbox', href: '/design/messages?variant=mobile-inbox' },
+      { label: 'Mobile · Thread', href: '/design/messages?variant=mobile-thread' },
+      { label: 'Mobile · New message', href: '/design/messages?variant=mobile-compose' },
+    ],
+  },
+  {
     page: 'Settings · Company',
     description:
       'Sidebar nav + sectioned form with live buyer-preview rail. Mobile is a sectioned accordion with sticky save bar.',
