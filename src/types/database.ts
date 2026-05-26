@@ -577,7 +577,6 @@ export type Database = {
           description: string | null
           id: string
           industries: string[]
-          industry: string | null
           is_suspended: boolean
           is_verified: boolean
           logo_url: string | null
@@ -604,7 +603,6 @@ export type Database = {
           description?: string | null
           id?: string
           industries?: string[]
-          industry?: string | null
           is_suspended?: boolean
           is_verified?: boolean
           logo_url?: string | null
@@ -631,7 +629,6 @@ export type Database = {
           description?: string | null
           id?: string
           industries?: string[]
-          industry?: string | null
           is_suspended?: boolean
           is_verified?: boolean
           logo_url?: string | null
@@ -2494,7 +2491,6 @@ export type Database = {
           email_notifications: Json | null
           full_name: string
           id: string
-          industry: string | null
           is_admin: boolean
           is_banned: boolean
           is_suspended: boolean
@@ -2541,7 +2537,6 @@ export type Database = {
           email_notifications?: Json | null
           full_name?: string
           id: string
-          industry?: string | null
           is_admin?: boolean
           is_banned?: boolean
           is_suspended?: boolean
